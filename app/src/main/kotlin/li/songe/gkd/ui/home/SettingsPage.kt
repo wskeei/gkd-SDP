@@ -50,6 +50,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.ramcosta.composedestinations.generated.destinations.AboutPageDestination
 import com.ramcosta.composedestinations.generated.destinations.AdvancedPageDestination
 import com.ramcosta.composedestinations.generated.destinations.BlockA11YAppListPageDestination
+import com.ramcosta.composedestinations.generated.destinations.FocusLockPageDestination
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.SharingStarted
@@ -88,6 +89,7 @@ import li.songe.gkd.ui.style.titleItemPadding
 import li.songe.gkd.util.AndroidTarget
 import li.songe.gkd.util.DarkThemeOption
 import li.songe.gkd.util.findOption
+import li.songe.gkd.util.FocusLockUtils
 import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.mapState
 import li.songe.gkd.util.openA11ySettings
@@ -461,6 +463,22 @@ fun useSettingsPage(): ScaffoldExt {
                 modifier = Modifier.titleItemPadding(),
                 style = MaterialTheme.typography.titleSmall,
                 color = MaterialTheme.colorScheme.primary,
+            )
+
+            val activeLock by FocusLockUtils.activeLockFlow.collectAsState()
+            SettingItem(
+                title = "规则锁定",
+                subtitle = activeLock?.let {
+                    if (it.isActive) {
+                        val minutes = it.remainingTime / 60000
+                        val hours = minutes / 60
+                        val remainingMinutes = minutes % 60
+                        "剩余 " + if (hours > 0) "${hours}小时${remainingMinutes}分钟" else "${minutes}分钟"
+                    } else "未锁定"
+                } ?: "未锁定",
+                onClick = {
+                    mainVm.navigatePage(FocusLockPageDestination)
+                }
             )
 
             SettingItem(title = "高级设置", onClick = {

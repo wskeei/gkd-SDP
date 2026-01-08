@@ -44,6 +44,7 @@ import li.songe.gkd.db.DbSet
 import li.songe.gkd.ui.getGlobalGroupChecked
 import li.songe.gkd.ui.icon.ResetSettings
 import li.songe.gkd.ui.share.LocalMainViewModel
+import li.songe.gkd.util.FocusLockUtils
 import li.songe.gkd.util.getGroupEnable
 import li.songe.gkd.util.launchAsFn
 import li.songe.gkd.util.throttle
@@ -111,7 +112,12 @@ fun RuleGroupCard(
             categoryConfig,
         )
     }
+    val isLocked = FocusLockUtils.isRuleLocked(subs.id, group.key, appId)
     val onCheckedChange = appScope.launchAsFn<Boolean> { newChecked ->
+        if (!newChecked && isLocked) {
+            toast("规则已锁定，无法关闭")
+            return@launchAsFn
+        }
         val newConfig = if (appId != null) {
             if (group is RawSubscription.RawGlobalGroup) {
                 // APP 汇总页面 - 全局规则
@@ -251,8 +257,14 @@ fun RuleGroupCard(
                         key = Objects.hash(subs.id, appId, group.key),
                         modifier = switchModifier.minimumInteractiveComponentSize(),
                         checked = checked,
-                        onCheckedChange = if (isSelectedMode) null else onCheckedChange,
-                        thumbContent = if (canRest) ({
+                        enabled = !isLocked,
+                        onCheckedChange = if (isSelectedMode || isLocked) null else onCheckedChange,
+                        thumbContent = if (isLocked) ({
+                            PerfIcon(
+                                imageVector = PerfIcon.Lock,
+                                modifier = Modifier.size(8.dp)
+                            )
+                        }) else if (canRest) ({
                             PerfIcon(
                                 imageVector = ResetSettings,
                                 modifier = Modifier.size(8.dp)

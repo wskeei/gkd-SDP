@@ -129,7 +129,9 @@ android {
             )
         }
         debug {
-            signingConfig = gkdSigningConfig
+            if (gkdSigningConfig != null) {
+                signingConfig = gkdSigningConfig
+            }
             applicationIdSuffix = ".debug"
             resValue("color", "better_black", "#FF5D92")
             debugSuffixPairList.onEach { (key, value) ->
@@ -141,7 +143,9 @@ android {
         flavorDimensions += "channel"
         create("gkd") {
             isDefault = true
-            signingConfig = gkdSigningConfig
+            if (gkdSigningConfig != null) {
+                signingConfig = gkdSigningConfig
+            }
             resValue("bool", "is_accessibility_tool", "true")
         }
         create("play") {
