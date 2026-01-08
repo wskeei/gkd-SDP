@@ -42,7 +42,7 @@ import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
 import kotlinx.coroutines.flow.update
 import li.songe.gkd.MainActivity
-import li.songe.gkd.R
+import li.songe.gkd.sdp.R
 import li.songe.gkd.data.AppInfo
 import li.songe.gkd.service.fixRestartService
 import li.songe.gkd.store.blockA11yAppListFlow

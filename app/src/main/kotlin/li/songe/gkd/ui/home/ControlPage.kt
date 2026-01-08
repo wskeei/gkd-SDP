@@ -43,7 +43,7 @@ import com.ramcosta.composedestinations.generated.destinations.AppOpsAllowPageDe
 import com.ramcosta.composedestinations.generated.destinations.AuthA11YPageDestination
 import com.ramcosta.composedestinations.generated.destinations.WebViewPageDestination
 import li.songe.gkd.MainActivity
-import li.songe.gkd.R
+import li.songe.gkd.sdp.R
 import li.songe.gkd.data.SubsConfig
 import li.songe.gkd.permission.appOpsRestrictedFlow
 import li.songe.gkd.permission.writeSecureSettingsState

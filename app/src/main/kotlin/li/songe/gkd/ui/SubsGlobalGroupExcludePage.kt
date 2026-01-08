@@ -37,7 +37,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
 import li.songe.gkd.MainActivity
-import li.songe.gkd.R
+import li.songe.gkd.sdp.R
 import li.songe.gkd.a11y.launcherAppId
 import li.songe.gkd.data.ExcludeData
 import li.songe.gkd.data.RawSubscription

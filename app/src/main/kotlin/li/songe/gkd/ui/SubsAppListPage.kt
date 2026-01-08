@@ -29,7 +29,7 @@ import com.ramcosta.composedestinations.annotation.RootGraph
 import com.ramcosta.composedestinations.generated.destinations.SubsAppGroupListPageDestination
 import com.ramcosta.composedestinations.generated.destinations.UpsertRuleGroupPageDestination
 import li.songe.gkd.MainActivity
-import li.songe.gkd.R
+import li.songe.gkd.sdp.R
 import li.songe.gkd.data.AppConfig
 import li.songe.gkd.db.DbSet
 import li.songe.gkd.ui.component.AnimatedIconButton

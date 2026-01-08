@@ -13,7 +13,7 @@ import androidx.core.net.toUri
 import kotlinx.atomicfu.atomic
 import li.songe.gkd.META
 import li.songe.gkd.MainActivity
-import li.songe.gkd.R
+import li.songe.gkd.sdp.R
 import li.songe.gkd.app
 import li.songe.gkd.permission.foregroundServiceSpecialUseState
 import li.songe.gkd.permission.notificationState

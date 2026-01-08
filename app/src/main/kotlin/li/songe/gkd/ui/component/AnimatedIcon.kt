@@ -10,7 +10,7 @@ import androidx.compose.material3.LocalContentColor
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import li.songe.gkd.R
+import li.songe.gkd.sdp.R
 
 @Composable
 private fun AnimatedIcon(

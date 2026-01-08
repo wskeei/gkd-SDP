@@ -3,7 +3,7 @@ import org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJsEnvSpec
 import org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJsPlugin
 
 ext {
-    set("android.namespace", "li.songe.gkd")
+    set("android.namespace", "li.songe.gkd.sdp")
     set("android.buildToolsVersion", "36.1.0")
     set("android.compileSdk", 36)
     set("android.targetSdk", 36)

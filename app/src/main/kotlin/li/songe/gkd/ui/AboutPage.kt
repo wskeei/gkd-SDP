@@ -59,7 +59,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import li.songe.gkd.META
 import li.songe.gkd.MainActivity
-import li.songe.gkd.R
+import li.songe.gkd.sdp.R
 import li.songe.gkd.store.storeFlow
 import li.songe.gkd.ui.component.PerfIcon
 import li.songe.gkd.ui.component.PerfIconButton

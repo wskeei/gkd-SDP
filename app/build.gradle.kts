@@ -65,7 +65,7 @@ android {
         minSdk = rootProject.ext["android.minSdk"] as Int
         targetSdk = rootProject.ext["android.targetSdk"] as Int
 
-        applicationId = "li.songe.gkd"
+        applicationId = "li.songe.gkd.sdp"
         versionCode = 81
         versionName = "1.11.6"
 
@@ -91,11 +91,15 @@ android {
         aidl = true
     }
 
-    val gkdSigningConfig = signingConfigs.create("gkd") {
-        storeFile = file(project.properties["GKD_STORE_FILE"] as String)
-        storePassword = project.properties["GKD_STORE_PASSWORD"].toString()
-        keyAlias = project.properties["GKD_KEY_ALIAS"].toString()
-        keyPassword = project.properties["GKD_KEY_PASSWORD"].toString()
+    val gkdSigningConfig = if (project.hasProperty("GKD_STORE_FILE")) {
+        signingConfigs.create("gkd") {
+            storeFile = file(project.properties["GKD_STORE_FILE"] as String)
+            storePassword = project.properties["GKD_STORE_PASSWORD"].toString()
+            keyAlias = project.properties["GKD_KEY_ALIAS"].toString()
+            keyPassword = project.properties["GKD_KEY_PASSWORD"].toString()
+        }
+    } else {
+        null
     }
 
     val playSigningConfig = if (project.hasProperty("PLAY_STORE_FILE")) {
@@ -141,7 +145,10 @@ android {
             resValue("bool", "is_accessibility_tool", "true")
         }
         create("play") {
-            signingConfig = playSigningConfig ?: gkdSigningConfig
+            val config = playSigningConfig ?: gkdSigningConfig
+            if (config != null) {
+                signingConfig = config
+            }
             resValue("bool", "is_accessibility_tool", "false")
         }
         all {

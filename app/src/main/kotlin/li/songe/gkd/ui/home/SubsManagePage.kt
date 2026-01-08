@@ -60,7 +60,7 @@ import com.ramcosta.composedestinations.generated.destinations.WebViewPageDestin
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.update
 import li.songe.gkd.MainActivity
-import li.songe.gkd.R
+import li.songe.gkd.sdp.R
 import li.songe.gkd.data.Value
 import li.songe.gkd.data.importData
 import li.songe.gkd.db.DbSet

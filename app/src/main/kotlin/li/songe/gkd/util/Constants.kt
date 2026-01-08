@@ -34,6 +34,6 @@ object ShortUrlSet {
 
 const val shizukuAppId = "moe.shizuku.privileged.api"
 
-const val PLAY_STORE_URL = "https://play.google.com/store/apps/details?id=li.songe.gkd"
+const val PLAY_STORE_URL = "https://play.google.com/store/apps/details?id=li.songe.gkd.sdp"
 
 const val systemUiAppId = "com.android.systemui"
