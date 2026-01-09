@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
@@ -53,6 +54,7 @@ fun FocusLockPage() {
 
     val selectedCount = groupStates.count { it.isSelectedForLock }
     val allCount = groupStates.size
+    val isActive = activeLock != null && activeLock!!.isActive
 
     Scaffold(
         topBar = {
@@ -70,7 +72,7 @@ fun FocusLockPage() {
         }
     ) { padding ->
         LazyColumn(modifier = Modifier.scaffoldPadding(padding)) {
-            if (activeLock != null && activeLock!!.isActive) {
+            if (isActive) {
                 item {
                     Card(
                         modifier = Modifier
@@ -90,170 +92,188 @@ fun FocusLockPage() {
                         }
                     }
                 }
-            } else {
-                item {
-                    Text("锁定时长", modifier = Modifier.titleItemPadding())
-                }
+            }
 
-                item {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .itemPadding()
+            item {
+                Text(if (isActive) "延长锁定" else "锁定时长", modifier = Modifier.titleItemPadding())
+            }
+
+            item {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .itemPadding()
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            val options = listOf(
-                                480 to "8小时",
-                                1440 to "1天",
-                                4320 to "3天"
-                            )
-                            options.forEach { (duration, label) ->
-                                TextButton(
-                                    onClick = {
-                                        vm.selectedDuration = duration
-                                        vm.isCustomDuration = false
-                                    },
-                                    modifier = Modifier.weight(1f)
-                                ) {
-                                    Text(
-                                        text = label,
-                                        color = if (!vm.isCustomDuration && vm.selectedDuration == duration)
-                                            MaterialTheme.colorScheme.primary
-                                        else
-                                            MaterialTheme.colorScheme.onSurface
-                                    )
-                                }
-                            }
+                        val options = listOf(
+                            480 to "8小时",
+                            1440 to "1天",
+                            4320 to "3天"
+                        )
+                        options.forEach { (duration, label) ->
                             TextButton(
-                                onClick = { vm.isCustomDuration = true },
+                                onClick = {
+                                    vm.selectedDuration = duration
+                                    vm.isCustomDuration = false
+                                },
                                 modifier = Modifier.weight(1f)
                             ) {
                                 Text(
-                                    text = "自定义",
-                                    color = if (vm.isCustomDuration)
+                                    text = if (isActive) "+$label" else label,
+                                    color = if (!vm.isCustomDuration && vm.selectedDuration == duration)
                                         MaterialTheme.colorScheme.primary
                                     else
                                         MaterialTheme.colorScheme.onSurface
                                 )
                             }
                         }
-
-                        if (vm.isCustomDuration) {
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                OutlinedTextField(
-                                    value = vm.customDaysText,
-                                    onValueChange = { newValue ->
-                                        if (newValue.all { it.isDigit() }) {
-                                            vm.customDaysText = newValue
-                                        }
-                                    },
-                                    label = { Text("天") },
-                                    singleLine = true,
-                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                                    modifier = Modifier.weight(1f)
-                                )
-                                OutlinedTextField(
-                                    value = vm.customHoursText,
-                                    onValueChange = { newValue ->
-                                        if (newValue.all { it.isDigit() }) {
-                                            vm.customHoursText = newValue
-                                        }
-                                    },
-                                    label = { Text("小时") },
-                                    singleLine = true,
-                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                                    modifier = Modifier.weight(1f)
-                                )
-                            }
-                        }
-                    }
-                }
-
-                item {
-                    Button(
-                        onClick = throttle { vm.startLock() },
-                        enabled = selectedCount > 0,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp)
-                    ) {
-                        Text(if (selectedCount == 0) "请选择规则" else "开始锁定 (${selectedCount})")
-                    }
-                }
-
-                item {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .titleItemPadding(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Text("规则列表 (${selectedCount}/${allCount})")
-                        TextButton(onClick = {
-                            vm.selectAll(selectedCount != allCount)
-                        }) {
-                            Text(if (selectedCount == allCount) "全不选" else "全选")
-                        }
-                    }
-                }
-
-                item {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 4.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Text(
-                            text = "规则名称 / 来源",
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        TextButton(
+                            onClick = { vm.isCustomDuration = true },
                             modifier = Modifier.weight(1f)
-                        )
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(16.dp)
                         ) {
                             Text(
-                                text = "自律模式",
-                                style = MaterialTheme.typography.labelMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                text = "自定义",
+                                color = if (vm.isCustomDuration)
+                                    MaterialTheme.colorScheme.primary
+                                else
+                                    MaterialTheme.colorScheme.onSurface
                             )
-                            Text(
-                                text = "锁定选中",
-                                style = MaterialTheme.typography.labelMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                        }
+                    }
+
+                    if (vm.isCustomDuration) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            OutlinedTextField(
+                                value = vm.customDaysText,
+                                onValueChange = { newValue ->
+                                    if (newValue.all { it.isDigit() }) {
+                                        vm.customDaysText = newValue
+                                    }
+                                },
+                                label = { Text("天") },
+                                singleLine = true,
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                modifier = Modifier.weight(1f)
+                            )
+                            OutlinedTextField(
+                                value = vm.customHoursText,
+                                onValueChange = { newValue ->
+                                    if (newValue.all { it.isDigit() }) {
+                                        vm.customHoursText = newValue
+                                    }
+                                },
+                                label = { Text("小时") },
+                                singleLine = true,
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                modifier = Modifier.weight(1f)
                             )
                         }
                     }
                 }
+            }
 
-                if (groupStates.isEmpty()) {
-                    item {
-                        Text(
-                            text = "当前没有已启用的规则组，请先前往订阅页面启用规则。",
-                            style = MaterialTheme.typography.bodyMedium,
-                            modifier = Modifier.itemPadding()
-                        )
-                    }
+            item {
+                val buttonText = if (isActive) {
+                    if (selectedCount > 0) "更新锁定 (添加 ${selectedCount} 个规则)" else "更新锁定"
                 } else {
-                    items(groupStates, key = { s -> "${s.group.subsItem.id}-${s.group.appId}-${s.group.group.key}" }) { state ->
-                        LockableGroupItemNew(
-                            state = state,
-                            onToggleIntercept = { vm.toggleIntercept(state.group) },
-                            onToggleSelection = { vm.toggleRuleSelection(state.group) }
-                        )
-                        HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), thickness = 0.5.dp, color = MaterialTheme.colorScheme.outlineVariant)
+                    if (selectedCount == 0) "请选择规则" else "开始锁定 (${selectedCount})"
+                }
+                
+                val isDurationSet = if (vm.isCustomDuration) {
+                    (vm.customDaysText.toIntOrNull() ?: 0) > 0 || (vm.customHoursText.toIntOrNull() ?: 0) > 0
+                } else {
+                    vm.selectedDuration > 0
+                }
+
+                val enabled = if (isActive) {
+                    selectedCount > 0 || isDurationSet
+                } else {
+                    selectedCount > 0 && isDurationSet
+                }
+
+                Button(
+                    onClick = throttle { vm.updateOrStartLock() },
+                    enabled = enabled,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp)
+                ) {
+                    Text(buttonText)
+                }
+            }
+
+            item {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .titleItemPadding(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text("规则列表 (${selectedCount}/${allCount})")
+                    TextButton(onClick = {
+                        vm.selectAll(selectedCount != allCount)
+                    }) {
+                        Text(if (selectedCount == allCount) "全不选" else "全选")
                     }
+                }
+            }
+
+            item {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = "规则名称 / 来源",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.weight(1f)
+                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        Text(
+                            text = "自律模式",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            text = "锁定选中",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            }
+
+            if (groupStates.isEmpty()) {
+                item {
+                    Text(
+                        text = "当前没有已启用的规则组，请先前往订阅页面启用规则。",
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.itemPadding()
+                    )
+                }
+            } else {
+                items(groupStates, key = { s -> "${s.group.subsItem.id}-${s.group.appId}-${s.group.group.key}" }) { state ->
+                    LockableGroupItemNew(
+                        state = state,
+                        onToggleIntercept = { vm.toggleIntercept(state.group) },
+                        onToggleSelection = { vm.toggleRuleSelection(state.group) }
+                    )
+                    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), thickness = 0.5.dp, color = MaterialTheme.colorScheme.outlineVariant)
                 }
             }
         }
@@ -269,7 +289,7 @@ private fun LockableGroupItemNew(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { onToggleSelection() }
+            .clickable(enabled = !state.isAlreadyLocked) { onToggleSelection() }
             .itemPadding(),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -304,10 +324,18 @@ private fun LockableGroupItemNew(
                 onCheckedChange = { onToggleIntercept() },
                 modifier = Modifier.height(24.dp) // Adjust size if needed
             )
-            PerfCheckbox(
-                checked = state.isSelectedForLock,
-                onCheckedChange = { onToggleSelection() }
-            )
+            if (state.isAlreadyLocked) {
+                PerfIcon(
+                    imageVector = PerfIcon.Lock,
+                    modifier = Modifier.size(24.dp),
+                    tint = MaterialTheme.colorScheme.primary
+                )
+            } else {
+                PerfCheckbox(
+                    checked = state.isSelectedForLock,
+                    onCheckedChange = { onToggleSelection() }
+                )
+            }
         }
     }
 }

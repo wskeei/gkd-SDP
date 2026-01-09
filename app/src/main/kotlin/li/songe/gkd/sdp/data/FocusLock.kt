@@ -34,6 +34,9 @@ data class FocusLock(
         @Insert
         suspend fun insert(vararg locks: FocusLock): List<Long>
 
+        @androidx.room.Update
+        suspend fun update(lock: FocusLock)
+
         @Query("SELECT * FROM focus_lock WHERE end_time > :currentTime ORDER BY end_time DESC LIMIT 1")
         fun queryActive(currentTime: Long = System.currentTimeMillis()): Flow<FocusLock?>
 

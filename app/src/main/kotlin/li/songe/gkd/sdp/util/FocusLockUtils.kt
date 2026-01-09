@@ -35,4 +35,26 @@ object FocusLockUtils {
         )
         return DbSet.focusLockDao.insert(lock).first()
     }
+
+    suspend fun updateLock(
+        lock: FocusLock,
+        newRules: List<FocusLock.LockedRule>,
+        extendMinutes: Int
+    ) {
+        val currentRules = json.decodeFromString<List<FocusLock.LockedRule>>(lock.lockedRules)
+        // Merge rules: old + new (distinct)
+        val allRules = (currentRules + newRules).distinct()
+        
+        val newEndTime = if (extendMinutes > 0) {
+            lock.endTime + extendMinutes * 60 * 1000L
+        } else {
+            lock.endTime
+        }
+
+        val updatedLock = lock.copy(
+            endTime = newEndTime,
+            lockedRules = json.encodeToString(allRules)
+        )
+        DbSet.focusLockDao.update(updatedLock)
+    }
 }

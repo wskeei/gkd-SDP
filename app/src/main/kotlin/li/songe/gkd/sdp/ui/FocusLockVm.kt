@@ -21,11 +21,13 @@ import li.songe.gkd.sdp.util.FocusLockUtils
 import li.songe.gkd.sdp.util.launchTry
 import li.songe.gkd.sdp.util.ruleSummaryFlow
 import li.songe.gkd.sdp.util.toast
+import li.songe.gkd.sdp.util.json
 
 data class GroupState(
     val group: ResolvedGroup,
     val isInterceptEnabled: Boolean,
-    val isSelectedForLock: Boolean
+    val isSelectedForLock: Boolean,
+    val isAlreadyLocked: Boolean
 )
 
 class FocusLockVm : BaseViewModel() {
@@ -38,18 +40,27 @@ class FocusLockVm : BaseViewModel() {
     val groupStatesFlow: StateFlow<List<GroupState>> = combine(
         ruleSummaryFlow,
         DbSet.interceptConfigDao.queryAll(),
-        selectedRulesSetFlow
-    ) { summary, interceptConfigs, selectedRules ->
+        selectedRulesSetFlow,
+        FocusLockUtils.activeLockFlow
+    ) { summary, interceptConfigs, selectedRules, activeLock ->
         val enabledAppGroups = summary.appIdToAllGroups.values.flatten().filter { it.enable }
         val enabledGlobalGroups = summary.globalGroups
         val allGroups = enabledAppGroups + enabledGlobalGroups
 
+        val lockedRules = if (activeLock != null && activeLock.isActive) {
+            json.decodeFromString<List<FocusLock.LockedRule>>(activeLock.lockedRules).toSet()
+        } else {
+            emptySet()
+        }
+
         allGroups.map { group ->
             val ruleKey = FocusLock.LockedRule(group.subsItem.id, group.group.key, group.appId)
+            val isLocked = lockedRules.contains(ruleKey)
             GroupState(
                 group = group,
                 isInterceptEnabled = interceptConfigs.any { it.subsId == group.subsItem.id && it.groupKey == group.group.key && it.enabled },
-                isSelectedForLock = selectedRules.contains(ruleKey)
+                isSelectedForLock = selectedRules.contains(ruleKey),
+                isAlreadyLocked = isLocked
             )
         }
     }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
@@ -57,6 +68,9 @@ class FocusLockVm : BaseViewModel() {
     fun toggleRuleSelection(group: ResolvedGroup) {
         val rule = FocusLock.LockedRule(group.subsItem.id, group.group.key, group.appId)
         val current = selectedRulesSetFlow.value
+        // If already locked in active session, prevent toggling (it's effectively always selected)
+        if (groupStatesFlow.value.find { it.group == group }?.isAlreadyLocked == true) return
+
         selectedRulesSetFlow.value = if (current.contains(rule)) {
             current - rule
         } else {
@@ -66,9 +80,11 @@ class FocusLockVm : BaseViewModel() {
 
     fun selectAll(selectAll: Boolean) {
         if (selectAll) {
-            val allRules = groupStatesFlow.value.map {
-                FocusLock.LockedRule(it.group.subsItem.id, it.group.group.key, it.group.appId)
-            }.toSet()
+            val allRules = groupStatesFlow.value
+                .filter { !it.isAlreadyLocked } // Only select those not already locked
+                .map {
+                    FocusLock.LockedRule(it.group.subsItem.id, it.group.group.key, it.group.appId)
+                }.toSet()
             selectedRulesSetFlow.value = allRules
         } else {
             selectedRulesSetFlow.value = emptySet()
@@ -86,13 +102,8 @@ class FocusLockVm : BaseViewModel() {
         DbSet.interceptConfigDao.insert(config)
     }
 
-    fun startLock() = viewModelScope.launchTry(Dispatchers.IO) {
+    fun updateOrStartLock() = viewModelScope.launchTry(Dispatchers.IO) {
         val rules = selectedRulesSetFlow.value.toList()
-        if (rules.isEmpty()) {
-            toast("请选择要锁定的规则组")
-            return@launchTry
-        }
-
         val duration = if (isCustomDuration) {
             val days = customDaysText.toIntOrNull() ?: 0
             val hours = customHoursText.toIntOrNull() ?: 0
@@ -101,13 +112,31 @@ class FocusLockVm : BaseViewModel() {
             selectedDuration
         }
 
-        if (duration <= 0) {
-            toast("请输入有效的锁定时长")
-            return@launchTry
+        val activeLock = FocusLockUtils.activeLockFlow.value
+        if (activeLock != null && activeLock.isActive) {
+            // Update existing lock
+            if (rules.isEmpty() && duration <= 0) {
+                toast("请选择要添加的规则或设置延长时间")
+                return@launchTry
+            }
+            FocusLockUtils.updateLock(activeLock, rules, duration)
+            var msg = "锁定更新成功"
+            if (rules.isNotEmpty()) msg += "，添加了 ${rules.size} 个规则"
+            if (duration > 0) msg += "，延长了 $duration 分钟"
+            toast(msg)
+        } else {
+            // Start new lock
+            if (rules.isEmpty()) {
+                toast("请选择要锁定的规则组")
+                return@launchTry
+            }
+            if (duration <= 0) {
+                toast("请输入有效的锁定时长")
+                return@launchTry
+            }
+            FocusLockUtils.createLock(rules, duration)
+            toast("已锁定 ${rules.size} 个规则组，${duration} 分钟后自动解锁")
         }
-
-        FocusLockUtils.createLock(rules, duration)
-        toast("已锁定 ${rules.size} 个规则组，${duration} 分钟后自动解锁")
         selectedRulesSetFlow.value = emptySet()
     }
 }
