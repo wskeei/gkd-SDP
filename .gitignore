@@ -25,5 +25,4 @@ local.properties
 
 /gradle/libs.versions.updates.toml
 .claude/
-GEMINI.md
 CLAUDE.md

@@ -23,8 +23,10 @@ import li.songe.gkd.sdp.data.SubsItem
 import li.songe.gkd.sdp.util.dbFolder
 import li.songe.gkd.sdp.util.json
 
+import li.songe.gkd.sdp.data.InterceptConfig
+
 @Database(
-    version = 15,
+    version = 16,
     entities = [
         SubsItem::class,
         Snapshot::class,
@@ -36,6 +38,7 @@ import li.songe.gkd.sdp.util.json
         AppVisitLog::class,
         A11yEventLog::class,
         FocusLock::class,
+        InterceptConfig::class,
     ],
     autoMigrations = [
         AutoMigration(from = 1, to = 2),
@@ -52,6 +55,7 @@ import li.songe.gkd.sdp.util.json
         AutoMigration(from = 12, to = 13),
         AutoMigration(from = 13, to = 14),
         AutoMigration(from = 14, to = 15),
+        AutoMigration(from = 15, to = 16),
     ]
 )
 @TypeConverters(DbConverters::class)
@@ -66,6 +70,7 @@ abstract class AppDb : RoomDatabase() {
     abstract fun appVisitLogDao(): AppVisitLog.AppLogDao
     abstract fun a11yEventLogDao(): A11yEventLog.A11yEventLogDao
     abstract fun focusLockDao(): FocusLock.FocusLockDao
+    abstract fun interceptConfigDao(): InterceptConfig.InterceptConfigDao
 }
 
 @RenameColumn(
@@ -130,4 +135,5 @@ object DbSet {
     val appVisitLogDao get() = db.appVisitLogDao()
     val a11yEventLogDao get() = db.a11yEventLogDao()
     val focusLockDao get() = db.focusLockDao()
+    val interceptConfigDao get() = db.interceptConfigDao()
 }

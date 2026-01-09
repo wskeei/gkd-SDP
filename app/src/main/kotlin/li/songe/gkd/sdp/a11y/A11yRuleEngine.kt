@@ -29,6 +29,9 @@ import java.util.concurrent.Executors
 import kotlin.coroutines.Continuation
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
+import li.songe.gkd.sdp.db.DbSet
+import li.songe.gkd.sdp.service.InterceptOverlayService
+import li.songe.gkd.sdp.util.InterceptUtils
 
 
 private val eventDispatcher = Executors.newSingleThreadExecutor().asCoroutineDispatcher()
@@ -330,6 +333,22 @@ class A11yRuleEngine(val service: A11yService) {
                 continue
             }
             if (rule.status != RuleStatus.StatusOk) break
+
+            val interceptConfig = DbSet.interceptConfigDao.get(rule.subsItem.id, rule.g.group.key)
+            if (interceptConfig != null && interceptConfig.enabled) {
+                if (!InterceptUtils.isAllowed(interceptConfig.subsId, interceptConfig.groupKey)) {
+                    val intent = android.content.Intent(service, InterceptOverlayService::class.java).apply {
+                        putExtra("subsId", interceptConfig.subsId)
+                        putExtra("groupKey", interceptConfig.groupKey)
+                        putExtra("message", interceptConfig.message)
+                        putExtra("cooldown", interceptConfig.cooldownSeconds)
+                        addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                    }
+                    service.startService(intent)
+                    return
+                }
+            }
+
             val actionResult = rule.performAction(target)
             if (actionResult.result) {
                 val topActivity = topActivityFlow.value

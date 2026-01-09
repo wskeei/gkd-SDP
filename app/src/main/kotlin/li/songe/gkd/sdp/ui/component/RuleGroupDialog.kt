@@ -14,10 +14,12 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -31,8 +33,12 @@ import com.ramcosta.composedestinations.generated.destinations.ImagePreviewPageD
 import com.ramcosta.composedestinations.generated.destinations.SubsAppGroupListPageDestination
 import com.ramcosta.composedestinations.generated.destinations.SubsGlobalGroupListPageDestination
 import com.ramcosta.composedestinations.utils.currentDestinationAsState
+import androidx.compose.runtime.rememberCoroutineScope
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import li.songe.gkd.sdp.data.InterceptConfig
 import li.songe.gkd.sdp.data.RawSubscription
+import li.songe.gkd.sdp.db.DbSet
 import li.songe.gkd.sdp.ui.icon.ResetSettings
 import li.songe.gkd.sdp.ui.share.LocalDarkTheme
 import li.songe.gkd.sdp.ui.share.LocalMainViewModel
@@ -40,6 +46,7 @@ import li.songe.gkd.sdp.ui.share.LocalNavController
 import li.songe.gkd.sdp.ui.style.getJson5AnnotatedString
 import li.songe.gkd.sdp.util.copyText
 import li.songe.gkd.sdp.util.throttle
+import li.songe.gkd.sdp.util.toast
 
 @Composable
 fun RuleGroupDialog(
@@ -54,6 +61,11 @@ fun RuleGroupDialog(
 ) {
     val mainVm = LocalMainViewModel.current
     val navController = LocalNavController.current
+    val interceptConfig by remember(subs.id, group.key) {
+        DbSet.interceptConfigDao.getFlow(subs.id, group.key)
+    }.collectAsState(initial = null)
+    val scope = rememberCoroutineScope()
+
     AlertDialog(
         onDismissRequest = onDismissRequest,
         title = { Text(text = "规则组详情") },

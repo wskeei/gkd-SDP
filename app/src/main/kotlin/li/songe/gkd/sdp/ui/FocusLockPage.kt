@@ -3,7 +3,6 @@ package li.songe.gkd.sdp.ui
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -18,6 +17,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -31,9 +31,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
-import li.songe.gkd.sdp.data.FocusLock
 import li.songe.gkd.sdp.data.ResolvedAppGroup
-import li.songe.gkd.sdp.data.ResolvedGroup
 import li.songe.gkd.sdp.ui.component.PerfCheckbox
 import li.songe.gkd.sdp.ui.component.PerfIcon
 import li.songe.gkd.sdp.ui.component.PerfIconButton
@@ -51,8 +49,10 @@ fun FocusLockPage() {
     val mainVm = LocalMainViewModel.current
     val vm = viewModel<FocusLockVm>()
     val activeLock by FocusLockUtils.activeLockFlow.collectAsState()
-    val lockableGroups by vm.lockableGroupsFlow.collectAsState()
-    val selectedRules by vm.selectedRulesFlow.collectAsState()
+    val groupStates by vm.groupStatesFlow.collectAsState()
+
+    val selectedCount = groupStates.count { it.isSelectedForLock }
+    val allCount = groupStates.size
 
     Scaffold(
         topBar = {
@@ -65,7 +65,7 @@ fun FocusLockPage() {
                         },
                     )
                 },
-                title = { Text(text = "规则锁定") }
+                title = { Text(text = "数字自律") }
             )
         }
     ) { padding ->
@@ -177,6 +177,18 @@ fun FocusLockPage() {
                 }
 
                 item {
+                    Button(
+                        onClick = throttle { vm.startLock() },
+                        enabled = selectedCount > 0,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp)
+                    ) {
+                        Text(if (selectedCount == 0) "请选择规则" else "开始锁定 (${selectedCount})")
+                    }
+                }
+
+                item {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -184,22 +196,48 @@ fun FocusLockPage() {
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Text("选择锁定规则 (${selectedRules.size}/${lockableGroups.size})")
+                        Text("规则列表 (${selectedCount}/${allCount})")
                         TextButton(onClick = {
-                            if (selectedRules.size == lockableGroups.size) {
-                                vm.selectedRulesFlow.value = emptySet()
-                            } else {
-                                vm.selectedRulesFlow.value = lockableGroups.map { g ->
-                                    FocusLock.LockedRule(g.subsItem.id, g.group.key, g.appId)
-                                }.toSet()
-                            }
+                            vm.selectAll(selectedCount != allCount)
                         }) {
-                            Text(if (selectedRules.size == lockableGroups.size) "全不选" else "全选")
+                            Text(if (selectedCount == allCount) "全不选" else "全选")
                         }
                     }
                 }
 
-                if (lockableGroups.isEmpty()) {
+                item {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(
+                            text = "规则名称 / 来源",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.weight(1f)
+                        )
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(16.dp)
+                        ) {
+                            Text(
+                                text = "自律模式",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Text(
+                                text = "锁定选中",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                }
+
+                if (groupStates.isEmpty()) {
                     item {
                         Text(
                             text = "当前没有已启用的规则组，请先前往订阅页面启用规则。",
@@ -208,27 +246,13 @@ fun FocusLockPage() {
                         )
                     }
                 } else {
-                    items(lockableGroups, key = { g -> "${g.subsItem.id}-${g.appId}-${g.group.key}" }) { group ->
-                        val lockedRule = FocusLock.LockedRule(group.subsItem.id, group.group.key, group.appId)
-                        val isSelected = selectedRules.contains(lockedRule)
-                        LockableGroupItem(
-                            group = group,
-                            isSelected = isSelected,
-                            onToggle = { vm.toggleRule(lockedRule) }
+                    items(groupStates, key = { s -> "${s.group.subsItem.id}-${s.group.appId}-${s.group.group.key}" }) { state ->
+                        LockableGroupItemNew(
+                            state = state,
+                            onToggleIntercept = { vm.toggleIntercept(state.group) },
+                            onToggleSelection = { vm.toggleRuleSelection(state.group) }
                         )
                         HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), thickness = 0.5.dp, color = MaterialTheme.colorScheme.outlineVariant)
-                    }
-                }
-
-                item {
-                    Button(
-                        onClick = throttle { vm.startLock() },
-                        enabled = selectedRules.isNotEmpty(),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp)
-                    ) {
-                        Text(if (selectedRules.isEmpty()) "请选择规则" else "开始锁定 (${selectedRules.size})")
                     }
                 }
             }
@@ -237,30 +261,30 @@ fun FocusLockPage() {
 }
 
 @Composable
-private fun LockableGroupItem(
-    group: ResolvedGroup,
-    isSelected: Boolean,
-    onToggle: () -> Unit
+private fun LockableGroupItemNew(
+    state: GroupState,
+    onToggleIntercept: () -> Unit,
+    onToggleSelection: () -> Unit
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { onToggle() }
+            .clickable { onToggleSelection() }
             .itemPadding(),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = group.group.name,
+                text = state.group.group.name,
                 style = MaterialTheme.typography.bodyLarge,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
-            val subtext = if (group is ResolvedAppGroup) {
-                "${group.app.name ?: group.appId} (${group.subscription.name})"
+            val subtext = if (state.group is ResolvedAppGroup) {
+                "${state.group.app.name ?: state.group.appId} (${state.group.subscription.name})"
             } else {
-                "全局规则 (${group.subscription.name})"
+                "全局规则 (${state.group.subscription.name})"
             }
             Text(
                 text = subtext,
@@ -270,7 +294,21 @@ private fun LockableGroupItem(
                 overflow = TextOverflow.Ellipsis
             )
         }
-        PerfCheckbox(checked = isSelected, onCheckedChange = { onToggle() })
+        
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(24.dp) // Gap between switch and checkbox
+        ) {
+            Switch(
+                checked = state.isInterceptEnabled,
+                onCheckedChange = { onToggleIntercept() },
+                modifier = Modifier.height(24.dp) // Adjust size if needed
+            )
+            PerfCheckbox(
+                checked = state.isSelectedForLock,
+                onCheckedChange = { onToggleSelection() }
+            )
+        }
     }
 }
 

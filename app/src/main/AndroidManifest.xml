@@ -186,6 +186,10 @@
         </service>
 
         <service
+            android:name=".service.InterceptOverlayService"
+            android:exported="false" />
+
+        <service
             android:name=".service.GkdTileService"
             android:exported="true"
             android:icon="@drawable/ic_status"

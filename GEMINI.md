@@ -106,6 +106,12 @@ data class FocusLock(
 }
 ```
 
+**UI 位置**：
+```
+设置页 → 规则锁定 → FocusLockPage
+```
+
+
 **关键实现**：
 1. ✅ `FocusLockUtils` 提供锁定检查逻辑，并在 `RuleGroupCard` 的开关回调中拦截关闭操作。
 2. ✅ `FocusLockVm` 自动筛选当前已启用的规则组供用户选择。
@@ -132,7 +138,7 @@ data class InterceptConfig(
 
 **UI 位置**：
 ```
-规则组详情页 → 长按菜单 → "启用拦截模式"
+设置页 → 规则锁定 → "启用拦截模式"
 ```
 
 **关键实现**：
