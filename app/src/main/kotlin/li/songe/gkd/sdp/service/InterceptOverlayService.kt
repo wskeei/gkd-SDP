@@ -109,22 +109,23 @@ class InterceptOverlayService : LifecycleService(), SavedStateRegistryOwner {
 @Composable
 fun InterceptScreen(
     message: String,
-    cooldown: Int,
-    onContinue: () -> Unit,
+    cooldown: Int, // Kept for API compatibility but we use 10s for auto-exit
+    onContinue: () -> Unit, // Kept for API compatibility but unused
     onExit: () -> Unit
 ) {
-    var timeLeft by remember { mutableIntStateOf(cooldown) }
+    var timeLeft by remember { mutableIntStateOf(10) }
     
     LaunchedEffect(Unit) {
         while (timeLeft > 0) {
             delay(1000)
             timeLeft--
         }
+        onExit()
     }
 
     Surface(
         modifier = Modifier.fillMaxSize(),
-        color = MaterialTheme.colorScheme.background.copy(alpha = 0.95f)
+        color = MaterialTheme.colorScheme.background // Opaque
     ) {
         Column(
             modifier = Modifier
@@ -136,7 +137,8 @@ fun InterceptScreen(
             Text(
                 text = message,
                 style = MaterialTheme.typography.headlineMedium,
-                textAlign = TextAlign.Center
+                textAlign = TextAlign.Center,
+                color = MaterialTheme.colorScheme.onBackground
             )
             Spacer(modifier = Modifier.height(48.dp))
             
@@ -144,17 +146,7 @@ fun InterceptScreen(
                 onClick = onExit,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text("算了 (退出)")
-            }
-            
-            Spacer(modifier = Modifier.height(16.dp))
-            
-            Button(
-                onClick = onContinue,
-                enabled = timeLeft == 0,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text(if (timeLeft > 0) "我需要使用 (${timeLeft}s)" else "我需要使用")
+                Text("算了 (退出) ${timeLeft}s")
             }
         }
     }
