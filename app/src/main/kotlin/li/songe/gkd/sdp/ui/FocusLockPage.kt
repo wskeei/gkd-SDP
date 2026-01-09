@@ -3,7 +3,7 @@ package li.songe.gkd.sdp.ui
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
-import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -16,8 +16,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
+import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -26,6 +28,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -33,12 +36,14 @@ import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -47,17 +52,15 @@ import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
 import kotlinx.coroutines.launch
 import li.songe.gkd.sdp.data.ConstraintConfig
-import li.songe.gkd.sdp.data.ResolvedAppGroup
-import li.songe.gkd.sdp.ui.AppState
-import li.songe.gkd.sdp.ui.RuleState
-import li.songe.gkd.sdp.ui.SubscriptionState
+import li.songe.gkd.sdp.data.InterceptConfig
 import li.songe.gkd.sdp.ui.component.PerfIcon
 import li.songe.gkd.sdp.ui.component.PerfIconButton
 import li.songe.gkd.sdp.ui.component.PerfTopAppBar
 import li.songe.gkd.sdp.ui.share.LocalMainViewModel
 import li.songe.gkd.sdp.ui.style.itemPadding
 import li.songe.gkd.sdp.ui.style.scaffoldPadding
-import li.songe.gkd.sdp.util.throttle
+import li.songe.gkd.sdp.ui.style.surfaceCardColors
+import kotlin.math.roundToInt
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Destination<RootGraph>
@@ -69,9 +72,15 @@ fun FocusLockPage() {
     val expandedSubs by vm.expandedSubs.collectAsState()
     val expandedApps by vm.expandedApps.collectAsState()
 
-    val sheetState = rememberModalBottomSheetState()
-    var showBottomSheet by remember { mutableStateOf(false) }
+    val lockSheetState = rememberModalBottomSheetState()
+    val pauseSheetState = rememberModalBottomSheetState()
+    
+    var showLockSheet by remember { mutableStateOf(false) }
+    var showPauseSheet by remember { mutableStateOf(false) }
+    
     var currentLockTarget by remember { mutableStateOf<LockTarget?>(null) }
+    var currentPauseTarget by remember { mutableStateOf<PauseTarget?>(null) }
+    
     val scope = rememberCoroutineScope()
 
     Scaffold(
@@ -80,9 +89,7 @@ fun FocusLockPage() {
                 navigationIcon = {
                     PerfIconButton(
                         imageVector = PerfIcon.ArrowBack,
-                        onClick = {
-                            mainVm.popBackStack()
-                        },
+                        onClick = { mainVm.popBackStack() },
                     )
                 },
                 title = { Text(text = "数字自律") }
@@ -102,76 +109,31 @@ fun FocusLockPage() {
 
             subStates.forEach { subState ->
                 item(key = "sub_${subState.subsId}") {
-                    SubscriptionItem(
-                        state = subState,
+                    SubscriptionCard(
+                        subState = subState,
                         isExpanded = expandedSubs.contains(subState.subsId),
-                        onExpandClick = { vm.toggleExpandSubs(subState.subsId) },
-                        onLockClick = {
-                            currentLockTarget = LockTarget(ConstraintConfig.TYPE_SUBSCRIPTION, subState.subsId, null, null, subState.subsName)
-                            showBottomSheet = true
+                        expandedApps = expandedApps,
+                        onExpandSubs = { vm.toggleExpandSubs(subState.subsId) },
+                        onExpandApp = { appId -> vm.toggleExpandApp("${subState.subsId}_$appId") },
+                        onLockClick = { target ->
+                            currentLockTarget = target
+                            showLockSheet = true
+                        },
+                        onPauseClick = { target ->
+                            currentPauseTarget = target
+                            showPauseSheet = true
                         }
                     )
-                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
-                }
-
-                if (expandedSubs.contains(subState.subsId)) {
-                    // Global Rules
-                    subState.globalRules.forEach { ruleState ->
-                        item(key = "rule_${subState.subsId}_${ruleState.group.group.key}") {
-                            RuleItem(
-                                state = ruleState,
-                                paddingStart = 32.dp,
-                                onLockClick = {
-                                    currentLockTarget = LockTarget(ConstraintConfig.TYPE_RULE_GROUP, subState.subsId, null, ruleState.group.group.key, ruleState.group.group.name)
-                                    showBottomSheet = true
-                                },
-                                onInterceptToggle = { vm.toggleIntercept(ruleState.group) }
-                            )
-                            HorizontalDivider(modifier = Modifier.padding(start = 32.dp), thickness = 0.5.dp, color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f))
-                        }
-                    }
-
-                    // Apps
-                    subState.apps.forEach { appState ->
-                        val appKey = "${subState.subsId}_${appState.appId}"
-                        item(key = "app_$appKey") {
-                            AppItem(
-                                state = appState,
-                                isExpanded = expandedApps.contains(appKey),
-                                onExpandClick = { vm.toggleExpandApp(appKey) },
-                                onLockClick = {
-                                    currentLockTarget = LockTarget(ConstraintConfig.TYPE_APP, subState.subsId, appState.appId, null, appState.appName)
-                                    showBottomSheet = true
-                                }
-                            )
-                            HorizontalDivider(modifier = Modifier.padding(start = 16.dp), thickness = 0.5.dp, color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f))
-                        }
-
-                        if (expandedApps.contains(appKey)) {
-                            appState.rules.forEach { ruleState ->
-                                item(key = "rule_${subState.subsId}_${appState.appId}_${ruleState.group.group.key}") {
-                                    RuleItem(
-                                        state = ruleState,
-                                        paddingStart = 48.dp,
-                                        onLockClick = {
-                                            currentLockTarget = LockTarget(ConstraintConfig.TYPE_RULE_GROUP, subState.subsId, appState.appId, ruleState.group.group.key, ruleState.group.group.name)
-                                            showBottomSheet = true
-                                        },
-                                        onInterceptToggle = { vm.toggleIntercept(ruleState.group) }
-                                    )
-                                    HorizontalDivider(modifier = Modifier.padding(start = 48.dp), thickness = 0.5.dp, color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f))
-                                }
-                            }
-                        }
-                    }
+                    Spacer(modifier = Modifier.height(12.dp))
                 }
             }
         }
 
-        if (showBottomSheet && currentLockTarget != null) {
+        // Lock Duration Sheet
+        if (showLockSheet && currentLockTarget != null) {
             ModalBottomSheet(
-                onDismissRequest = { showBottomSheet = false },
-                sheetState = sheetState
+                onDismissRequest = { showLockSheet = false },
+                sheetState = lockSheetState
             ) {
                 LockDurationSheet(
                     targetName = currentLockTarget!!.name,
@@ -183,10 +145,43 @@ fun FocusLockPage() {
                             currentLockTarget!!.appId,
                             currentLockTarget!!.groupKey
                         )
-                        scope.launch { sheetState.hide() }.invokeOnCompletion {
-                            if (!sheetState.isVisible) {
-                                showBottomSheet = false
-                            }
+                        scope.launch { lockSheetState.hide() }.invokeOnCompletion {
+                            if (!lockSheetState.isVisible) showLockSheet = false
+                        }
+                    }
+                )
+            }
+        }
+
+        // Mindful Pause Config Sheet
+        if (showPauseSheet && currentPauseTarget != null) {
+            ModalBottomSheet(
+                onDismissRequest = { showPauseSheet = false },
+                sheetState = pauseSheetState
+            ) {
+                MindfulPauseSheet(
+                    target = currentPauseTarget!!,
+                    onConfirm = { enabled, cooldown, msg ->
+                        if (currentPauseTarget!!.groupKey != null) {
+                            vm.updateInterceptConfig(
+                                currentPauseTarget!!.subsId,
+                                currentPauseTarget!!.appId,
+                                currentPauseTarget!!.groupKey!!,
+                                enabled,
+                                cooldown,
+                                msg
+                            )
+                        } else {
+                            vm.batchUpdateInterceptConfig(
+                                currentPauseTarget!!.subsId,
+                                currentPauseTarget!!.appId,
+                                enabled,
+                                cooldown,
+                                msg
+                            )
+                        }
+                        scope.launch { pauseSheetState.hide() }.invokeOnCompletion {
+                            if (!pauseSheetState.isVisible) showPauseSheet = false
                         }
                     }
                 )
@@ -194,6 +189,8 @@ fun FocusLockPage() {
         }
     }
 }
+
+// --- Data Models for Sheet Targets ---
 
 data class LockTarget(
     val type: Int,
@@ -203,90 +200,195 @@ data class LockTarget(
     val name: String
 )
 
-@Composable
-fun SubscriptionItem(
-    state: SubscriptionState,
-    isExpanded: Boolean,
-    onExpandClick: () -> Unit,
-    onLockClick: () -> Unit
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onExpandClick() }
-            .padding(16.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        PerfIcon(
-            imageVector = if (isExpanded) PerfIcon.ArrowDownward else PerfIcon.KeyboardArrowRight,
-            tint = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        Spacer(modifier = Modifier.width(16.dp))
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = state.subsName,
-                style = MaterialTheme.typography.titleMedium,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-            if (state.isLocked) {
-                Text(
-                    text = "剩余: ${formatRemainingTime(state.lockEndTime - System.currentTimeMillis())}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.primary
-                )
-            }
-        }
-        IconButton(onClick = onLockClick) {
-            PerfIcon(
-                imageVector = if (state.isLocked) PerfIcon.Lock else PerfIcon.History, // Use History as "Clock/Time" icon for setting lock
-                tint = if (state.isLocked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-    }
-}
+data class PauseTarget(
+    val subsId: Long,
+    val appId: String?,
+    val groupKey: Int?,
+    val groupName: String,
+    val config: InterceptConfig?
+)
+
+// --- Composable Components ---
 
 @Composable
-fun AppItem(
-    state: AppState,
+fun SubscriptionCard(
+    subState: SubscriptionState,
     isExpanded: Boolean,
-    onExpandClick: () -> Unit,
-    onLockClick: () -> Unit
+    expandedApps: Set<String>,
+    onExpandSubs: () -> Unit,
+    onExpandApp: (String) -> Unit,
+    onLockClick: (LockTarget) -> Unit,
+    onPauseClick: (PauseTarget) -> Unit
 ) {
-    Row(
+    ElevatedCard(
+        colors = surfaceCardColors,
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { onExpandClick() }
-            .padding(start = 32.dp, end = 16.dp, top = 12.dp, bottom = 12.dp),
-        verticalAlignment = Alignment.CenterVertically
+            .padding(horizontal = 16.dp),
     ) {
-        PerfIcon(
-            imageVector = if (isExpanded) PerfIcon.ArrowDownward else PerfIcon.KeyboardArrowRight,
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.size(20.dp)
-        )
-        Spacer(modifier = Modifier.width(12.dp))
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = state.appName,
-                style = MaterialTheme.typography.bodyLarge,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
+        // Subscription Header
+        Row(
+            modifier = Modifier
+                .clickable { onExpandSubs() }
+                .padding(16.dp)
+                .fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            PerfIcon(
+                imageVector = if (isExpanded) PerfIcon.ArrowDownward else PerfIcon.KeyboardArrowRight,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
             )
-            if (state.isLocked) {
+            Spacer(modifier = Modifier.width(16.dp))
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "剩余: ${formatRemainingTime(state.lockEndTime - System.currentTimeMillis())}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.primary
+                    text = subState.subsName,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold
+                )
+                if (subState.isLocked) {
+                    Text(
+                        text = "已锁定 • 剩余 ${formatRemainingTime(subState.lockEndTime - System.currentTimeMillis())}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+            }
+
+            // Batch Pause Button (Subs)
+            IconButton(
+                onClick = {
+                    onPauseClick(PauseTarget(subState.subsId, null, null, subState.subsName, null))
+                }
+            ) {
+                PerfIcon(
+                    imageVector = PerfIcon.Eco,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                )
+            }
+
+            // Lock Button for Subscription
+            IconButton(
+                onClick = { 
+                    onLockClick(LockTarget(ConstraintConfig.TYPE_SUBSCRIPTION, subState.subsId, null, null, subState.subsName)) 
+                }
+            ) {
+                PerfIcon(
+                    imageVector = if (subState.isLocked) PerfIcon.Lock else PerfIcon.History,
+                    tint = if (subState.isLocked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
                 )
             }
         }
-        IconButton(onClick = onLockClick, modifier = Modifier.size(32.dp)) {
-            PerfIcon(
-                imageVector = if (state.isLocked) PerfIcon.Lock else PerfIcon.History,
-                tint = if (state.isLocked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(20.dp)
-            )
+
+        // Expanded Content
+        AnimatedVisibility(
+            visible = isExpanded,
+            enter = expandVertically(),
+            exit = shrinkVertically()
+        ) {
+            Column {
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f))
+                
+                // Global Rules
+                if (subState.globalRules.isNotEmpty()) {
+                    Text(
+                        text = "全局规则",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(start = 56.dp, top = 8.dp, bottom = 4.dp)
+                    )
+                    subState.globalRules.forEach { rule ->
+                        RuleItem(
+                            state = rule,
+                            paddingStart = 40.dp, // Indented
+                            onLockClick = { onLockClick(LockTarget(ConstraintConfig.TYPE_RULE_GROUP, subState.subsId, null, rule.group.group.key, rule.group.group.name)) },
+                            onPauseClick = { onPauseClick(PauseTarget(subState.subsId, "", rule.group.group.key, rule.group.group.name, rule.interceptConfig)) }
+                        )
+                    }
+                }
+
+                // App Rules
+                subState.apps.forEach { appState ->
+                    val isAppExpanded = expandedApps.contains("${subState.subsId}_${appState.appId}")
+                    
+                    // App Header
+                    Row(
+                        modifier = Modifier
+                            .clickable { onExpandApp(appState.appId) }
+                            .padding(vertical = 8.dp, horizontal = 16.dp)
+                            .fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Spacer(modifier = Modifier.width(24.dp)) // Indent
+                        PerfIcon(
+                            imageVector = if (isAppExpanded) PerfIcon.ArrowDownward else PerfIcon.KeyboardArrowRight,
+                            modifier = Modifier.size(20.dp),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = appState.appName,
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Medium
+                            )
+                            if (appState.isLocked) {
+                                Text(
+                                    text = "剩余 ${formatRemainingTime(appState.lockEndTime - System.currentTimeMillis())}",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                            }
+                        }
+                        
+                        // Batch Pause Button (App)
+                        IconButton(
+                            onClick = {
+                                onPauseClick(PauseTarget(subState.subsId, appState.appId, null, appState.appName, null))
+                            },
+                            modifier = Modifier.size(32.dp)
+                        ) {
+                            PerfIcon(
+                                imageVector = PerfIcon.Eco,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+
+                        IconButton(
+                            onClick = { 
+                                onLockClick(LockTarget(ConstraintConfig.TYPE_APP, subState.subsId, appState.appId, null, appState.appName))
+                            },
+                            modifier = Modifier.size(32.dp)
+                        ) {
+                            PerfIcon(
+                                imageVector = if (appState.isLocked) PerfIcon.Lock else PerfIcon.History,
+                                tint = if (appState.isLocked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                    }
+
+                    // App Rules List
+                    AnimatedVisibility(
+                        visible = isAppExpanded,
+                        enter = expandVertically(),
+                        exit = shrinkVertically()
+                    ) {
+                        Column {
+                            appState.rules.forEach { rule ->
+                                RuleItem(
+                                    state = rule,
+                                    paddingStart = 64.dp, // More indented
+                                    onLockClick = { onLockClick(LockTarget(ConstraintConfig.TYPE_RULE_GROUP, subState.subsId, appState.appId, rule.group.group.key, rule.group.group.name)) },
+                                    onPauseClick = { onPauseClick(PauseTarget(subState.subsId, appState.appId, rule.group.group.key, rule.group.group.name, rule.interceptConfig)) }
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(8.dp))
+                        }
+                    }
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+            }
         }
     }
 }
@@ -296,48 +398,136 @@ fun RuleItem(
     state: RuleState,
     paddingStart: androidx.compose.ui.unit.Dp,
     onLockClick: () -> Unit,
-    onInterceptToggle: () -> Unit
+    onPauseClick: () -> Unit
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(start = paddingStart, end = 16.dp, top = 8.dp, bottom = 8.dp),
+            .padding(start = paddingStart, end = 16.dp, top = 6.dp, bottom = 6.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = state.group.group.name,
                 style = MaterialTheme.typography.bodyMedium,
-                maxLines = 1,
+                maxLines = 2,
                 overflow = TextOverflow.Ellipsis
             )
-            if (state.isLocked) {
-                val lockSource = when (state.lockedBy) {
-                    2 -> " (应用)"
-                    3 -> " (订阅)"
-                    else -> ""
+            val statusText = buildString {
+                if (state.isLocked) {
+                    val lockSource = when (state.lockedBy) {
+                        2 -> "(应用)"
+                        3 -> "(订阅)"
+                        else -> ""
+                    }
+                    append("锁定中$lockSource ")
                 }
+                if (state.interceptConfig?.enabled == true) {
+                    append("全屏拦截")
+                }
+            }
+            if (statusText.isNotEmpty()) {
                 Text(
-                    text = "剩余: ${formatRemainingTime(state.lockEndTime - System.currentTimeMillis())}$lockSource",
+                    text = statusText,
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.primary
+                    color = MaterialTheme.colorScheme.secondary
                 )
             }
         }
         
-        Switch(
-            checked = state.isInterceptEnabled,
-            onCheckedChange = { onInterceptToggle() },
-            modifier = Modifier.height(24.dp).padding(end = 16.dp)
+        // Action Buttons Row
+        Row(horizontalArrangement = Arrangement.spacedBy(0.dp)) {
+            // Mindful Pause Button (Eco Icon)
+            IconButton(
+                onClick = onPauseClick,
+                modifier = Modifier.size(36.dp)
+            ) {
+                PerfIcon(
+                    imageVector = PerfIcon.Eco,
+                    tint = if (state.interceptConfig?.enabled == true) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f),
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+            
+            // Lock Button
+            IconButton(
+                onClick = onLockClick,
+                modifier = Modifier.size(36.dp)
+            ) {
+                PerfIcon(
+                    imageVector = if (state.isLocked) PerfIcon.Lock else PerfIcon.History,
+                    tint = if (state.isLocked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f),
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun MindfulPauseSheet(
+    target: PauseTarget,
+    onConfirm: (Boolean, Int, String) -> Unit
+) {
+    var enabled by remember { mutableStateOf(target.config?.enabled ?: false) }
+    var cooldown by remember { mutableFloatStateOf(target.config?.cooldownSeconds?.toFloat() ?: 5f) }
+    var message by remember { mutableStateOf(target.config?.message ?: "这真的重要吗？") }
+    
+    val isBatch = target.groupKey == null
+    
+    Column(modifier = Modifier.padding(24.dp)) {
+        Text(
+            text = if (isBatch) "批量配置全屏拦截" else "配置全屏拦截",
+            style = MaterialTheme.typography.titleLarge
+        )
+        Text(
+            text = target.groupName,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Spacer(modifier = Modifier.height(24.dp))
+
+        // Toggle
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text("启用拦截", style = MaterialTheme.typography.titleMedium)
+            Switch(checked = enabled, onCheckedChange = { enabled = it })
+        }
+        
+        HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp))
+
+        // Cooldown
+        Text("冷静期: ${cooldown.roundToInt()} 秒", style = MaterialTheme.typography.bodyMedium)
+        Slider(
+            value = cooldown,
+            onValueChange = { cooldown = it },
+            valueRange = 3f..30f,
+            steps = 26
         )
 
-        IconButton(onClick = onLockClick, modifier = Modifier.size(32.dp)) {
-            PerfIcon(
-                imageVector = if (state.isLocked) PerfIcon.Lock else PerfIcon.History,
-                tint = if (state.isLocked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(20.dp)
-            )
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Message
+        OutlinedTextField(
+            value = message,
+            onValueChange = { message = it },
+            label = { Text("沉思语录") },
+            modifier = Modifier.fillMaxWidth(),
+            maxLines = 2
+        )
+
+        Spacer(modifier = Modifier.height(32.dp))
+
+        Button(
+            onClick = { onConfirm(enabled, cooldown.roundToInt(), message) },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("保存配置")
         }
+        Spacer(modifier = Modifier.height(16.dp))
     }
 }
 
@@ -350,12 +540,19 @@ fun LockDurationSheet(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(16.dp)
+            .padding(24.dp)
     ) {
         Text(
             text = "锁定: $targetName",
             style = MaterialTheme.typography.titleLarge,
             modifier = Modifier.padding(bottom = 16.dp)
+        )
+        
+        Text(
+            text = "锁定期间规则将无法关闭。请谨慎操作。",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(bottom = 24.dp)
         )
 
         Column(
@@ -376,7 +573,10 @@ fun LockDurationSheet(
                             vm.selectedDuration = duration
                             vm.isCustomDuration = false
                         },
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.weight(1f),
+                        border = if (!vm.isCustomDuration && vm.selectedDuration == duration) 
+                            androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.primary) 
+                            else null
                     ) {
                         Text(
                             text = label,
@@ -387,9 +587,18 @@ fun LockDurationSheet(
                         )
                     }
                 }
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 TextButton(
                     onClick = { vm.isCustomDuration = true },
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.width(100.dp),
+                     border = if (vm.isCustomDuration) 
+                            androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.primary) 
+                            else null
                 ) {
                     Text(
                         text = "自定义",
@@ -399,48 +608,47 @@ fun LockDurationSheet(
                             MaterialTheme.colorScheme.onSurface
                     )
                 }
-            }
-
-            if (vm.isCustomDuration) {
-                Spacer(modifier = Modifier.height(8.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    OutlinedTextField(
-                        value = vm.customDaysText,
-                        onValueChange = { newValue ->
-                            if (newValue.all { it.isDigit() }) {
-                                vm.customDaysText = newValue
-                            }
-                        },
-                        label = { Text("天") },
-                        singleLine = true,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        modifier = Modifier.weight(1f)
-                    )
-                    OutlinedTextField(
-                        value = vm.customHoursText,
-                        onValueChange = { newValue ->
-                            if (newValue.all { it.isDigit() }) {
-                                vm.customHoursText = newValue
-                            }
-                        },
-                        label = { Text("小时") },
-                        singleLine = true,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        modifier = Modifier.weight(1f)
-                    )
+                Spacer(modifier = Modifier.width(16.dp))
+                if (vm.isCustomDuration) {
+                    Row(
+                        modifier = Modifier.weight(1f),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        OutlinedTextField(
+                            value = vm.customDaysText,
+                            onValueChange = { newValue ->
+                                if (newValue.all { it.isDigit() }) {
+                                    vm.customDaysText = newValue
+                                }
+                            },
+                            label = { Text("天") },
+                            singleLine = true,
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            modifier = Modifier.weight(1f)
+                        )
+                        OutlinedTextField(
+                            value = vm.customHoursText,
+                            onValueChange = { newValue ->
+                                if (newValue.all { it.isDigit() }) {
+                                    vm.customHoursText = newValue
+                                }
+                            },
+                            label = { Text("小时") },
+                            singleLine = true,
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
                 }
             }
         }
 
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(32.dp))
         Button(
             onClick = onConfirm,
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text("确定")
+            Text("确定锁定")
         }
         Spacer(modifier = Modifier.height(16.dp))
     }

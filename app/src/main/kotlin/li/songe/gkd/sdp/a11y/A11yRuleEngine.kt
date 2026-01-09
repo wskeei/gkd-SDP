@@ -334,7 +334,7 @@ class A11yRuleEngine(val service: A11yService) {
             }
             if (rule.status != RuleStatus.StatusOk) break
 
-            val interceptConfig = DbSet.interceptConfigDao.get(rule.subsItem.id, rule.g.group.key)
+            val interceptConfig = DbSet.interceptConfigDao.get(rule.subsItem.id, rule.g.appId ?: "", rule.g.group.key)
             if (interceptConfig != null && interceptConfig.enabled) {
                 if (!InterceptUtils.isAllowed(interceptConfig.subsId, interceptConfig.groupKey)) {
                     val intent = android.content.Intent(service, InterceptOverlayService::class.java).apply {

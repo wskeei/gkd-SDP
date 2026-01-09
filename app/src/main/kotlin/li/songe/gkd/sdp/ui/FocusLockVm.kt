@@ -26,7 +26,7 @@ import li.songe.gkd.sdp.util.toast
 
 data class RuleState(
     val group: ResolvedGroup,
-    val isInterceptEnabled: Boolean,
+    val interceptConfig: InterceptConfig?, // Changed from Boolean to Config object
     val isSelectedForLock: Boolean,
     val isLocked: Boolean,
     val lockEndTime: Long,
@@ -110,10 +110,11 @@ class FocusLockVm : BaseViewModel() {
                         else -> 0
                     }
                     val ruleKey = FocusLock.LockedRule(subs.id, group.group.key, app.id)
+                    val config = interceptConfigs.find { it.subsId == subs.id && it.appId == app.id && it.groupKey == group.group.key }
                     
                     RuleState(
                         group = group,
-                        isInterceptEnabled = interceptConfigs.any { it.subsId == subs.id && it.groupKey == group.group.key && it.enabled },
+                        interceptConfig = config,
                         isSelectedForLock = selectedRules.contains(ruleKey),
                         isLocked = effectiveRuleLocked,
                         lockEndTime = effectiveRuleEndTime,
@@ -141,10 +142,11 @@ class FocusLockVm : BaseViewModel() {
                     else -> 0
                 }
                 val ruleKey = FocusLock.LockedRule(subs.id, group.group.key, null)
+                val config = interceptConfigs.find { it.subsId == subs.id && it.appId == "" && it.groupKey == group.group.key }
 
                 RuleState(
                     group = group,
-                    isInterceptEnabled = interceptConfigs.any { it.subsId == subs.id && it.groupKey == group.group.key && it.enabled },
+                    interceptConfig = config,
                     isSelectedForLock = selectedRules.contains(ruleKey),
                     isLocked = effectiveRuleLocked,
                     lockEndTime = effectiveRuleEndTime,
@@ -226,17 +228,48 @@ class FocusLockVm : BaseViewModel() {
         toast("锁定设置已更新")
     }
 
-    fun toggleIntercept(group: ResolvedGroup) = viewModelScope.launch(Dispatchers.IO) {
-        val currentEnabled = subStatesFlow.value
-            .flatMap { it.apps.flatMap { a -> a.rules } + it.globalRules }
-            .find { it.group == group }?.isInterceptEnabled ?: false
-            
-        val newEnabled = !currentEnabled
+    fun updateInterceptConfig(subsId: Long, appId: String?, groupKey: Int, enabled: Boolean, cooldown: Int, message: String) = viewModelScope.launch(Dispatchers.IO) {
         val config = InterceptConfig(
-            subsId = group.subsItem.id,
-            groupKey = group.group.key,
-            enabled = newEnabled
+            subsId = subsId,
+            appId = appId ?: "",
+            groupKey = groupKey,
+            enabled = enabled,
+            cooldownSeconds = cooldown,
+            message = message
         )
         DbSet.interceptConfigDao.insert(config)
+    }
+
+    fun batchUpdateInterceptConfig(subsId: Long, appId: String?, enabled: Boolean, cooldown: Int, message: String) = viewModelScope.launch(Dispatchers.IO) {
+        val subState = subStatesFlow.value.find { it.subsId == subsId } ?: return@launch
+        
+        val targets = ArrayList<Triple<Long, String, Int>>() // subsId, appId, groupKey
+
+        if (appId != null) {
+            // App Level
+            val appState = subState.apps.find { it.appId == appId } ?: return@launch
+            targets.addAll(appState.rules.map { Triple(subsId, appId, it.group.group.key) })
+        } else {
+            // Subscription Level (All Apps + Global)
+            // Global
+            targets.addAll(subState.globalRules.map { Triple(subsId, "", it.group.group.key) })
+            // Apps
+            subState.apps.forEach { app ->
+                targets.addAll(app.rules.map { Triple(subsId, app.appId, it.group.group.key) })
+            }
+        }
+
+        targets.forEach { (s, a, g) ->
+            val config = InterceptConfig(
+                subsId = s,
+                appId = a,
+                groupKey = g,
+                enabled = enabled,
+                cooldownSeconds = cooldown,
+                message = message
+            )
+            DbSet.interceptConfigDao.insert(config)
+        }
+        toast("已批量更新配置")
     }
 }

@@ -15,6 +15,7 @@ import kotlinx.serialization.Serializable
 data class InterceptConfig(
     @PrimaryKey(autoGenerate = true) @ColumnInfo(name = "id") val id: Long = 0,
     @ColumnInfo(name = "subs_id") val subsId: Long,
+    @ColumnInfo(name = "app_id", defaultValue = "") val appId: String = "",
     @ColumnInfo(name = "group_key") val groupKey: Int,
     @ColumnInfo(name = "enabled") val enabled: Boolean,
     @ColumnInfo(name = "cooldown_seconds") val cooldownSeconds: Int = 5,
@@ -25,16 +26,16 @@ data class InterceptConfig(
         @Insert(onConflict = OnConflictStrategy.REPLACE)
         suspend fun insert(config: InterceptConfig): Long
 
-        @Query("SELECT * FROM intercept_config WHERE subs_id = :subsId AND group_key = :groupKey")
-        fun getFlow(subsId: Long, groupKey: Int): Flow<InterceptConfig?>
+        @Query("SELECT * FROM intercept_config WHERE subs_id = :subsId AND app_id = :appId AND group_key = :groupKey")
+        fun getFlow(subsId: Long, appId: String, groupKey: Int): Flow<InterceptConfig?>
 
-        @Query("SELECT * FROM intercept_config WHERE subs_id = :subsId AND group_key = :groupKey")
-        suspend fun get(subsId: Long, groupKey: Int): InterceptConfig?
+        @Query("SELECT * FROM intercept_config WHERE subs_id = :subsId AND app_id = :appId AND group_key = :groupKey")
+        suspend fun get(subsId: Long, appId: String, groupKey: Int): InterceptConfig?
 
         @Query("SELECT * FROM intercept_config")
         fun queryAll(): Flow<List<InterceptConfig>>
 
-        @Query("DELETE FROM intercept_config WHERE subs_id = :subsId AND group_key = :groupKey")
-        suspend fun delete(subsId: Long, groupKey: Int)
+        @Query("DELETE FROM intercept_config WHERE subs_id = :subsId AND app_id = :appId AND group_key = :groupKey")
+        suspend fun delete(subsId: Long, appId: String, groupKey: Int)
     }
 }

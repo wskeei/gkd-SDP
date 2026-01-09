@@ -13,7 +13,7 @@
 | 语言 | Kotlin |
 | UI 框架 | Jetpack Compose + Material 3 |
 | 架构 | MVVM (Page + ViewModel) |
-| 数据库 | Room (当前版本 16) |
+| 数据库 | Room (当前版本 18) |
 | 导航 | compose-destinations |
 | 依赖管理 | 单例模式 + CompositionLocal（无 Hilt） |
 | 网络 | Ktor |
@@ -34,7 +34,7 @@ app/src/main/kotlin/li/songe/gkd/
 │   ├── SubsConfig.kt        # 规则配置
 │   └── RawSubscription.kt   # 订阅数据结构
 ├── db/             # 数据库
-│   └── AppDb.kt             # Room 数据库定义 (v16)
+│   └── AppDb.kt             # Room 数据库定义 (v18)
 ├── service/        # 服务
 │   ├── A11yService.kt       # 无障碍服务
 │   ├── InterceptOverlayService.kt # 全屏拦截悬浮窗服务 (P1)
@@ -69,9 +69,9 @@ $env:JAVA_HOME = 'D:\Download\tools\jdk_ms_21'
 ```
 
 **常见问题：**
-- **JVM 版本错误**：如果遇到 `Gradle requires JVM 17 or later`，请检查 `JAVA_HOME` 是否正确设置。
-- **AIDL 路径问题**：编译时若报 AIDL 相关错误，请确保 `app/src/main/aidl` 下的包名路径与 `AndroidManifest.xml` 及代码引用一致。
-- **包名引用**：项目已重构为 `li.songe.gkd.sdp`，请注意 `R` 类和其他资源的引用路径。
+- **JVM 版本错误** : 如果遇到 `Gradle requires JVM 17 or later`，请检查 `JAVA_HOME` 是否正确设置。
+- **AIDL 路径问题** : 编译时若报 AIDL 相关错误，请确保 `app/src/main/aidl` 下的包名路径与 `AndroidManifest.xml` 及代码引用一致。
+- **包名引用** : 项目已重构为 `li.songe.gkd.sdp`，请注意 `R` 类和其他资源的引用路径。
 
 ---
 
@@ -131,6 +131,7 @@ data class FocusLock(
 data class InterceptConfig(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val subsId: Long,
+    val appId: String = "", // Added in v18
     val groupKey: Int,
     val enabled: Boolean,
     val cooldownSeconds: Int = 5,
@@ -143,6 +144,7 @@ data class InterceptConfig(
 2.  ✅ **全屏服务**：`InterceptOverlayService` 使用 `TYPE_APPLICATION_OVERLAY` 创建全屏悬浮窗，遮挡应用内容。
 3.  ✅ **拦截逻辑**：`A11yRuleEngine` 在执行规则动作前检查 `InterceptConfig`。若开启拦截且未处于“放行期”，则启动全屏服务并中止规则执行。
 4.  ✅ **交互流程**：全屏页提供“我需要使用”（带倒计时）和“算了（退出）”选项。点击“使用”后进入短暂放行期。
+5.  ✅ **批量配置**：支持对整个应用或整个订阅下的规则进行统一开启/关闭全屏拦截。
 
 ### 功能 3：触发统计（Progress Tracker）- P2 ✅ 已完成
 
@@ -184,3 +186,5 @@ data class InterceptConfig(
 | 2026-01-09 | ✅ 完成 P2 功能：触发统计（Progress Tracker），集成 Vico 图表 |
 | 2026-01-09 | ✅ 完成 P1 功能：全屏拦截（Mindful Pause），实现全屏悬浮窗服务 |
 | 2026-01-09 | 🔄 优化整合：将 P0 与 P1 功能深度整合至“数字自律”页面，支持锁定状态下的规则添加与时长延长 |
+| 2026-01-09 | 🎨 UI优化：数字自律页面卡片化重构，支持折叠收纳 |
+| 2026-01-09 | 🔄 功能增强：全屏拦截支持批量配置（按应用/订阅），数据库升级至 v18 |

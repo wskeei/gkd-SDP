@@ -61,8 +61,8 @@ fun RuleGroupDialog(
 ) {
     val mainVm = LocalMainViewModel.current
     val navController = LocalNavController.current
-    val interceptConfig by remember(subs.id, group.key) {
-        DbSet.interceptConfigDao.getFlow(subs.id, group.key)
+    val interceptConfig by remember(subs.id, appId, group.key) {
+        DbSet.interceptConfigDao.getFlow(subs.id, appId ?: "", group.key)
     }.collectAsState(initial = null)
     val scope = rememberCoroutineScope()
 
