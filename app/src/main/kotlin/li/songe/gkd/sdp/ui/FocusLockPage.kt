@@ -146,6 +146,7 @@ fun FocusLockPage() {
             ) {
                 LockDurationSheet(
                     targetName = currentLockTarget!!.name,
+                    currentEndTime = currentLockTarget!!.currentEndTime,
                     vm = vm,
                     onConfirm = {
                         vm.lockTarget(
@@ -233,7 +234,8 @@ data class LockTarget(
     val subsId: Long,
     val appId: String?,
     val groupKey: Int?,
-    val name: String
+    val name: String,
+    val currentEndTime: Long = 0
 )
 
 data class PauseTarget(
@@ -305,7 +307,7 @@ fun SubscriptionCard(
             // Lock Button for Subscription
             IconButton(
                 onClick = { 
-                    onLockClick(LockTarget(ConstraintConfig.TYPE_SUBSCRIPTION, subState.subsId, null, null, subState.subsName)) 
+                    onLockClick(LockTarget(ConstraintConfig.TYPE_SUBSCRIPTION, subState.subsId, null, null, subState.subsName, currentEndTime = subState.lockEndTime)) 
                 }
             ) {
                 PerfIcon(
@@ -336,7 +338,7 @@ fun SubscriptionCard(
                         RuleItem(
                             state = rule,
                             paddingStart = 40.dp, // Indented
-                            onLockClick = { onLockClick(LockTarget(ConstraintConfig.TYPE_RULE_GROUP, subState.subsId, null, rule.group.group.key, rule.group.group.name)) },
+                            onLockClick = { onLockClick(LockTarget(ConstraintConfig.TYPE_RULE_GROUP, subState.subsId, null, rule.group.group.key, rule.group.group.name, currentEndTime = rule.lockEndTime)) },
                             onPauseClick = { onPauseClick(PauseTarget(subState.subsId, "", rule.group.group.key, rule.group.group.name, rule.interceptConfig)) }
                         )
                     }
@@ -392,7 +394,7 @@ fun SubscriptionCard(
 
                         IconButton(
                             onClick = { 
-                                onLockClick(LockTarget(ConstraintConfig.TYPE_APP, subState.subsId, appState.appId, null, appState.appName))
+                                onLockClick(LockTarget(ConstraintConfig.TYPE_APP, subState.subsId, appState.appId, null, appState.appName, currentEndTime = appState.lockEndTime))
                             },
                             modifier = Modifier.size(32.dp)
                         ) {
@@ -415,7 +417,7 @@ fun SubscriptionCard(
                                 RuleItem(
                                     state = rule,
                                     paddingStart = 64.dp, // More indented
-                                    onLockClick = { onLockClick(LockTarget(ConstraintConfig.TYPE_RULE_GROUP, subState.subsId, appState.appId, rule.group.group.key, rule.group.group.name)) },
+                                    onLockClick = { onLockClick(LockTarget(ConstraintConfig.TYPE_RULE_GROUP, subState.subsId, appState.appId, rule.group.group.key, rule.group.group.name, currentEndTime = rule.lockEndTime)) },
                                     onPauseClick = { onPauseClick(PauseTarget(subState.subsId, appState.appId, rule.group.group.key, rule.group.group.name, rule.interceptConfig)) }
                                 )
                             }
@@ -567,22 +569,36 @@ fun MindfulPauseSheet(
 @Composable
 fun LockDurationSheet(
     targetName: String,
+    currentEndTime: Long,
     vm: FocusLockVm,
     onConfirm: () -> Unit
 ) {
+    val isLocked = currentEndTime > System.currentTimeMillis()
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(24.dp)
     ) {
         Text(
-            text = "锁定: $targetName",
+            text = if (isLocked) "延长锁定: $targetName" else "锁定: $targetName",
             style = MaterialTheme.typography.titleLarge,
-            modifier = Modifier.padding(bottom = 16.dp)
+            modifier = Modifier.padding(bottom = 8.dp)
         )
         
+        if (isLocked) {
+            val date = java.util.Date(currentEndTime)
+            val formatter = java.text.SimpleDateFormat("MM-dd HH:mm", java.util.Locale.getDefault())
+            Text(
+                text = "当前锁定至: ${formatter.format(date)}",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+        }
+        
         Text(
-            text = "锁定期间规则将无法关闭。请谨慎操作。",
+            text = if (isLocked) "选择要延长的时长。锁定期间规则将无法关闭。" else "锁定期间规则将无法关闭。请谨慎操作。",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(bottom = 24.dp)
@@ -681,7 +697,7 @@ fun LockDurationSheet(
             onClick = onConfirm,
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text("确定锁定")
+            Text(if (isLocked) "确定延长" else "确定锁定")
         }
         Spacer(modifier = Modifier.height(16.dp))
     }

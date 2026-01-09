@@ -217,6 +217,7 @@ class FocusLockVm : BaseViewModel() {
         }
 
         val config = ConstraintConfig(
+            id = existing?.id ?: 0,
             targetType = targetType,
             subsId = subsId,
             appId = appId,
