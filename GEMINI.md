@@ -13,7 +13,7 @@
 | 语言 | Kotlin |
 | UI 框架 | Jetpack Compose + Material 3 |
 | 架构 | MVVM (Page + ViewModel) |
-| 数据库 | Room (当前版本 15) |
+| 数据库 | Room (当前版本 16) |
 | 导航 | compose-destinations |
 | 依赖管理 | 单例模式 + CompositionLocal（无 Hilt） |
 | 网络 | Ktor |
@@ -24,17 +24,20 @@
 ```
 app/src/main/kotlin/li/songe/gkd/
 ├── a11y/           # 无障碍服务核心逻辑
-│   ├── A11yRuleEngine.kt    # 规则引擎
+│   ├── A11yRuleEngine.kt    # 规则引擎 (含全屏拦截检查)
 │   ├── A11yState.kt         # 状态管理
 │   └── A11yContext.kt       # 节点查询
 ├── data/           # 数据模型
-│   ├── ActionLog.kt         # 触发日志
+│   ├── ActionLog.kt         # 触发日志与统计 (P2)
+│   ├── FocusLock.kt         # 规则锁定实体 (P0)
+│   ├── InterceptConfig.kt   # 全屏拦截配置 (P1)
 │   ├── SubsConfig.kt        # 规则配置
 │   └── RawSubscription.kt   # 订阅数据结构
 ├── db/             # 数据库
-│   └── AppDb.kt             # Room 数据库定义
+│   └── AppDb.kt             # Room 数据库定义 (v16)
 ├── service/        # 服务
 │   ├── A11yService.kt       # 无障碍服务
+│   ├── InterceptOverlayService.kt # 全屏拦截悬浮窗服务 (P1)
 │   └── OverlayWindowService.kt  # 悬浮窗基类
 ├── shizuku/        # Shizuku 相关
 ├── store/          # 持久化存储
@@ -42,18 +45,18 @@ app/src/main/kotlin/li/songe/gkd/
 │   ├── component/           # 可复用组件
 │   ├── home/                # 首页 Tab
 │   ├── style/               # 主题样式
-│   └── *Page.kt / *Vm.kt    # 各功能页面
+│   └── *Page.kt / *Vm.kt    # 各功能页面 (FocusLockPage, ActionLogPage等)
 └── util/           # 工具类
 ```
 
 ---
 
 ## 环境配置与调试
-请注意！在每一次修改后，都需要重新编译项目！！确保不出现错误！！
+**重要**：每次修改代码后，请务必执行重新编译以确保无错误。
 
 ### 使用 JDK 21 进行 Debug
 
-jdk21地址：D:\Download\tools\jdk_ms_21
+JDK 21 路径：`D:\Download\tools\jdk_ms_21`
 
 **命令行编译/调试：**
 在执行 Gradle 命令前，需手动设置 `JAVA_HOME` 环境变量指向 JDK 21 目录。
@@ -66,8 +69,9 @@ $env:JAVA_HOME = 'D:\Download\tools\jdk_ms_21'
 ```
 
 **常见问题：**
-- 如果遇到 `Gradle requires JVM 17 or later` 错误，请检查 `gradle.properties` 或当前终端的 `JAVA_HOME`。
-- 编译时如果遇到 AIDL 相关错误，请确保 `app/src/main/aidl` 路径与包名一致。
+- **JVM 版本错误**：如果遇到 `Gradle requires JVM 17 or later`，请检查 `JAVA_HOME` 是否正确设置。
+- **AIDL 路径问题**：编译时若报 AIDL 相关错误，请确保 `app/src/main/aidl` 下的包名路径与 `AndroidManifest.xml` 及代码引用一致。
+- **包名引用**：项目已重构为 `li.songe.gkd.sdp`，请注意 `R` 类和其他资源的引用路径。
 
 ---
 
@@ -81,9 +85,10 @@ $env:JAVA_HOME = 'D:\Download\tools\jdk_ms_21'
 
 ### 功能 1：规则锁定（Focus Lock）- P0 ✅ 已完成
 
-**目标**：在设定时间内无法关闭已启用的规则
+**目标**：在设定时间内无法关闭已启用的规则，支持选择性锁定和时长扩展。
 
-**实现状态**：已完成。支持在 `FocusLockPage` 中选择特定已启用的规则组进行锁定。
+**UI 位置**：
+`设置页` → `数字自律` (原规则锁定)
 
 **数据模型**：
 ```kotlin
@@ -100,31 +105,31 @@ data class FocusLock(
         val groupKey: Int,
         val appId: String? = null, // null = 全局规则
     )
-
-    val isActive: Boolean get() = System.currentTimeMillis() < endTime
-    val remainingTime: Long get() = (endTime - System.currentTimeMillis()).coerceAtLeast(0)
+    // ...
 }
 ```
 
+**核心实现**：
+1.  ✅ **选择性锁定**：在 `FocusLockPage` 中列出所有已启用的规则，用户可勾选特定规则进行锁定。
+2.  ✅ **时长设置优化**：预设时长调整为 **8小时**、**1天**、**3天**，并支持 **自定义时长 (X天 X小时)**。
+3.  **动态更新**：
+    *   **锁定中查看**：即使锁定激活，也能查看规则列表。
+    *   **锁定扩展**：支持在锁定期间**添加新规则**到锁定列表。
+    *   **时间延长**：支持在锁定期间**追加锁定时长**。
+4.  **强制拦截**：`FocusLockUtils` 提供锁定状态检查，`RuleGroupCard` 在用户尝试关闭规则时进行拦截。
+
+### 功能 2：全屏拦截（Mindful Pause）- P1 ✅ 已完成
+
+**目标**：规则触发时显示全屏“沉思”页面（"这真的重要吗？"），而非直接执行跳过。
+
 **UI 位置**：
-```
-设置页 → 规则锁定 → FocusLockPage
-```
+`设置页` → `数字自律` (与规则锁定整合在同一列表)
 
-
-**关键实现**：
-1. ✅ `FocusLockUtils` 提供锁定检查逻辑，并在 `RuleGroupCard` 的开关回调中拦截关闭操作。
-2. ✅ `FocusLockVm` 自动筛选当前已启用的规则组供用户选择。
-3. ✅ 修复了大量包名引用错误（`li.songe.gkd.sdp.sdp.R` -> `li.songe.gkd.sdp.R`）和 AIDL 路径问题。
-
-### 功能 2：全屏拦截（Mindful Pause）- P1 ⏳ 待开始
-
-**目标**：规则触发时显示"这真的重要吗？"全屏页面
-
+**数据模型**：
 ```kotlin
 @Entity(tableName = "intercept_config")
 data class InterceptConfig(
-    @PrimaryKey val id: Long,
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val subsId: Long,
     val groupKey: Int,
     val enabled: Boolean,
@@ -133,30 +138,24 @@ data class InterceptConfig(
 )
 ```
 
-**实现方案**：使用 `TYPE_ACCESSIBILITY_OVERLAY` 创建全屏悬浮窗。
-
-
-**UI 位置**：
-```
-设置页 → 规则锁定 → "启用拦截模式"
-```
-
-**关键实现**：
-1. 新增 `InterceptConfig` 实体和 DAO
-2. 新增 `InterceptOverlayService` 全屏悬浮窗服务
-3. 修改 `A11yRuleEngine` 在触发时检查拦截配置
-4. 拦截页面：提示语 + 退出按钮 + 继续使用按钮（带冷静期）
-
+**核心实现**：
+1.  ✅ **功能整合**：将“自律模式”开关整合进 `FocusLockPage` 的规则列表项中，不再分散于弹窗。
+2.  ✅ **全屏服务**：`InterceptOverlayService` 使用 `TYPE_APPLICATION_OVERLAY` 创建全屏悬浮窗，遮挡应用内容。
+3.  ✅ **拦截逻辑**：`A11yRuleEngine` 在执行规则动作前检查 `InterceptConfig`。若开启拦截且未处于“放行期”，则启动全屏服务并中止规则执行。
+4.  ✅ **交互流程**：全屏页提供“我需要使用”（带倒计时）和“算了（退出）”选项。点击“使用”后进入短暂放行期。
 
 ### 功能 3：触发统计（Progress Tracker）- P2 ✅ 已完成
 
-**目标**：可视化展示规则触发趋势，让用户看到进步
+**目标**：可视化展示规则触发趋势，让用户看到进步。
 
-**关键实现**：
-1. ✅ `ActionLogDao` 新增 `queryDailyStats` 查询，支持按天统计触发次数，并支持 `subsId` 和 `appId` 过滤。
-2. ✅ 集成 `Vico` 图表库用于数据可视化。
-3. ✅ `ActionLogPage` 升级为多 Tab 布局：“记录列表”和“统计图表”。
-4. ✅ 实现 `ActionLogStatsView` 展示最近 14 天的触发趋势柱状图及详细数据列表。
+**UI 位置**：
+`首页` → `触发记录` → `统计图表` Tab
+
+**核心实现**：
+1.  ✅ **数据查询**：`ActionLogDao.queryDailyStats` 支持按天统计触发次数，并支持 `subsId` 和 `appId` 过滤。
+2.  ✅ **图表集成**：引入 `Vico` 图表库 (v2.0.0-alpha.28) 绘制柱状图。
+3.  ✅ **页面重构**：`ActionLogPage` 升级为双 Tab 布局（记录列表 / 统计图表）。
+4.  ✅ **统计视图**：`ActionLogStatsView` 展示最近 14 天的触发趋势图及详细数据列表。
 
 ---
 
@@ -168,7 +167,7 @@ data class InterceptConfig(
 |------|------|----------|
 | 间距 | `itemHorizontalPadding = 16.dp`, `itemVerticalPadding = 12.dp` | `ui/style/Padding.kt` |
 | 卡片颜色 | `surfaceCardColors` | `ui/style/Color.kt` |
-| 开关组件 | `TextSwitch` | `ui/component/TextSwitch.kt` |
+| 开关组件 | `Switch` (新规范) / `TextSwitch` | `ui/FocusLockPage.kt` |
 | 设置项 | `SettingItem` | `ui/component/SettingItem.kt` |
 | 图标 | `PerfIcon` | `ui/component/PerfIcon.kt` |
 | 顶部栏 | `PerfTopAppBar` | `ui/component/PerfTopAppBar.kt` |
@@ -179,6 +178,9 @@ data class InterceptConfig(
 
 | 日期 | 内容 |
 |------|------|
-| 2026-01-08 | 创建文档，完成数字自律功能头脑风暴 |
+| 2026-01-08 | 📝 创建文档，完成数字自律功能头脑风暴 |
 | 2026-01-08 | ✅ 完成 P0 功能：规则锁定（Focus Lock），修复编译错误并完善选择逻辑 |
 | 2026-01-09 | 📝 更新文档，添加 JDK 21 Debug 指南，标记 P0 为完全完成 |
+| 2026-01-09 | ✅ 完成 P2 功能：触发统计（Progress Tracker），集成 Vico 图表 |
+| 2026-01-09 | ✅ 完成 P1 功能：全屏拦截（Mindful Pause），实现全屏悬浮窗服务 |
+| 2026-01-09 | 🔄 优化整合：将 P0 与 P1 功能深度整合至“数字自律”页面，支持锁定状态下的规则添加与时长延长 |
