@@ -38,7 +38,8 @@ data class AppState(
     val appName: String,
     val rules: List<RuleState>,
     val isLocked: Boolean,
-    val lockEndTime: Long
+    val lockEndTime: Long,
+    val allInterceptEnabled: Boolean
 )
 
 data class SubscriptionState(
@@ -47,7 +48,8 @@ data class SubscriptionState(
     val apps: List<AppState>,
     val globalRules: List<RuleState>,
     val isLocked: Boolean,
-    val lockEndTime: Long
+    val lockEndTime: Long,
+    val allInterceptEnabled: Boolean
 )
 
 class FocusLockVm : BaseViewModel() {
@@ -99,7 +101,7 @@ class FocusLockVm : BaseViewModel() {
                 val effectiveAppLocked = subsLocked || appLocked
                 val effectiveAppEndTime = maxOf(subsEndTime, appEndTime)
 
-                val ruleStates = groups.filter { it.enable }.map { group ->
+                val ruleStates = groups.map { group ->
                     val (ruleLocked, ruleEndTime) = getLockStatus(ConstraintConfig.TYPE_RULE_GROUP, subs.id, app.id, group.group.key)
                     val effectiveRuleLocked = effectiveAppLocked || ruleLocked
                     val effectiveRuleEndTime = maxOf(effectiveAppEndTime, ruleEndTime)
@@ -121,12 +123,14 @@ class FocusLockVm : BaseViewModel() {
                         lockedBy = lockedBy
                     )
                 }
+                val allEnabled = ruleStates.isNotEmpty() && ruleStates.all { it.interceptConfig?.enabled == true }
                 AppState(
                     appId = app.id,
                     appName = app.name ?: app.id,
                     rules = ruleStates,
                     isLocked = effectiveAppLocked,
-                    lockEndTime = effectiveAppEndTime
+                    lockEndTime = effectiveAppEndTime,
+                    allInterceptEnabled = allEnabled
                 )
             }.filter { it.rules.isNotEmpty() }
 
@@ -154,13 +158,18 @@ class FocusLockVm : BaseViewModel() {
                 )
             }
 
+            val allG = if (gRuleStates.isEmpty()) true else gRuleStates.all { it.interceptConfig?.enabled == true }
+            val allA = if (apps.isEmpty()) true else apps.all { it.allInterceptEnabled }
+            val allSubsEnabled = (gRuleStates.isNotEmpty() || apps.isNotEmpty()) && allG && allA
+
             SubscriptionState(
                 subsId = subs.id,
                 subsName = subs.name,
                 apps = apps,
                 globalRules = gRuleStates,
                 isLocked = subsLocked,
-                lockEndTime = subsEndTime
+                lockEndTime = subsEndTime,
+                allInterceptEnabled = allSubsEnabled
             )
         }
     }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())

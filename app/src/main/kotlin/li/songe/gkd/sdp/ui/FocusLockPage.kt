@@ -243,7 +243,9 @@ data class PauseTarget(
     val appId: String?,
     val groupKey: Int?,
     val groupName: String,
-    val config: InterceptConfig?
+    val config: InterceptConfig?,
+    val isLocked: Boolean = false,
+    val initialEnabled: Boolean = false
 )
 
 // --- Composable Components ---
@@ -295,7 +297,7 @@ fun SubscriptionCard(
             // Batch Pause Button (Subs)
             IconButton(
                 onClick = {
-                    onPauseClick(PauseTarget(subState.subsId, null, null, subState.subsName, null))
+                    onPauseClick(PauseTarget(subState.subsId, null, null, subState.subsName, null, isLocked = subState.isLocked, initialEnabled = subState.allInterceptEnabled))
                 }
             ) {
                 PerfIcon(
@@ -339,7 +341,7 @@ fun SubscriptionCard(
                             state = rule,
                             paddingStart = 40.dp, // Indented
                             onLockClick = { onLockClick(LockTarget(ConstraintConfig.TYPE_RULE_GROUP, subState.subsId, null, rule.group.group.key, rule.group.group.name, currentEndTime = rule.lockEndTime)) },
-                            onPauseClick = { onPauseClick(PauseTarget(subState.subsId, "", rule.group.group.key, rule.group.group.name, rule.interceptConfig)) }
+                            onPauseClick = { onPauseClick(PauseTarget(subState.subsId, "", rule.group.group.key, rule.group.group.name, rule.interceptConfig, isLocked = rule.isLocked)) }
                         )
                     }
                 }
@@ -381,7 +383,7 @@ fun SubscriptionCard(
                         // Batch Pause Button (App)
                         IconButton(
                             onClick = {
-                                onPauseClick(PauseTarget(subState.subsId, appState.appId, null, appState.appName, null))
+                                onPauseClick(PauseTarget(subState.subsId, appState.appId, null, appState.appName, null, isLocked = appState.isLocked, initialEnabled = appState.allInterceptEnabled))
                             },
                             modifier = Modifier.size(32.dp)
                         ) {
@@ -418,7 +420,7 @@ fun SubscriptionCard(
                                     state = rule,
                                     paddingStart = 64.dp, // More indented
                                     onLockClick = { onLockClick(LockTarget(ConstraintConfig.TYPE_RULE_GROUP, subState.subsId, appState.appId, rule.group.group.key, rule.group.group.name, currentEndTime = rule.lockEndTime)) },
-                                    onPauseClick = { onPauseClick(PauseTarget(subState.subsId, appState.appId, rule.group.group.key, rule.group.group.name, rule.interceptConfig)) }
+                                    onPauseClick = { onPauseClick(PauseTarget(subState.subsId, appState.appId, rule.group.group.key, rule.group.group.name, rule.interceptConfig, isLocked = rule.isLocked)) }
                                 )
                             }
                             Spacer(modifier = Modifier.height(8.dp))
@@ -507,7 +509,7 @@ fun MindfulPauseSheet(
     target: PauseTarget,
     onConfirm: (Boolean, Int, String) -> Unit
 ) {
-    var enabled by remember { mutableStateOf(target.config?.enabled ?: false) }
+    var enabled by remember { mutableStateOf(target.config?.enabled ?: target.initialEnabled) }
     // Cooldown is hardcoded to 10s by request
     val cooldown = 10 
     var message by remember { mutableStateOf(target.config?.message ?: "这真的重要吗？") }
@@ -533,7 +535,14 @@ fun MindfulPauseSheet(
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Text("启用拦截", style = MaterialTheme.typography.titleMedium)
-            Switch(checked = enabled, onCheckedChange = { enabled = it })
+            
+            val switchInteractionEnabled = !target.isLocked || !enabled
+            
+            Switch(
+                checked = enabled, 
+                onCheckedChange = { enabled = it },
+                enabled = switchInteractionEnabled
+            )
         }
         
         HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp))
