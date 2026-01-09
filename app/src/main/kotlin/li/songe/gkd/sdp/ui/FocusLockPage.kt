@@ -301,8 +301,8 @@ fun SubscriptionCard(
                 }
             ) {
                 PerfIcon(
-                    imageVector = PerfIcon.Eco,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                    imageVector = PerfIcon.Mindful,
+                    tint = if (subState.allInterceptEnabled) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
                 )
             }
 
@@ -388,8 +388,8 @@ fun SubscriptionCard(
                             modifier = Modifier.size(32.dp)
                         ) {
                             PerfIcon(
-                                imageVector = PerfIcon.Eco,
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                                imageVector = PerfIcon.Mindful,
+                                tint = if (appState.allInterceptEnabled) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
                                 modifier = Modifier.size(18.dp)
                             )
                         }
@@ -483,7 +483,7 @@ fun RuleItem(
                 modifier = Modifier.size(36.dp)
             ) {
                 PerfIcon(
-                    imageVector = PerfIcon.Eco,
+                    imageVector = PerfIcon.Mindful,
                     tint = if (state.interceptConfig?.enabled == true) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f),
                     modifier = Modifier.size(20.dp)
                 )

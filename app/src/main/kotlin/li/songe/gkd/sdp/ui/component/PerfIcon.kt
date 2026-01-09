@@ -41,6 +41,7 @@ import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.RocketLaunch
 import androidx.compose.material.icons.outlined.Save
+import androidx.compose.material.icons.outlined.SelfImprovement
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.TextFields
 import androidx.compose.material.icons.outlined.Title
@@ -206,6 +207,7 @@ object PerfIcon {
     val Layers get() = Icons.Outlined.Layers
     val Equalizer get() = Icons.Outlined.Equalizer
     val Lock get() = Icons.Outlined.Lock
+    val Mindful get() = Icons.Outlined.SelfImprovement
     val Title get() = Icons.Outlined.Title
     val TextFields get() = Icons.Outlined.TextFields
     val ArrowDownward get() = Icons.Outlined.ArrowDownward
