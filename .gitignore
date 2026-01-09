@@ -26,3 +26,9 @@ local.properties
 /gradle/libs.versions.updates.toml
 .claude/
 CLAUDE.md
+
+/更新.md
+
+# Build artifacts
+/app/gkd/
+/更新
