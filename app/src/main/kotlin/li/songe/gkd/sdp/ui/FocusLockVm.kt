@@ -229,6 +229,10 @@ class FocusLockVm : BaseViewModel() {
     }
 
     fun updateInterceptConfig(subsId: Long, appId: String?, groupKey: Int, enabled: Boolean, cooldown: Int, message: String) = viewModelScope.launch(Dispatchers.IO) {
+        if (!enabled && FocusLockUtils.isRuleLocked(subsId, groupKey, appId)) {
+            toast("当前规则已锁定，无法关闭自律模式")
+            return@launch
+        }
         val config = InterceptConfig(
             subsId = subsId,
             appId = appId ?: "",
@@ -259,7 +263,14 @@ class FocusLockVm : BaseViewModel() {
             }
         }
 
+        var updatedCount = 0
+        var skippedCount = 0
+
         targets.forEach { (s, a, g) ->
+            if (!enabled && FocusLockUtils.isRuleLocked(s, g, if (a.isEmpty()) null else a)) {
+                skippedCount++
+                return@forEach
+            }
             val config = InterceptConfig(
                 subsId = s,
                 appId = a,
@@ -269,7 +280,12 @@ class FocusLockVm : BaseViewModel() {
                 message = message
             )
             DbSet.interceptConfigDao.insert(config)
+            updatedCount++
         }
-        toast("已批量更新配置")
+        if (skippedCount > 0) {
+            toast("更新 $updatedCount 条，跳过 $skippedCount 条(已锁定)")
+        } else {
+            toast("已批量更新配置")
+        }
     }
 }
