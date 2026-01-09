@@ -24,3 +24,6 @@ local.properties
 /.kotlin
 
 /gradle/libs.versions.updates.toml
+.claude/
+GEMINI.md
+CLAUDE.md
