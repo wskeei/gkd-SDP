@@ -105,6 +105,7 @@ fun useSubsManagePage(): ScaffoldExt {
     val vm = viewModel<HomeVm>()
     val subItems by subsItemsFlow.collectAsState()
     val subsIdToRaw by subsMapFlow.collectAsState()
+    val constraints by li.songe.gkd.sdp.util.FocusLockUtils.allConstraintsFlow.collectAsState()
 
     var orderSubItems by remember {
         mutableStateOf(subItems)
@@ -438,6 +439,9 @@ fun useSubsManagePage(): ScaffoldExt {
             ) {
                 itemsIndexed(orderSubItems, { _, subItem -> subItem.id }) { index, subItem ->
                     val canDrag = !refreshing && orderSubItems.size > 1
+                    val isLocked = remember(subItem.id, constraints) {
+                        li.songe.gkd.sdp.util.FocusLockUtils.isSubscriptionLocked(subItem.id)
+                    }
                     ReorderableItem(
                         state = reorderableLazyColumnState,
                         key = subItem.id,
@@ -476,6 +480,7 @@ fun useSubsManagePage(): ScaffoldExt {
                             index = index + 1,
                             isSelectedMode = isSelectedMode,
                             isSelected = selectedIds.contains(subItem.id),
+                            isLocked = isLocked,
                             onCheckedChange = mainVm.viewModelScope.launchAsFn { checked ->
                                 if (checked && storeFlow.value.subsPowerWarn && !subItem.isLocal && usedSubsEntriesFlow.value.any { !it.subsItem.isLocal }) {
                                     mainVm.dialogFlow.waitResult(

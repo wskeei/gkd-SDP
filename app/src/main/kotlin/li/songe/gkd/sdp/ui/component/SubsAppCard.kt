@@ -23,6 +23,7 @@ import li.songe.gkd.sdp.ui.style.appItemPadding
 @Composable
 fun SubsAppCard(
     data: SubsAppInfoItem,
+    isLocked: Boolean = false,
     onClick: (() -> Unit),
     onValueChange: ((Boolean) -> Unit),
 ) {
@@ -69,8 +70,15 @@ fun SubsAppCard(
         }
         PerfSwitch(
             key = data.id,
-            checked = data.appConfig?.enable ?: (data.appInfo != null),
-            onCheckedChange = onValueChange,
+            checked = if (isLocked) true else data.appConfig?.enable ?: (data.appInfo != null),
+            enabled = !isLocked,
+            onCheckedChange = if (isLocked) null else onValueChange,
+            thumbContent = if (isLocked) ({
+                PerfIcon(
+                    imageVector = PerfIcon.Lock,
+                    modifier = Modifier.size(8.dp)
+                )
+            }) else null,
         )
     }
 }

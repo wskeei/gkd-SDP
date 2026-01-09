@@ -72,6 +72,7 @@ fun SubsAppListPage(
 
     val appTripleList by vm.appItemListFlow.collectAsState()
     val searchStr by vm.searchStrFlow.collectAsState()
+    val constraints by li.songe.gkd.sdp.util.FocusLockUtils.allConstraintsFlow.collectAsState()
 
     var showSearchBar by rememberSaveable { mutableStateOf(false) }
     LaunchedEffect(key1 = showSearchBar, block = {
@@ -200,8 +201,12 @@ fun SubsAppListPage(
             state = listState
         ) {
             items(appTripleList, { it.id }) { a ->
+                val isLocked = remember(a.id, subsItemId, constraints) {
+                    li.songe.gkd.sdp.util.FocusLockUtils.isAppLocked(subsItemId, a.id)
+                }
                 SubsAppCard(
                     data = a,
+                    isLocked = isLocked,
                     onClick = throttle {
                         context.justHideSoftInput()
                         mainVm.navigatePage(SubsAppGroupListPageDestination(subsItemId, a.id))

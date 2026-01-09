@@ -256,7 +256,7 @@ fun RuleGroupCard(
                     PerfSwitch(
                         key = Objects.hash(subs.id, appId, group.key),
                         modifier = switchModifier.minimumInteractiveComponentSize(),
-                        checked = checked,
+                        checked = if (isLocked) true else checked,
                         enabled = !isLocked,
                         onCheckedChange = if (isSelectedMode || isLocked) null else onCheckedChange,
                         thumbContent = if (isLocked) ({

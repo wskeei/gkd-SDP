@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -56,6 +57,7 @@ fun SubsItemCard(
     index: Int,
     isSelectedMode: Boolean,
     isSelected: Boolean,
+    isLocked: Boolean = false,
     onCheckedChange: ((Boolean) -> Unit),
     onSelectedChange: (() -> Unit)? = null,
 ) {
@@ -212,8 +214,15 @@ fun SubsItemCard(
             PerfSwitch(
                 key = subsItem.id,
                 modifier = switchModifier,
-                checked = subsItem.enable,
-                onCheckedChange = if (isSelectedMode) null else throttle(fn = onCheckedChange),
+                checked = if (isLocked) true else subsItem.enable,
+                enabled = !isLocked,
+                onCheckedChange = if (isSelectedMode || isLocked) null else throttle(fn = onCheckedChange),
+                thumbContent = if (isLocked) ({
+                    PerfIcon(
+                        imageVector = PerfIcon.Lock,
+                        modifier = Modifier.size(8.dp)
+                    )
+                }) else null,
             )
         }
     }

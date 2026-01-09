@@ -108,6 +108,12 @@ suspend fun batchUpdateGroupEnable(
         }
         val subsConfig = g.querySubsConfig()
         val categoryConfig = g.queryCategoryConfig()
+
+        // Disable modifying locked rules in batch operations
+        if (li.songe.gkd.sdp.util.FocusLockUtils.isRuleLocked(g.subsId, g.groupKey, g.appId)) {
+            return@map null
+        }
+
         if (enable == null && subsConfig?.enable == null && subsConfig?.exclude.isNullOrEmpty()) {
             return@map null
         }
