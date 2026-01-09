@@ -97,6 +97,8 @@ import li.songe.gkd.sdp.util.openA11ySettings
 import li.songe.gkd.sdp.util.openAppDetailsSettings
 import li.songe.gkd.sdp.util.throttle
 import li.songe.gkd.sdp.util.toast
+import li.songe.gkd.sdp.util.ruleSummaryFlow
+import li.songe.gkd.sdp.data.ConstraintConfig
 
 @Composable
 fun useSettingsPage(): ScaffoldExt {
@@ -466,9 +468,30 @@ fun useSettingsPage(): ScaffoldExt {
                 color = MaterialTheme.colorScheme.primary,
             )
 
+            val summary by ruleSummaryFlow.collectAsState()
             val constraints by FocusLockUtils.allConstraintsFlow.collectAsState()
-            val activeLockCount = remember(constraints) {
-                constraints.count { it.lockEndTime > System.currentTimeMillis() }
+            val activeLockCount = remember(summary, constraints) {
+                val now = System.currentTimeMillis()
+                val activeConstraints = constraints.filter { it.lockEndTime > now }
+                if (activeConstraints.isEmpty()) return@remember 0
+
+                var count = 0
+                fun isLocked(subsId: Long, appId: String?, groupKey: Int): Boolean {
+                    if (activeConstraints.any { it.targetType == ConstraintConfig.TYPE_SUBSCRIPTION && it.subsId == subsId }) return true
+                    if (appId != null && activeConstraints.any { it.targetType == ConstraintConfig.TYPE_APP && it.subsId == subsId && it.appId == appId }) return true
+                    if (activeConstraints.any { it.targetType == ConstraintConfig.TYPE_RULE_GROUP && it.subsId == subsId && it.appId == appId && it.groupKey == groupKey }) return true
+                    return false
+                }
+
+                count += summary.globalGroups.count { g ->
+                    isLocked(g.subsItem.id, null, g.group.key)
+                }
+                summary.appIdToAllGroups.values.flatten().forEach { g ->
+                    if (isLocked(g.subsItem.id, g.appId, g.group.key)) {
+                        count++
+                    }
+                }
+                count
             }
             
             SettingItem(
