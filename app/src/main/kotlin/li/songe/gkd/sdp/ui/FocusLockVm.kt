@@ -12,8 +12,10 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import li.songe.gkd.sdp.data.ConstraintConfig
 import li.songe.gkd.sdp.data.FocusLock
 import li.songe.gkd.sdp.data.InterceptConfig
+import li.songe.gkd.sdp.data.ResolvedAppGroup
 import li.songe.gkd.sdp.data.ResolvedGroup
 import li.songe.gkd.sdp.db.DbSet
 import li.songe.gkd.sdp.ui.share.BaseViewModel
@@ -21,13 +23,31 @@ import li.songe.gkd.sdp.util.FocusLockUtils
 import li.songe.gkd.sdp.util.launchTry
 import li.songe.gkd.sdp.util.ruleSummaryFlow
 import li.songe.gkd.sdp.util.toast
-import li.songe.gkd.sdp.util.json
 
-data class GroupState(
+data class RuleState(
     val group: ResolvedGroup,
     val isInterceptEnabled: Boolean,
     val isSelectedForLock: Boolean,
-    val isAlreadyLocked: Boolean
+    val isLocked: Boolean,
+    val lockEndTime: Long,
+    val lockedBy: Int // 0=None, 1=Self, 2=Parent(App), 3=Parent(Subs)
+)
+
+data class AppState(
+    val appId: String,
+    val appName: String,
+    val rules: List<RuleState>,
+    val isLocked: Boolean,
+    val lockEndTime: Long
+)
+
+data class SubscriptionState(
+    val subsId: Long,
+    val subsName: String,
+    val apps: List<AppState>,
+    val globalRules: List<RuleState>,
+    val isLocked: Boolean,
+    val lockEndTime: Long
 )
 
 class FocusLockVm : BaseViewModel() {
@@ -37,40 +57,125 @@ class FocusLockVm : BaseViewModel() {
     var customDaysText by mutableStateOf("")
     var customHoursText by mutableStateOf("")
 
-    val groupStatesFlow: StateFlow<List<GroupState>> = combine(
+    // Map expanded states for Subscriptions and Apps
+    val expandedSubs = MutableStateFlow<Set<Long>>(emptySet())
+    val expandedApps = MutableStateFlow<Set<String>>(emptySet()) // "subsId_appId"
+
+    val subStatesFlow: StateFlow<List<SubscriptionState>> = combine(
         ruleSummaryFlow,
         DbSet.interceptConfigDao.queryAll(),
         selectedRulesSetFlow,
-        FocusLockUtils.activeLockFlow
-    ) { summary, interceptConfigs, selectedRules, activeLock ->
-        val enabledAppGroups = summary.appIdToAllGroups.values.flatten().filter { it.enable }
-        val enabledGlobalGroups = summary.globalGroups
-        val allGroups = enabledAppGroups + enabledGlobalGroups
+        FocusLockUtils.allConstraintsFlow
+    ) { summary, interceptConfigs, selectedRules, constraints ->
+        val now = System.currentTimeMillis()
 
-        val lockedRules = if (activeLock != null && activeLock.isActive) {
-            json.decodeFromString<List<FocusLock.LockedRule>>(activeLock.lockedRules).toSet()
-        } else {
-            emptySet()
+        // Helper to check constraints
+        fun getLockStatus(targetType: Int, subsId: Long, appId: String?, groupKey: Int?): Pair<Boolean, Long> {
+            val constraint = constraints.find { 
+                it.targetType == targetType && 
+                it.subsId == subsId && 
+                it.appId == appId && 
+                it.groupKey == groupKey 
+            }
+            return if (constraint != null && constraint.lockEndTime > now) {
+                true to constraint.lockEndTime
+            } else {
+                false to 0L
+            }
         }
 
-        allGroups.map { group ->
-            val ruleKey = FocusLock.LockedRule(group.subsItem.id, group.group.key, group.appId)
-            val isLocked = lockedRules.contains(ruleKey)
-            GroupState(
-                group = group,
-                isInterceptEnabled = interceptConfigs.any { it.subsId == group.subsItem.id && it.groupKey == group.group.key && it.enabled },
-                isSelectedForLock = selectedRules.contains(ruleKey),
-                isAlreadyLocked = isLocked
+        // Group by Subscription
+        val subsGroups = summary.appIdToAllGroups.values.flatten().groupBy { it.subscription }
+        val globalGroups = summary.globalGroups.groupBy { it.subscription }
+        val allSubs = (subsGroups.keys + globalGroups.keys).distinctBy { it.id }
+
+        allSubs.map { subs ->
+            val (subsLocked, subsEndTime) = getLockStatus(ConstraintConfig.TYPE_SUBSCRIPTION, subs.id, null, null)
+
+            // Process Apps under this Subs
+            val appGroups = subsGroups[subs] ?: emptyList()
+            val apps = appGroups.groupBy { (it as ResolvedAppGroup).app }.map { (app, groups) ->
+                val (appLocked, appEndTime) = getLockStatus(ConstraintConfig.TYPE_APP, subs.id, app.id, null)
+                val effectiveAppLocked = subsLocked || appLocked
+                val effectiveAppEndTime = maxOf(subsEndTime, appEndTime)
+
+                val ruleStates = groups.filter { it.enable }.map { group ->
+                    val (ruleLocked, ruleEndTime) = getLockStatus(ConstraintConfig.TYPE_RULE_GROUP, subs.id, app.id, group.group.key)
+                    val effectiveRuleLocked = effectiveAppLocked || ruleLocked
+                    val effectiveRuleEndTime = maxOf(effectiveAppEndTime, ruleEndTime)
+                    val lockedBy = when {
+                        ruleLocked -> 1
+                        appLocked -> 2
+                        subsLocked -> 3
+                        else -> 0
+                    }
+                    val ruleKey = FocusLock.LockedRule(subs.id, group.group.key, app.id)
+                    
+                    RuleState(
+                        group = group,
+                        isInterceptEnabled = interceptConfigs.any { it.subsId == subs.id && it.groupKey == group.group.key && it.enabled },
+                        isSelectedForLock = selectedRules.contains(ruleKey),
+                        isLocked = effectiveRuleLocked,
+                        lockEndTime = effectiveRuleEndTime,
+                        lockedBy = lockedBy
+                    )
+                }
+                AppState(
+                    appId = app.id,
+                    appName = app.name ?: app.id,
+                    rules = ruleStates,
+                    isLocked = effectiveAppLocked,
+                    lockEndTime = effectiveAppEndTime
+                )
+            }.filter { it.rules.isNotEmpty() }
+
+            // Process Global Rules
+            val gGroups = globalGroups[subs] ?: emptyList()
+            val gRuleStates = gGroups.map { group ->
+                val (ruleLocked, ruleEndTime) = getLockStatus(ConstraintConfig.TYPE_RULE_GROUP, subs.id, null, group.group.key)
+                val effectiveRuleLocked = subsLocked || ruleLocked
+                val effectiveRuleEndTime = maxOf(subsEndTime, ruleEndTime)
+                val lockedBy = when {
+                    ruleLocked -> 1
+                    subsLocked -> 3 // Global rules skipped App level
+                    else -> 0
+                }
+                val ruleKey = FocusLock.LockedRule(subs.id, group.group.key, null)
+
+                RuleState(
+                    group = group,
+                    isInterceptEnabled = interceptConfigs.any { it.subsId == subs.id && it.groupKey == group.group.key && it.enabled },
+                    isSelectedForLock = selectedRules.contains(ruleKey),
+                    isLocked = effectiveRuleLocked,
+                    lockEndTime = effectiveRuleEndTime,
+                    lockedBy = lockedBy
+                )
+            }
+
+            SubscriptionState(
+                subsId = subs.id,
+                subsName = subs.name,
+                apps = apps,
+                globalRules = gRuleStates,
+                isLocked = subsLocked,
+                lockEndTime = subsEndTime
             )
         }
     }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
+    fun toggleExpandSubs(subsId: Long) {
+        val current = expandedSubs.value
+        expandedSubs.value = if (current.contains(subsId)) current - subsId else current + subsId
+    }
+
+    fun toggleExpandApp(key: String) {
+        val current = expandedApps.value
+        expandedApps.value = if (current.contains(key)) current - key else current + key
+    }
+
     fun toggleRuleSelection(group: ResolvedGroup) {
         val rule = FocusLock.LockedRule(group.subsItem.id, group.group.key, group.appId)
         val current = selectedRulesSetFlow.value
-        // If already locked in active session, prevent toggling (it's effectively always selected)
-        if (groupStatesFlow.value.find { it.group == group }?.isAlreadyLocked == true) return
-
         selectedRulesSetFlow.value = if (current.contains(rule)) {
             current - rule
         } else {
@@ -78,33 +183,9 @@ class FocusLockVm : BaseViewModel() {
         }
     }
 
-    fun selectAll(selectAll: Boolean) {
-        if (selectAll) {
-            val allRules = groupStatesFlow.value
-                .filter { !it.isAlreadyLocked } // Only select those not already locked
-                .map {
-                    FocusLock.LockedRule(it.group.subsItem.id, it.group.group.key, it.group.appId)
-                }.toSet()
-            selectedRulesSetFlow.value = allRules
-        } else {
-            selectedRulesSetFlow.value = emptySet()
-        }
-    }
-
-    fun toggleIntercept(group: ResolvedGroup) = viewModelScope.launch(Dispatchers.IO) {
-        val currentEnabled = groupStatesFlow.value.find { it.group == group }?.isInterceptEnabled ?: false
-        val newEnabled = !currentEnabled
-        val config = InterceptConfig(
-            subsId = group.subsItem.id,
-            groupKey = group.group.key,
-            enabled = newEnabled
-        )
-        DbSet.interceptConfigDao.insert(config)
-    }
-
-    fun updateOrStartLock() = viewModelScope.launchTry(Dispatchers.IO) {
-        val rules = selectedRulesSetFlow.value.toList()
-        val duration = if (isCustomDuration) {
+    // Lock a specific target (Subs, App, or Rule)
+    fun lockTarget(targetType: Int, subsId: Long, appId: String? = null, groupKey: Int? = null) = viewModelScope.launchTry(Dispatchers.IO) {
+        val durationMinutes = if (isCustomDuration) {
             val days = customDaysText.toIntOrNull() ?: 0
             val hours = customHoursText.toIntOrNull() ?: 0
             days * 24 * 60 + hours * 60
@@ -112,31 +193,50 @@ class FocusLockVm : BaseViewModel() {
             selectedDuration
         }
 
-        val activeLock = FocusLockUtils.activeLockFlow.value
-        if (activeLock != null && activeLock.isActive) {
-            // Update existing lock
-            if (rules.isEmpty() && duration <= 0) {
-                toast("请选择要添加的规则或设置延长时间")
-                return@launchTry
-            }
-            FocusLockUtils.updateLock(activeLock, rules, duration)
-            var msg = "锁定更新成功"
-            if (rules.isNotEmpty()) msg += "，添加了 ${rules.size} 个规则"
-            if (duration > 0) msg += "，延长了 $duration 分钟"
-            toast(msg)
-        } else {
-            // Start new lock
-            if (rules.isEmpty()) {
-                toast("请选择要锁定的规则组")
-                return@launchTry
-            }
-            if (duration <= 0) {
-                toast("请输入有效的锁定时长")
-                return@launchTry
-            }
-            FocusLockUtils.createLock(rules, duration)
-            toast("已锁定 ${rules.size} 个规则组，${duration} 分钟后自动解锁")
+        if (durationMinutes <= 0) {
+            toast("请输入有效的锁定时长")
+            return@launchTry
         }
-        selectedRulesSetFlow.value = emptySet()
+
+        val durationMillis = durationMinutes * 60 * 1000L
+        val now = System.currentTimeMillis()
+
+        val existing = FocusLockUtils.allConstraintsFlow.value.find {
+            it.targetType == targetType &&
+            it.subsId == subsId &&
+            it.appId == appId &&
+            it.groupKey == groupKey
+        }
+
+        val newEndTime = if (existing != null && existing.lockEndTime > now) {
+            existing.lockEndTime + durationMillis
+        } else {
+            now + durationMillis
+        }
+
+        val config = ConstraintConfig(
+            targetType = targetType,
+            subsId = subsId,
+            appId = appId,
+            groupKey = groupKey,
+            lockEndTime = newEndTime
+        )
+        
+        DbSet.constraintConfigDao.insert(config)
+        toast("锁定设置已更新")
+    }
+
+    fun toggleIntercept(group: ResolvedGroup) = viewModelScope.launch(Dispatchers.IO) {
+        val currentEnabled = subStatesFlow.value
+            .flatMap { it.apps.flatMap { a -> a.rules } + it.globalRules }
+            .find { it.group == group }?.isInterceptEnabled ?: false
+            
+        val newEnabled = !currentEnabled
+        val config = InterceptConfig(
+            subsId = group.subsItem.id,
+            groupKey = group.group.key,
+            enabled = newEnabled
+        )
+        DbSet.interceptConfigDao.insert(config)
     }
 }

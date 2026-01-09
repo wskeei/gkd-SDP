@@ -466,17 +466,14 @@ fun useSettingsPage(): ScaffoldExt {
                 color = MaterialTheme.colorScheme.primary,
             )
 
-            val activeLock by FocusLockUtils.activeLockFlow.collectAsState()
+            val constraints by FocusLockUtils.allConstraintsFlow.collectAsState()
+            val activeLockCount = remember(constraints) {
+                constraints.count { it.lockEndTime > System.currentTimeMillis() }
+            }
+            
             SettingItem(
-                title = "规则锁定",
-                subtitle = activeLock?.let {
-                    if (it.isActive) {
-                        val minutes = it.remainingTime / 60000
-                        val hours = minutes / 60
-                        val remainingMinutes = minutes % 60
-                        "剩余 " + if (hours > 0) "${hours}小时${remainingMinutes}分钟" else "${minutes}分钟"
-                    } else "未锁定"
-                } ?: "未锁定",
+                title = "数字自律",
+                subtitle = if (activeLockCount > 0) "${activeLockCount} 项规则已锁定" else "未锁定",
                 onClick = {
                     mainVm.navigatePage(FocusLockPageDestination)
                 }

@@ -20,13 +20,13 @@ import li.songe.gkd.sdp.data.FocusLock
 import li.songe.gkd.sdp.data.Snapshot
 import li.songe.gkd.sdp.data.SubsConfig
 import li.songe.gkd.sdp.data.SubsItem
+import li.songe.gkd.sdp.data.InterceptConfig
+import li.songe.gkd.sdp.data.ConstraintConfig
 import li.songe.gkd.sdp.util.dbFolder
 import li.songe.gkd.sdp.util.json
 
-import li.songe.gkd.sdp.data.InterceptConfig
-
 @Database(
-    version = 16,
+    version = 17,
     entities = [
         SubsItem::class,
         Snapshot::class,
@@ -39,6 +39,7 @@ import li.songe.gkd.sdp.data.InterceptConfig
         A11yEventLog::class,
         FocusLock::class,
         InterceptConfig::class,
+        ConstraintConfig::class,
     ],
     autoMigrations = [
         AutoMigration(from = 1, to = 2),
@@ -56,6 +57,7 @@ import li.songe.gkd.sdp.data.InterceptConfig
         AutoMigration(from = 13, to = 14),
         AutoMigration(from = 14, to = 15),
         AutoMigration(from = 15, to = 16),
+        AutoMigration(from = 16, to = 17),
     ]
 )
 @TypeConverters(DbConverters::class)
@@ -71,6 +73,7 @@ abstract class AppDb : RoomDatabase() {
     abstract fun a11yEventLogDao(): A11yEventLog.A11yEventLogDao
     abstract fun focusLockDao(): FocusLock.FocusLockDao
     abstract fun interceptConfigDao(): InterceptConfig.InterceptConfigDao
+    abstract fun constraintConfigDao(): ConstraintConfig.ConstraintConfigDao
 }
 
 @RenameColumn(
@@ -136,4 +139,5 @@ object DbSet {
     val a11yEventLogDao get() = db.a11yEventLogDao()
     val focusLockDao get() = db.focusLockDao()
     val interceptConfigDao get() = db.interceptConfigDao()
+    val constraintConfigDao get() = db.constraintConfigDao()
 }

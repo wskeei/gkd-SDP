@@ -4,57 +4,40 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 import li.songe.gkd.sdp.appScope
-import li.songe.gkd.sdp.data.FocusLock
+import li.songe.gkd.sdp.data.ConstraintConfig
 import li.songe.gkd.sdp.db.DbSet
 
 object FocusLockUtils {
-    val activeLockFlow: StateFlow<FocusLock?> by lazy {
-        DbSet.focusLockDao.queryActive()
-            .stateIn(appScope, SharingStarted.Eagerly, null)
+    val allConstraintsFlow: StateFlow<List<ConstraintConfig>> by lazy {
+        DbSet.constraintConfigDao.queryAll()
+            .stateIn(appScope, SharingStarted.Eagerly, emptyList())
     }
 
     fun isRuleLocked(subsId: Long, groupKey: Int, appId: String? = null): Boolean {
-        val lock = activeLockFlow.value ?: return false
-        if (!lock.isActive) return false
-
-        val lockedRules = json.decodeFromString<List<FocusLock.LockedRule>>(lock.lockedRules)
-        return lockedRules.any {
-            it.subsId == subsId && it.groupKey == groupKey && it.appId == appId
-        }
-    }
-
-    suspend fun createLock(
-        rules: List<FocusLock.LockedRule>,
-        durationMinutes: Int
-    ): Long {
         val now = System.currentTimeMillis()
-        val lock = FocusLock(
-            startTime = now,
-            endTime = now + durationMinutes * 60 * 1000L,
-            lockedRules = json.encodeToString(rules)
-        )
-        return DbSet.focusLockDao.insert(lock).first()
-    }
-
-    suspend fun updateLock(
-        lock: FocusLock,
-        newRules: List<FocusLock.LockedRule>,
-        extendMinutes: Int
-    ) {
-        val currentRules = json.decodeFromString<List<FocusLock.LockedRule>>(lock.lockedRules)
-        // Merge rules: old + new (distinct)
-        val allRules = (currentRules + newRules).distinct()
+        val constraints = allConstraintsFlow.value
         
-        val newEndTime = if (extendMinutes > 0) {
-            lock.endTime + extendMinutes * 60 * 1000L
-        } else {
-            lock.endTime
-        }
-
-        val updatedLock = lock.copy(
-            endTime = newEndTime,
-            lockedRules = json.encodeToString(allRules)
-        )
-        DbSet.focusLockDao.update(updatedLock)
+        // 1. Check Rule Level
+        if (constraints.any { 
+            it.targetType == ConstraintConfig.TYPE_RULE_GROUP &&
+            it.subsId == subsId && it.groupKey == groupKey && it.appId == appId &&
+            it.isLocked
+        }) return true
+        
+        // 2. Check App Level (if appId is present)
+        if (appId != null && constraints.any {
+            it.targetType == ConstraintConfig.TYPE_APP &&
+            it.subsId == subsId && it.appId == appId &&
+            it.isLocked
+        }) return true
+        
+        // 3. Check Subscription Level
+        if (constraints.any {
+            it.targetType == ConstraintConfig.TYPE_SUBSCRIPTION &&
+            it.subsId == subsId &&
+            it.isLocked
+        }) return true
+        
+        return false
     }
 }
