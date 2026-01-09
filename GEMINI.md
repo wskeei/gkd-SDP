@@ -148,30 +148,16 @@ data class InterceptConfig(
 4. 拦截页面：提示语 + 退出按钮 + 继续使用按钮（带冷静期）
 
 
-### 功能 3：触发统计（Progress Tracker）- P2
+### 功能 3：触发统计（Progress Tracker）- P2 ✅ 已完成
 
 **目标**：可视化展示规则触发趋势，让用户看到进步
 
-**数据查询**（基于现有 ActionLog）：
-```kotlin
-// 按天统计
-@Query("""
-    SELECT date(ctime/1000, 'unixepoch', 'localtime') as date,
-           COUNT(*) as count
-    FROM action_log
-    WHERE ctime >= :startTime
-    GROUP BY date
-    ORDER BY date DESC
-""")
-fun queryDailyStats(startTime: Long): Flow<List<DailyStat>>
-```
+**关键实现**：
+1. ✅ `ActionLogDao` 新增 `queryDailyStats` 查询，支持按天统计触发次数，并支持 `subsId` 和 `appId` 过滤。
+2. ✅ 集成 `Vico` 图表库用于数据可视化。
+3. ✅ `ActionLogPage` 升级为多 Tab 布局：“记录列表”和“统计图表”。
+4. ✅ 实现 `ActionLogStatsView` 展示最近 14 天的触发趋势柱状图及详细数据列表。
 
-**UI 位置**：
-```
-首页 → 触发记录 → 统计图表 Tab
-```
-
-**图表库**：推荐 Vico (https://github.com/patrykandpatrick/vico)
 ---
 
 ## UI 设计规范

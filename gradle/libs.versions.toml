@@ -12,8 +12,12 @@ coil = "3.3.0"
 rikka_refine = "4.4.0"
 rikka_shizuku = "13.1.5"
 loc = "0.5.3"
+vico = "2.0.0-alpha.28"
 
 [libraries]
+vico_compose = { module = "com.patrykandpatrick.vico:compose", version.ref = "vico" }
+vico_compose_m3 = { module = "com.patrykandpatrick.vico:compose-m3", version.ref = "vico" }
+vico_core = { module = "com.patrykandpatrick.vico:core", version.ref = "vico" }
 kotlin_stdlib = { module = "org.jetbrains.kotlin:kotlin-stdlib", version.ref = "kotlin" }
 kotlin_test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
 kotlinx_serialization_json = "org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0"

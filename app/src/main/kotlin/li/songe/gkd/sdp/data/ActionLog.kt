@@ -15,6 +15,12 @@ import li.songe.gkd.sdp.util.format
 import li.songe.gkd.sdp.util.getShowActivityId
 
 @Serializable
+data class DailyStat(
+    val date: String,
+    val count: Int
+)
+
+@Serializable
 @Entity(
     tableName = "action_log",
 )
@@ -121,5 +127,23 @@ data class ActionLog(
 
         @Query("SELECT DISTINCT app_id FROM action_log WHERE subs_id=:subsItemId AND group_key=:globalGroupKey AND group_type=${SubsConfig.GlobalGroupType} ORDER BY id DESC")
         fun queryLatestUniqueAppIds(subsItemId: Long, globalGroupKey: Int): Flow<List<String>>
+
+        @Query(
+            """
+            SELECT date(ctime/1000, 'unixepoch', 'localtime') as date,
+                   COUNT(*) as count
+            FROM action_log
+            WHERE ctime >= :startTime 
+              AND (:subsId IS NULL OR subs_id = :subsId)
+              AND (:appId IS NULL OR app_id = :appId)
+            GROUP BY date
+            ORDER BY date ASC
+        """
+        )
+        fun queryDailyStats(
+            startTime: Long,
+            subsId: Long? = null,
+            appId: String? = null
+        ): Flow<List<DailyStat>>
     }
 }

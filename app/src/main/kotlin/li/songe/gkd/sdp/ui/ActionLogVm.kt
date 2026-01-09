@@ -9,14 +9,26 @@ import androidx.paging.cachedIn
 import androidx.paging.map
 import com.ramcosta.composedestinations.generated.destinations.ActionLogPageDestination
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.stateIn
 import li.songe.gkd.sdp.data.ActionLog
+import li.songe.gkd.sdp.data.DailyStat
 import li.songe.gkd.sdp.data.SubsConfig
 import li.songe.gkd.sdp.db.DbSet
 import li.songe.gkd.sdp.util.subsMapFlow
 
 class ActionLogVm(stateHandle: SavedStateHandle) : ViewModel() {
     private val args = ActionLogPageDestination.argsFrom(stateHandle)
+
+    val selectedTabIndex = MutableStateFlow(0)
+
+    val dailyStatsFlow: StateFlow<List<DailyStat>> = DbSet.actionLogDao.queryDailyStats(
+        startTime = System.currentTimeMillis() - 14 * 24 * 60 * 60 * 1000L,
+        subsId = args.subsId,
+        appId = args.appId
+    ).stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     val pagingDataFlow = Pager(PagingConfig(pageSize = 100)) {
         if (args.subsId != null) {

@@ -4,18 +4,32 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.PrimaryTabRow
+import androidx.compose.material3.Tab
+import com.patrykandpatrick.vico.compose.cartesian.CartesianChartHost
+import com.patrykandpatrick.vico.compose.cartesian.axis.rememberBottomAxis
+import com.patrykandpatrick.vico.compose.cartesian.axis.rememberStartAxis
+import com.patrykandpatrick.vico.compose.cartesian.layer.rememberColumnCartesianLayer
+import com.patrykandpatrick.vico.compose.cartesian.rememberCartesianChart
+import com.patrykandpatrick.vico.compose.common.component.rememberLineComponent
+import com.patrykandpatrick.vico.core.cartesian.data.CartesianChartModelProducer
+import com.patrykandpatrick.vico.core.cartesian.data.columnSeries
+import com.patrykandpatrick.vico.core.cartesian.layer.ColumnCartesianLayer
 import androidx.compose.material3.Card
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.LocalContentColor
@@ -25,6 +39,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -168,37 +183,62 @@ fun ActionLogPage(
                 }
             })
     }, content = { contentPadding ->
-        CompositionLocalProvider(
-            LocalNumberCharWidth provides timeTextWidth
-        ) {
-            LazyColumn(
-                modifier = Modifier.scaffoldPadding(contentPadding),
-                state = listState,
+        Column(modifier = Modifier.scaffoldPadding(contentPadding)) {
+            val selectedTab by vm.selectedTabIndex.collectAsState()
+            PrimaryTabRow(
+                selectedTabIndex = selectedTab,
+                modifier = Modifier.fillMaxWidth(),
+                containerColor = MaterialTheme.colorScheme.surface,
+                divider = {}
             ) {
-                items(
-                    count = list.itemCount,
-                    key = list.itemKey { c -> c.first.id }
-                ) { i ->
-                    val item = list[i] ?: return@items
-                    val lastItem = if (i > 0) list[i - 1] else null
-                    ActionLogCard(
-                        modifier = Modifier.animateListItem(),
-                        i = i,
-                        item = item,
-                        lastItem = lastItem,
-                        onClick = {
-                            vm.showActionLogFlow.value = item.first
-                        },
-                        subsId = subsId,
-                        appId = appId,
-                    )
-                }
-                item(ListPlaceholder.KEY, ListPlaceholder.TYPE) {
-                    Spacer(modifier = Modifier.height(EmptyHeight))
-                    if (list.itemCount == 0 && list.loadState.refresh !is LoadState.Loading) {
-                        EmptyText(text = "暂无数据")
+                Tab(
+                    selected = selectedTab == 0,
+                    onClick = { vm.selectedTabIndex.value = 0 },
+                    text = { Text("记录列表") }
+                )
+                Tab(
+                    selected = selectedTab == 1,
+                    onClick = { vm.selectedTabIndex.value = 1 },
+                    text = { Text("统计图表") }
+                )
+            }
+
+            if (selectedTab == 0) {
+                CompositionLocalProvider(
+                    LocalNumberCharWidth provides timeTextWidth
+                ) {
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        state = listState,
+                    ) {
+                        items(
+                            count = list.itemCount,
+                            key = list.itemKey { c -> c.first.id }
+                        ) { i ->
+                            val item = list[i] ?: return@items
+                            val lastItem = if (i > 0) list[i - 1] else null
+                            ActionLogCard(
+                                modifier = Modifier.animateListItem(),
+                                i = i,
+                                item = item,
+                                lastItem = lastItem,
+                                onClick = {
+                                    vm.showActionLogFlow.value = item.first
+                                },
+                                subsId = subsId,
+                                appId = appId,
+                            )
+                        }
+                        item(ListPlaceholder.KEY, ListPlaceholder.TYPE) {
+                            Spacer(modifier = Modifier.height(EmptyHeight))
+                            if (list.itemCount == 0 && list.loadState.refresh !is LoadState.Loading) {
+                                EmptyText(text = "暂无数据")
+                            }
+                        }
                     }
                 }
+            } else {
+                ActionLogStatsView(vm)
             }
         }
     })
@@ -211,6 +251,96 @@ fun ActionLogPage(
                 vm.showActionLogFlow.value = null
             }
         )
+    }
+}
+
+@Composable
+private fun ActionLogStatsView(vm: ActionLogVm) {
+    val stats by vm.dailyStatsFlow.collectAsState()
+    if (stats.isEmpty()) {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            EmptyText(text = "暂无统计数据")
+        }
+        return
+    }
+
+    val modelProducer = remember { CartesianChartModelProducer() }
+    LaunchedEffect(stats) {
+        modelProducer.runTransaction {
+            columnSeries {
+                series(stats.map { it.count })
+            }
+        }
+    }
+
+    LazyColumn(modifier = Modifier.fillMaxSize()) {
+        item {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp)
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text(
+                        text = "触发趋势 (最近14天)",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    Spacer(modifier = Modifier.height(24.dp))
+                    CartesianChartHost(
+                        chart = rememberCartesianChart(
+                            rememberColumnCartesianLayer(
+                                columnProvider = ColumnCartesianLayer.ColumnProvider.series(
+                                    rememberLineComponent(
+                                        color = MaterialTheme.colorScheme.primary,
+                                        thickness = 12.dp,
+                                    )
+                                )
+                            ),
+                            startAxis = rememberStartAxis(),
+                            bottomAxis = rememberBottomAxis(
+                                valueFormatter = { x, _, _ ->
+                                    stats.getOrNull(x.toInt())?.date?.substring(5) ?: ""
+                                }
+                            ),
+                        ),
+                        modelProducer = modelProducer,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(250.dp)
+                    )
+                }
+            }
+        }
+        
+        item {
+            Text(
+                text = "详细数据",
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                style = MaterialTheme.typography.titleSmall
+            )
+        }
+        
+        items(stats.reversed()) { stat ->
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(text = stat.date, style = MaterialTheme.typography.bodyMedium)
+                Text(
+                    text = "${stat.count} 次触发",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.secondary
+                )
+            }
+            HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), thickness = 0.5.dp)
+        }
+        
+        item {
+            Spacer(modifier = Modifier.height(EmptyHeight))
+        }
     }
 }
 
