@@ -41,6 +41,7 @@ import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.RocketLaunch
 import androidx.compose.material.icons.outlined.Save
+import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.SelfImprovement
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.TextFields
@@ -212,4 +213,5 @@ object PerfIcon {
     val TextFields get() = Icons.Outlined.TextFields
     val ArrowDownward get() = Icons.Outlined.ArrowDownward
     val Check get() = Icons.Outlined.Check
+    val Search get() = Icons.Outlined.Search
 }

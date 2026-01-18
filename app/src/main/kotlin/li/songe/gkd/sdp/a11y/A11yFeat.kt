@@ -299,7 +299,10 @@ private fun A11yService.useFocusMode() {
             val currentAppId = activity.appId
             if (currentAppId.isNotEmpty() && currentAppId != lastAppId) {
                 lastAppId = currentAppId
+                // 先检查专注模式
                 FocusModeEngine.onAppChanged(currentAppId, this@useFocusMode)
+                // 再检查应用拦截
+                AppBlockerEngine.onAppChanged(currentAppId, this@useFocusMode)
             }
         }
     }

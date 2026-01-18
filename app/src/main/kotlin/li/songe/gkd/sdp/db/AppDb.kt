@@ -13,8 +13,11 @@ import li.songe.gkd.sdp.app
 import li.songe.gkd.sdp.data.A11yEventLog
 import li.songe.gkd.sdp.data.ActionLog
 import li.songe.gkd.sdp.data.ActivityLog
+import li.songe.gkd.sdp.data.AppBlockerLock
 import li.songe.gkd.sdp.data.AppConfig
+import li.songe.gkd.sdp.data.AppGroup
 import li.songe.gkd.sdp.data.AppVisitLog
+import li.songe.gkd.sdp.data.BlockTimeRule
 import li.songe.gkd.sdp.data.BrowserConfig
 import li.songe.gkd.sdp.data.CategoryConfig
 import li.songe.gkd.sdp.data.ConstraintConfig
@@ -30,7 +33,7 @@ import li.songe.gkd.sdp.util.dbFolder
 import li.songe.gkd.sdp.util.json
 
 @Database(
-    version = 20,
+    version = 21,
     entities = [
         SubsItem::class,
         Snapshot::class,
@@ -48,6 +51,9 @@ import li.songe.gkd.sdp.util.json
         BrowserConfig::class,
         FocusRule::class,
         FocusSession::class,
+        AppGroup::class,
+        BlockTimeRule::class,
+        AppBlockerLock::class,
     ],
     autoMigrations = [
         AutoMigration(from = 1, to = 2),
@@ -69,6 +75,7 @@ import li.songe.gkd.sdp.util.json
         AutoMigration(from = 17, to = 18),
         AutoMigration(from = 18, to = 19),
         AutoMigration(from = 19, to = 20),
+        AutoMigration(from = 20, to = 21),
     ]
 )
 @TypeConverters(DbConverters::class)
@@ -89,6 +96,9 @@ abstract class AppDb : RoomDatabase() {
     abstract fun browserConfigDao(): BrowserConfig.BrowserConfigDao
     abstract fun focusRuleDao(): FocusRule.FocusRuleDao
     abstract fun focusSessionDao(): FocusSession.FocusSessionDao
+    abstract fun appGroupDao(): AppGroup.AppGroupDao
+    abstract fun blockTimeRuleDao(): BlockTimeRule.BlockTimeRuleDao
+    abstract fun appBlockerLockDao(): AppBlockerLock.AppBlockerLockDao
 }
 
 @RenameColumn(
@@ -159,4 +169,7 @@ object DbSet {
     val browserConfigDao get() = db.browserConfigDao()
     val focusRuleDao get() = db.focusRuleDao()
     val focusSessionDao get() = db.focusSessionDao()
+    val appGroupDao get() = db.appGroupDao()
+    val blockTimeRuleDao get() = db.blockTimeRuleDao()
+    val appBlockerLockDao get() = db.appBlockerLockDao()
 }

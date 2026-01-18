@@ -53,6 +53,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.ui.platform.LocalContext
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
+import com.ramcosta.composedestinations.generated.destinations.AppBlockerPageDestination
 import com.ramcosta.composedestinations.generated.destinations.FocusModePageDestination
 import com.ramcosta.composedestinations.generated.destinations.UrlBlockPageDestination
 import kotlinx.coroutines.launch
@@ -123,6 +124,14 @@ fun FocusLockPage() {
                 UrlBlockerCard(
                     enabled = urlBlockerEnabled,
                     onClick = { mainVm.navigatePage(UrlBlockPageDestination) }
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+            }
+
+            // 应用拦截卡片
+            item(key = "app_blocker") {
+                AppBlockerCard(
+                    onClick = { mainVm.navigatePage(AppBlockerPageDestination) }
                 )
                 Spacer(modifier = Modifier.height(12.dp))
             }
@@ -830,6 +839,48 @@ fun FocusModeCard(
                     text = if (isActive) "进行中" else "未启动",
                     style = MaterialTheme.typography.bodySmall,
                     color = if (isActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            PerfIcon(
+                imageVector = PerfIcon.KeyboardArrowRight,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+}
+
+@Composable
+fun AppBlockerCard(
+    onClick: () -> Unit
+) {
+    ElevatedCard(
+        colors = surfaceCardColors,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp)
+            .clickable { onClick() },
+    ) {
+        Row(
+            modifier = Modifier
+                .padding(16.dp)
+                .fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            PerfIcon(
+                imageVector = PerfIcon.Block,
+                tint = MaterialTheme.colorScheme.primary
+            )
+            Spacer(modifier = Modifier.width(16.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "应用拦截",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Text(
+                    text = "拦截指定应用",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
             PerfIcon(
