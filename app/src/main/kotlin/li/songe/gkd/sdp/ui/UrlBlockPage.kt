@@ -1,5 +1,6 @@
 package li.songe.gkd.sdp.ui
 
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -12,6 +13,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ElevatedCard
@@ -31,6 +34,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -41,11 +45,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import li.songe.gkd.sdp.a11y.UrlBlockerEngine
 import li.songe.gkd.sdp.data.BrowserConfig
@@ -69,14 +75,18 @@ fun UrlBlockPage() {
     val enabledRuleCount by vm.enabledRuleCountFlow.collectAsState()
     val enabledBrowserCount by vm.enabledBrowserCountFlow.collectAsState()
     val urlBlockerEnabled by UrlBlockerEngine.enabledFlow.collectAsState()
+    val isLocked by vm.isLockedFlow.collectAsState()
+    val lockEndTime by vm.lockEndTimeFlow.collectAsState()
 
     val scope = rememberCoroutineScope()
     val ruleSheetState = rememberModalBottomSheetState()
     val browserSheetState = rememberModalBottomSheetState()
+    val lockSheetState = rememberModalBottomSheetState()
 
     var showRuleSheet by remember { mutableStateOf(false) }
     var showBrowserSheet by remember { mutableStateOf(false) }
     var showBrowserListDialog by remember { mutableStateOf(false) }
+    var showLockSheet by remember { mutableStateOf(false) }
     var deleteConfirmRule by remember { mutableStateOf<UrlBlockRule?>(null) }
 
     // 当前 Tab: 0=规则, 1=浏览器
@@ -93,6 +103,13 @@ fun UrlBlockPage() {
                 },
                 title = { Text(text = "网址拦截") },
                 actions = {
+                    // 锁定按钮
+                    IconButton(onClick = { showLockSheet = true }) {
+                        PerfIcon(
+                            imageVector = PerfIcon.Lock,
+                            tint = if (isLocked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                     IconButton(onClick = { showBrowserListDialog = true }) {
                         PerfIcon(
                             imageVector = PerfIcon.Settings,
@@ -114,6 +131,13 @@ fun UrlBlockPage() {
         }
     ) { padding ->
         LazyColumn(modifier = Modifier.scaffoldPadding(padding)) {
+            // 锁定状态提示
+            if (isLocked) {
+                item {
+                    LockStatusCard(lockEndTime = lockEndTime)
+                }
+            }
+
             // 功能开关
             item {
                 ElevatedCard(
@@ -143,7 +167,8 @@ fun UrlBlockPage() {
                         }
                         Switch(
                             checked = urlBlockerEnabled,
-                            onCheckedChange = { vm.toggleUrlBlockerEnabled(it) }
+                            onCheckedChange = { vm.toggleUrlBlockerEnabled(it) },
+                            enabled = !isLocked || !urlBlockerEnabled  // 锁定时只能开不能关
                         )
                     }
                 }
@@ -265,6 +290,26 @@ fun UrlBlockPage() {
                     }
                 }
             )
+        }
+
+        // 锁定时长 Sheet
+        if (showLockSheet) {
+            ModalBottomSheet(
+                onDismissRequest = { showLockSheet = false },
+                sheetState = lockSheetState
+            ) {
+                UrlBlockLockSheet(
+                    vm = vm,
+                    isLocked = isLocked,
+                    lockEndTime = lockEndTime,
+                    onConfirm = {
+                        vm.lockUrlBlocker()
+                        scope.launch { lockSheetState.hide() }.invokeOnCompletion {
+                            if (!lockSheetState.isVisible) showLockSheet = false
+                        }
+                    }
+                )
+            }
         }
     }
 }
@@ -607,5 +652,205 @@ fun BrowserEditSheet(
         }
 
         Spacer(modifier = Modifier.height(16.dp))
+    }
+}
+
+@Composable
+fun LockStatusCard(lockEndTime: Long) {
+    var remainingText by remember { mutableStateOf("") }
+
+    LaunchedEffect(lockEndTime) {
+        while (true) {
+            val remaining = lockEndTime - System.currentTimeMillis()
+            remainingText = if (remaining > 0) {
+                formatRemainingTime(remaining)
+            } else {
+                "已结束"
+            }
+            delay(1000)
+        }
+    }
+
+    ElevatedCard(
+        colors = surfaceCardColors,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            PerfIcon(
+                imageVector = PerfIcon.Lock,
+                tint = MaterialTheme.colorScheme.primary
+            )
+            Spacer(modifier = Modifier.width(12.dp))
+            Column {
+                Text(
+                    text = "已锁定",
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Text(
+                    text = "剩余时间: $remainingText",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun UrlBlockLockSheet(
+    vm: UrlBlockVm,
+    isLocked: Boolean,
+    lockEndTime: Long,
+    onConfirm: () -> Unit
+) {
+    val durationOptions = listOf(
+        480 to "8小时",
+        1440 to "1天",
+        4320 to "3天"
+    )
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(24.dp)
+    ) {
+        Text(
+            text = if (isLocked) "延长锁定" else "锁定网址拦截",
+            style = MaterialTheme.typography.titleLarge,
+            modifier = Modifier.padding(bottom = 8.dp)
+        )
+
+        if (isLocked) {
+            val remaining = lockEndTime - System.currentTimeMillis()
+            Text(
+                text = "当前剩余: ${formatRemainingTime(remaining)}",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(bottom = 16.dp)
+            )
+        } else {
+            Text(
+                text = "锁定后将无法关闭网址拦截功能",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(bottom = 16.dp)
+            )
+        }
+
+        Text(
+            text = "选择时长",
+            style = MaterialTheme.typography.labelMedium,
+            modifier = Modifier.padding(bottom = 8.dp)
+        )
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            durationOptions.forEach { (minutes, label) ->
+                val isSelected = !vm.isCustomDuration && vm.selectedDuration == minutes
+                Text(
+                    text = label,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                    color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier
+                        .border(
+                            width = if (isSelected) 2.dp else 1.dp,
+                            color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
+                            shape = CircleShape
+                        )
+                        .clickable {
+                            vm.isCustomDuration = false
+                            vm.selectedDuration = minutes
+                        }
+                        .padding(horizontal = 16.dp, vertical = 8.dp)
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.clickable { vm.isCustomDuration = !vm.isCustomDuration }
+        ) {
+            Switch(
+                checked = vm.isCustomDuration,
+                onCheckedChange = { vm.isCustomDuration = it }
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text("自定义时长", style = MaterialTheme.typography.bodyMedium)
+        }
+
+        if (vm.isCustomDuration) {
+            Spacer(modifier = Modifier.height(12.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                OutlinedTextField(
+                    value = vm.customDaysText,
+                    onValueChange = { newValue ->
+                        if (newValue.all { it.isDigit() }) {
+                            vm.customDaysText = newValue
+                        }
+                    },
+                    label = { Text("天") },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    modifier = Modifier.weight(1f)
+                )
+                OutlinedTextField(
+                    value = vm.customHoursText,
+                    onValueChange = { newValue ->
+                        if (newValue.all { it.isDigit() }) {
+                            vm.customHoursText = newValue
+                        }
+                    },
+                    label = { Text("小时") },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    modifier = Modifier.weight(1f)
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(32.dp))
+
+        Button(
+            onClick = onConfirm,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text(if (isLocked) "确定延长" else "确定锁定")
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+    }
+}
+
+private fun formatRemainingTime(millis: Long): String {
+    if (millis <= 0) return "已结束"
+    val minutes = millis / 60000
+    val hours = minutes / 60
+    val remainingMinutes = minutes % 60
+    val days = hours / 24
+    val remainingHours = hours % 24
+
+    return if (days > 0) {
+        "${days}天${remainingHours}小时"
+    } else if (hours > 0) {
+        "${hours}小时${remainingMinutes}分钟"
+    } else {
+        "${minutes}分钟"
     }
 }

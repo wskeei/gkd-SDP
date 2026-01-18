@@ -8,9 +8,36 @@ import li.songe.gkd.sdp.data.ConstraintConfig
 import li.songe.gkd.sdp.db.DbSet
 
 object FocusLockUtils {
+    // 网址拦截功能使用的特殊 subsId
+    const val URL_BLOCKER_SUBS_ID = -100L
+
     val allConstraintsFlow: StateFlow<List<ConstraintConfig>> by lazy {
         DbSet.constraintConfigDao.queryAll()
             .stateIn(appScope, SharingStarted.Eagerly, emptyList())
+    }
+
+    /**
+     * 检查网址拦截功能是否被锁定
+     */
+    fun isUrlBlockerLocked(): Boolean {
+        return allConstraintsFlow.value.any {
+            it.targetType == ConstraintConfig.TYPE_SUBSCRIPTION &&
+            it.subsId == URL_BLOCKER_SUBS_ID &&
+            it.isLocked
+        }
+    }
+
+    /**
+     * 获取网址拦截功能的锁定结束时间
+     */
+    fun getUrlBlockerLockEndTime(): Long {
+        return allConstraintsFlow.value
+            .filter {
+                it.targetType == ConstraintConfig.TYPE_SUBSCRIPTION &&
+                it.subsId == URL_BLOCKER_SUBS_ID &&
+                it.isLocked
+            }
+            .maxOfOrNull { it.lockEndTime } ?: 0L
     }
 
     fun isRuleLocked(subsId: Long, groupKey: Int, appId: String? = null): Boolean {

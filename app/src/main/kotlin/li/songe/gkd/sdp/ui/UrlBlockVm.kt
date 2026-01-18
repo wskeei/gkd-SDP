@@ -1,18 +1,22 @@
 package li.songe.gkd.sdp.ui
 
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import li.songe.gkd.sdp.a11y.UrlBlockerEngine
 import li.songe.gkd.sdp.data.BrowserConfig
+import li.songe.gkd.sdp.data.ConstraintConfig
 import li.songe.gkd.sdp.data.UrlBlockRule
 import li.songe.gkd.sdp.db.DbSet
 import li.songe.gkd.sdp.ui.share.BaseViewModel
+import li.songe.gkd.sdp.util.FocusLockUtils
 import li.songe.gkd.sdp.util.toast
 
 class UrlBlockVm : BaseViewModel() {
@@ -28,6 +32,31 @@ class UrlBlockVm : BaseViewModel() {
 
     val enabledBrowserCountFlow = DbSet.browserConfigDao.countEnabled()
         .stateIn(viewModelScope, SharingStarted.Eagerly, 0)
+
+    // 锁定状态
+    val isLockedFlow = FocusLockUtils.allConstraintsFlow.map { constraints ->
+        constraints.any {
+            it.targetType == ConstraintConfig.TYPE_SUBSCRIPTION &&
+            it.subsId == FocusLockUtils.URL_BLOCKER_SUBS_ID &&
+            it.isLocked
+        }
+    }.stateIn(viewModelScope, SharingStarted.Eagerly, false)
+
+    val lockEndTimeFlow = FocusLockUtils.allConstraintsFlow.map { constraints ->
+        constraints
+            .filter {
+                it.targetType == ConstraintConfig.TYPE_SUBSCRIPTION &&
+                it.subsId == FocusLockUtils.URL_BLOCKER_SUBS_ID &&
+                it.isLocked
+            }
+            .maxOfOrNull { it.lockEndTime } ?: 0L
+    }.stateIn(viewModelScope, SharingStarted.Eagerly, 0L)
+
+    // 锁定时长选择
+    var selectedDuration by mutableIntStateOf(480)  // 默认 8 小时
+    var isCustomDuration by mutableStateOf(false)
+    var customDaysText by mutableStateOf("")
+    var customHoursText by mutableStateOf("")
 
     // 编辑状态
     var editingRule by mutableStateOf<UrlBlockRule?>(null)
@@ -104,11 +133,20 @@ class UrlBlockVm : BaseViewModel() {
     }
 
     fun deleteRule(rule: UrlBlockRule) = viewModelScope.launch(Dispatchers.IO) {
+        if (FocusLockUtils.isUrlBlockerLocked()) {
+            toast("网址拦截已锁定，无法删除规则")
+            return@launch
+        }
         DbSet.urlBlockRuleDao.delete(rule)
         toast("规则已删除")
     }
 
     fun toggleRuleEnabled(rule: UrlBlockRule) = viewModelScope.launch(Dispatchers.IO) {
+        // 锁定状态下不允许关闭规则
+        if (rule.enabled && FocusLockUtils.isUrlBlockerLocked()) {
+            toast("网址拦截已锁定，无法关闭规则")
+            return@launch
+        }
         DbSet.urlBlockRuleDao.update(rule.copy(enabled = !rule.enabled))
     }
 
@@ -136,15 +174,79 @@ class UrlBlockVm : BaseViewModel() {
             toast("内置浏览器不可删除")
             return@launch
         }
+        if (FocusLockUtils.isUrlBlockerLocked()) {
+            toast("网址拦截已锁定，无法删除浏览器")
+            return@launch
+        }
         DbSet.browserConfigDao.delete(browser)
         toast("浏览器配置已删除")
     }
 
     fun toggleBrowserEnabled(browser: BrowserConfig) = viewModelScope.launch(Dispatchers.IO) {
+        // 锁定状态下不允许关闭浏览器
+        if (browser.enabled && FocusLockUtils.isUrlBlockerLocked()) {
+            toast("网址拦截已锁定，无法关闭浏览器")
+            return@launch
+        }
         DbSet.browserConfigDao.update(browser.copy(enabled = !browser.enabled))
     }
 
     fun toggleUrlBlockerEnabled(enabled: Boolean) {
+        // 锁定状态下不允许关闭
+        if (!enabled && FocusLockUtils.isUrlBlockerLocked()) {
+            toast("网址拦截已锁定，无法关闭")
+            return
+        }
         UrlBlockerEngine.enabledFlow.value = enabled
+    }
+
+    /**
+     * 锁定网址拦截功能
+     */
+    fun lockUrlBlocker() = viewModelScope.launch(Dispatchers.IO) {
+        val durationMinutes = if (isCustomDuration) {
+            val days = customDaysText.toIntOrNull() ?: 0
+            val hours = customHoursText.toIntOrNull() ?: 0
+            days * 24 * 60 + hours * 60
+        } else {
+            selectedDuration
+        }
+
+        if (durationMinutes <= 0) {
+            toast("请输入有效的锁定时长")
+            return@launch
+        }
+
+        val durationMillis = durationMinutes * 60 * 1000L
+        val now = System.currentTimeMillis()
+        val currentEndTime = lockEndTimeFlow.value
+
+        val newEndTime = if (currentEndTime > now) {
+            currentEndTime + durationMillis  // 延长锁定
+        } else {
+            now + durationMillis  // 新锁定
+        }
+
+        // 查找现有配置
+        val existing = FocusLockUtils.allConstraintsFlow.value.find {
+            it.targetType == ConstraintConfig.TYPE_SUBSCRIPTION &&
+            it.subsId == FocusLockUtils.URL_BLOCKER_SUBS_ID
+        }
+
+        val config = ConstraintConfig(
+            id = existing?.id ?: 0,
+            targetType = ConstraintConfig.TYPE_SUBSCRIPTION,
+            subsId = FocusLockUtils.URL_BLOCKER_SUBS_ID,
+            appId = null,
+            groupKey = null,
+            lockEndTime = newEndTime
+        )
+
+        DbSet.constraintConfigDao.insert(config)
+
+        // 锁定时自动启用
+        UrlBlockerEngine.enabledFlow.value = true
+
+        toast("网址拦截已锁定")
     }
 }
