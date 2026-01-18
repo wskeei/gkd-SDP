@@ -53,8 +53,10 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.ui.platform.LocalContext
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
+import com.ramcosta.composedestinations.generated.destinations.FocusModePageDestination
 import com.ramcosta.composedestinations.generated.destinations.UrlBlockPageDestination
 import kotlinx.coroutines.launch
+import li.songe.gkd.sdp.a11y.FocusModeEngine
 import li.songe.gkd.sdp.a11y.UrlBlockerEngine
 import li.songe.gkd.sdp.data.ConstraintConfig
 import li.songe.gkd.sdp.data.InterceptConfig
@@ -104,8 +106,18 @@ fun FocusLockPage() {
         }
     ) { padding ->
         val urlBlockerEnabled by UrlBlockerEngine.enabledFlow.collectAsState()
+        val focusModeActive by FocusModeEngine.isActiveFlow.collectAsState()
 
         LazyColumn(modifier = Modifier.scaffoldPadding(padding)) {
+            // 专注模式卡片
+            item(key = "focus_mode") {
+                FocusModeCard(
+                    isActive = focusModeActive,
+                    onClick = { mainVm.navigatePage(FocusModePageDestination) }
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+            }
+
             // URL 拦截卡片 - 作为内置订阅
             item(key = "url_blocker") {
                 UrlBlockerCard(
@@ -775,6 +787,49 @@ fun UrlBlockerCard(
                     text = if (enabled) "已启用" else "未启用",
                     style = MaterialTheme.typography.bodySmall,
                     color = if (enabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            PerfIcon(
+                imageVector = PerfIcon.KeyboardArrowRight,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+}
+
+@Composable
+fun FocusModeCard(
+    isActive: Boolean,
+    onClick: () -> Unit
+) {
+    ElevatedCard(
+        colors = surfaceCardColors,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp)
+            .clickable { onClick() },
+    ) {
+        Row(
+            modifier = Modifier
+                .padding(16.dp)
+                .fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            PerfIcon(
+                imageVector = PerfIcon.Mindful,
+                tint = if (isActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(modifier = Modifier.width(16.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "专注模式",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Text(
+                    text = if (isActive) "进行中" else "未启动",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = if (isActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
             PerfIcon(

@@ -48,6 +48,7 @@ fun onA11yFeatInit() = service.run {
     useCaptureVolume()
     useRuleChangedLog()
     useUrlBlocker()
+    useFocusMode()
     onA11yEvent { onA11yFeatEvent(it) }
     onCreated { StatusService.autoStart() }
     onDestroyed {
@@ -288,5 +289,18 @@ private fun A11yService.useRuleChangedLog() {
 private fun A11yService.useUrlBlocker() {
     onA11yEvent { event ->
         UrlBlockerEngine.onAccessibilityEvent(event, this)
+    }
+}
+
+private fun A11yService.useFocusMode() {
+    var lastAppId = ""
+    scope.launch(Dispatchers.Default) {
+        topActivityFlow.collect { activity ->
+            val currentAppId = activity.appId
+            if (currentAppId.isNotEmpty() && currentAppId != lastAppId) {
+                lastAppId = currentAppId
+                FocusModeEngine.onAppChanged(currentAppId, this@useFocusMode)
+            }
+        }
     }
 }

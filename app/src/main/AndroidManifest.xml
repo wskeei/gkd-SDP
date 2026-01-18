@@ -190,6 +190,10 @@
             android:exported="false" />
 
         <service
+            android:name=".service.FocusOverlayService"
+            android:exported="false" />
+
+        <service
             android:name=".service.GkdTileService"
             android:exported="true"
             android:icon="@drawable/ic_status"
