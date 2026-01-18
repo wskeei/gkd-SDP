@@ -15,18 +15,20 @@ import li.songe.gkd.sdp.data.ActionLog
 import li.songe.gkd.sdp.data.ActivityLog
 import li.songe.gkd.sdp.data.AppConfig
 import li.songe.gkd.sdp.data.AppVisitLog
+import li.songe.gkd.sdp.data.BrowserConfig
 import li.songe.gkd.sdp.data.CategoryConfig
+import li.songe.gkd.sdp.data.ConstraintConfig
 import li.songe.gkd.sdp.data.FocusLock
+import li.songe.gkd.sdp.data.InterceptConfig
 import li.songe.gkd.sdp.data.Snapshot
 import li.songe.gkd.sdp.data.SubsConfig
 import li.songe.gkd.sdp.data.SubsItem
-import li.songe.gkd.sdp.data.InterceptConfig
-import li.songe.gkd.sdp.data.ConstraintConfig
+import li.songe.gkd.sdp.data.UrlBlockRule
 import li.songe.gkd.sdp.util.dbFolder
 import li.songe.gkd.sdp.util.json
 
 @Database(
-    version = 18,
+    version = 19,
     entities = [
         SubsItem::class,
         Snapshot::class,
@@ -40,6 +42,8 @@ import li.songe.gkd.sdp.util.json
         FocusLock::class,
         InterceptConfig::class,
         ConstraintConfig::class,
+        UrlBlockRule::class,
+        BrowserConfig::class,
     ],
     autoMigrations = [
         AutoMigration(from = 1, to = 2),
@@ -59,6 +63,7 @@ import li.songe.gkd.sdp.util.json
         AutoMigration(from = 15, to = 16),
         AutoMigration(from = 16, to = 17),
         AutoMigration(from = 17, to = 18),
+        AutoMigration(from = 18, to = 19),
     ]
 )
 @TypeConverters(DbConverters::class)
@@ -75,6 +80,8 @@ abstract class AppDb : RoomDatabase() {
     abstract fun focusLockDao(): FocusLock.FocusLockDao
     abstract fun interceptConfigDao(): InterceptConfig.InterceptConfigDao
     abstract fun constraintConfigDao(): ConstraintConfig.ConstraintConfigDao
+    abstract fun urlBlockRuleDao(): UrlBlockRule.UrlBlockRuleDao
+    abstract fun browserConfigDao(): BrowserConfig.BrowserConfigDao
 }
 
 @RenameColumn(
@@ -141,4 +148,6 @@ object DbSet {
     val focusLockDao get() = db.focusLockDao()
     val interceptConfigDao get() = db.interceptConfigDao()
     val constraintConfigDao get() = db.constraintConfigDao()
+    val urlBlockRuleDao get() = db.urlBlockRuleDao()
+    val browserConfigDao get() = db.browserConfigDao()
 }

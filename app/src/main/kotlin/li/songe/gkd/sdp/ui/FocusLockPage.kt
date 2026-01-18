@@ -53,7 +53,9 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.ui.platform.LocalContext
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
+import com.ramcosta.composedestinations.generated.destinations.UrlBlockPageDestination
 import kotlinx.coroutines.launch
+import li.songe.gkd.sdp.a11y.UrlBlockerEngine
 import li.songe.gkd.sdp.data.ConstraintConfig
 import li.songe.gkd.sdp.data.InterceptConfig
 import li.songe.gkd.sdp.ui.component.PerfIcon
@@ -101,7 +103,18 @@ fun FocusLockPage() {
             )
         }
     ) { padding ->
+        val urlBlockerEnabled by UrlBlockerEngine.enabledFlow.collectAsState()
+
         LazyColumn(modifier = Modifier.scaffoldPadding(padding)) {
+            // URL 拦截卡片 - 作为内置订阅
+            item(key = "url_blocker") {
+                UrlBlockerCard(
+                    enabled = urlBlockerEnabled,
+                    onClick = { mainVm.navigatePage(UrlBlockPageDestination) }
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+            }
+
             if (subStates.isEmpty()) {
                 item {
                     Text(
@@ -719,12 +732,55 @@ private fun formatRemainingTime(millis: Long): String {
     val remainingMinutes = minutes % 60
     val days = hours / 24
     val remainingHours = hours % 24
-    
+
     return if (days > 0) {
         "${days}天${remainingHours}小时"
     } else if (hours > 0) {
         "${hours}小时${remainingMinutes}分钟"
     } else {
         "${minutes}分钟"
+    }
+}
+
+@Composable
+fun UrlBlockerCard(
+    enabled: Boolean,
+    onClick: () -> Unit
+) {
+    ElevatedCard(
+        colors = surfaceCardColors,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp)
+            .clickable { onClick() },
+    ) {
+        Row(
+            modifier = Modifier
+                .padding(16.dp)
+                .fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            PerfIcon(
+                imageVector = PerfIcon.Block,
+                tint = if (enabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(modifier = Modifier.width(16.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "网址拦截",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Text(
+                    text = if (enabled) "已启用" else "未启用",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = if (enabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            PerfIcon(
+                imageVector = PerfIcon.KeyboardArrowRight,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
     }
 }

@@ -47,6 +47,7 @@ fun onA11yFeatInit() = service.run {
     useAliveOverlayView()
     useCaptureVolume()
     useRuleChangedLog()
+    useUrlBlocker()
     onA11yEvent { onA11yFeatEvent(it) }
     onCreated { StatusService.autoStart() }
     onDestroyed {
@@ -281,5 +282,11 @@ private fun A11yService.useRuleChangedLog() {
                 }.toTypedArray())
             }
         }
+    }
+}
+
+private fun A11yService.useUrlBlocker() {
+    onA11yEvent { event ->
+        UrlBlockerEngine.onAccessibilityEvent(event, this)
     }
 }
