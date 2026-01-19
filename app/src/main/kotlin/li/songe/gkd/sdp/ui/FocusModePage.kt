@@ -187,6 +187,10 @@ fun FocusModePage() {
                 whitelistPickerMode = "manual"
                 showWhitelistPicker = true
             },
+            onShowWechatContactPicker = {
+                wechatContactPickerMode = "manual"
+                showWechatContactPicker = true
+            },
             onStart = {
                 vm.startManualSession()
                 showQuickStartSheet = false
@@ -540,6 +544,7 @@ private fun QuickStartSheet(
     vm: FocusModeVm,
     onDismiss: () -> Unit,
     onShowWhitelistPicker: () -> Unit,
+    onShowWechatContactPicker: () -> Unit,
     onStart: () -> Unit
 ) {
     ModalBottomSheet(
@@ -652,6 +657,48 @@ private fun QuickStartSheet(
                             selected = true,
                             onClick = { vm.removeFromManualWhitelist(packageName) },
                             label = { Text(appName) }
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // 微信联系人白名单
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    text = "微信联系人白名单 (${vm.manualWechatWhitelist.size})",
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.weight(1f)
+                )
+                TextButton(onClick = onShowWechatContactPicker) {
+                    Text("选择")
+                }
+            }
+
+            if (vm.manualWechatWhitelist.isNotEmpty()) {
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    vm.manualWechatWhitelist.forEach { wechatId ->
+                        val contact = remember(wechatId) {
+                            try {
+                                kotlinx.coroutines.runBlocking {
+                                    li.songe.gkd.sdp.db.DbSet.wechatContactDao.getByIds(listOf(wechatId)).firstOrNull()
+                                }
+                            } catch (e: Exception) {
+                                null
+                            }
+                        }
+                        val displayName = contact?.displayName ?: wechatId
+                        FilterChip(
+                            selected = true,
+                            onClick = { vm.removeFromManualWechatWhitelist(wechatId) },
+                            label = { Text(displayName) }
                         )
                     }
                 }
@@ -1262,6 +1309,24 @@ private fun WechatContactPickerDialog(
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true
                 )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // 更新微信联系人按钮
+                val isFetching by li.songe.gkd.sdp.a11y.WechatContactFetcher.isFetchingFlow.collectAsState()
+                val fetchProgress by li.songe.gkd.sdp.a11y.WechatContactFetcher.fetchProgressFlow.collectAsState()
+
+                Button(
+                    onClick = {
+                        li.songe.gkd.sdp.service.A11yService.instance?.let { service ->
+                            li.songe.gkd.sdp.a11y.WechatContactFetcher.startFetch(service)
+                        }
+                    },
+                    enabled = !isFetching,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(if (isFetching) fetchProgress else "更新微信联系人")
+                }
 
                 Spacer(modifier = Modifier.height(8.dp))
 
