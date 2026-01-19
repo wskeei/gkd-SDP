@@ -206,20 +206,33 @@ object FocusModeEngine {
 
     /**
      * 显示专注模式全屏拦截界面
+     * @param overrideWhitelist 直接指定白名单（用于会话刚创建时 Flow 还未更新的情况）
+     * @param overrideMessage 直接指定拦截消息
+     * @param overrideEndTime 直接指定结束时间
+     * @param overrideIsLocked 直接指定锁定状态
      */
-    private fun showFocusOverlay(service: A11yService, packageName: String) {
+    private fun showFocusOverlay(
+        service: A11yService,
+        packageName: String,
+        overrideWhitelist: List<String>? = null,
+        overrideMessage: String? = null,
+        overrideEndTime: Long? = null,
+        overrideIsLocked: Boolean? = null
+    ) {
         try {
-            val message = currentMessageFlow.value
-            val whitelist = currentWhitelistFlow.value
+            val message = overrideMessage ?: currentMessageFlow.value
+            val whitelist = overrideWhitelist ?: currentWhitelistFlow.value
             val session = cachedSession
             val activeRule = cachedRules.firstOrNull { it.isActiveNow() }
+            val isLocked = overrideIsLocked ?: (session?.isCurrentlyLocked == true || activeRule?.isCurrentlyLocked == true)
+            val endTime = overrideEndTime ?: session?.endTime ?: 0L
 
             val intent = Intent(service, FocusOverlayService::class.java).apply {
                 putExtra("message", message)
                 putExtra("whitelist", json.encodeToString(whitelist))
                 putExtra("blockedApp", packageName)
-                putExtra("isLocked", session?.isCurrentlyLocked == true || activeRule?.isCurrentlyLocked == true)
-                putExtra("endTime", session?.endTime ?: 0L)
+                putExtra("isLocked", isLocked)
+                putExtra("endTime", endTime)
             }
             service.startService(intent)
         } catch (e: Exception) {
@@ -257,9 +270,16 @@ object FocusModeEngine {
         DbSet.focusSessionDao.insert(session)
         LogUtils.d("Manual focus session started: ${durationMinutes}min, whitelist: ${whitelistApps.size} apps")
 
-        // 立即触发拦截界面
+        // 立即触发拦截界面，直接传递参数（因为 Flow 可能还未更新）
         A11yService.instance?.let { service ->
-            showFocusOverlay(service, "manual_start")
+            showFocusOverlay(
+                service = service,
+                packageName = "manual_start",
+                overrideWhitelist = whitelistApps,
+                overrideMessage = interceptMessage,
+                overrideEndTime = endTime,
+                overrideIsLocked = isLocked
+            )
         }
     }
 
