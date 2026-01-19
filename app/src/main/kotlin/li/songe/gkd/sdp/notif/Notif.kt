@@ -151,3 +151,12 @@ val eventNotif = Notif(
     uri = "gkd://page/1",
     stopService = EventService::class,
 )
+
+val focusEndNotif = Notif(
+    channel = NotifChannel.FocusMode,
+    id = 108,
+    title = "专注结束",
+    text = "专注时间已结束，做得很好！",
+    ongoing = false,
+    autoCancel = true,
+)

@@ -37,7 +37,11 @@ class FocusModeVm : BaseViewModel() {
     var ruleInterceptMessage by mutableStateOf("专注当下")
 
     // 手动启动表单
-    var manualDurationMinutes by mutableIntStateOf(30)
+    var manualHours by mutableIntStateOf(0)
+    var manualMinutes by mutableIntStateOf(30)
+    val totalDurationMinutes: Int
+        get() = manualHours * 60 + manualMinutes
+
     var manualWhitelistApps by mutableStateOf<List<String>>(emptyList())
     var manualMessage by mutableStateOf("专注当下")
     var manualIsLocked by mutableStateOf(false)
@@ -48,6 +52,10 @@ class FocusModeVm : BaseViewModel() {
     var isCustomLockDuration by mutableStateOf(false)
     var customLockDaysText by mutableStateOf("")
     var customLockHoursText by mutableStateOf("")
+
+    // 白名单选择器搜索和过滤
+    var whitelistSearchQuery by mutableStateOf("")
+    var showSystemAppsInWhitelist by mutableStateOf(false)
 
     fun resetRuleForm() {
         editingRule = null
@@ -115,13 +123,13 @@ class FocusModeVm : BaseViewModel() {
     }
 
     fun startManualSession() = viewModelScope.launch(Dispatchers.IO) {
-        if (manualDurationMinutes <= 0) {
-            toast("请输入有效的专注时长")
+        if (totalDurationMinutes < 5) {
+            toast("专注时长至少为 5 分钟")
             return@launch
         }
 
         FocusModeEngine.startManualSession(
-            durationMinutes = manualDurationMinutes,
+            durationMinutes = totalDurationMinutes,
             whitelistApps = manualWhitelistApps,
             interceptMessage = manualMessage.ifBlank { "专注当下" },
             isLocked = manualIsLocked,

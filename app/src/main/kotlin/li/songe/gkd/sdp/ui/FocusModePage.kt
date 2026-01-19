@@ -501,15 +501,50 @@ private fun QuickStartSheet(
 
             // 时长选择
             Text(
-                text = "专注时长: ${vm.manualDurationMinutes} 分钟",
-                style = MaterialTheme.typography.bodyMedium
+                text = "专注时长",
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Medium
             )
-            Slider(
-                value = vm.manualDurationMinutes.toFloat(),
-                onValueChange = { vm.manualDurationMinutes = it.toInt() },
-                valueRange = 5f..240f,
-                steps = 46
-            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                OutlinedTextField(
+                    value = vm.manualHours.toString(),
+                    onValueChange = {
+                        val hours = it.toIntOrNull()?.coerceIn(0, 48) ?: 0
+                        vm.manualHours = hours
+                    },
+                    label = { Text("小时") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    modifier = Modifier.weight(1f),
+                    singleLine = true
+                )
+
+                OutlinedTextField(
+                    value = vm.manualMinutes.toString(),
+                    onValueChange = {
+                        val minutes = it.toIntOrNull()?.coerceIn(0, 59) ?: 0
+                        vm.manualMinutes = minutes
+                    },
+                    label = { Text("分钟") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    modifier = Modifier.weight(1f),
+                    singleLine = true
+                )
+            }
+
+            // 显示验证提示
+            if (vm.totalDurationMinutes < 5) {
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "最短时长为 5 分钟",
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
 
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -752,44 +787,109 @@ private fun WhitelistPickerDialog(
 ) {
     var selectedApps by remember { mutableStateOf(currentWhitelist.toSet()) }
     val appInfoMap by appInfoMapFlow.collectAsState()
+    val vm = viewModel<FocusModeVm>()
 
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("选择白名单应用") },
         text = {
-            LazyColumn {
-                items(appInfoMap.values.filterNot { it.hidden }.sortedBy { it.name }.toList()) { appInfo ->
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable {
-                                selectedApps = if (selectedApps.contains(appInfo.id)) {
-                                    selectedApps - appInfo.id
+            Column(modifier = Modifier.fillMaxWidth()) {
+                // 搜索框
+                OutlinedTextField(
+                    value = vm.whitelistSearchQuery,
+                    onValueChange = { vm.whitelistSearchQuery = it },
+                    placeholder = { Text("搜索应用") },
+                    leadingIcon = { Icon(PerfIcon.Search, null) },
+                    trailingIcon = {
+                        if (vm.whitelistSearchQuery.isNotEmpty()) {
+                            IconButton(onClick = { vm.whitelistSearchQuery = "" }) {
+                                Icon(PerfIcon.Close, "清除")
+                            }
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // 系统应用开关
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { vm.showSystemAppsInWhitelist = !vm.showSystemAppsInWhitelist }
+                        .padding(vertical = 8.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("显示系统应用")
+                    Switch(
+                        checked = vm.showSystemAppsInWhitelist,
+                        onCheckedChange = { vm.showSystemAppsInWhitelist = it }
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // 应用列表
+                LazyColumn {
+                    items(
+                        appInfoMap.values
+                            .filterNot { !vm.showSystemAppsInWhitelist && it.isSystem }
+                            .filter { appInfo ->
+                                if (vm.whitelistSearchQuery.isBlank()) {
+                                    !appInfo.hidden
                                 } else {
-                                    selectedApps + appInfo.id
+                                    !appInfo.hidden && (
+                                        appInfo.name.contains(vm.whitelistSearchQuery, ignoreCase = true) ||
+                                        appInfo.id.contains(vm.whitelistSearchQuery, ignoreCase = true)
+                                    )
                                 }
                             }
-                            .padding(vertical = 8.dp)
-                    ) {
-                        Checkbox(
-                            checked = selectedApps.contains(appInfo.id),
-                            onCheckedChange = {
-                                selectedApps = if (it) {
-                                    selectedApps + appInfo.id
-                                } else {
-                                    selectedApps - appInfo.id
+                            .sortedBy { it.name }
+                            .toList()
+                    ) { appInfo ->
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    selectedApps = if (selectedApps.contains(appInfo.id)) {
+                                        selectedApps - appInfo.id
+                                    } else {
+                                        selectedApps + appInfo.id
+                                    }
                                 }
+                                .padding(vertical = 8.dp)
+                        ) {
+                            Checkbox(
+                                checked = selectedApps.contains(appInfo.id),
+                                onCheckedChange = {
+                                    selectedApps = if (it) {
+                                        selectedApps + appInfo.id
+                                    } else {
+                                        selectedApps - appInfo.id
+                                    }
+                                }
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            AppIcon(appId = appInfo.id)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Column {
+                                Text(
+                                    text = appInfo.name,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                                Text(
+                                    text = appInfo.id,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
                             }
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        AppIcon(appId = appInfo.id)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = appInfo.name,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
+                        }
                     }
                 }
             }

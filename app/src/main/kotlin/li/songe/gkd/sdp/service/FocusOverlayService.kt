@@ -2,7 +2,10 @@ package li.songe.gkd.sdp.service
 
 import android.content.Intent
 import android.graphics.PixelFormat
+import android.os.Handler
+import android.os.Looper
 import android.view.WindowManager
+import android.widget.Toast
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -26,9 +29,11 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.ComposeView
@@ -101,13 +106,26 @@ class FocusOverlayService : LifecycleService(), SavedStateRegistryOwner {
                             try {
                                 val launchIntent = app.packageManager.getLaunchIntentForPackage(packageName)
                                 if (launchIntent != null) {
-                                    launchIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                    // 使用正确的启动标志
+                                    launchIntent.addFlags(
+                                        Intent.FLAG_ACTIVITY_NEW_TASK or
+                                        Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED or
+                                        Intent.FLAG_ACTIVITY_CLEAR_TOP
+                                    )
+
+                                    // 启动应用
                                     startActivity(launchIntent)
+
+                                    // 延迟关闭服务，确保应用已启动
+                                    Handler(Looper.getMainLooper()).postDelayed({
+                                        stopSelf()
+                                    }, 300)
+                                } else {
+                                    Toast.makeText(this@FocusOverlayService, "无法启动该应用", Toast.LENGTH_SHORT).show()
                                 }
                             } catch (e: Exception) {
-                                // Ignore
+                                Toast.makeText(this@FocusOverlayService, "启动失败：${e.message}", Toast.LENGTH_SHORT).show()
                             }
-                            stopSelf()
                         }
                     )
                 }
@@ -174,6 +192,16 @@ private fun MainInterceptContent(
     endTime: Long,
     onShowWhitelist: () -> Unit
 ) {
+    // 添加自动刷新机制
+    var refreshTrigger by remember { mutableIntStateOf(0) }
+
+    LaunchedEffect(endTime) {
+        while (endTime > 0) {
+            kotlinx.coroutines.delay(60_000L)  // 每 60 秒刷新一次
+            refreshTrigger++
+        }
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -190,9 +218,11 @@ private fun MainInterceptContent(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // 显示剩余时间（如果有结束时间）
+        // 显示剩余时间（会随 refreshTrigger 变化自动重组）
         if (endTime > 0) {
-            val remainingMinutes = ((endTime - System.currentTimeMillis()) / 60000).coerceAtLeast(0)
+            val now = System.currentTimeMillis()
+            val remainingMinutes = ((endTime - now) / 60000).coerceAtLeast(0)
+
             if (remainingMinutes > 0) {
                 Text(
                     text = if (remainingMinutes >= 60) {

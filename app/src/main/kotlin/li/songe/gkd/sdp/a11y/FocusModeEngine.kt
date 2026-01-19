@@ -3,6 +3,7 @@ package li.songe.gkd.sdp.a11y
 import android.content.Intent
 import android.util.Log
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
@@ -16,6 +17,7 @@ import li.songe.gkd.sdp.data.FocusSession
 import li.songe.gkd.sdp.db.DbSet
 import li.songe.gkd.sdp.service.A11yService
 import li.songe.gkd.sdp.service.FocusOverlayService
+import li.songe.gkd.sdp.notif.focusEndNotif
 import li.songe.gkd.sdp.util.LogUtils
 import li.songe.gkd.sdp.util.json
 import java.util.concurrent.ConcurrentHashMap
@@ -81,13 +83,19 @@ object FocusModeEngine {
             }
         }
 
-        // 监听会话过期
+        // 监听会话过期并自动结束
         appScope.launch(Dispatchers.IO) {
-            activeSessionFlow.collect { session ->
+            while (true) {
+                delay(30_000L)  // 每 30 秒检查一次
+
+                val session = cachedSession
                 if (session != null && session.isActive && !session.isValidNow()) {
                     // 会话已过期，停用
                     DbSet.focusSessionDao.deactivate()
                     LogUtils.d("Focus session expired, deactivated")
+
+                    // 发送结束通知
+                    focusEndNotif.notifySelf()
                 }
             }
         }

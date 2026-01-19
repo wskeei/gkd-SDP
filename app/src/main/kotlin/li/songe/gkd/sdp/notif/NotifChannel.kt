@@ -19,10 +19,16 @@ sealed class NotifChannel(
         id = "1",
         name = "保存快照通知",
     )
+
+    data object FocusMode : NotifChannel(
+        id = "2",
+        name = "专注模式通知",
+        desc = "专注会话开始和结束通知",
+    )
 }
 
 fun initChannel() {
-    val channels = arrayOf(NotifChannel.Default, NotifChannel.Snapshot)
+    val channels = arrayOf(NotifChannel.Default, NotifChannel.Snapshot, NotifChannel.FocusMode)
     val manager = NotificationManagerCompat.from(app)
     // delete old channels
     manager.notificationChannels.filter { channels.none { c -> c.id == it.id } }.forEach {
