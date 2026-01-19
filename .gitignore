@@ -26,9 +26,11 @@ local.properties
 /gradle/libs.versions.updates.toml
 .claude/
 CLAUDE.md
-
+GEMINI.md
+新功能.md
 /更新.md
 
 # Build artifacts
 /app/gkd/
 /更新
+.worktrees/
