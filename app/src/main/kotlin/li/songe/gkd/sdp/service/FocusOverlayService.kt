@@ -138,8 +138,17 @@ class FocusOverlayService : LifecycleService(), SavedStateRegistryOwner {
                         },
                         onOpenWechatChat = { wechatId ->
                             try {
+                                val cleanId = wechatId.trim().filter { !it.isWhitespace() }
+                                
+                                // 1. 复制到剪贴板 (作为备选)
+                                val clipboard = app.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                                val clip = android.content.ClipData.newPlainText("wechat_id", cleanId)
+                                clipboard.setPrimaryClip(clip)
+                                Toast.makeText(app, "已复制微信号: $cleanId", Toast.LENGTH_SHORT).show()
+
+                                // 2. 尝试跳转
                                 val intent = Intent(Intent.ACTION_VIEW).apply {
-                                    data = android.net.Uri.parse("weixin://dl/chat?$wechatId")
+                                    data = android.net.Uri.parse("weixin://dl/chat?$cleanId")
                                     addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                                 }
                                 startActivity(intent)
@@ -151,7 +160,7 @@ class FocusOverlayService : LifecycleService(), SavedStateRegistryOwner {
                             } catch (e: Exception) {
                                 Toast.makeText(
                                     this@FocusOverlayService,
-                                    "跳转失败：${e.message ?: "微信 Scheme 不支持"}",
+                                    "跳转失败：${e.message}",
                                     Toast.LENGTH_LONG
                                 ).show()
                             }

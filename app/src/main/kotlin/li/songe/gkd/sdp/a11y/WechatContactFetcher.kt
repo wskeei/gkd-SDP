@@ -91,16 +91,14 @@ object WechatContactFetcher {
         processedNodes.clear()
         failedAttempts.clear()
 
-        // FetchOverlayController.show(accessibilityService)
+        FetchOverlayController.show(accessibilityService)
 
         collectJob?.cancel()
-        /*
         collectJob = appScope.launch(Dispatchers.Main) {
             fetchStateFlow.collect { state ->
                 FetchOverlayController.update(state)
             }
         }
-        */
 
         appScope.launch(Dispatchers.IO) {
             try {
@@ -684,7 +682,7 @@ object WechatContactFetcher {
         // Delay slightly to let user see "Finished" status
         delay(2000)
         
-        // FetchOverlayController.hide()
+        FetchOverlayController.hide()
         collectJob?.cancel()
         collectJob = null
         service = null
@@ -695,7 +693,7 @@ object WechatContactFetcher {
     fun stopFetch() {
         isFetching = false
         updateStatus(text = "已停止抓取", fetching = false)
-        // FetchOverlayController.hide()
+        FetchOverlayController.hide()
         collectJob?.cancel()
         collectJob = null
         service = null
