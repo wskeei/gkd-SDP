@@ -47,6 +47,7 @@ object WechatContactFetcher {
     private var currentScrollHash = 0
     private var noChangeCount = 0
     private val processedNodes = mutableSetOf<String>()
+    private val failedAttempts = mutableMapOf<String, Int>()
 
     private fun updateStatus(text: String? = null, target: String? = null, count: Int? = null, fetching: Boolean? = null) {
         fetchStateFlow.update { currentState ->
@@ -88,6 +89,7 @@ object WechatContactFetcher {
         currentScrollHash = 0
         noChangeCount = 0
         processedNodes.clear()
+        failedAttempts.clear()
 
         // FetchOverlayController.show(accessibilityService)
 
@@ -152,10 +154,11 @@ object WechatContactFetcher {
             for (node in contactNodes) {
                 if (!isFetching) break
 
+                val nodeText = getNodeText(node) ?: "Unknown"
                 // 生成节点唯一标识 (使用 文本+屏幕区域 组合)
                 val rect = Rect()
                 node.getBoundsInScreen(rect)
-                val nodeId = "${getNodeText(node)}_${rect}"
+                val nodeId = "${nodeText}_${rect}"
                 
                 if (nodeId in processedNodes) continue
 
@@ -163,16 +166,27 @@ object WechatContactFetcher {
 
                 val success = processSingleContact(node)
                 
-                // 无论成功失败，都标记为已处理，防止死循环卡在某一个节点
-                processedNodes.add(nodeId)
-                
                 if (success) {
+                    processedNodes.add(nodeId)
                     hasProcessedAny = true
                     retryCount = 0 // 重置重试计数
                 } else {
-                    // 失败反馈
-                    updateStatus("抓取失败，跳过...", count = fetchCount)
-                    delay(1000)
+                    // 失败重试逻辑
+                    val fails = failedAttempts[nodeText] ?: 0
+                    if (fails < 2) {
+                        failedAttempts[nodeText] = fails + 1
+                        LogUtils.d(TAG, "Fetch failed for $nodeText, attempting micro-scroll retry ($fails/2)")
+                        updateStatus("抓取失败，微调位置重试...")
+                        performMicroScroll(rootNode)
+                        delay(800)
+                        // 中断当前循环，重新扫描屏幕以获取新位置的节点
+                        break 
+                    } else {
+                        LogUtils.d(TAG, "Fetch failed for $nodeText after retries, skipping")
+                        processedNodes.add(nodeId) // 放弃，标记为已处理
+                        updateStatus("重试失败，跳过此人", count = fetchCount)
+                        delay(1000)
+                    }
                 }
 
                 // 每抓取 10-15 个联系人，暂停一下
@@ -181,25 +195,45 @@ object WechatContactFetcher {
                 }
             }
 
-            // 4. 滚动加载更多
-            val preHash = calculateScreenHash(rootNode)
-            val scrolled = performScroll(listNode, rootNode)
+            // 如果刚刚因为重试而中断了循环 (break)，hasProcessedAny 可能为 false，
+            // 但我们不需要执行大滚动，因为我们刚刚执行了微调。
+            // 此时应该直接进入下一次 while 循环重新 findValidContactNodes。
+            // 只有当所有节点都处理完了（正常遍历完），才执行翻页。
             
-            if (!scrolled) {
-                LogUtils.d(TAG, "Scroll action failed")
-                noChangeCount++
-            } else {
-                // 等待滚动完成
-                delay(1000) 
-                val postHash = calculateScreenHash(service?.rootInActiveWindow ?: rootNode)
-                if (preHash == postHash) {
+            // 如何判断是 break 出来的？
+            // 简单办法：如果刚执行了 performMicroScroll，屏幕内容变了，不用大翻页。
+            
+            // 如果所有节点都在 processedNodes 里，或者 contactNodes 为空，才需要翻页。
+            // 我们可以检查 contactNodes 最后一个是否被处理了。
+            
+            val allProcessed = contactNodes.all { node ->
+                val r = Rect()
+                node.getBoundsInScreen(r)
+                val id = "${getNodeText(node)}_${r}"
+                id in processedNodes
+            }
+
+            if (allProcessed) {
+                // 4. 滚动加载更多
+                val preHash = calculateScreenHash(rootNode)
+                val scrolled = performScroll(listNode, rootNode)
+                
+                if (!scrolled) {
+                    LogUtils.d(TAG, "Scroll action failed")
                     noChangeCount++
                 } else {
-                    noChangeCount = 0
-                    // 滚动成功，清理旧缓存防止内存溢出 (只保留最近200个)
-                    if (processedNodes.size > 200) {
-                        val toRemove = processedNodes.take(100)
-                        processedNodes.removeAll(toRemove.toSet())
+                    // 等待滚动完成
+                    delay(1000) 
+                    val postHash = calculateScreenHash(service?.rootInActiveWindow ?: rootNode)
+                    if (preHash == postHash) {
+                        noChangeCount++
+                    } else {
+                        noChangeCount = 0
+                        // 滚动成功，清理旧缓存
+                        if (processedNodes.size > 200) {
+                            val toRemove = processedNodes.take(100)
+                            processedNodes.removeAll(toRemove.toSet())
+                        }
                     }
                 }
             }
@@ -215,6 +249,25 @@ object WechatContactFetcher {
                 break
             }
         }
+    }
+
+    private fun performMicroScroll(root: AccessibilityNodeInfo): Boolean {
+        // 向上轻微滑动 (约屏幕高度的 10%)
+        val rect = Rect()
+        root.getBoundsInScreen(rect)
+        val centerX = rect.centerX().toFloat()
+        val startY = rect.centerY().toFloat()
+        val endY = startY - (rect.height() * 0.1f) // 向上滑
+
+        val path = Path()
+        path.moveTo(centerX, startY)
+        path.lineTo(centerX, endY)
+
+        val gesture = GestureDescription.Builder()
+            .addStroke(GestureDescription.StrokeDescription(path, 0, 300))
+            .build()
+
+        return service?.dispatchGesture(gesture, null, null) ?: false
     }
 
     private suspend fun processSingleContact(node: AccessibilityNodeInfo): Boolean {
