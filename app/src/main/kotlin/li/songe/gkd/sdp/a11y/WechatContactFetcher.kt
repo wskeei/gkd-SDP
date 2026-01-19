@@ -64,6 +64,13 @@ object WechatContactFetcher {
         if (fetching != null) {
             isFetchingFlow.value = fetching
         }
+        
+        if (target != null) {
+            toast("已抓取: $target")
+        }
+        if (text != null && (text.contains("失败") || text.contains("完成") || text.contains("停止"))) {
+            toast(text)
+        }
     }
 
     fun startFetch(accessibilityService: AccessibilityService) {
@@ -82,14 +89,16 @@ object WechatContactFetcher {
         noChangeCount = 0
         processedNodes.clear()
 
-        FetchOverlayController.show(accessibilityService)
+        // FetchOverlayController.show(accessibilityService)
 
         collectJob?.cancel()
+        /*
         collectJob = appScope.launch(Dispatchers.Main) {
             fetchStateFlow.collect { state ->
                 FetchOverlayController.update(state)
             }
         }
+        */
 
         appScope.launch(Dispatchers.IO) {
             try {
@@ -442,29 +451,60 @@ object WechatContactFetcher {
     }
 
     private fun findWechatId(rootNode: AccessibilityNodeInfo): String? {
-        // 策略1: 查找包含"微信号"的节点，取其兄弟或子节点
+        val allText = mutableListOf<String>()
+        collectAllText(rootNode, allText)
+        LogUtils.d(TAG, "Detail Page Content Dump: $allText")
+
+        // 策略1: 查找包含"微信号"的节点
         val nodes = rootNode.findAccessibilityNodeInfosByText("微信号")
+        LogUtils.d(TAG, "Found '微信号' nodes: ${nodes.size}")
+        
         for (node in nodes) {
-            // 情况A: 文本是 "微信号: wxid_xxx"
             val text = node.text?.toString()
+            LogUtils.d(TAG, "Checking node: text='$text', contentDesc='${node.contentDescription}'")
+            
+            // 情况A: 文本是 "微信号: wxid_xxx"
             if (text != null && text.contains("微信号") && text.length > 4) {
                 val id = text.substringAfter("微信号").replace(":", "").trim()
+                LogUtils.d(TAG, "Candidate from text: '$id'")
                 if (isValidWechatId(id)) return id
             }
             
             // 情况B: 兄弟节点
-            val parent = node.parent ?: continue
-            for (i in 0 until parent.childCount) {
-                val sibling = parent.getChild(i) ?: continue
-                val siblingText = sibling.text?.toString() ?: continue
-                if (siblingText != "微信号" && siblingText.isNotBlank() && isValidWechatId(siblingText)) {
-                    return siblingText.trim()
+            val parent = node.parent
+            if (parent != null) {
+                LogUtils.d(TAG, "Checking siblings of '${text}' (parent childCount=${parent.childCount})")
+                for (i in 0 until parent.childCount) {
+                    val sibling = parent.getChild(i) ?: continue
+                    val siblingText = sibling.text?.toString()
+                    LogUtils.d(TAG, "  Sibling $i: '$siblingText'")
+                    if (siblingText != null && siblingText != "微信号" && siblingText.isNotBlank() && isValidWechatId(siblingText)) {
+                        LogUtils.d(TAG, "Found ID in sibling: '$siblingText'")
+                        return siblingText.trim()
+                    }
                 }
             }
         }
 
-        // 策略2: 全局扫描符合微信号格式的文本 (wxid_... 或 6-20位字母数字)
-        return findTextByRegex(rootNode)
+        // 策略2: 全局扫描符合微信号格式的文本
+        LogUtils.d(TAG, "Starting regex scan...")
+        val regexMatch = findTextByRegex(rootNode)
+        if (regexMatch != null) {
+            LogUtils.d(TAG, "Regex scan matched: '$regexMatch'")
+        } else {
+            LogUtils.d(TAG, "Regex scan failed")
+        }
+        return regexMatch
+    }
+
+    private fun collectAllText(node: AccessibilityNodeInfo, list: MutableList<String>) {
+        if (!node.text.isNullOrEmpty()) {
+            list.add(node.text.toString())
+        }
+        for (i in 0 until node.childCount) {
+            val child = node.getChild(i) ?: continue
+            collectAllText(child, list)
+        }
     }
 
     private fun isValidWechatId(text: String): Boolean {
@@ -480,9 +520,28 @@ object WechatContactFetcher {
     private fun findTextByRegex(node: AccessibilityNodeInfo): String? {
         val text = node.text?.toString()
         if (text != null) {
-            // 优先匹配 wxid_
+            // 策略A: 文本包含 "微信号" (处理 "微信号: xxx" 在同一节点的情况)
+            if (text.contains("微信号")) {
+                // 提取冒号后面的部分
+                val candidate = text.substringAfter("微信号").replace(":", "").replace("：", "").trim()
+                if (isValidWechatId(candidate)) {
+                    LogUtils.d(TAG, "Regex scan found via prefix: '$candidate' (origin: '$text')")
+                    return candidate
+                }
+            }
+
+            // 策略B: 优先匹配 wxid_
             if (text.startsWith("wxid_", ignoreCase = true)) return text
-            // 匹配纯微信号格式 (仅字母数字下划线减号，首字符字母，6-20位)
+            
+            // 策略C: 匹配纯微信号格式 (仅字母数字下划线减号，首字符字母，6-20位)
+            // 这里的判断比较严格，防止误判 "地区: China"
+            // isValidWechatId 已经包含了基本的字符检查
+            if (isValidWechatId(text)) {
+                 // 再次确认不包含中文等干扰字符
+                 if (!text.any { it > '\u007F' }) { // 简单判断非ASCII字符
+                     return text
+                 }
+            }
         }
 
         for (i in 0 until node.childCount) {
@@ -494,12 +553,32 @@ object WechatContactFetcher {
     }
 
     private fun findNickname(rootNode: AccessibilityNodeInfo): String? {
-        // 通常昵称在顶部标题栏
+        // 策略: 遍历所有文本，找第一个"看起来像昵称"的短文本
+        // 通常昵称在顶部，或者在头像旁边
         val textNodes = mutableListOf<AccessibilityNodeInfo>()
         findTextNodes(rootNode, textNodes)
 
-        // 返回第一个非空文本（通常是昵称）
-        return textNodes.firstOrNull()?.text?.toString()?.trim()
+        for (node in textNodes) {
+            val text = node.text?.toString()?.trim() ?: continue
+            if (text.isEmpty()) continue
+            
+            // 排除系统关键词
+            if (text == "返回" || text == "更多" || text == "朋友资料" || text == "详细资料") continue
+            if (text.startsWith("微信号")) continue
+            if (text.startsWith("地区")) continue
+            if (text == "发消息" || text == "音视频通话") continue
+            
+            // 排除长文本 (功能描述)
+            if (text.length > 40) continue 
+            
+            // 排除包含"添加朋友"的提示文本
+            if (text.contains("添加朋友") || text.contains("设置朋友权限")) continue
+
+            // 找到了! (按顺序，第一个非排除项通常就是标题/昵称)
+            return text
+        }
+        
+        return null
     }
 
     private fun findRemark(rootNode: AccessibilityNodeInfo): String? {
@@ -552,7 +631,7 @@ object WechatContactFetcher {
         // Delay slightly to let user see "Finished" status
         delay(2000)
         
-        FetchOverlayController.hide()
+        // FetchOverlayController.hide()
         collectJob?.cancel()
         collectJob = null
         service = null
@@ -563,7 +642,7 @@ object WechatContactFetcher {
     fun stopFetch() {
         isFetching = false
         updateStatus(text = "已停止抓取", fetching = false)
-        FetchOverlayController.hide()
+        // FetchOverlayController.hide()
         collectJob?.cancel()
         collectJob = null
         service = null

@@ -168,6 +168,7 @@ class FocusModeVm : BaseViewModel() {
         FocusModeEngine.startManualSession(
             durationMinutes = totalDurationMinutes,
             whitelistApps = manualWhitelistApps,
+            wechatWhitelist = manualWechatWhitelist,
             interceptMessage = manualMessage.ifBlank { "专注当下" },
             isLocked = manualIsLocked,
             lockDurationMinutes = if (manualIsLocked) manualLockDurationMinutes else 0
@@ -263,6 +264,7 @@ class FocusModeVm : BaseViewModel() {
         FocusModeEngine.startManualSession(
             durationMinutes = rule.durationMinutes,
             whitelistApps = rule.getWhitelistPackages(),
+            wechatWhitelist = rule.getWechatWhitelist(),
             interceptMessage = rule.interceptMessage,
             isLocked = rule.isLocked,
             lockDurationMinutes = rule.lockDurationMinutes

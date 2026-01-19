@@ -31,9 +31,9 @@ object FetchOverlayController {
                     WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON
             width = WindowManager.LayoutParams.WRAP_CONTENT
             height = WindowManager.LayoutParams.WRAP_CONTENT
-            gravity = Gravity.BOTTOM or Gravity.END
+            gravity = Gravity.TOP or Gravity.START
             x = 30
-            y = 300 // Avoid covering navigation bar
+            y = 200 // Avoid status bar, sit in header area
         }
 
         // Create UI programmatically

@@ -234,16 +234,26 @@ object FocusModeEngine {
      * 微信专项检查
      */
     private fun checkWechatAccess(service: A11yService): Boolean {
+        val whitelist = currentWechatWhitelistFlow.value
+        if (whitelist.isEmpty()) return false
+
         val rootNode = service.rootInActiveWindow ?: return false
 
-        // 1. 检查是否在聊天界面
-        val currentActivity = rootNode.className?.toString() ?: ""
-        if (!currentActivity.contains("ChattingUI")) {
-            return false  // 不在聊天界面，拦截
+        // 1. 允许微信主界面 (LauncherUI)
+        // 特征：底部包含 "微信", "通讯录", "发现", "我"
+        val hasMainTabs = rootNode.findAccessibilityNodeInfosByText("通讯录").isNotEmpty() &&
+                rootNode.findAccessibilityNodeInfosByText("发现").isNotEmpty()
+        if (hasMainTabs) {
+            return true
         }
 
         // 2. 读取聊天标题栏的联系人名称
         val chatTitle = extractChatTitle(rootNode) ?: return false
+        
+        // 排除常见非聊天页面
+        if (chatTitle == "朋友圈" || chatTitle == "视频号" || chatTitle == "订阅号消息" || chatTitle == "服务号") {
+            return false
+        }
 
         // 3. 查询该名称对应的微信号（同步查询）
         val wechatId = try {
@@ -261,7 +271,6 @@ object FocusModeEngine {
         }
 
         // 4. 检查是否在白名单
-        val whitelist = currentWechatWhitelistFlow.value
         return whitelist.contains(wechatId)
     }
 
@@ -341,6 +350,7 @@ object FocusModeEngine {
     suspend fun startManualSession(
         durationMinutes: Int,
         whitelistApps: List<String>,
+        wechatWhitelist: List<String> = emptyList(), // Added parameter
         interceptMessage: String = "专注当下",
         isLocked: Boolean = false,
         lockDurationMinutes: Int = 0
@@ -356,6 +366,7 @@ object FocusModeEngine {
             startTime = now,
             endTime = endTime,
             whitelistApps = json.encodeToString(whitelistApps),
+            wechatWhitelist = json.encodeToString(wechatWhitelist), // Save it
             interceptMessage = interceptMessage,
             isManual = true,
             isLocked = isLocked,
@@ -363,7 +374,7 @@ object FocusModeEngine {
         )
 
         DbSet.focusSessionDao.insert(session)
-        LogUtils.d("Manual focus session started: ${durationMinutes}min, whitelist: ${whitelistApps.size} apps")
+        LogUtils.d("Manual focus session started: ${durationMinutes}min, whitelist: ${whitelistApps.size} apps, wechat: ${wechatWhitelist.size}")
 
         // 立即触发拦截界面，直接传递参数（因为 Flow 可能还未更新）
         A11yService.instance?.let { service ->
@@ -371,6 +382,7 @@ object FocusModeEngine {
                 service = service,
                 packageName = "manual_start",
                 overrideWhitelist = whitelistApps,
+                overrideWechatWhitelist = wechatWhitelist, // Pass it
                 overrideMessage = interceptMessage,
                 overrideEndTime = endTime,
                 overrideIsLocked = isLocked
