@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import li.songe.gkd.sdp.META
+import li.songe.gkd.sdp.app
 import li.songe.gkd.sdp.appScope
 import li.songe.gkd.sdp.data.FocusRule
 import li.songe.gkd.sdp.data.FocusSession
@@ -94,10 +95,26 @@ object FocusModeEngine {
                     DbSet.focusSessionDao.deactivate()
                     LogUtils.d("Focus session expired, deactivated")
 
+                    // 关闭拦截界面
+                    closeFocusOverlay()
+
                     // 发送结束通知
                     focusEndNotif.notifySelf()
                 }
             }
+        }
+    }
+
+    /**
+     * 关闭专注模式拦截界面
+     */
+    private fun closeFocusOverlay() {
+        try {
+            val intent = Intent(app, FocusOverlayService::class.java)
+            app.stopService(intent)
+            LogUtils.d("Focus overlay service stopped")
+        } catch (e: Exception) {
+            LogUtils.d("Failed to stop focus overlay: ${e.message}")
         }
     }
 
