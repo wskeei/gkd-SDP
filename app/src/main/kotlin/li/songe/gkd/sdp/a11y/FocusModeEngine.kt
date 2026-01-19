@@ -35,6 +35,22 @@ object FocusModeEngine {
     private val cooldownMap = ConcurrentHashMap<String, Long>()
     private const val COOLDOWN_MS = 2000L  // 2秒冷却时间
 
+    // 微信跳转状态机
+    enum class JumpState {
+        IDLE,               // 空闲
+        WAIT_FOR_MAIN,      // 已启动微信，等待主界面
+        WAIT_FOR_SEARCH,    // 已点击搜索，等待搜索页
+        WAIT_FOR_RESULT,    // 已输入内容，等待搜索结果
+        COMPLETED           // 检测到聊天页，完成
+    }
+
+    private val jumpState = MutableStateFlow(JumpState.IDLE)
+    private var jumpJob: kotlinx.coroutines.Job? = null
+    private var targetWechatId: String? = null
+
+    val isJumpInProgress: Boolean
+        get() = jumpState.value != JumpState.IDLE
+
     // 是否启用专注模式引擎
     val enabledFlow = MutableStateFlow(true)
 
@@ -162,6 +178,161 @@ object FocusModeEngine {
     }
 
     /**
+     * 开始微信跳转流程
+     */
+    fun startWechatJump(wechatId: String) {
+        if (isJumpInProgress) {
+            LogUtils.d(TAG, "Jump already in progress")
+            return
+        }
+
+        appScope.launch(Dispatchers.Main) {
+            try {
+                // 1. 复制微信号到剪贴板
+                val clipboard = app.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                val clip = android.content.ClipData.newPlainText("wechat_id", wechatId)
+                clipboard.setPrimaryClip(clip)
+
+                // 2. 初始化状态
+                targetWechatId = wechatId
+                jumpState.value = JumpState.WAIT_FOR_MAIN
+                LogUtils.d(TAG, "Starting jump for $wechatId, state: WAIT_FOR_MAIN")
+
+                // 3. 启动微信
+                val intent = app.packageManager.getLaunchIntentForPackage("com.tencent.mm")
+                if (intent != null) {
+                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED)
+                    app.startActivity(intent)
+                } else {
+                    LogUtils.d(TAG, "WeChat not installed")
+                    resetJumpState()
+                    return@launch
+                }
+
+                // 4. 设置超时任务 (15秒)
+                jumpJob?.cancel()
+                jumpJob = launch {
+                    delay(15_000L)
+                    if (isJumpInProgress) {
+                        LogUtils.d(TAG, "Jump timeout, resetting state")
+                        // 如果超时，且当前不在聊天界面，可能需要恢复拦截
+                        // 但由于我们在 onAppChanged 中有 checkWechatAccess，如果用户还在微信，会根据逻辑判断是否拦截
+                        resetJumpState()
+                        // 显示提示
+                        launch(Dispatchers.Main) {
+                            android.widget.Toast.makeText(app, "自动跳转超时，请手动查找", android.widget.Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                LogUtils.d(TAG, "Failed to start jump: ${e.message}")
+                resetJumpState()
+            }
+        }
+    }
+
+    private fun resetJumpState() {
+        jumpState.value = JumpState.IDLE
+        targetWechatId = null
+        jumpJob?.cancel()
+        jumpJob = null
+    }
+
+    /**
+     * 处理无障碍事件，驱动状态机
+     */
+    fun onA11yEvent(event: android.view.accessibility.AccessibilityEvent) {
+        if (!isJumpInProgress) return
+        if (event.packageName != "com.tencent.mm") return
+
+        val node = event.source ?: return
+        // 注意: node 可能会被回收，需要小心使用
+        // 这里的逻辑尽量简单快速
+
+        when (jumpState.value) {
+            JumpState.WAIT_FOR_MAIN -> {
+                // 目标：找到"搜索"按钮并点击
+                // 微信主界面通常有 "搜索" 按钮 (contentDescription="搜索" 或 text="搜索")
+                val searchNodes = node.findAccessibilityNodeInfosByText("搜索")
+                // 过滤出真正的搜索按钮（通常是 ImageButton 或 TextView，且可点击）
+                // 微信主界面的搜索通常在右上角
+                val searchBtn = searchNodes.firstOrNull { 
+                    it.isClickable && (it.className.contains("ImageView") || it.className.contains("TextView")) 
+                }
+                
+                if (searchBtn != null) {
+                    LogUtils.d(TAG, "Found search button, clicking...")
+                    searchBtn.performAction(AccessibilityNodeInfo.ACTION_CLICK)
+                    jumpState.value = JumpState.WAIT_FOR_SEARCH
+                }
+            }
+            JumpState.WAIT_FOR_SEARCH -> {
+                // 目标：找到搜索输入框 (EditText)，并粘贴内容
+                val editNodes = mutableListOf<AccessibilityNodeInfo>()
+                findNodesByClass(node, "android.widget.EditText", editNodes)
+                
+                val editText = editNodes.firstOrNull()
+                if (editText != null) {
+                    LogUtils.d(TAG, "Found search input, pasting...")
+                    // 优先使用粘贴
+                    val pasteResult = editText.performAction(AccessibilityNodeInfo.ACTION_PASTE)
+                    if (!pasteResult) {
+                        // 如果粘贴失败，尝试设置文本
+                         val args = android.os.Bundle()
+                         args.putCharSequence(AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE, targetWechatId)
+                         editText.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT, args)
+                    }
+                    jumpState.value = JumpState.WAIT_FOR_RESULT
+                }
+            }
+            JumpState.WAIT_FOR_RESULT -> {
+                // 目标：找到包含 "微信号: targetId" 的结果项
+                // 微信搜索结果中，精确匹配的微信号通常会显示 "微信号: xxx"
+                val targetId = targetWechatId ?: return
+                // 搜索文本可能分散，我们查找包含微信号的节点
+                val resultNodes = node.findAccessibilityNodeInfosByText(targetId)
+                
+                for (n in resultNodes) {
+                    // 检查父节点是否可点击，或者自己可点击
+                    // 通常是一个列表项
+                    var clickTarget: AccessibilityNodeInfo? = n
+                    while (clickTarget != null && !clickTarget.isClickable) {
+                        clickTarget = clickTarget.parent
+                    }
+                    
+                    if (clickTarget != null) {
+                        LogUtils.d(TAG, "Found result, clicking...")
+                        clickTarget.performAction(AccessibilityNodeInfo.ACTION_CLICK)
+                        jumpState.value = JumpState.COMPLETED
+                        
+                        // 稍微延迟后重置状态，确保跳转完成
+                        appScope.launch {
+                            delay(2000)
+                            resetJumpState()
+                        }
+                        return
+                    }
+                }
+            }
+            JumpState.COMPLETED -> {
+                // 这里的处理在点击后已经做了延迟重置，也可以在这里检测 ChattingUI
+                // 暂时留空
+            }
+            else -> {}
+        }
+    }
+
+    private fun findNodesByClass(root: AccessibilityNodeInfo, className: String, result: MutableList<AccessibilityNodeInfo>) {
+        if (root.className?.toString() == className) {
+            result.add(root)
+        }
+        for (i in 0 until root.childCount) {
+            val child = root.getChild(i) ?: continue
+            findNodesByClass(child, className, result)
+        }
+    }
+
+    /**
      * 检查当前是否处于专注模式
      */
     fun isInFocusMode(): Boolean {
@@ -201,6 +372,12 @@ object FocusModeEngine {
     fun onAppChanged(packageName: String, service: A11yService) {
         if (!enabledFlow.value) return
         if (!isInFocusMode()) return
+
+        // 如果正在自动跳转中，且是微信，暂时放行
+        if (isJumpInProgress && packageName == "com.tencent.mm") {
+            LogUtils.d(TAG, "Jump in progress, allowing WeChat access")
+            return
+        }
 
         // 检查冷却时间
         val now = System.currentTimeMillis()
