@@ -141,23 +141,11 @@ class FocusOverlayService : LifecycleService(), SavedStateRegistryOwner {
                                 // 严格清洗：只保留字母、数字、下划线、减号
                                 val cleanId = wechatId.filter { it.isLetterOrDigit() || it == '_' || it == '-' }
                                 
-                                // 1. 复制到剪贴板
-                                val clipboard = app.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
-                                val clip = android.content.ClipData.newPlainText("wechat_id", cleanId)
-                                clipboard.setPrimaryClip(clip)
+                                // 启动自动跳转流程
+                                li.songe.gkd.sdp.a11y.FocusModeEngine.startWechatJump(cleanId)
                                 
-                                // 2. 尝试跳转
-                                val intent = Intent(Intent.ACTION_VIEW).apply {
-                                    data = android.net.Uri.parse("weixin://dl/chat?$cleanId")
-                                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                                    setPackage("com.tencent.mm") // 明确指定包名
-                                }
-                                startActivity(intent)
-
-                                // 跳转成功，关闭拦截页面
-                                Handler(Looper.getMainLooper()).postDelayed({
-                                    stopSelf()
-                                }, 300)
+                                // 关闭当前的拦截页面，允许跳转进行
+                                stopSelf()
                             } catch (e: Exception) {
                                 Toast.makeText(
                                     this@FocusOverlayService,
