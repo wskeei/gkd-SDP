@@ -7,7 +7,9 @@ import android.graphics.Rect
 import android.view.accessibility.AccessibilityNodeInfo
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import li.songe.gkd.sdp.appScope
 import li.songe.gkd.sdp.data.WechatContact
@@ -16,17 +18,53 @@ import li.songe.gkd.sdp.util.LogUtils
 import li.songe.gkd.sdp.util.toast
 import kotlin.random.Random
 
+data class FetchState(
+    val isFetching: Boolean = false,
+    val fetchedCount: Int = 0,
+    val statusText: String = "准备中...",
+    val currentTarget: String? = null
+)
+
 object WechatContactFetcher {
     private const val TAG = "WechatContactFetcher"
     private const val WECHAT_PACKAGE = "com.tencent.mm"
 
+    private val BLACK_LIST = setOf(
+        "新的朋友", "仅聊天的朋友", "群聊", "标签", "公众号", "服务号",
+        "企业微信联系人", "企业微信通知", "我的企业及企业联系人",
+        "微信团队", "文件传输助手"
+    )
+
     val isFetchingFlow = MutableStateFlow(false)
     val fetchProgressFlow = MutableStateFlow("")
+    val fetchStateFlow = MutableStateFlow(FetchState())
 
     private var service: AccessibilityService? = null
     private var isFetching = false
     private val fetchedContacts = mutableListOf<WechatContact>()
     private var fetchCount = 0
+    private var collectJob: Job? = null
+    private var currentScrollHash = 0
+    private var noChangeCount = 0
+    private val processedNodes = mutableSetOf<String>()
+
+    private fun updateStatus(text: String? = null, target: String? = null, count: Int? = null, fetching: Boolean? = null) {
+        fetchStateFlow.update { currentState ->
+            currentState.copy(
+                isFetching = fetching ?: currentState.isFetching,
+                fetchedCount = count ?: currentState.fetchedCount,
+                statusText = text ?: currentState.statusText,
+                currentTarget = target
+            )
+        }
+        // Keep backward compatibility
+        if (text != null) {
+            fetchProgressFlow.value = text
+        }
+        if (fetching != null) {
+            isFetchingFlow.value = fetching
+        }
+    }
 
     fun startFetch(accessibilityService: AccessibilityService) {
         if (isFetching) {
@@ -36,22 +74,35 @@ object WechatContactFetcher {
 
         service = accessibilityService
         isFetching = true
-        isFetchingFlow.value = true
+        updateStatus(text = "准备开始抓取...", count = 0, fetching = true)
+        
         fetchedContacts.clear()
         fetchCount = 0
+        currentScrollHash = 0
+        noChangeCount = 0
+        processedNodes.clear()
+
+        FetchOverlayController.show(accessibilityService)
+
+        collectJob?.cancel()
+        collectJob = appScope.launch(Dispatchers.Main) {
+            fetchStateFlow.collect { state ->
+                FetchOverlayController.update(state)
+            }
+        }
 
         appScope.launch(Dispatchers.IO) {
             try {
                 toast("请打开微信通讯录页面")
-                fetchProgressFlow.value = "等待进入微信通讯录..."
+                updateStatus("等待进入微信通讯录...")
 
                 // 等待用户打开通讯录
                 delay(3000)
 
                 fetchContactsFromCurrentScreen()
-            } catch (e: Exception) {
-                LogUtils.d("$TAG: Fetch error: ${e.message}")
-                toast("抓取失败：${e.message}")
+            } catch (err: Exception) {
+                LogUtils.d("$TAG: Fetch error: ${err.message}")
+                toast("抓取失败：${err.message}")
             } finally {
                 finishFetch()
             }
@@ -59,70 +110,199 @@ object WechatContactFetcher {
     }
 
     private suspend fun fetchContactsFromCurrentScreen() {
-        var consecutiveEmptyScreens = 0
+        var retryCount = 0
+        val MAX_RETRIES = 5
 
-        while (isFetching && consecutiveEmptyScreens < 2) {
+        while (isFetching && retryCount < MAX_RETRIES) {
             val rootNode = service?.rootInActiveWindow
             if (rootNode == null) {
-                delay(1000)
+                delay(500)
                 continue
             }
 
             // 检查是否在通讯录页面
             if (!isInContactsPage(rootNode)) {
-                fetchProgressFlow.value = "请打开微信通讯录页面"
+                updateStatus("请打开微信通讯录页面")
                 delay(2000)
                 continue
             }
 
-            // 获取当前屏幕的联系人列表项
-            val contactNodes = findContactNodes(rootNode)
-
-            if (contactNodes.isEmpty()) {
-                consecutiveEmptyScreens++
-                if (consecutiveEmptyScreens >= 2) {
-                    break
-                }
-                // 尝试滚动
-                scrollDown(rootNode)
-                delay(randomDelay(800, 1500))
+            // 1. 查找列表容器
+            val listNode = findScrollableList(rootNode)
+            if (listNode == null) {
+                delay(1000)
+                retryCount++
                 continue
             }
 
-            consecutiveEmptyScreens = 0
+            // 2. 获取当前屏幕的有效联系人节点
+            val contactNodes = findValidContactNodes(listNode)
+            var hasProcessedAny = false
 
-            // 逐个点击联系人
-            for ((index, node) in contactNodes.withIndex()) {
+            // 3. 逐个处理
+            for (node in contactNodes) {
                 if (!isFetching) break
 
-                fetchProgressFlow.value = "正在抓取第 ${fetchCount + 1} 个联系人..."
+                // 生成节点唯一标识 (使用 文本+屏幕区域 组合)
+                val rect = Rect()
+                node.getBoundsInScreen(rect)
+                val nodeId = "${getNodeText(node)}_${rect}"
+                
+                if (nodeId in processedNodes) continue
 
-                // 点击联系人
-                clickNodeWithRandomOffset(node)
-                delay(randomDelay(500, 1000))
+                updateStatus("正在抓取第 ${fetchCount + 1} 个联系人...", count = fetchCount)
 
-                // 读取详情页信息
-                val contact = extractContactInfo()
-                if (contact != null) {
-                    fetchedContacts.add(contact)
-                    fetchCount++
-                    LogUtils.d("$TAG: Fetched contact: ${contact.displayName} (${contact.wechatId})")
+                val success = processSingleContact(node)
+                
+                if (success) {
+                    processedNodes.add(nodeId)
+                    hasProcessedAny = true
+                    retryCount = 0 // 重置重试计数
                 }
 
-                // 返回
-                service?.performGlobalAction(AccessibilityService.GLOBAL_ACTION_BACK)
-                delay(randomDelay(400, 800))
-
                 // 每抓取 10-15 个联系人，暂停一下
-                if (fetchCount % Random.nextInt(10, 16) == 0) {
+                if (fetchCount > 0 && fetchCount % Random.nextInt(10, 16) == 0) {
                     delay(randomDelay(2000, 4000))
                 }
             }
 
-            // 滚动到下一屏
-            scrollDown(rootNode)
-            delay(randomDelay(800, 1500))
+            // 4. 滚动加载更多
+            val preHash = calculateScreenHash(rootNode)
+            val scrolled = performScroll(listNode, rootNode)
+            
+            if (!scrolled) {
+                LogUtils.d(TAG, "Scroll action failed")
+                noChangeCount++
+            } else {
+                // 等待滚动完成
+                delay(1000) 
+                val postHash = calculateScreenHash(service?.rootInActiveWindow ?: rootNode)
+                if (preHash == postHash) {
+                    noChangeCount++
+                } else {
+                    noChangeCount = 0
+                    // 滚动成功，清理旧缓存防止内存溢出 (只保留最近200个)
+                    if (processedNodes.size > 200) {
+                        val toRemove = processedNodes.take(100)
+                        processedNodes.removeAll(toRemove.toSet())
+                    }
+                }
+            }
+
+            // 5. 结束检查
+            if (isAtBottom(rootNode)) {
+                LogUtils.d(TAG, "Detected bottom indicator")
+                break
+            }
+
+            if (noChangeCount >= 3) {
+                LogUtils.d(TAG, "Screen content no change for 3 times")
+                break
+            }
         }
+    }
+
+    private suspend fun processSingleContact(node: AccessibilityNodeInfo): Boolean {
+        return try {
+            // 点击联系人
+            clickNodeWithRandomOffset(node)
+            delay(randomDelay(800, 1200))
+
+            val root = service?.rootInActiveWindow
+            if (root == null || !isInDetailPage(root)) {
+                LogUtils.d(TAG, "Failed to enter detail page")
+                // 如果没进入详情页，不需要返回
+                return false
+            }
+
+            // 读取详情页信息
+            val contact = extractContactInfo()
+            if (contact != null) {
+                fetchedContacts.add(contact)
+                fetchCount++
+                updateStatus(count = fetchCount, target = contact.displayName)
+                LogUtils.d("$TAG: Fetched contact: ${contact.displayName} (${contact.wechatId})")
+            }
+
+            // 返回
+            service?.performGlobalAction(AccessibilityService.GLOBAL_ACTION_BACK)
+            delay(randomDelay(500, 800))
+            
+            // 验证是否回到列表页 (可选，如果不回来，下一轮循环会检测)
+            
+            true
+        } catch (t: Throwable) {
+            LogUtils.d(TAG, "Error processing contact: ${t.message}")
+            // 尝试恢复状态（比如多按一次返回？）
+            service?.performGlobalAction(AccessibilityService.GLOBAL_ACTION_BACK)
+            delay(1000)
+            false
+        }
+    }
+
+    private fun isInDetailPage(root: AccessibilityNodeInfo): Boolean {
+        // 特征：存在"微信号" 或 "发消息" 按钮
+        if (root.findAccessibilityNodeInfosByText("微信号").isNotEmpty()) return true
+        if (root.findAccessibilityNodeInfosByText("发消息").isNotEmpty()) return true
+        return false
+    }
+
+    private fun calculateScreenHash(root: AccessibilityNodeInfo): Int {
+        val sb = StringBuilder()
+        collectNodeInfo(root, sb)
+        return sb.toString().hashCode()
+    }
+
+    private fun collectNodeInfo(node: AccessibilityNodeInfo, sb: StringBuilder) {
+        if (!node.text.isNullOrEmpty()) {
+            sb.append(node.text).append("|")
+        }
+        val rect = Rect()
+        node.getBoundsInScreen(rect)
+        sb.append(rect.toShortString()).append("|")
+        
+        for (i in 0 until node.childCount) {
+            val child = node.getChild(i) ?: continue
+            collectNodeInfo(child, sb)
+        }
+    }
+
+    private fun performScroll(listNode: AccessibilityNodeInfo, root: AccessibilityNodeInfo): Boolean {
+        // Try standard scroll first
+        if (listNode.performAction(AccessibilityNodeInfo.ACTION_SCROLL_FORWARD)) {
+            return true
+        }
+
+        // Fallback to gesture
+        val rect = Rect()
+        root.getBoundsInScreen(rect)
+        // Center of screen
+        val centerX = rect.centerX().toFloat()
+        // Swipe from 80% height to 20% height
+        val startY = rect.height() * 0.8f
+        val endY = rect.height() * 0.2f
+
+        val path = Path()
+        path.moveTo(centerX, startY)
+        path.lineTo(centerX, endY)
+
+        val gesture = GestureDescription.Builder()
+            .addStroke(GestureDescription.StrokeDescription(path, 0, 500)) // 500ms duration
+            .build()
+
+        return service?.dispatchGesture(gesture, null, null) ?: false
+    }
+
+    private fun isAtBottom(root: AccessibilityNodeInfo): Boolean {
+        // Check for "X位联系人"
+        val nodes = root.findAccessibilityNodeInfosByText("位联系人")
+        for (node in nodes) {
+            val text = node.text?.toString() ?: continue
+            if (text.matches(Regex("^\\d+位联系人$"))) {
+                return true
+            }
+        }
+        return false
     }
 
     private fun isInContactsPage(rootNode: AccessibilityNodeInfo): Boolean {
@@ -131,25 +311,63 @@ object WechatContactFetcher {
         return nodes.isNotEmpty()
     }
 
-    private fun findContactNodes(rootNode: AccessibilityNodeInfo): List<AccessibilityNodeInfo> {
-        val contactNodes = mutableListOf<AccessibilityNodeInfo>()
+    private fun findScrollableList(root: AccessibilityNodeInfo): AccessibilityNodeInfo? {
+        val candidates = mutableListOf<AccessibilityNodeInfo>()
+        findNodesByClassName(root, "android.widget.ListView", candidates)
+        findNodesByClassName(root, "androidx.recyclerview.widget.RecyclerView", candidates)
 
-        // 查找 ListView 或 RecyclerView
-        val listNodes = mutableListOf<AccessibilityNodeInfo>()
-        findNodesByClassName(rootNode, "android.widget.ListView", listNodes)
-        findNodesByClassName(rootNode, "androidx.recyclerview.widget.RecyclerView", listNodes)
+        // Return the largest one
+        return candidates.maxByOrNull {
+            val rect = Rect()
+            it.getBoundsInScreen(rect)
+            rect.width() * rect.height()
+        }
+    }
 
-        for (listNode in listNodes) {
-            for (i in 0 until listNode.childCount) {
-                val child = listNode.getChild(i) ?: continue
-                // 简单判断：包含文本且可点击的节点
-                if (child.isClickable && hasText(child)) {
-                    contactNodes.add(child)
-                }
+    private fun findValidContactNodes(listNode: AccessibilityNodeInfo): List<AccessibilityNodeInfo> {
+        val validNodes = mutableListOf<AccessibilityNodeInfo>()
+
+        for (i in 0 until listNode.childCount) {
+            val child = listNode.getChild(i) ?: continue
+            val text = getNodeText(child)
+            
+            // Filter Logic
+            if (text.isNullOrBlank()) continue
+            if (text in BLACK_LIST) continue
+            
+            // Index Filter: Single char and small height
+            val rect = Rect()
+            child.getBoundsInScreen(rect)
+            if (text.length == 1 && rect.height() < 100) continue 
+
+            // Must be clickable or have clickable relatives
+            if (isClickableNode(child)) {
+                validNodes.add(child)
             }
         }
+        return validNodes
+    }
 
-        return contactNodes
+    private fun getNodeText(node: AccessibilityNodeInfo): String? {
+        if (!node.text.isNullOrEmpty()) return node.text.toString().trim()
+        for (i in 0 until node.childCount) {
+            val child = node.getChild(i) ?: continue
+            val text = getNodeText(child)
+            if (!text.isNullOrEmpty()) return text
+        }
+        return null
+    }
+
+    private fun isClickableNode(node: AccessibilityNodeInfo): Boolean {
+        if (node.isClickable) return true
+        // Check children? usually the list item itself is clickable or contains a clickable
+        // But here we want the item to be the target. 
+        // If the item itself isn't clickable, maybe it's a container.
+        // Let's assume the list child is the touch target or contains it.
+        // For now, if we found text, we assume it's valid. 
+        // But wait, "Headers" might not be clickable? 
+        // Let's stick to: must have text AND (self is clickable OR has clickable child)
+        return true // Simplification: if it has text and is in list, it's likely interactable.
     }
 
     private fun findNodesByClassName(
@@ -164,15 +382,6 @@ object WechatContactFetcher {
             val child = node.getChild(i) ?: continue
             findNodesByClassName(child, className, result)
         }
-    }
-
-    private fun hasText(node: AccessibilityNodeInfo): Boolean {
-        if (!node.text.isNullOrEmpty()) return true
-        for (i in 0 until node.childCount) {
-            val child = node.getChild(i) ?: continue
-            if (hasText(child)) return true
-        }
-        return false
     }
 
     private fun clickNodeWithRandomOffset(node: AccessibilityNodeInfo) {
@@ -274,35 +483,42 @@ object WechatContactFetcher {
         }
     }
 
-    private fun scrollDown(rootNode: AccessibilityNodeInfo) {
-        rootNode.performAction(AccessibilityNodeInfo.ACTION_SCROLL_FORWARD)
-    }
-
     private fun randomDelay(minMs: Long, maxMs: Long): Long {
         return Random.nextLong(minMs, maxMs + 1)
     }
 
     private suspend fun finishFetch() {
         isFetching = false
-        isFetchingFlow.value = false
-
+        updateStatus(fetching = false)
+        
         if (fetchedContacts.isNotEmpty()) {
             // 保存到数据库
             DbSet.wechatContactDao.insertAll(fetchedContacts)
             toast("抓取完成，已更新 ${fetchedContacts.size} 个联系人")
-            fetchProgressFlow.value = "抓取完成：${fetchedContacts.size} 个联系人"
+            updateStatus("抓取完成：${fetchedContacts.size} 个联系人")
         } else {
             toast("未抓取到联系人")
-            fetchProgressFlow.value = "未抓取到联系人"
+            updateStatus("未抓取到联系人")
         }
+
+        // Delay slightly to let user see "Finished" status
+        delay(2000)
+        
+        FetchOverlayController.hide()
+        collectJob?.cancel()
+        collectJob = null
+        service = null
 
         LogUtils.d("$TAG: Fetch finished, total: ${fetchedContacts.size}")
     }
 
     fun stopFetch() {
         isFetching = false
-        isFetchingFlow.value = false
-        fetchProgressFlow.value = "已停止抓取"
+        updateStatus(text = "已停止抓取", fetching = false)
+        FetchOverlayController.hide()
+        collectJob?.cancel()
+        collectJob = null
+        service = null
         toast("已停止抓取")
     }
 }
