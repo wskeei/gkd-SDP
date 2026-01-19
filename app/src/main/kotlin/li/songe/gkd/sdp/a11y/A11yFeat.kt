@@ -293,6 +293,9 @@ private fun A11yService.useUrlBlocker() {
 }
 
 private fun A11yService.useFocusMode() {
+    onA11yEvent { event ->
+        FocusModeEngine.onA11yEvent(event)
+    }
     var lastAppId = ""
     scope.launch(Dispatchers.Default) {
         topActivityFlow.collect { activity ->
