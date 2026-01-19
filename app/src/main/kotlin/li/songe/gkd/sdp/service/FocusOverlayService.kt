@@ -22,13 +22,10 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -43,7 +40,6 @@ import androidx.lifecycle.setViewTreeLifecycleOwner
 import androidx.savedstate.SavedStateRegistryController
 import androidx.savedstate.SavedStateRegistryOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
-import kotlinx.coroutines.delay
 import li.songe.gkd.sdp.app
 import li.songe.gkd.sdp.ui.component.AppIcon
 import li.songe.gkd.sdp.ui.style.AppTheme
@@ -101,12 +97,6 @@ class FocusOverlayService : LifecycleService(), SavedStateRegistryOwner {
                         blockedApp = blockedApp,
                         isLocked = isLocked,
                         endTime = endTime,
-                        onExit = {
-                            A11yService.instance?.performGlobalAction(
-                                android.accessibilityservice.AccessibilityService.GLOBAL_ACTION_HOME
-                            )
-                            stopSelf()
-                        },
                         onOpenApp = { packageName ->
                             try {
                                 val launchIntent = app.packageManager.getLaunchIntentForPackage(packageName)
@@ -150,19 +140,9 @@ fun FocusInterceptScreen(
     blockedApp: String,
     isLocked: Boolean,
     endTime: Long,
-    onExit: () -> Unit,
     onOpenApp: (String) -> Unit
 ) {
-    var timeLeft by remember { mutableIntStateOf(15) }
     var showWhitelistPicker by remember { mutableStateOf(false) }
-
-    LaunchedEffect(Unit) {
-        while (timeLeft > 0) {
-            delay(1000)
-            timeLeft--
-        }
-        onExit()
-    }
 
     Surface(
         modifier = Modifier.fillMaxSize(),
@@ -180,8 +160,6 @@ fun FocusInterceptScreen(
                 whitelist = whitelist,
                 isLocked = isLocked,
                 endTime = endTime,
-                timeLeft = timeLeft,
-                onExit = onExit,
                 onShowWhitelist = { showWhitelistPicker = true }
             )
         }
@@ -194,8 +172,6 @@ private fun MainInterceptContent(
     whitelist: List<String>,
     isLocked: Boolean,
     endTime: Long,
-    timeLeft: Int,
-    onExit: () -> Unit,
     onShowWhitelist: () -> Unit
 ) {
     Column(
@@ -241,21 +217,20 @@ private fun MainInterceptContent(
 
         Spacer(modifier = Modifier.height(48.dp))
 
-        Button(
-            onClick = onExit,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text("算了（退出）${timeLeft}s")
-        }
-
         if (whitelist.isNotEmpty()) {
-            Spacer(modifier = Modifier.height(16.dp))
-            OutlinedButton(
+            Button(
                 onClick = onShowWhitelist,
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text("打开白名单应用")
             }
+        } else {
+            Text(
+                text = "暂无白名单应用",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f),
+                textAlign = TextAlign.Center
+            )
         }
     }
 }

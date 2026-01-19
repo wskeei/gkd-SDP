@@ -231,6 +231,11 @@ object FocusModeEngine {
 
         DbSet.focusSessionDao.insert(session)
         LogUtils.d("Manual focus session started: ${durationMinutes}min, whitelist: ${whitelistApps.size} apps")
+
+        // 立即触发拦截界面
+        A11yService.instance?.let { service ->
+            showFocusOverlay(service, "manual_start")
+        }
     }
 
     /**
