@@ -245,38 +245,48 @@ object FocusModeEngine {
         if (!isJumpInProgress) return
         if (event.packageName != "com.tencent.mm") return
 
-        val node = event.source ?: return
-        // 注意: node 可能会被回收，需要小心使用
-        // 这里的逻辑尽量简单快速
+        // 使用 rootInActiveWindow 而不是 event.source，确保能获取完整界面
+        val root = A11yService.instance?.rootInActiveWindow ?: return
 
         when (jumpState.value) {
             JumpState.WAIT_FOR_MAIN -> {
+                LogUtils.d(TAG, "Checking for Search button in WAIT_FOR_MAIN...")
                 // 目标：找到"搜索"按钮并点击
-                // 微信主界面通常有 "搜索" 按钮 (contentDescription="搜索" 或 text="搜索")
-                val searchNodes = node.findAccessibilityNodeInfosByText("搜索")
-                // 过滤出真正的搜索按钮（通常是 ImageButton 或 TextView，且可点击）
-                // 微信主界面的搜索通常在右上角
-                val searchBtn = searchNodes.firstOrNull { 
-                    it.isClickable && (it.className.contains("ImageView") || it.className.contains("TextView")) 
-                }
+                // 1. 查找所有描述或文本为"搜索"的节点
+                val searchNodes = root.findAccessibilityNodeInfosByText("搜索")
                 
-                if (searchBtn != null) {
-                    LogUtils.d(TAG, "Found search button, clicking...")
-                    searchBtn.performAction(AccessibilityNodeInfo.ACTION_CLICK)
-                    jumpState.value = JumpState.WAIT_FOR_SEARCH
+                for (node in searchNodes) {
+                    // 2. 向上寻找可点击的父节点
+                    var target: AccessibilityNodeInfo? = node
+                    while (target != null) {
+                        if (target.isClickable) {
+                            LogUtils.d(TAG, "Found clickable Search button: ${target.className}, clicking...")
+                            target.performAction(AccessibilityNodeInfo.ACTION_CLICK)
+                            jumpState.value = JumpState.WAIT_FOR_SEARCH
+                            return
+                        }
+                        target = target.parent
+                    }
                 }
+                LogUtils.d(TAG, "Search button not found in current event window")
             }
             JumpState.WAIT_FOR_SEARCH -> {
+                LogUtils.d(TAG, "Checking for EditText in WAIT_FOR_SEARCH...")
                 // 目标：找到搜索输入框 (EditText)，并粘贴内容
                 val editNodes = mutableListOf<AccessibilityNodeInfo>()
-                findNodesByClass(node, "android.widget.EditText", editNodes)
+                findNodesByClass(root, "android.widget.EditText", editNodes)
                 
                 val editText = editNodes.firstOrNull()
                 if (editText != null) {
-                    LogUtils.d(TAG, "Found search input, pasting...")
+                    LogUtils.d(TAG, "Found search input, pasting targetId: $targetWechatId")
+                    
+                    // 必须先聚焦
+                    editText.performAction(AccessibilityNodeInfo.ACTION_FOCUS)
+                    
                     // 优先使用粘贴
                     val pasteResult = editText.performAction(AccessibilityNodeInfo.ACTION_PASTE)
                     if (!pasteResult) {
+                        LogUtils.d(TAG, "Paste failed, trying SET_TEXT")
                         // 如果粘贴失败，尝试设置文本
                          val args = android.os.Bundle()
                          args.putCharSequence(AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE, targetWechatId)
@@ -286,15 +296,14 @@ object FocusModeEngine {
                 }
             }
             JumpState.WAIT_FOR_RESULT -> {
-                // 目标：找到包含 "微信号: targetId" 的结果项
-                // 微信搜索结果中，精确匹配的微信号通常会显示 "微信号: xxx"
                 val targetId = targetWechatId ?: return
-                // 搜索文本可能分散，我们查找包含微信号的节点
-                val resultNodes = node.findAccessibilityNodeInfosByText(targetId)
+                LogUtils.d(TAG, "Checking for result '$targetId' in WAIT_FOR_RESULT...")
+                
+                // 目标：找到包含 "微信号: targetId" 的结果项
+                val resultNodes = root.findAccessibilityNodeInfosByText(targetId)
                 
                 for (n in resultNodes) {
-                    // 检查父节点是否可点击，或者自己可点击
-                    // 通常是一个列表项
+                    LogUtils.d(TAG, "Found potential result node: ${n.text}, checking clickable parent...")
                     var clickTarget: AccessibilityNodeInfo? = n
                     while (clickTarget != null && !clickTarget.isClickable) {
                         clickTarget = clickTarget.parent
@@ -315,8 +324,7 @@ object FocusModeEngine {
                 }
             }
             JumpState.COMPLETED -> {
-                // 这里的处理在点击后已经做了延迟重置，也可以在这里检测 ChattingUI
-                // 暂时留空
+                // 这里的处理在点击后已经做了延迟重置
             }
             else -> {}
         }
