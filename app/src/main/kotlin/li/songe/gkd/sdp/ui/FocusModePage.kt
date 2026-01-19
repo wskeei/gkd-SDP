@@ -84,6 +84,7 @@ fun FocusModePage() {
     var lockTargetRule by remember { mutableStateOf<FocusRule?>(null) }
     var whitelistPickerMode by remember { mutableStateOf("rule") } // "rule" or "manual"
     var wechatContactPickerMode by remember { mutableStateOf("rule") } // "rule" or "manual"
+    var showManualAddDialog by remember { mutableStateOf(false) }
 
     val scope = rememberCoroutineScope()
 
@@ -250,6 +251,17 @@ fun FocusModePage() {
                     vm.manualWechatWhitelist = selected
                 }
                 showWechatContactPicker = false
+            },
+            onShowManualAdd = { showManualAddDialog = true }
+        )
+    }
+
+    if (showManualAddDialog) {
+        ManualContactAddDialog(
+            onDismiss = { showManualAddDialog = false },
+            onConfirm = { id, name ->
+                vm.addManualContact(id, name)
+                showManualAddDialog = false
             }
         )
     }
@@ -1272,7 +1284,8 @@ private fun WechatContactPickerDialog(
     currentWhitelist: List<String>,
     allContacts: List<li.songe.gkd.sdp.data.WechatContact>,
     onDismiss: () -> Unit,
-    onConfirm: (List<String>) -> Unit
+    onConfirm: (List<String>) -> Unit,
+    onShowManualAdd: () -> Unit
 ) {
     var selectedContacts by remember { mutableStateOf(currentWhitelist.toSet()) }
     var searchQuery by remember { mutableStateOf("") }
@@ -1316,16 +1329,25 @@ private fun WechatContactPickerDialog(
                 val isFetching by li.songe.gkd.sdp.a11y.WechatContactFetcher.isFetchingFlow.collectAsState()
                 val fetchProgress by li.songe.gkd.sdp.a11y.WechatContactFetcher.fetchProgressFlow.collectAsState()
 
-                Button(
-                    onClick = {
-                        li.songe.gkd.sdp.service.A11yService.instance?.let { service ->
-                            li.songe.gkd.sdp.a11y.WechatContactFetcher.startFetch(service)
-                        }
-                    },
-                    enabled = !isFetching,
-                    modifier = Modifier.fillMaxWidth()
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Text(if (isFetching) fetchProgress else "更新微信联系人")
+                    Button(
+                        onClick = {
+                            li.songe.gkd.sdp.service.A11yService.instance?.let { service ->
+                                li.songe.gkd.sdp.a11y.WechatContactFetcher.startFetch(service)
+                            }
+                        },
+                        enabled = !isFetching,
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text(if (isFetching) fetchProgress else "更新联系人")
+                    }
+                    
+                    OutlinedButton(onClick = onShowManualAdd) {
+                        Text("手动添加")
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(8.dp))
@@ -1384,6 +1406,54 @@ private fun WechatContactPickerDialog(
         confirmButton = {
             TextButton(onClick = { onConfirm(selectedContacts.toList()) }) {
                 Text("确定")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("取消")
+            }
+        }
+    )
+}
+
+@Composable
+private fun ManualContactAddDialog(
+    onDismiss: () -> Unit,
+    onConfirm: (String, String) -> Unit
+) {
+    var wechatId by remember { mutableStateOf("") }
+    var name by remember { mutableStateOf("") }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("手动添加联系人") },
+        text = {
+            Column(modifier = Modifier.fillMaxWidth()) {
+                OutlinedTextField(
+                    value = wechatId,
+                    onValueChange = { wechatId = it },
+                    label = { Text("微信号 (必填)") },
+                    placeholder = { Text("请输入准确的微信号") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    label = { Text("昵称/备注 (选填)") },
+                    placeholder = { Text("用于显示") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = { onConfirm(wechatId, name) },
+                enabled = wechatId.isNotBlank()
+            ) {
+                Text("添加")
             }
         },
         dismissButton = {

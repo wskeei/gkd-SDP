@@ -292,4 +292,15 @@ class FocusModeVm : BaseViewModel() {
     fun removeFromManualWechatWhitelist(wechatId: String) {
         manualWechatWhitelist = manualWechatWhitelist - wechatId
     }
+
+    fun addManualContact(wechatId: String, name: String) = viewModelScope.launch(Dispatchers.IO) {
+        if (wechatId.isBlank()) return@launch
+        val contact = li.songe.gkd.sdp.data.WechatContact(
+            wechatId = wechatId.trim(),
+            nickname = name.trim().ifBlank { wechatId },
+            remark = if (name.isNotBlank()) name.trim() else ""
+        )
+        DbSet.wechatContactDao.insertAll(listOf(contact))
+        toast("已添加联系人: $name")
+    }
 }

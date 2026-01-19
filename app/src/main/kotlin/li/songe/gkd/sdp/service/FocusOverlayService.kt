@@ -138,18 +138,19 @@ class FocusOverlayService : LifecycleService(), SavedStateRegistryOwner {
                         },
                         onOpenWechatChat = { wechatId ->
                             try {
-                                val cleanId = wechatId.trim().filter { !it.isWhitespace() }
+                                // 严格清洗：只保留字母、数字、下划线、减号
+                                val cleanId = wechatId.filter { it.isLetterOrDigit() || it == '_' || it == '-' }
                                 
-                                // 1. 复制到剪贴板 (作为备选)
+                                // 1. 复制到剪贴板
                                 val clipboard = app.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
                                 val clip = android.content.ClipData.newPlainText("wechat_id", cleanId)
                                 clipboard.setPrimaryClip(clip)
-                                Toast.makeText(app, "已复制微信号: $cleanId", Toast.LENGTH_SHORT).show()
-
+                                
                                 // 2. 尝试跳转
                                 val intent = Intent(Intent.ACTION_VIEW).apply {
                                     data = android.net.Uri.parse("weixin://dl/chat?$cleanId")
                                     addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                    setPackage("com.tencent.mm") // 明确指定包名
                                 }
                                 startActivity(intent)
 
