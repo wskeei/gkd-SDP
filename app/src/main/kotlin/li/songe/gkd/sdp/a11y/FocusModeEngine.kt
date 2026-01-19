@@ -239,6 +239,63 @@ object FocusModeEngine {
     }
 
     /**
+     * 处理应用切换事件
+     */
+    fun onAppChanged(packageName: String, service: A11yService) {
+        if (!enabledFlow.value) return
+        if (!isInFocusMode()) return
+
+        // 如果正在自动跳转中，且是微信
+        if (isJumpInProgress && packageName == "com.tencent.mm") {
+            // 安全检查：防止跳转过程中用户去往其他页面
+            // 允许的页面：LauncherUI(主界面), FTSMainUI(搜索页), ChattingUI(聊天页)
+            // 拒绝的页面：SnsTimeLineUI(朋友圈), Finder(视频号) 等
+            val currentClass = service.topActivityFlow.value.activityId
+            if (currentClass != null) {
+                if (currentClass.contains("SnsTimeLineUI") || 
+                    currentClass.contains("Finder") || 
+                    currentClass.contains("GameCenterUI")) {
+                    LogUtils.d(TAG, "User strayed to $currentClass during jump, aborting")
+                    resetJumpState()
+                    // 继续执行下面的拦截逻辑
+                } else {
+                    LogUtils.d(TAG, "Jump in progress ($currentClass), allowing WeChat access")
+                    return
+                }
+            } else {
+                return // 无法获取 Activity，暂时放行
+            }
+        }
+
+        // 检查冷却时间
+        val now = System.currentTimeMillis()
+        val lastTriggerTime = cooldownMap[packageName] ?: 0L
+        if (now - lastTriggerTime < COOLDOWN_MS) {
+            return
+        }
+
+        // 微信专项检查
+        if (packageName == "com.tencent.mm") {
+            if (checkWechatAccess(service)) {
+                return  // 允许访问
+            }
+        } else {
+            // 其他应用：检查是否在白名单
+            if (isWhitelisted(packageName)) {
+                if (META.debuggable) {
+                    Log.d(TAG, "App $packageName is whitelisted, allowing")
+                }
+                return
+            }
+        }
+
+        // 触发拦截
+        cooldownMap[packageName] = now
+        LogUtils.d("Focus mode blocking: $packageName")
+        showFocusOverlay(service, packageName)
+    }
+
+    /**
      * 处理无障碍事件，驱动状态机
      */
     fun onA11yEvent(event: android.view.accessibility.AccessibilityEvent) {
@@ -247,6 +304,8 @@ object FocusModeEngine {
 
         // 使用 rootInActiveWindow 而不是 event.source，确保能获取完整界面
         val root = A11yService.instance?.rootInActiveWindow ?: return
+        val displayMetrics = app.resources.displayMetrics
+        val screenWidth = displayMetrics.widthPixels
 
         when (jumpState.value) {
             JumpState.WAIT_FOR_MAIN -> {
@@ -256,11 +315,26 @@ object FocusModeEngine {
                 val searchNodes = root.findAccessibilityNodeInfosByText("搜索")
                 
                 for (node in searchNodes) {
+                    // 过滤策略：
+                    // 1. 必须在屏幕顶部区域 (Top < 300px)
+                    // 2. 必须在屏幕右侧区域 (Right > width * 0.6) - 微信主界面的搜索通常在右上角
+                    val bounds = android.graphics.Rect()
+                    node.getBoundsInScreen(bounds)
+                    
+                    if (bounds.top > 300) {
+                        LogUtils.d(TAG, "Node '${node.text}' ignored: too low (top=${bounds.top})")
+                        continue
+                    }
+                    if (bounds.right < screenWidth * 0.6) {
+                         LogUtils.d(TAG, "Node '${node.text}' ignored: too left (right=${bounds.right})")
+                         continue
+                    }
+
                     // 2. 向上寻找可点击的父节点
                     var target: AccessibilityNodeInfo? = node
                     while (target != null) {
                         if (target.isClickable) {
-                            LogUtils.d(TAG, "Found clickable Search button: ${target.className}, clicking...")
+                            LogUtils.d(TAG, "Found valid Search button: ${target.className}, clicking...")
                             target.performAction(AccessibilityNodeInfo.ACTION_CLICK)
                             jumpState.value = JumpState.WAIT_FOR_SEARCH
                             return
@@ -328,91 +402,6 @@ object FocusModeEngine {
             }
             else -> {}
         }
-    }
-
-    private fun findNodesByClass(root: AccessibilityNodeInfo, className: String, result: MutableList<AccessibilityNodeInfo>) {
-        if (root.className?.toString() == className) {
-            result.add(root)
-        }
-        for (i in 0 until root.childCount) {
-            val child = root.getChild(i) ?: continue
-            findNodesByClass(child, className, result)
-        }
-    }
-
-    /**
-     * 检查当前是否处于专注模式
-     */
-    fun isInFocusMode(): Boolean {
-        if (!enabledFlow.value) return false
-
-        // 检查手动会话
-        val session = cachedSession
-        if (session?.isValidNow() == true) return true
-
-        // 检查定时规则
-        return cachedRules.any { it.isActiveNow() }
-    }
-
-    /**
-     * 检查包名是否在白名单中
-     */
-    fun isWhitelisted(packageName: String): Boolean {
-        // 始终允许系统 UI
-        if (packageName == "com.android.systemui") return true
-        // 始终允许本应用
-        if (packageName == META.appId) return true
-
-        // 检查手动会话的白名单
-        val session = cachedSession
-        if (session?.isValidNow() == true) {
-            return session.isInWhitelist(packageName)
-        }
-
-        // 检查当前生效规则的白名单
-        val activeRule = cachedRules.firstOrNull { it.isActiveNow() }
-        return activeRule?.getWhitelistPackages()?.contains(packageName) == true
-    }
-
-    /**
-     * 处理应用切换事件
-     */
-    fun onAppChanged(packageName: String, service: A11yService) {
-        if (!enabledFlow.value) return
-        if (!isInFocusMode()) return
-
-        // 如果正在自动跳转中，且是微信，暂时放行
-        if (isJumpInProgress && packageName == "com.tencent.mm") {
-            LogUtils.d(TAG, "Jump in progress, allowing WeChat access")
-            return
-        }
-
-        // 检查冷却时间
-        val now = System.currentTimeMillis()
-        val lastTriggerTime = cooldownMap[packageName] ?: 0L
-        if (now - lastTriggerTime < COOLDOWN_MS) {
-            return
-        }
-
-        // 微信专项检查
-        if (packageName == "com.tencent.mm") {
-            if (checkWechatAccess(service)) {
-                return  // 允许访问
-            }
-        } else {
-            // 其他应用：检查是否在白名单
-            if (isWhitelisted(packageName)) {
-                if (META.debuggable) {
-                    Log.d(TAG, "App $packageName is whitelisted, allowing")
-                }
-                return
-            }
-        }
-
-        // 触发拦截
-        cooldownMap[packageName] = now
-        LogUtils.d("Focus mode blocking: $packageName")
-        showFocusOverlay(service, packageName)
     }
 
     /**
