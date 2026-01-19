@@ -20,11 +20,47 @@ import li.songe.gkd.sdp.db.DbSet
 import li.songe.gkd.sdp.service.A11yService
 import li.songe.gkd.sdp.service.FocusOverlayService
 import li.songe.gkd.sdp.notif.focusEndNotif
+import li.songe.gkd.sdp.a11y.topActivityFlow
 import li.songe.gkd.sdp.util.LogUtils
 import li.songe.gkd.sdp.util.json
 import java.util.concurrent.ConcurrentHashMap
 
 object FocusModeEngine {
+    
+    /**
+     * 检查当前是否处于专注模式（会话有效或定时规则生效）
+     */
+    private fun isInFocusMode(): Boolean {
+        // 检查手动会话
+        val session = cachedSession
+        if (session?.isValidNow() == true) return true
+        // 检查定时规则
+        return cachedRules.any { it.isActiveNow() }
+    }
+    
+    /**
+     * 检查应用是否在白名单中
+     */
+    private fun isWhitelisted(packageName: String): Boolean {
+        return currentWhitelistFlow.value.contains(packageName)
+    }
+    
+    /**
+     * 递归查找特定类名的节点
+     */
+    private fun findNodesByClass(
+        node: AccessibilityNodeInfo,
+        className: String,
+        result: MutableList<AccessibilityNodeInfo>
+    ) {
+        if (node.className?.toString() == className) {
+            result.add(node)
+        }
+        for (i in 0 until node.childCount) {
+            val child = node.getChild(i) ?: continue
+            findNodesByClass(child, className, result)
+        }
+    }
     private const val TAG = "FocusModeEngine"
 
     // 缓存的规则和会话
@@ -178,57 +214,126 @@ object FocusModeEngine {
     }
 
     /**
-     * 开始微信跳转流程
+     * 开始微信跳转流程 - 简化版
+     * 1. 打开微信
+     * 2. 显示提示悬浮窗（倒计时）
+     * 3. 用户手动找到联系人
+     * 4. 倒计时结束后检查是否在目标聊天页
      */
-    fun startWechatJump(wechatId: String) {
-        if (isJumpInProgress) {
-            LogUtils.d(TAG, "Jump already in progress")
-            return
-        }
-
+    fun startWechatJump(wechatId: String, contactName: String = "") {
         appScope.launch(Dispatchers.Main) {
             try {
-                // 1. 复制微信号到剪贴板
-                val clipboard = app.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
-                val clip = android.content.ClipData.newPlainText("wechat_id", wechatId)
-                clipboard.setPrimaryClip(clip)
-
-                // 2. 初始化状态
+                // 保存目标信息
                 targetWechatId = wechatId
-                jumpState.value = JumpState.WAIT_FOR_MAIN
-                LogUtils.d(TAG, "Starting jump for $wechatId, state: WAIT_FOR_MAIN")
-
-                // 3. 启动微信
+                pendingContactName = contactName
+                
+                LogUtils.d(TAG, "Starting manual jump for $contactName ($wechatId)")
+                
+                // 1. 启动微信
                 val intent = app.packageManager.getLaunchIntentForPackage("com.tencent.mm")
                 if (intent != null) {
                     intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED)
                     app.startActivity(intent)
                 } else {
                     LogUtils.d(TAG, "WeChat not installed")
-                    resetJumpState()
+                    android.widget.Toast.makeText(app, "微信未安装", android.widget.Toast.LENGTH_SHORT).show()
                     return@launch
                 }
-
-                // 4. 设置超时任务 (15秒)
-                jumpJob?.cancel()
-                jumpJob = launch {
-                    delay(15_000L)
-                    if (isJumpInProgress) {
-                        LogUtils.d(TAG, "Jump timeout, resetting state")
-                        // 如果超时，且当前不在聊天界面，可能需要恢复拦截
-                        // 但由于我们在 onAppChanged 中有 checkWechatAccess，如果用户还在微信，会根据逻辑判断是否拦截
-                        resetJumpState()
-                        // 显示提示
-                        launch(Dispatchers.Main) {
-                            android.widget.Toast.makeText(app, "自动跳转超时，请手动查找", android.widget.Toast.LENGTH_SHORT).show()
-                        }
-                    }
+                
+                // 2. 延迟一点后启动提示悬浮窗（确保微信已启动）
+                delay(500)
+                
+                val hintIntent = Intent(app, li.songe.gkd.sdp.service.WechatJumpHintService::class.java).apply {
+                    putExtra(li.songe.gkd.sdp.service.WechatJumpHintService.EXTRA_CONTACT_NAME, contactName.ifEmpty { wechatId })
+                    putExtra(li.songe.gkd.sdp.service.WechatJumpHintService.EXTRA_WECHAT_ID, wechatId)
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 }
+                app.startService(hintIntent)
+                
             } catch (e: Exception) {
                 LogUtils.d(TAG, "Failed to start jump: ${e.message}")
-                resetJumpState()
+                android.widget.Toast.makeText(app, "跳转失败: ${e.message}", android.widget.Toast.LENGTH_SHORT).show()
             }
         }
+    }
+    
+    // 保存待查找的联系人名称（用于验证）
+    private var pendingContactName: String? = null
+    
+    /**
+     * 检查当前是否在目标联系人的聊天页面
+     * 使用多种方式检测：
+     * 1. Activity 名称包含 Chatting 相关关键词
+     * 2. UI 特征：有输入框、发送按钮等
+     * 3. 标题栏匹配目标联系人
+     */
+    fun checkIfOnTargetChat(wechatId: String, contactName: String): Boolean {
+        val service = A11yService.instance ?: return false
+        val rootNode = service.rootInActiveWindow ?: return false
+        
+        // 获取当前 Activity
+        val currentActivity = topActivityFlow.value.activityId ?: ""
+        LogUtils.d("$TAG: checkIfOnTargetChat - activity: $currentActivity")
+        
+        // 方法1：检查 Activity 名称
+        val isChatActivity = currentActivity.contains("Chatting", ignoreCase = true) ||
+                currentActivity.contains("Chat", ignoreCase = true) ||
+                currentActivity.contains("BaseChatUI", ignoreCase = true)
+        
+        // 方法2：检查 UI 特征（微信聊天页特征）
+        // 聊天页通常有：输入框（EditText）、语音按钮、更多功能按钮等
+        val hasInputBox = rootNode.findAccessibilityNodeInfosByText("按住 说话").isNotEmpty() ||
+                rootNode.findAccessibilityNodeInfosByText("发送").isNotEmpty() ||
+                hasClassNode(rootNode, "android.widget.EditText", 8)
+        
+        // 方法3：通过页面结构判断 - 聊天页底部有输入区域
+        val hasBottomInput = checkForBottomInputArea(rootNode)
+        
+        val looksLikeChat = isChatActivity || hasInputBox || hasBottomInput
+        LogUtils.d("$TAG: Chat detection - activity=$isChatActivity, inputBox=$hasInputBox, bottomInput=$hasBottomInput, final=$looksLikeChat")
+        
+        if (!looksLikeChat) {
+            LogUtils.d("$TAG: Not in chat UI ($currentActivity)")
+            return false
+        }
+        
+        // 提取当前聊天对象名称
+        val chatTitle = extractChatTitle(rootNode)
+        LogUtils.d("$TAG: Checking target chat, expected: $contactName (id: $wechatId), actual: $chatTitle")
+        
+        if (chatTitle == null) {
+            return false
+        }
+        
+        // 检查名称是否匹配（忽略特殊字符）
+        val normalizedExpected = contactName.trim()
+        val normalizedActual = chatTitle.trim()
+        
+        if (normalizedActual == normalizedExpected) {
+            return true
+        }
+        
+        // 尝试通过微信号匹配（查询数据库）
+        val actualWechatId = try {
+            kotlinx.coroutines.runBlocking {
+                DbSet.wechatContactDao.findIdByName(normalizedActual)
+            }
+        } catch (e: Exception) {
+            null
+        }
+        
+        return actualWechatId == wechatId
+    }
+    
+    /**
+     * 触发微信拦截（用于跳转失败时）
+     */
+    fun triggerWechatIntercept() {
+        val service = A11yService.instance ?: return
+        LogUtils.d("$TAG: Triggering wechat intercept")
+        
+        // 显示专注模式拦截界面
+        showFocusOverlay(service, "com.tencent.mm")
     }
 
     private fun resetJumpState() {
@@ -250,7 +355,7 @@ object FocusModeEngine {
             // 安全检查：防止跳转过程中用户去往其他页面
             // 允许的页面：LauncherUI(主界面), FTSMainUI(搜索页), ChattingUI(聊天页)
             // 拒绝的页面：SnsTimeLineUI(朋友圈), Finder(视频号) 等
-            val currentClass = service.topActivityFlow.value.activityId
+            val currentClass = topActivityFlow.value.activityId
             if (currentClass != null) {
                 if (currentClass.contains("SnsTimeLineUI") || 
                     currentClass.contains("Finder") || 
@@ -405,61 +510,236 @@ object FocusModeEngine {
     }
 
     /**
-     * 微信专项检查
+     * 微信专项检查 - 严格模式
+     * 只允许：
+     * 1. 白名单联系人的聊天页面
+     * 2. 主界面的"微信"和"通讯录"标签页（用于查找联系人）
+     * 3. 搜索页面（用于搜索联系人）
+     * 
+     * 拦截：
+     * 1. 朋友圈、视频号、发现页、游戏、购物等
+     * 2. 非白名单联系人的聊天
+     * 3. 小程序
      */
     private fun checkWechatAccess(service: A11yService): Boolean {
         val whitelist = currentWechatWhitelistFlow.value
-        if (whitelist.isEmpty()) return false
+        if (whitelist.isEmpty()) {
+            LogUtils.d("$TAG: WeChat whitelist is empty, blocking all")
+            return false
+        }
 
         val rootNode = service.rootInActiveWindow ?: return false
+        
+        // 获取当前 Activity
+        val currentActivity = topActivityFlow.value.activityId ?: ""
+        LogUtils.d("$TAG: Checking WeChat access, activity: $currentActivity")
+        
+        // 1. 检查是否在小程序中 - 直接拦截
+        if (currentActivity.contains("AppBrandUI") || 
+            currentActivity.contains("WeAppUI") ||
+            currentActivity.contains("miniprogram", ignoreCase = true)) {
+            LogUtils.d("$TAG: In mini-program, blocking")
+            return false
+        }
+        
+        // 2. 检查是否在朋友圈/视频号/发现页 - 直接拦截
+        if (currentActivity.contains("SnsTimeLineUI") ||  // 朋友圈
+            currentActivity.contains("SnsUploadUI") ||    // 发朋友圈
+            currentActivity.contains("FinderHomeUI") ||   // 视频号
+            currentActivity.contains("FinderLiveUI") ||   // 视频号直播
+            currentActivity.contains("FinderFeedUI") ||   // 视频号Feed
+            currentActivity.contains("WxaLauncherUI") ||  // 小程序启动器
+            currentActivity.contains("GameCenterUI") ||   // 游戏中心
+            currentActivity.contains("ShoppingUI") ||     // 购物
+            currentActivity.contains("ChannelUI")) {      // 频道
+            LogUtils.d("$TAG: In restricted page ($currentActivity), blocking")
+            return false
+        }
+        
+        // 3. 检查是否在聊天界面 (ChattingUI)
+        if (currentActivity.contains("ChattingUI")) {
+            // 在聊天界面，提取聊天对象并检查白名单
+            val chatTitle = extractChatTitle(rootNode)
+            LogUtils.d("$TAG: In chat UI, title: $chatTitle")
+            
+            if (chatTitle == null) {
+                return false
+            }
+            
+            // 排除系统服务和订阅号
+            if (chatTitle == "订阅号消息" || chatTitle == "服务通知" || 
+                chatTitle == "文件传输助手" || chatTitle == "微信团队") {
+                LogUtils.d("$TAG: System chat, blocking")
+                return false
+            }
+            
+            // 查询该名称对应的微信号
+            val wechatId = try {
+                kotlinx.coroutines.runBlocking {
+                    DbSet.wechatContactDao.findIdByName(chatTitle)
+                }
+            } catch (e: Exception) {
+                LogUtils.d("$TAG: Failed to query wechat contact: ${e.message}")
+                null
+            }
 
-        // 1. 允许微信主界面 (LauncherUI)
-        // 特征：底部包含 "微信", "通讯录", "发现", "我"
-        val hasMainTabs = rootNode.findAccessibilityNodeInfosByText("通讯录").isNotEmpty() &&
-                rootNode.findAccessibilityNodeInfosByText("发现").isNotEmpty()
-        if (hasMainTabs) {
+            if (wechatId == null) {
+                // 未找到对应联系人，尝试用名称直接匹配白名单
+                // 因为白名单可能包含备注名或昵称
+                val isInWhitelistByName = try {
+                    kotlinx.coroutines.runBlocking {
+                        val contact = DbSet.wechatContactDao.findByDisplayName(chatTitle)
+                        contact != null && whitelist.contains(contact.wechatId)
+                    }
+                } catch (e: Exception) {
+                    false
+                }
+                
+                if (!isInWhitelistByName) {
+                    LogUtils.d("$TAG: Contact '$chatTitle' not in whitelist, blocking")
+                    return false
+                }
+                return true
+            }
+
+            // 检查是否在白名单
+            val allowed = whitelist.contains(wechatId)
+            LogUtils.d("$TAG: Contact '$chatTitle' (id: $wechatId) whitelist check: $allowed")
+            return allowed
+        }
+        
+        // 4. 检查主界面 - 只允许在"微信"聊天列表和"通讯录"Tab
+        if (currentActivity.contains("LauncherUI")) {
+            // 检查当前选中的Tab
+            // 如果能找到"发现"或"我"Tab处于选中状态，则拦截
+            
+            // 检测是否在聊天列表或通讯录Tab
+            // 通过检测页面特征：聊天列表有搜索框，通讯录有字母索引
+            val hasSearch = rootNode.findAccessibilityNodeInfosByText("搜索").isNotEmpty()
+            val hasContacts = rootNode.findAccessibilityNodeInfosByText("通讯录").isNotEmpty()
+            val hasNewFriend = rootNode.findAccessibilityNodeInfosByText("新的朋友").isNotEmpty()
+            
+            // 检测是否在"发现"Tab - 有"朋友圈"、"视频号"等入口
+            val hasMoments = rootNode.findAccessibilityNodeInfosByText("朋友圈").isNotEmpty()
+            val hasChannels = rootNode.findAccessibilityNodeInfosByText("视频号").isNotEmpty()
+            
+            // 如果能看到朋友圈和视频号入口，说明在发现页
+            if (hasMoments && hasChannels) {
+                LogUtils.d("$TAG: In Discover tab (朋友圈+视频号 visible), blocking")
+                return false
+            }
+            
+            // 检测是否在"我"Tab - 有"设置"、"收藏"等入口
+            val hasSettings = rootNode.findAccessibilityNodeInfosByText("设置").isNotEmpty()
+            val hasFavorites = rootNode.findAccessibilityNodeInfosByText("收藏").isNotEmpty()
+            if (hasSettings && hasFavorites) {
+                LogUtils.d("$TAG: In 'Me' tab, blocking")
+                return false
+            }
+            
+            // 允许聊天列表和通讯录
+            LogUtils.d("$TAG: In launcher (chat/contacts), allowing")
             return true
         }
-
-        // 2. 读取聊天标题栏的联系人名称
-        val chatTitle = extractChatTitle(rootNode) ?: return false
         
-        // 排除常见非聊天页面
-        if (chatTitle == "朋友圈" || chatTitle == "视频号" || chatTitle == "订阅号消息" || chatTitle == "服务号") {
-            return false
+        // 5. 允许搜索页面 (用于搜索联系人)
+        if (currentActivity.contains("FTSMainUI") || 
+            currentActivity.contains("ContactSearchUI") ||
+            currentActivity.contains("SearchUI")) {
+            LogUtils.d("$TAG: In search UI, allowing")
+            return true
         }
-
-        // 3. 查询该名称对应的微信号（同步查询）
-        val wechatId = try {
-            kotlinx.coroutines.runBlocking {
-                DbSet.wechatContactDao.findIdByName(chatTitle)
-            }
-        } catch (e: Exception) {
-            LogUtils.d("$TAG: Failed to query wechat contact: ${e.message}")
-            null
+        
+        // 6. 允许联系人详情页 (用于发起聊天)
+        if (currentActivity.contains("ContactInfoUI") ||
+            currentActivity.contains("FriendProfileUI")) {
+            LogUtils.d("$TAG: In contact info UI, allowing")
+            return true
         }
-
-        if (wechatId == null) {
-            // 未找到对应联系人，拦截
-            return false
-        }
-
-        // 4. 检查是否在白名单
-        return whitelist.contains(wechatId)
+        
+        // 7. 其他未知页面 - 默认拦截
+        LogUtils.d("$TAG: Unknown activity ($currentActivity), blocking by default")
+        return false
     }
 
     /**
      * 提取聊天标题栏的联系人名称
+     * 微信聊天界面的标题通常在导航栏中，特征：
+     * 1. 在屏幕顶部区域（Y < 300dp）
+     * 2. 是一个 TextView
+     * 3. 不是返回按钮、设置按钮等
      */
     private fun extractChatTitle(rootNode: AccessibilityNodeInfo): String? {
-        // 查找标题栏（通常在顶部）
-        val textNodes = mutableListOf<AccessibilityNodeInfo>()
-        findTextNodes(rootNode, textNodes, maxDepth = 5)
-
-        // 返回第一个非空文本（通常是联系人名称）
-        return textNodes.firstOrNull()?.text?.toString()?.trim()
+        val displayMetrics = app.resources.displayMetrics
+        val density = displayMetrics.density
+        val maxY = (200 * density).toInt()  // 200dp 以内
+        
+        val candidates = mutableListOf<Pair<String, android.graphics.Rect>>()
+        
+        // 收集顶部区域的所有文本节点
+        collectTopTextNodes(rootNode, candidates, maxY)
+        
+        // 过滤掉不可能是标题的内容
+        val filtered = candidates.filter { (text, _) ->
+            text.isNotEmpty() &&
+            text != "返回" &&
+            text != "搜索" &&
+            text != "..." &&
+            text != "⋮" &&
+            !text.startsWith("微信") &&  // 排除底部Tab文字
+            !text.contains("通讯录") &&
+            !text.contains("发现") &&
+            !text.matches(Regex("^\\d+$")) &&  // 纯数字
+            !text.matches(Regex("^\\d{1,2}:\\d{2}$")) &&  // 时间格式
+            text.length in 1..30  // 合理的名称长度
+        }
+        
+        // 按 X 坐标排序，取居中的（标题通常在中间）
+        val sorted = filtered.sortedBy { it.second.left }
+        
+        // 如果有多个候选，优先选择靠中间的
+        val screenWidth = displayMetrics.widthPixels
+        val centerX = screenWidth / 2
+        val best = sorted.minByOrNull { 
+            kotlin.math.abs(it.second.centerX() - centerX)
+        }
+        
+        val result = best?.first
+        LogUtils.d("$TAG: extractChatTitle candidates: ${filtered.map { it.first }}, selected: $result")
+        return result
     }
-
+    
+    /**
+     * 收集顶部区域的文本节点
+     */
+    private fun collectTopTextNodes(
+        node: AccessibilityNodeInfo,
+        result: MutableList<Pair<String, android.graphics.Rect>>,
+        maxY: Int,
+        depth: Int = 0
+    ) {
+        if (depth > 10) return  // 限制递归深度
+        
+        // 检查节点位置
+        val bounds = android.graphics.Rect()
+        node.getBoundsInScreen(bounds)
+        
+        // 只处理顶部区域的节点
+        if (bounds.top > maxY) return
+        
+        // 如果是文本节点，添加到结果
+        val text = node.text?.toString()?.trim()
+        if (!text.isNullOrEmpty() && bounds.top < maxY) {
+            result.add(text to bounds)
+        }
+        
+        // 递归处理子节点
+        for (i in 0 until node.childCount) {
+            val child = node.getChild(i) ?: continue
+            collectTopTextNodes(child, result, maxY, depth + 1)
+        }
+    }
+    
     private fun findTextNodes(
         node: AccessibilityNodeInfo,
         result: MutableList<AccessibilityNodeInfo>,
@@ -476,6 +756,68 @@ object FocusModeEngine {
             val child = node.getChild(i) ?: continue
             findTextNodes(child, result, maxDepth, currentDepth + 1)
         }
+    }
+
+    /**
+     * 检查是否存在指定类名的节点
+     */
+    private fun hasClassNode(node: AccessibilityNodeInfo, className: String, maxDepth: Int, depth: Int = 0): Boolean {
+        if (depth > maxDepth) return false
+        
+        if (node.className?.toString() == className) {
+            return true
+        }
+        
+        for (i in 0 until node.childCount) {
+            val child = node.getChild(i) ?: continue
+            if (hasClassNode(child, className, maxDepth, depth + 1)) {
+                return true
+            }
+        }
+        return false
+    }
+    
+    /**
+     * 检查是否有底部输入区域（聊天页特征）
+     */
+    private fun checkForBottomInputArea(rootNode: AccessibilityNodeInfo): Boolean {
+        val displayMetrics = app.resources.displayMetrics
+        val screenHeight = displayMetrics.heightPixels
+        val bottomThreshold = (screenHeight * 0.7).toInt()  // 底部 30% 区域
+        
+        // 查找底部区域的 EditText 或输入相关节点
+        return hasBottomEditText(rootNode, bottomThreshold)
+    }
+    
+    /**
+     * 检查底部是否有 EditText
+     */
+    private fun hasBottomEditText(node: AccessibilityNodeInfo, bottomThreshold: Int, depth: Int = 0): Boolean {
+        if (depth > 15) return false
+        
+        val bounds = android.graphics.Rect()
+        node.getBoundsInScreen(bounds)
+        
+        // 检查是否在底部区域且是输入相关控件
+        if (bounds.top > bottomThreshold) {
+            val className = node.className?.toString() ?: ""
+            if (className.contains("EditText") || className.contains("Input")) {
+                return true
+            }
+            // 检查是否有微信特有的输入区域文本
+            val text = node.text?.toString() ?: ""
+            if (text == "按住 说话" || text.contains("输入") || node.isEditable) {
+                return true
+            }
+        }
+        
+        for (i in 0 until node.childCount) {
+            val child = node.getChild(i) ?: continue
+            if (hasBottomEditText(child, bottomThreshold, depth + 1)) {
+                return true
+            }
+        }
+        return false
     }
 
     /**

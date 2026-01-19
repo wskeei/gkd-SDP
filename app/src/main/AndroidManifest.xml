@@ -198,6 +198,10 @@
             android:exported="false" />
 
         <service
+            android:name=".service.WechatJumpHintService"
+            android:exported="false" />
+
+        <service
             android:name=".service.GkdTileService"
             android:exported="true"
             android:icon="@drawable/ic_status"

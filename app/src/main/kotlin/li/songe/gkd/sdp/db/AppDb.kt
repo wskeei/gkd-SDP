@@ -34,7 +34,7 @@ import li.songe.gkd.sdp.util.dbFolder
 import li.songe.gkd.sdp.util.json
 
 @Database(
-    version = 23,
+    version = 24,
     entities = [
         SubsItem::class,
         Snapshot::class,
@@ -80,6 +80,7 @@ import li.songe.gkd.sdp.util.json
         AutoMigration(from = 20, to = 21),
         AutoMigration(from = 21, to = 22),
         AutoMigration(from = 22, to = 23),
+        AutoMigration(from = 23, to = 24),  // 添加 is_allow_mode 字段
     ]
 )
 @TypeConverters(DbConverters::class)

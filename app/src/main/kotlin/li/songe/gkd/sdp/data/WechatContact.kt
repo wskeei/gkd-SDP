@@ -40,6 +40,9 @@ data class WechatContact(
         @Query("SELECT wechat_id FROM wechat_contact WHERE nickname = :name OR remark = :name LIMIT 1")
         suspend fun findIdByName(name: String): String?
 
+        @Query("SELECT * FROM wechat_contact WHERE nickname = :name OR remark = :name LIMIT 1")
+        suspend fun findByDisplayName(name: String): WechatContact?
+
         @Query("DELETE FROM wechat_contact")
         suspend fun deleteAll()
     }

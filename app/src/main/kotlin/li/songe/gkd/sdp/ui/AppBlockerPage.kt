@@ -419,10 +419,24 @@ private fun AppGroupCard(
                             .padding(vertical = 4.dp)
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = "${rule.formatTimeRange()} ${rule.formatDaysOfWeek()}",
-                                style = MaterialTheme.typography.bodyMedium
-                            )
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    text = if (rule.isAllowMode) "✓" else "🚫",
+                                    style = MaterialTheme.typography.bodySmall
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = "${rule.formatTimeRange()} ${rule.formatDaysOfWeek()}",
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+                            }
+                            if (rule.isAllowMode) {
+                                Text(
+                                    text = "允许时间段",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                            }
                             if (rule.isCurrentlyLocked) {
                                 Text(
                                     text = "已锁定",
@@ -552,10 +566,24 @@ private fun AppRulesCard(
                         .padding(vertical = 4.dp)
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = "${rule.formatTimeRange()} ${rule.formatDaysOfWeek()}",
-                            style = MaterialTheme.typography.bodyMedium
-                        )
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = if (rule.isAllowMode) "✓" else "🚫",
+                                style = MaterialTheme.typography.bodySmall
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = "${rule.formatTimeRange()} ${rule.formatDaysOfWeek()}",
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                        }
+                        if (rule.isAllowMode) {
+                            Text(
+                                text = "允许时间段",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
                         if (rule.isCurrentlyLocked) {
                             Text(
                                 text = "已锁定",
@@ -802,7 +830,36 @@ private fun RuleEditorSheet(
                     }
                 }
 
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // 模式选择（禁止/允许）
+                Text(
+                    text = "规则模式",
+                    style = MaterialTheme.typography.bodyMedium
+                )
                 Spacer(modifier = Modifier.height(8.dp))
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    FilterChip(
+                        selected = !vm.ruleIsAllowMode,
+                        onClick = { vm.ruleIsAllowMode = false },
+                        label = { Text("🚫 禁止时间段") }
+                    )
+                    FilterChip(
+                        selected = vm.ruleIsAllowMode,
+                        onClick = { vm.ruleIsAllowMode = true },
+                        label = { Text("✓ 允许时间段") }
+                    )
+                }
+                if (vm.ruleIsAllowMode) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "仅在设定的时间段内允许使用，其他时间拦截",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
 
                 // 时间段
                 Row(

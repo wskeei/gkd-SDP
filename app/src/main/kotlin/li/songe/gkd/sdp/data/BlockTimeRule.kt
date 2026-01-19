@@ -38,6 +38,9 @@ data class BlockTimeRule(
     @ColumnInfo(name = "created_at") val createdAt: Long = System.currentTimeMillis(),
 
     @ColumnInfo(name = "intercept_message") val interceptMessage: String = "这真的重要吗？",
+
+    // 是否为允许模式（反选）：true = 时间段内允许，其他时间拦截
+    @ColumnInfo(name = "is_allow_mode", defaultValue = "0") val isAllowMode: Boolean = false,
 ) {
     companion object {
         const val TARGET_TYPE_APP = 0
@@ -85,7 +88,9 @@ data class BlockTimeRule(
     }
 
     /**
-     * 检查当前时间是否在规则时间段内
+     * 检查当前时间是否应该拦截
+     * - 禁止模式：时间段内拦截 (返回 true)
+     * - 允许模式：时间段外拦截 (时间段内返回 false，时间段外返回 true)
      */
     fun isActiveNow(): Boolean {
         if (!enabled) return false
@@ -95,13 +100,13 @@ data class BlockTimeRule(
         val currentTime = now.toLocalTime()
 
         // 检查星期几
-        if (currentDayOfWeek !in getDaysOfWeekList()) return false
+        val dayMatches = currentDayOfWeek in getDaysOfWeekList()
 
         // 检查时间段
         val start = parseTime(startTime)
         val end = parseTime(endTime)
 
-        return if (end.isAfter(start)) {
+        val timeMatches = if (end.isAfter(start)) {
             // 正常时间段，如 09:00 - 17:00
             currentTime.isAfter(start) && currentTime.isBefore(end) ||
                     currentTime == start
@@ -110,6 +115,25 @@ data class BlockTimeRule(
             currentTime.isAfter(start) || currentTime.isBefore(end) ||
                     currentTime == start
         }
+
+        val inTimeWindow = dayMatches && timeMatches
+
+        // 根据模式决定是否拦截
+        return if (isAllowMode) {
+            // 允许模式：时间窗口内不拦截，窗口外拦截
+            // 注意：星期几不匹配时，整天都拦截
+            if (!dayMatches) true else !inTimeWindow
+        } else {
+            // 禁止模式：时间窗口内拦截
+            inTimeWindow
+        }
+    }
+
+    /**
+     * 获取模式描述
+     */
+    fun formatModeDescription(): String {
+        return if (isAllowMode) "允许时间段" else "禁止时间段"
     }
 
     /**

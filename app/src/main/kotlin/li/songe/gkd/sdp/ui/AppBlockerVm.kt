@@ -41,6 +41,7 @@ class AppBlockerVm : BaseViewModel() {
     var ruleEndTime by mutableStateOf("08:00")
     var ruleDaysOfWeek by mutableStateOf(listOf(1, 2, 3, 4, 5, 6, 7))
     var ruleInterceptMessage by mutableStateOf("这真的重要吗？")
+    var ruleIsAllowMode by mutableStateOf(false)  // 是否为允许模式（反选）
 
     // 锁定时长选择
     var selectedLockDuration by mutableIntStateOf(480)  // 默认 8 小时
@@ -125,6 +126,7 @@ class AppBlockerVm : BaseViewModel() {
         ruleEndTime = "08:00"
         ruleDaysOfWeek = listOf(1, 2, 3, 4, 5, 6, 7)
         ruleInterceptMessage = "这真的重要吗？"
+        ruleIsAllowMode = false
         showRuleEditor = false
     }
 
@@ -136,6 +138,7 @@ class AppBlockerVm : BaseViewModel() {
         ruleEndTime = rule.endTime
         ruleDaysOfWeek = rule.getDaysOfWeekList()
         ruleInterceptMessage = rule.interceptMessage
+        ruleIsAllowMode = rule.isAllowMode
         showRuleEditor = true
     }
 
@@ -162,7 +165,8 @@ class AppBlockerVm : BaseViewModel() {
             isLocked = editingRule?.isLocked ?: false,
             lockEndTime = editingRule?.lockEndTime ?: 0,
             createdAt = editingRule?.createdAt ?: System.currentTimeMillis(),
-            interceptMessage = ruleInterceptMessage.ifBlank { "这真的重要吗？" }
+            interceptMessage = ruleInterceptMessage.ifBlank { "这真的重要吗？" },
+            isAllowMode = ruleIsAllowMode
         )
 
         DbSet.blockTimeRuleDao.insert(rule)
