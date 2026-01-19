@@ -23,11 +23,15 @@ data class FocusRule(
 
     @ColumnInfo(name = "name") val name: String,  // 规则名称，如"复盘时间"
 
-    @ColumnInfo(name = "start_time") val startTime: String,  // 开始时间 "22:30"
+    @ColumnInfo(name = "rule_type", defaultValue = "0") val ruleType: Int = RULE_TYPE_SCHEDULED,  // 规则类型
 
-    @ColumnInfo(name = "end_time") val endTime: String,  // 结束时间 "23:00"
+    @ColumnInfo(name = "start_time") val startTime: String = "00:00",  // 开始时间 "22:30"（定时规则用）
 
-    @ColumnInfo(name = "days_of_week") val daysOfWeek: String,  // 星期几 "1,2,3,4,5"
+    @ColumnInfo(name = "end_time") val endTime: String = "00:00",  // 结束时间 "23:00"（定时规则用）
+
+    @ColumnInfo(name = "duration_minutes", defaultValue = "30") val durationMinutes: Int = 30,  // 持续时长（快速启动用）
+
+    @ColumnInfo(name = "days_of_week") val daysOfWeek: String = "",  // 星期几 "1,2,3,4,5"（定时规则用）
 
     @ColumnInfo(name = "enabled") val enabled: Boolean = true,
 
@@ -39,14 +43,25 @@ data class FocusRule(
 
     @ColumnInfo(name = "lock_end_time") val lockEndTime: Long = 0,  // 锁定结束时间
 
+    @ColumnInfo(name = "lock_duration_minutes", defaultValue = "0") val lockDurationMinutes: Int = 0,  // 锁定持续时长（快速启动用）
+
     @ColumnInfo(name = "order_index") val orderIndex: Int = 0,
 ) {
     companion object {
+        const val RULE_TYPE_SCHEDULED = 0  // 定时规则
+        const val RULE_TYPE_QUICK_START = 1  // 快速启动模板
+
         fun parseTime(timeStr: String): LocalTime {
             val parts = timeStr.split(":")
             return LocalTime.of(parts[0].toInt(), parts[1].toInt())
         }
     }
+
+    /**
+     * 是否为快速启动模板
+     */
+    val isQuickStart: Boolean
+        get() = ruleType == RULE_TYPE_QUICK_START
 
     /**
      * 获取白名单应用包名列表
@@ -86,9 +101,11 @@ data class FocusRule(
 
     /**
      * 检查当前时间是否在规则时间段内
+     * 注意：快速启动模板始终返回 false，需要手动启动
      */
     fun isActiveNow(): Boolean {
         if (!enabled) return false
+        if (isQuickStart) return false  // 快速启动模板不自动激活
 
         val now = java.time.LocalDateTime.now()
         val currentDayOfWeek = now.dayOfWeek.value  // 1=周一, 7=周日
@@ -133,6 +150,19 @@ data class FocusRule(
             5 to "周五", 6 to "周六", 7 to "周日"
         )
         return days.mapNotNull { dayNames[it] }.joinToString("、")
+    }
+
+    /**
+     * 格式化时长显示
+     */
+    fun formatDuration(): String {
+        val hours = durationMinutes / 60
+        val minutes = durationMinutes % 60
+        return when {
+            hours > 0 && minutes > 0 -> "${hours}小时${minutes}分钟"
+            hours > 0 -> "${hours}小时"
+            else -> "${minutes}分钟"
+        }
     }
 
     @Dao

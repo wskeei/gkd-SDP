@@ -30,11 +30,19 @@ class FocusModeVm : BaseViewModel() {
 
     // 规则表单字段
     var ruleName by mutableStateOf("")
+    var ruleType by mutableIntStateOf(FocusRule.RULE_TYPE_QUICK_START)  // 默认快速启动
     var ruleStartTime by mutableStateOf("22:00")
     var ruleEndTime by mutableStateOf("23:00")
     var ruleDaysOfWeek by mutableStateOf(listOf(1, 2, 3, 4, 5, 6, 7))
+    var ruleDurationHours by mutableIntStateOf(0)
+    var ruleDurationMinutes by mutableIntStateOf(30)
     var ruleWhitelistApps by mutableStateOf<List<String>>(emptyList())
     var ruleInterceptMessage by mutableStateOf("专注当下")
+    var ruleIsLocked by mutableStateOf(false)
+    var ruleLockDurationMinutes by mutableIntStateOf(30)
+
+    val ruleTotalDurationMinutes: Int
+        get() = ruleDurationHours * 60 + ruleDurationMinutes
 
     // 手动启动表单
     var manualHours by mutableIntStateOf(0)
@@ -60,22 +68,32 @@ class FocusModeVm : BaseViewModel() {
     fun resetRuleForm() {
         editingRule = null
         ruleName = ""
+        ruleType = FocusRule.RULE_TYPE_QUICK_START
         ruleStartTime = "22:00"
         ruleEndTime = "23:00"
         ruleDaysOfWeek = listOf(1, 2, 3, 4, 5, 6, 7)
+        ruleDurationHours = 0
+        ruleDurationMinutes = 30
         ruleWhitelistApps = emptyList()
         ruleInterceptMessage = "专注当下"
+        ruleIsLocked = false
+        ruleLockDurationMinutes = 30
         showRuleEditor = false
     }
 
     fun loadRuleForEdit(rule: FocusRule) {
         editingRule = rule
         ruleName = rule.name
+        ruleType = rule.ruleType
         ruleStartTime = rule.startTime
         ruleEndTime = rule.endTime
         ruleDaysOfWeek = rule.getDaysOfWeekList()
+        ruleDurationHours = rule.durationMinutes / 60
+        ruleDurationMinutes = rule.durationMinutes % 60
         ruleWhitelistApps = rule.getWhitelistPackages()
         ruleInterceptMessage = rule.interceptMessage
+        ruleIsLocked = rule.isLocked
+        ruleLockDurationMinutes = rule.lockDurationMinutes
         showRuleEditor = true
     }
 
@@ -85,17 +103,26 @@ class FocusModeVm : BaseViewModel() {
             return@launch
         }
 
+        // 快速启动模板验证时长
+        if (ruleType == FocusRule.RULE_TYPE_QUICK_START && ruleTotalDurationMinutes < 5) {
+            toast("专注时长至少为 5 分钟")
+            return@launch
+        }
+
         val rule = FocusRule(
             id = editingRule?.id ?: 0,
             name = ruleName.trim(),
+            ruleType = ruleType,
             startTime = ruleStartTime,
             endTime = ruleEndTime,
+            durationMinutes = ruleTotalDurationMinutes,
             daysOfWeek = ruleDaysOfWeek.joinToString(","),
             enabled = editingRule?.enabled ?: true,
             whitelistApps = json.encodeToString(ruleWhitelistApps),
             interceptMessage = ruleInterceptMessage.ifBlank { "专注当下" },
             isLocked = editingRule?.isLocked ?: false,
             lockEndTime = editingRule?.lockEndTime ?: 0,
+            lockDurationMinutes = ruleLockDurationMinutes,
             orderIndex = editingRule?.orderIndex ?: 0
         )
 
@@ -207,5 +234,29 @@ class FocusModeVm : BaseViewModel() {
      */
     fun removeFromSessionWhitelist(packageName: String) = viewModelScope.launch(Dispatchers.IO) {
         FocusModeEngine.removeFromWhitelist(packageName)
+    }
+
+    /**
+     * 从快速启动模板启动专注会话
+     */
+    fun startQuickRule(rule: FocusRule) = viewModelScope.launch(Dispatchers.IO) {
+        if (!rule.isQuickStart) {
+            toast("这不是快速启动模板")
+            return@launch
+        }
+
+        if (rule.durationMinutes < 5) {
+            toast("专注时长至少为 5 分钟")
+            return@launch
+        }
+
+        FocusModeEngine.startManualSession(
+            durationMinutes = rule.durationMinutes,
+            whitelistApps = rule.getWhitelistPackages(),
+            interceptMessage = rule.interceptMessage,
+            isLocked = rule.isLocked,
+            lockDurationMinutes = rule.lockDurationMinutes
+        )
+        toast("专注模式已开始")
     }
 }

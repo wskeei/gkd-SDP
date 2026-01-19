@@ -167,7 +167,8 @@ fun FocusModePage() {
                         onLock = {
                             lockTargetRule = rule
                             showLockSheet = true
-                        }
+                        },
+                        onStart = { vm.startQuickRule(rule) }
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                 }
@@ -369,7 +370,8 @@ private fun FocusRuleCard(
     onToggleEnabled: () -> Unit,
     onEdit: () -> Unit,
     onDelete: () -> Unit,
-    onLock: () -> Unit
+    onLock: () -> Unit,
+    onStart: () -> Unit  // 快速启动
 ) {
     var showDeleteConfirm by remember { mutableStateOf(false) }
 
@@ -392,6 +394,14 @@ private fun FocusRuleCard(
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold
                         )
+                        if (rule.isQuickStart) {
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "快速启动",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.secondary
+                            )
+                        }
                         if (rule.isCurrentlyLocked) {
                             Spacer(modifier = Modifier.width(8.dp))
                             Icon(
@@ -400,7 +410,7 @@ private fun FocusRuleCard(
                                 tint = MaterialTheme.colorScheme.error
                             )
                         }
-                        if (rule.isActiveNow()) {
+                        if (!rule.isQuickStart && rule.isActiveNow()) {
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
                                 text = "进行中",
@@ -410,22 +420,47 @@ private fun FocusRuleCard(
                         }
                     }
                     Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = "${rule.startTime} - ${rule.endTime}",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-                    )
-                    Text(
-                        text = rule.formatDaysOfWeek(),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                    )
+
+                    // 根据规则类型显示不同信息
+                    if (rule.isQuickStart) {
+                        Text(
+                            text = "时长：${rule.formatDuration()}",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                        )
+                        if (rule.isLocked) {
+                            Text(
+                                text = "启动后锁定",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.error.copy(alpha = 0.7f)
+                            )
+                        }
+                    } else {
+                        Text(
+                            text = "${rule.startTime} - ${rule.endTime}",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                        )
+                        Text(
+                            text = rule.formatDaysOfWeek(),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                        )
+                    }
                 }
 
-                Switch(
-                    checked = rule.enabled,
-                    onCheckedChange = { onToggleEnabled() }
-                )
+                if (rule.isQuickStart) {
+                    // 快速启动：显示开始按钮
+                    Button(onClick = onStart) {
+                        Text("开始")
+                    }
+                } else {
+                    // 定时规则：显示开关
+                    Switch(
+                        checked = rule.enabled,
+                        onCheckedChange = { onToggleEnabled() }
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.height(12.dp))
@@ -436,10 +471,12 @@ private fun FocusRuleCard(
                 horizontalArrangement = Arrangement.End,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                TextButton(onClick = onLock) {
-                    Icon(PerfIcon.Lock, contentDescription = null)
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(if (rule.isCurrentlyLocked) "延长锁定" else "锁定")
+                if (!rule.isQuickStart) {
+                    TextButton(onClick = onLock) {
+                        Icon(PerfIcon.Lock, contentDescription = null)
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(if (rule.isCurrentlyLocked) "延长锁定" else "锁定")
+                    }
                 }
                 if (!rule.isCurrentlyLocked) {
                     TextButton(onClick = { showDeleteConfirm = true }) {
@@ -663,54 +700,139 @@ private fun RuleEditorSheet(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // 时间段
+            // 规则类型选择
+            Text(
+                text = "规则类型",
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Medium
+            )
+            Spacer(modifier = Modifier.height(8.dp))
             Row(
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
                 modifier = Modifier.fillMaxWidth()
             ) {
-                OutlinedTextField(
-                    value = vm.ruleStartTime,
-                    onValueChange = { vm.ruleStartTime = it },
-                    label = { Text("开始时间") },
-                    placeholder = { Text("22:00") },
-                    modifier = Modifier.weight(1f),
-                    singleLine = true
+                FilterChip(
+                    selected = vm.ruleType == FocusRule.RULE_TYPE_QUICK_START,
+                    onClick = { vm.ruleType = FocusRule.RULE_TYPE_QUICK_START },
+                    label = { Text("快速启动") }
                 )
-                OutlinedTextField(
-                    value = vm.ruleEndTime,
-                    onValueChange = { vm.ruleEndTime = it },
-                    label = { Text("结束时间") },
-                    placeholder = { Text("23:00") },
-                    modifier = Modifier.weight(1f),
-                    singleLine = true
+                FilterChip(
+                    selected = vm.ruleType == FocusRule.RULE_TYPE_SCHEDULED,
+                    onClick = { vm.ruleType = FocusRule.RULE_TYPE_SCHEDULED },
+                    label = { Text("定时规则") }
                 )
             }
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // 星期选择
-            Text(
-                text = "生效日期",
-                style = MaterialTheme.typography.bodyMedium
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            FlowRow(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                val dayNames = listOf("一", "二", "三", "四", "五", "六", "日")
-                (1..7).forEach { day ->
-                    FilterChip(
-                        selected = vm.ruleDaysOfWeek.contains(day),
-                        onClick = {
-                            vm.ruleDaysOfWeek = if (vm.ruleDaysOfWeek.contains(day)) {
-                                vm.ruleDaysOfWeek - day
-                            } else {
-                                (vm.ruleDaysOfWeek + day).sorted()
-                            }
+            // 根据规则类型显示不同的输入
+            if (vm.ruleType == FocusRule.RULE_TYPE_QUICK_START) {
+                // 快速启动：时长输入
+                Text(
+                    text = "专注时长",
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Medium
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    OutlinedTextField(
+                        value = vm.ruleDurationHours.toString(),
+                        onValueChange = {
+                            vm.ruleDurationHours = it.toIntOrNull()?.coerceIn(0, 48) ?: 0
                         },
-                        label = { Text("周${dayNames[day - 1]}") }
+                        label = { Text("小时") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        modifier = Modifier.weight(1f),
+                        singleLine = true
                     )
+                    OutlinedTextField(
+                        value = vm.ruleDurationMinutes.toString(),
+                        onValueChange = {
+                            vm.ruleDurationMinutes = it.toIntOrNull()?.coerceIn(0, 59) ?: 0
+                        },
+                        label = { Text("分钟") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        modifier = Modifier.weight(1f),
+                        singleLine = true
+                    )
+                }
+                if (vm.ruleTotalDurationMinutes < 5) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "最短时长为 5 分钟",
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // 锁定选项
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Checkbox(
+                        checked = vm.ruleIsLocked,
+                        onCheckedChange = { vm.ruleIsLocked = it }
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("锁定（无法提前结束）")
+                }
+            } else {
+                // 定时规则：时间段
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    OutlinedTextField(
+                        value = vm.ruleStartTime,
+                        onValueChange = { vm.ruleStartTime = it },
+                        label = { Text("开始时间") },
+                        placeholder = { Text("22:00") },
+                        modifier = Modifier.weight(1f),
+                        singleLine = true
+                    )
+                    OutlinedTextField(
+                        value = vm.ruleEndTime,
+                        onValueChange = { vm.ruleEndTime = it },
+                        label = { Text("结束时间") },
+                        placeholder = { Text("23:00") },
+                        modifier = Modifier.weight(1f),
+                        singleLine = true
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // 星期选择
+                Text(
+                    text = "生效日期",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    val dayNames = listOf("一", "二", "三", "四", "五", "六", "日")
+                    (1..7).forEach { day ->
+                        FilterChip(
+                            selected = vm.ruleDaysOfWeek.contains(day),
+                            onClick = {
+                                vm.ruleDaysOfWeek = if (vm.ruleDaysOfWeek.contains(day)) {
+                                    vm.ruleDaysOfWeek - day
+                                } else {
+                                    (vm.ruleDaysOfWeek + day).sorted()
+                                }
+                            },
+                            label = { Text("周${dayNames[day - 1]}") }
+                        )
+                    }
                 }
             }
 
