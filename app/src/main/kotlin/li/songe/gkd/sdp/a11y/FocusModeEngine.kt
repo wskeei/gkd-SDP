@@ -2,6 +2,7 @@ package li.songe.gkd.sdp.a11y
 
 import android.content.Intent
 import android.util.Log
+import android.view.accessibility.AccessibilityNodeInfo
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -60,6 +61,11 @@ object FocusModeEngine {
     // 当前生效的白名单
     val currentWhitelistFlow = combine(activeSessionFlow, enabledRulesFlow) { session, rules ->
         getEffectiveWhitelist(session, rules)
+    }.stateIn(appScope, SharingStarted.Eagerly, emptyList())
+
+    // 当前生效的微信白名单
+    val currentWechatWhitelistFlow = combine(activeSessionFlow, enabledRulesFlow) { session, rules ->
+        getEffectiveWechatWhitelist(session, rules)
     }.stateIn(appScope, SharingStarted.Eagerly, emptyList())
 
     // 当前生效的拦截消息
@@ -143,6 +149,19 @@ object FocusModeEngine {
     }
 
     /**
+     * 获取当前有效的微信白名单
+     */
+    private fun getEffectiveWechatWhitelist(session: FocusSession?, rules: List<FocusRule>): List<String> {
+        // 优先使用手动会话的白名单
+        if (session?.isValidNow() == true) {
+            return session.getWechatWhitelist()
+        }
+        // 使用当前生效规则的白名单
+        val activeRule = rules.firstOrNull { it.isActiveNow() }
+        return activeRule?.getWechatWhitelist() ?: emptyList()
+    }
+
+    /**
      * 检查当前是否处于专注模式
      */
     fun isInFocusMode(): Boolean {
@@ -190,12 +209,19 @@ object FocusModeEngine {
             return
         }
 
-        // 检查是否在白名单
-        if (isWhitelisted(packageName)) {
-            if (META.debuggable) {
-                Log.d(TAG, "App $packageName is whitelisted, allowing")
+        // 微信专项检查
+        if (packageName == "com.tencent.mm") {
+            if (checkWechatAccess(service)) {
+                return  // 允许访问
             }
-            return
+        } else {
+            // 其他应用：检查是否在白名单
+            if (isWhitelisted(packageName)) {
+                if (META.debuggable) {
+                    Log.d(TAG, "App $packageName is whitelisted, allowing")
+                }
+                return
+            }
         }
 
         // 触发拦截
@@ -205,11 +231,77 @@ object FocusModeEngine {
     }
 
     /**
+     * 微信专项检查
+     */
+    private fun checkWechatAccess(service: A11yService): Boolean {
+        val rootNode = service.rootInActiveWindow ?: return false
+
+        // 1. 检查是否在聊天界面
+        val currentActivity = rootNode.className?.toString() ?: ""
+        if (!currentActivity.contains("ChattingUI")) {
+            return false  // 不在聊天界面，拦截
+        }
+
+        // 2. 读取聊天标题栏的联系人名称
+        val chatTitle = extractChatTitle(rootNode) ?: return false
+
+        // 3. 查询该名称对应的微信号（同步查询）
+        val wechatId = try {
+            kotlinx.coroutines.runBlocking {
+                DbSet.wechatContactDao.findIdByName(chatTitle)
+            }
+        } catch (e: Exception) {
+            LogUtils.d("$TAG: Failed to query wechat contact: ${e.message}")
+            null
+        }
+
+        if (wechatId == null) {
+            // 未找到对应联系人，拦截
+            return false
+        }
+
+        // 4. 检查是否在白名单
+        val whitelist = currentWechatWhitelistFlow.value
+        return whitelist.contains(wechatId)
+    }
+
+    /**
+     * 提取聊天标题栏的联系人名称
+     */
+    private fun extractChatTitle(rootNode: AccessibilityNodeInfo): String? {
+        // 查找标题栏（通常在顶部）
+        val textNodes = mutableListOf<AccessibilityNodeInfo>()
+        findTextNodes(rootNode, textNodes, maxDepth = 5)
+
+        // 返回第一个非空文本（通常是联系人名称）
+        return textNodes.firstOrNull()?.text?.toString()?.trim()
+    }
+
+    private fun findTextNodes(
+        node: AccessibilityNodeInfo,
+        result: MutableList<AccessibilityNodeInfo>,
+        maxDepth: Int,
+        currentDepth: Int = 0
+    ) {
+        if (currentDepth > maxDepth) return
+
+        if (!node.text.isNullOrEmpty()) {
+            result.add(node)
+        }
+
+        for (i in 0 until node.childCount) {
+            val child = node.getChild(i) ?: continue
+            findTextNodes(child, result, maxDepth, currentDepth + 1)
+        }
+    }
+
+    /**
      * 显示专注模式全屏拦截界面
      * @param overrideWhitelist 直接指定白名单（用于会话刚创建时 Flow 还未更新的情况）
      * @param overrideMessage 直接指定拦截消息
      * @param overrideEndTime 直接指定结束时间
      * @param overrideIsLocked 直接指定锁定状态
+     * @param overrideWechatWhitelist 直接指定微信白名单
      */
     private fun showFocusOverlay(
         service: A11yService,
@@ -217,11 +309,13 @@ object FocusModeEngine {
         overrideWhitelist: List<String>? = null,
         overrideMessage: String? = null,
         overrideEndTime: Long? = null,
-        overrideIsLocked: Boolean? = null
+        overrideIsLocked: Boolean? = null,
+        overrideWechatWhitelist: List<String>? = null
     ) {
         try {
             val message = overrideMessage ?: currentMessageFlow.value
             val whitelist = overrideWhitelist ?: currentWhitelistFlow.value
+            val wechatWhitelist = overrideWechatWhitelist ?: currentWechatWhitelistFlow.value
             val session = cachedSession
             val activeRule = cachedRules.firstOrNull { it.isActiveNow() }
             val isLocked = overrideIsLocked ?: (session?.isCurrentlyLocked == true || activeRule?.isCurrentlyLocked == true)
@@ -230,6 +324,7 @@ object FocusModeEngine {
             val intent = Intent(service, FocusOverlayService::class.java).apply {
                 putExtra("message", message)
                 putExtra("whitelist", json.encodeToString(whitelist))
+                putExtra("wechatWhitelist", json.encodeToString(wechatWhitelist))
                 putExtra("blockedApp", packageName)
                 putExtra("isLocked", isLocked)
                 putExtra("endTime", endTime)

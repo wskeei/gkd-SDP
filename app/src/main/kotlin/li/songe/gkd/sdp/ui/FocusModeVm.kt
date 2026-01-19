@@ -23,6 +23,11 @@ class FocusModeVm : BaseViewModel() {
     val activeSessionFlow = FocusModeEngine.activeSessionFlow
     val isActiveFlow = FocusModeEngine.isActiveFlow
     val currentWhitelistFlow = FocusModeEngine.currentWhitelistFlow
+    val currentWechatWhitelistFlow = FocusModeEngine.currentWechatWhitelistFlow
+
+    // 微信联系人
+    val allWechatContactsFlow = DbSet.wechatContactDao.queryAll()
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     // 编辑状态
     var editingRule by mutableStateOf<FocusRule?>(null)
@@ -37,6 +42,7 @@ class FocusModeVm : BaseViewModel() {
     var ruleDurationHours by mutableIntStateOf(0)
     var ruleDurationMinutes by mutableIntStateOf(30)
     var ruleWhitelistApps by mutableStateOf<List<String>>(emptyList())
+    var ruleWechatWhitelist by mutableStateOf<List<String>>(emptyList())
     var ruleInterceptMessage by mutableStateOf("专注当下")
     var ruleIsLocked by mutableStateOf(false)
     var ruleLockDurationMinutes by mutableIntStateOf(30)
@@ -51,6 +57,7 @@ class FocusModeVm : BaseViewModel() {
         get() = manualHours * 60 + manualMinutes
 
     var manualWhitelistApps by mutableStateOf<List<String>>(emptyList())
+    var manualWechatWhitelist by mutableStateOf<List<String>>(emptyList())
     var manualMessage by mutableStateOf("专注当下")
     var manualIsLocked by mutableStateOf(false)
     var manualLockDurationMinutes by mutableIntStateOf(30)
@@ -75,6 +82,7 @@ class FocusModeVm : BaseViewModel() {
         ruleDurationHours = 0
         ruleDurationMinutes = 30
         ruleWhitelistApps = emptyList()
+        ruleWechatWhitelist = emptyList()
         ruleInterceptMessage = "专注当下"
         ruleIsLocked = false
         ruleLockDurationMinutes = 30
@@ -91,6 +99,7 @@ class FocusModeVm : BaseViewModel() {
         ruleDurationHours = rule.durationMinutes / 60
         ruleDurationMinutes = rule.durationMinutes % 60
         ruleWhitelistApps = rule.getWhitelistPackages()
+        ruleWechatWhitelist = rule.getWechatWhitelist()
         ruleInterceptMessage = rule.interceptMessage
         ruleIsLocked = rule.isLocked
         ruleLockDurationMinutes = rule.lockDurationMinutes
@@ -119,6 +128,7 @@ class FocusModeVm : BaseViewModel() {
             daysOfWeek = ruleDaysOfWeek.joinToString(","),
             enabled = editingRule?.enabled ?: true,
             whitelistApps = json.encodeToString(ruleWhitelistApps),
+            wechatWhitelist = json.encodeToString(ruleWechatWhitelist),
             interceptMessage = ruleInterceptMessage.ifBlank { "专注当下" },
             isLocked = editingRule?.isLocked ?: false,
             lockEndTime = editingRule?.lockEndTime ?: 0,
@@ -258,5 +268,26 @@ class FocusModeVm : BaseViewModel() {
             lockDurationMinutes = rule.lockDurationMinutes
         )
         toast("专注模式已开始")
+    }
+
+    // 微信联系人白名单管理
+    fun addToRuleWechatWhitelist(wechatId: String) {
+        if (!ruleWechatWhitelist.contains(wechatId)) {
+            ruleWechatWhitelist = ruleWechatWhitelist + wechatId
+        }
+    }
+
+    fun removeFromRuleWechatWhitelist(wechatId: String) {
+        ruleWechatWhitelist = ruleWechatWhitelist - wechatId
+    }
+
+    fun addToManualWechatWhitelist(wechatId: String) {
+        if (!manualWechatWhitelist.contains(wechatId)) {
+            manualWechatWhitelist = manualWechatWhitelist + wechatId
+        }
+    }
+
+    fun removeFromManualWechatWhitelist(wechatId: String) {
+        manualWechatWhitelist = manualWechatWhitelist - wechatId
     }
 }

@@ -37,6 +37,8 @@ data class FocusRule(
 
     @ColumnInfo(name = "whitelist_apps") val whitelistApps: String = "[]",  // JSON: List<String> 包名列表
 
+    @ColumnInfo(name = "wechat_whitelist", defaultValue = "[]") val wechatWhitelist: String = "[]",  // JSON: List<String> 微信号列表
+
     @ColumnInfo(name = "intercept_message") val interceptMessage: String = "专注当下",
 
     @ColumnInfo(name = "is_locked") val isLocked: Boolean = false,
@@ -79,6 +81,24 @@ data class FocusRule(
      */
     fun withWhitelistPackages(packages: List<String>): FocusRule {
         return copy(whitelistApps = json.encodeToString(packages))
+    }
+
+    /**
+     * 获取微信白名单联系人列表
+     */
+    fun getWechatWhitelist(): List<String> {
+        return try {
+            json.decodeFromString<List<String>>(wechatWhitelist)
+        } catch (e: Exception) {
+            emptyList()
+        }
+    }
+
+    /**
+     * 设置微信白名单联系人列表
+     */
+    fun withWechatWhitelist(wechatIds: List<String>): FocusRule {
+        return copy(wechatWhitelist = json.encodeToString(wechatIds))
     }
 
     /**

@@ -29,11 +29,12 @@ import li.songe.gkd.sdp.data.Snapshot
 import li.songe.gkd.sdp.data.SubsConfig
 import li.songe.gkd.sdp.data.SubsItem
 import li.songe.gkd.sdp.data.UrlBlockRule
+import li.songe.gkd.sdp.data.WechatContact
 import li.songe.gkd.sdp.util.dbFolder
 import li.songe.gkd.sdp.util.json
 
 @Database(
-    version = 22,
+    version = 23,
     entities = [
         SubsItem::class,
         Snapshot::class,
@@ -54,6 +55,7 @@ import li.songe.gkd.sdp.util.json
         AppGroup::class,
         BlockTimeRule::class,
         AppBlockerLock::class,
+        WechatContact::class,
     ],
     autoMigrations = [
         AutoMigration(from = 1, to = 2),
@@ -77,6 +79,7 @@ import li.songe.gkd.sdp.util.json
         AutoMigration(from = 19, to = 20),
         AutoMigration(from = 20, to = 21),
         AutoMigration(from = 21, to = 22),
+        AutoMigration(from = 22, to = 23),
     ]
 )
 @TypeConverters(DbConverters::class)
@@ -100,6 +103,7 @@ abstract class AppDb : RoomDatabase() {
     abstract fun appGroupDao(): AppGroup.AppGroupDao
     abstract fun blockTimeRuleDao(): BlockTimeRule.BlockTimeRuleDao
     abstract fun appBlockerLockDao(): AppBlockerLock.AppBlockerLockDao
+    abstract fun wechatContactDao(): WechatContact.WechatContactDao
 }
 
 @RenameColumn(
@@ -173,4 +177,5 @@ object DbSet {
     val appGroupDao get() = db.appGroupDao()
     val blockTimeRuleDao get() = db.blockTimeRuleDao()
     val appBlockerLockDao get() = db.appBlockerLockDao()
+    val wechatContactDao get() = db.wechatContactDao()
 }
