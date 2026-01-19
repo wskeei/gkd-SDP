@@ -154,10 +154,16 @@ object WechatContactFetcher {
 
                 val success = processSingleContact(node)
                 
+                // 无论成功失败，都标记为已处理，防止死循环卡在某一个节点
+                processedNodes.add(nodeId)
+                
                 if (success) {
-                    processedNodes.add(nodeId)
                     hasProcessedAny = true
                     retryCount = 0 // 重置重试计数
+                } else {
+                    // 失败反馈
+                    updateStatus("抓取失败，跳过...", count = fetchCount)
+                    delay(1000)
                 }
 
                 // 每抓取 10-15 个联系人，暂停一下
@@ -222,6 +228,10 @@ object WechatContactFetcher {
                 fetchCount++
                 updateStatus(count = fetchCount, target = contact.displayName)
                 LogUtils.d("$TAG: Fetched contact: ${contact.displayName} (${contact.wechatId})")
+            } else {
+                updateStatus("未找到微信号，跳过...", count = fetchCount)
+                LogUtils.d("$TAG: Failed to extract info (no wechatId found)")
+                delay(1500) // 让用户看清错误提示
             }
 
             // 返回
@@ -241,9 +251,12 @@ object WechatContactFetcher {
     }
 
     private fun isInDetailPage(root: AccessibilityNodeInfo): Boolean {
-        // 特征：存在"微信号" 或 "发消息" 按钮
-        if (root.findAccessibilityNodeInfosByText("微信号").isNotEmpty()) return true
+        // 特征：存在"发消息"、"音视频通话"、"个人信息"等
         if (root.findAccessibilityNodeInfosByText("发消息").isNotEmpty()) return true
+        if (root.findAccessibilityNodeInfosByText("音视频通话").isNotEmpty()) return true
+        if (root.findAccessibilityNodeInfosByText("微信号").isNotEmpty()) return true
+        if (root.findAccessibilityNodeInfosByText("添加到通讯录").isNotEmpty()) return true
+        // 地区也是一个特征，但可能太通用？结合前面几项应该够了。
         return false
     }
 
@@ -429,18 +442,53 @@ object WechatContactFetcher {
     }
 
     private fun findWechatId(rootNode: AccessibilityNodeInfo): String? {
-        // 查找包含"微信号"的节点
+        // 策略1: 查找包含"微信号"的节点，取其兄弟或子节点
         val nodes = rootNode.findAccessibilityNodeInfosByText("微信号")
         for (node in nodes) {
-            // 查找同级或父级的文本节点
+            // 情况A: 文本是 "微信号: wxid_xxx"
+            val text = node.text?.toString()
+            if (text != null && text.contains("微信号") && text.length > 4) {
+                val id = text.substringAfter("微信号").replace(":", "").trim()
+                if (isValidWechatId(id)) return id
+            }
+            
+            // 情况B: 兄弟节点
             val parent = node.parent ?: continue
             for (i in 0 until parent.childCount) {
                 val sibling = parent.getChild(i) ?: continue
-                val text = sibling.text?.toString() ?: continue
-                if (text != "微信号" && text.isNotBlank()) {
-                    return text.trim()
+                val siblingText = sibling.text?.toString() ?: continue
+                if (siblingText != "微信号" && siblingText.isNotBlank() && isValidWechatId(siblingText)) {
+                    return siblingText.trim()
                 }
             }
+        }
+
+        // 策略2: 全局扫描符合微信号格式的文本 (wxid_... 或 6-20位字母数字)
+        return findTextByRegex(rootNode)
+    }
+
+    private fun isValidWechatId(text: String): Boolean {
+        // 排除常见干扰词
+        if (text.contains("地区") || text.contains("昵称") || text.contains("来源")) return false
+        // 微信号通常是 wxid_ 开头，或者 6-20位，支持减号和下划线
+        // 简单正则：包含字母或数字，且长度合适
+        if (text.length < 6 || text.length > 30) return false
+        // 必须包含至少一个字母或数字
+        return text.any { it.isLetterOrDigit() }
+    }
+
+    private fun findTextByRegex(node: AccessibilityNodeInfo): String? {
+        val text = node.text?.toString()
+        if (text != null) {
+            // 优先匹配 wxid_
+            if (text.startsWith("wxid_", ignoreCase = true)) return text
+            // 匹配纯微信号格式 (仅字母数字下划线减号，首字符字母，6-20位)
+        }
+
+        for (i in 0 until node.childCount) {
+            val child = node.getChild(i) ?: continue
+            val found = findTextByRegex(child)
+            if (found != null) return found
         }
         return null
     }
