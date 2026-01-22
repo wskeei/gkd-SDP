@@ -368,6 +368,46 @@ val wechatWhitelist: String = "[]"  // JSON: List<String> 微信号列表
 - 微信 Scheme 跳转实现一键打开指定联系人聊天
 - 完整的反检测机制确保抓取过程不被微信识别
 
+### 功能 10：软件安装监控（App Install Monitor）- P7 ✅ 已完成
+
+**目标**：监控并记录特定应用的安装与卸载行为，通过热力图直观展示应用存在时间，辅助用户反思数字习惯。
+
+**UI 位置**：
+`数字自律` → `软件安装监测` (新增卡片入口)
+
+**数据模型**：
+```kotlin
+@Entity(tableName = "app_install_log")
+data class AppInstallLog(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val packageName: String,
+    val appName: String,
+    val action: String,           // "install" / "uninstall"
+    val timestamp: Long,          // 事件时间戳
+    val date: String              // "yyyy-MM-dd"
+)
+
+@Entity(tableName = "monitored_app")
+data class MonitoredApp(
+    @PrimaryKey val packageName: String,
+    val displayName: String,
+    val enabled: Boolean = true,
+    val isCurrentlyInstalled: Boolean = false // 仅用于 UI 状态缓存
+) {
+    companion object {
+        val DEFAULT_APPS = listOf(...) // 预置抖音、B站、知乎等
+    }
+}
+```
+
+**核心实现**：
+1.  ✅ **自动记录**：`AppInstallReceiver` 监听 `PACKAGE_ADDED` 和 `PACKAGE_REMOVED` 广播，自动写入日志。
+2.  ✅ **历史回溯**：添加监控时若应用已安装，利用 `PackageManager.firstInstallTime` 自动补录安装记录，确保热力图即刻可用。
+3.  ✅ **热力图算法**：计算每日"存在应用数"（当日安装且未卸载）。即使无数据也显示网格，颜色深度反映当日并存应用量。
+4.  ✅ **日详情增强**：点击热力图格子展示当日存在应用列表，包含**安装时长**及**卸载时间**（如"共存活 3天"）。
+5.  ✅ **交互优化**：`AppInstallMonitorPage` 提供精美的热力图组件。添加监控时支持**从本机已安装列表选择**（带图标、搜索、系统应用过滤），告别手动输入包名。
+6.  ✅ **数据导出**：支持导出 CSV 格式的完整安装/卸载记录，方便用户备份分析。
+
 ---
 
 ## UI 设计规范
@@ -402,3 +442,5 @@ val wechatWhitelist: String = "[]"  // JSON: List<String> 微信号列表
 | 2026-01-19 | ✅ 完成 P6 功能：微信联系人白名单（WeChat Contact Whitelist），支持联系人级别的精准拦截 |
 | 2026-01-19 | 🔧 实现细节：无障碍抓取微信联系人（反检测）、微信专项检查（Activity+标题匹配）、Scheme跳转 |
 | 2026-01-19 | 🎨 UI完善：规则编辑器和快速启动中添加微信联系人白名单入口，联系人选择器支持搜索和实时更新 |
+| 2026-01-22 | ✅ 完成 P7 功能：软件安装监控（App Install Monitor），包含热力图、日详情、历史回溯、CSV导出 |
+| 2026-01-22 | 🎨 交互升级：添加监控支持"列表选择"模式，优化详情页展示卸载时间与存活天数 |
