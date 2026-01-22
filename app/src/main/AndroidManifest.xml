@@ -340,6 +340,14 @@
                 android:resource="@xml/focus_quick_start_widget_info" />
         </receiver>
 
+        <activity
+            android:name=".sdp.widget.FocusWidgetConfigActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE" />
+            </intent-filter>
+        </activity>
+
     </application>
 
 </manifest>

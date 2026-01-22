@@ -1,6 +1,6 @@
 # TodoWrite
 
-- [ ] Task 1: Create Widget Layouts and Metadata
+- [x] Task 1: Create Widget Layouts and Metadata
 - [ ] Task 2: Implement Widget Configuration Activity
 - [ ] Task 3: Implement Widget Service and Data Loading
 - [ ] Task 4: Handle Click Actions (Start Focus)
