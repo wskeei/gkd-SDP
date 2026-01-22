@@ -3,11 +3,20 @@ package li.songe.gkd.sdp.widget
 import android.app.PendingIntent
 import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProvider
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.widget.RemoteViews
+import android.widget.Toast
+import kotlinx.coroutines.DelicateCoroutinesApi
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
+import li.songe.gkd.sdp.MainActivity
 import li.songe.gkd.sdp.R
+import li.songe.gkd.sdp.db.DbSet
+import li.songe.gkd.sdp.service.FocusOverlayService
 
 class FocusQuickStartWidget : AppWidgetProvider() {
 
@@ -24,6 +33,58 @@ class FocusQuickStartWidget : AppWidgetProvider() {
         // There may be multiple widgets active, so update all of them
         for (appWidgetId in appWidgetIds) {
             updateAppWidget(context, appWidgetManager, appWidgetId)
+        }
+    }
+
+    @OptIn(DelicateCoroutinesApi::class)
+    override fun onReceive(context: Context, intent: Intent) {
+        super.onReceive(context, intent)
+        if (intent.action == ACTION_START_FOCUS) {
+            val ruleId = intent.getLongExtra(EXTRA_RULE_ID, -1L)
+            if (ruleId == -1L) return
+
+            val pendingResult = goAsync()
+            GlobalScope.launch(Dispatchers.IO) {
+                try {
+                    val rule = DbSet.focusRuleDao.getById(ruleId)
+                    if (rule != null) {
+                        val session = DbSet.focusSessionDao.getSessionNow() ?: li.songe.gkd.sdp.data.FocusSession(
+                            whitelistApps = "[]",
+                            interceptMessage = "专注当下"
+                        )
+                        val now = System.currentTimeMillis()
+                        val endTime = now + rule.durationMinutes * 60 * 1000
+                        
+                        val newSession = session.copy(
+                            isActive = true,
+                            ruleId = rule.id,
+                            startTime = now,
+                            endTime = endTime,
+                            whitelistApps = rule.whitelistApps,
+                            interceptMessage = rule.interceptMessage,
+                            isManual = true,
+                            isLocked = rule.isLocked,
+                            lockEndTime = if (rule.isLocked) now + rule.lockDurationMinutes * 60 * 1000 else 0
+                        )
+                        DbSet.focusSessionDao.insert(newSession)
+                        
+                        // Start Service
+                        val serviceIntent = Intent(context, FocusOverlayService::class.java)
+                        context.startService(serviceIntent)
+
+                        // Launch Main Activity to show feedback
+                        val appIntent = Intent(context, MainActivity::class.java).apply {
+                            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+                            putExtra("tab", 1) // Assuming Focus is tab 1, or handle in MainActivity
+                        }
+                        context.startActivity(appIntent)
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                } finally {
+                    pendingResult.finish()
+                }
+            }
         }
     }
 
