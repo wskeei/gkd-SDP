@@ -29,6 +29,7 @@ import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.ContentCopy
 import androidx.compose.material.icons.outlined.DarkMode
 import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.outlined.Download
 import androidx.compose.material.icons.outlined.Eco
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.Equalizer
@@ -214,4 +215,5 @@ object PerfIcon {
     val ArrowDownward get() = Icons.Outlined.ArrowDownward
     val Check get() = Icons.Outlined.Check
     val Search get() = Icons.Outlined.Search
+    val Download get() = Icons.Outlined.Download
 }

@@ -156,17 +156,25 @@ object AppBlockerEngine {
      * 处理应用切换事件
      */
     fun onAppChanged(packageName: String, service: A11yService) {
-        if (!enabledFlow.value) return
+        LogUtils.d("$TAG: onAppChanged called for $packageName, enabled=${enabledFlow.value}")
+        
+        if (!enabledFlow.value) {
+            LogUtils.d("$TAG: App blocker disabled, skipping")
+            return
+        }
 
         // 检查冷却时间
         val now = System.currentTimeMillis()
         val lastTriggerTime = cooldownMap[packageName] ?: 0L
         if (now - lastTriggerTime < COOLDOWN_MS) {
+            LogUtils.d("$TAG: Cooldown active for $packageName")
             return
         }
 
         // 判断是否应该拦截
         val (shouldBlock, message) = shouldBlock(packageName)
+        LogUtils.d("$TAG: shouldBlock=$shouldBlock for $packageName, rules=${cachedRules.size}, groups=${cachedGroups.size}")
+        
         if (shouldBlock) {
             cooldownMap[packageName] = now
             LogUtils.d("App blocker blocking: $packageName")

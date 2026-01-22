@@ -22,9 +22,14 @@ data class WechatContact(
 
     @ColumnInfo(name = "avatar_url") val avatarUrl: String = "",  // 头像（可选）
 
-    @ColumnInfo(name = "last_updated") val lastUpdated: Long = System.currentTimeMillis()
+    @ColumnInfo(name = "last_updated") val lastUpdated: Long = System.currentTimeMillis(),
+
+    @ColumnInfo(name = "shortcut_id", defaultValue = "") val shortcutId: String = ""  // 桌面快捷方式 ID
 ) {
     val displayName: String get() = remark.ifEmpty { nickname }
+    
+    // 检查是否有有效的快捷方式 ID
+    val hasShortcut: Boolean get() = shortcutId.isNotBlank()
 
     @Dao
     interface WechatContactDao {

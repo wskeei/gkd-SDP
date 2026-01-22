@@ -141,18 +141,21 @@ class FocusOverlayService : LifecycleService(), SavedStateRegistryOwner {
                                 // 严格清洗：只保留字母、数字、下划线、减号
                                 val cleanId = wechatId.filter { it.isLetterOrDigit() || it == '_' || it == '-' }
                                 
-                                // 获取联系人显示名称
-                                val contactName = try {
+                                // 获取联系人信息（包括 shortcutId）
+                                val contact = try {
                                     kotlinx.coroutines.runBlocking {
                                         li.songe.gkd.sdp.db.DbSet.wechatContactDao.getByIds(listOf(cleanId))
-                                            .firstOrNull()?.displayName ?: cleanId
+                                            .firstOrNull()
                                     }
                                 } catch (e: Exception) {
-                                    cleanId
+                                    null
                                 }
                                 
-                                // 启动手动跳转流程（带提示）
-                                li.songe.gkd.sdp.a11y.FocusModeEngine.startWechatJump(cleanId, contactName)
+                                val contactName = contact?.displayName ?: cleanId
+                                val shortcutId = contact?.shortcutId ?: ""
+                                
+                                // 启动跳转流程（优先使用快捷方式直跳）
+                                li.songe.gkd.sdp.a11y.FocusModeEngine.startWechatJump(cleanId, contactName, shortcutId)
                                 
                                 // 关闭当前的拦截页面，允许跳转进行
                                 stopSelf()

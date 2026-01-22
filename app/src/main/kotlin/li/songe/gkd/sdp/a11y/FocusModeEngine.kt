@@ -40,8 +40,13 @@ object FocusModeEngine {
     
     /**
      * 检查应用是否在白名单中
+     * GKD-SDP 应用本身默认在白名单中，以便用户可以随时访问设置
      */
     private fun isWhitelisted(packageName: String): Boolean {
+        // GKD-SDP 应用始终在白名单中（但用户可以在 UI 中手动移除）
+        if (packageName == META.appId) {
+            return true
+        }
         return currentWhitelistFlow.value.contains(packageName)
     }
     
@@ -214,47 +219,85 @@ object FocusModeEngine {
     }
 
     /**
-     * 开始微信跳转流程 - 简化版
-     * 1. 打开微信
-     * 2. 显示提示悬浮窗（倒计时）
-     * 3. 用户手动找到联系人
-     * 4. 倒计时结束后检查是否在目标聊天页
+     * 开始微信跳转流程
+     * 优先使用快捷方式 Intent 直接跳转，如无快捷方式则显示提示悬浮窗引导手动跳转
      */
-    fun startWechatJump(wechatId: String, contactName: String = "") {
+    fun startWechatJump(wechatId: String, contactName: String = "", shortcutId: String = "") {
         appScope.launch(Dispatchers.Main) {
             try {
                 // 保存目标信息
                 targetWechatId = wechatId
                 pendingContactName = contactName
                 
-                LogUtils.d(TAG, "Starting manual jump for $contactName ($wechatId)")
+                LogUtils.d(TAG, "Starting jump for $contactName ($wechatId), shortcut=${shortcutId.take(20)}...")
                 
-                // 1. 启动微信
-                val intent = app.packageManager.getLaunchIntentForPackage("com.tencent.mm")
-                if (intent != null) {
-                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED)
-                    app.startActivity(intent)
-                } else {
-                    LogUtils.d(TAG, "WeChat not installed")
-                    android.widget.Toast.makeText(app, "微信未安装", android.widget.Toast.LENGTH_SHORT).show()
-                    return@launch
+                // 如果有快捷方式 ID，直接使用 Intent 跳转
+                if (shortcutId.isNotBlank()) {
+                    val success = openWechatByShortcut(shortcutId)
+                    if (success) {
+                        LogUtils.d(TAG, "Shortcut jump successful")
+                        return@launch
+                    }
+                    LogUtils.d(TAG, "Shortcut jump failed, falling back to manual")
                 }
                 
-                // 2. 延迟一点后启动提示悬浮窗（确保微信已启动）
-                delay(500)
-                
-                val hintIntent = Intent(app, li.songe.gkd.sdp.service.WechatJumpHintService::class.java).apply {
-                    putExtra(li.songe.gkd.sdp.service.WechatJumpHintService.EXTRA_CONTACT_NAME, contactName.ifEmpty { wechatId })
-                    putExtra(li.songe.gkd.sdp.service.WechatJumpHintService.EXTRA_WECHAT_ID, wechatId)
-                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                }
-                app.startService(hintIntent)
+                // 无快捷方式或跳转失败，使用手动跳转
+                startManualWechatJump(wechatId, contactName)
                 
             } catch (e: Exception) {
                 LogUtils.d(TAG, "Failed to start jump: ${e.message}")
                 android.widget.Toast.makeText(app, "跳转失败: ${e.message}", android.widget.Toast.LENGTH_SHORT).show()
             }
         }
+    }
+    
+    /**
+     * 使用微信桌面快捷方式 Intent 直接打开联系人聊天
+     */
+    private fun openWechatByShortcut(shortcutId: String): Boolean {
+        return try {
+            val intent = Intent("com.tencent.mm.action.BIZSHORTCUT").apply {
+                component = android.content.ComponentName(
+                    "com.tencent.mm",
+                    "com.tencent.mm.ui.LauncherUI"
+                )
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_FORWARD_RESULT
+                putExtra("LauncherUI.Shortcut.Username", shortcutId)
+                putExtra("LauncherUI.From.Biz.Shortcut", true)
+                putExtra("app_shortcut_custom_id", shortcutId)
+            }
+            app.startActivity(intent)
+            true
+        } catch (e: Exception) {
+            LogUtils.d(TAG, "openWechatByShortcut failed: ${e.message}")
+            false
+        }
+    }
+    
+    /**
+     * 手动跳转流程（无快捷方式时使用）
+     */
+    private suspend fun startManualWechatJump(wechatId: String, contactName: String) {
+        // 1. 启动微信
+        val intent = app.packageManager.getLaunchIntentForPackage("com.tencent.mm")
+        if (intent != null) {
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED)
+            app.startActivity(intent)
+        } else {
+            LogUtils.d(TAG, "WeChat not installed")
+            android.widget.Toast.makeText(app, "微信未安装", android.widget.Toast.LENGTH_SHORT).show()
+            return
+        }
+        
+        // 2. 延迟一点后启动提示悬浮窗（确保微信已启动）
+        delay(500)
+        
+        val hintIntent = Intent(app, li.songe.gkd.sdp.service.WechatJumpHintService::class.java).apply {
+            putExtra(li.songe.gkd.sdp.service.WechatJumpHintService.EXTRA_CONTACT_NAME, contactName.ifEmpty { wechatId })
+            putExtra(li.songe.gkd.sdp.service.WechatJumpHintService.EXTRA_WECHAT_ID, wechatId)
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        app.startService(hintIntent)
     }
     
     // 保存待查找的联系人名称（用于验证）

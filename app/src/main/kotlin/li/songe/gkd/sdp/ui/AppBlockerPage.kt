@@ -384,11 +384,23 @@ private fun AppGroupCard(
                         }
                     }
                     Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = "${group.getAppList().size} 个应用",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                    )
+                    Row {
+                        Text(
+                            text = "${group.getAppList().size} 个应用",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                        )
+                        if (group.isCurrentlyLocked) {
+                            val lockEndTime = java.text.SimpleDateFormat("MM-dd HH:mm", java.util.Locale.getDefault())
+                                .format(java.util.Date(group.lockEndTime))
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "🔒 锁定至 $lockEndTime",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.error
+                            )
+                        }
+                    }
                 }
 
                 Switch(
@@ -455,25 +467,41 @@ private fun AppGroupCard(
             }
 
             // 操作按钮
-            if (!group.isCurrentlyLocked) {
-                Spacer(modifier = Modifier.height(12.dp))
-                HorizontalDivider()
-                Spacer(modifier = Modifier.height(8.dp))
+            // 操作按钮区域
+            Spacer(modifier = Modifier.height(12.dp))
+            HorizontalDivider()
+            Spacer(modifier = Modifier.height(8.dp))
 
-                Row(
-                    horizontalArrangement = Arrangement.End,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
+            Row(
+                horizontalArrangement = Arrangement.End,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                // 添加规则按钮 - 仅未锁定时显示
+                if (!group.isCurrentlyLocked) {
                     TextButton(onClick = onAddRule) {
                         Icon(PerfIcon.Add, contentDescription = null)
                         Spacer(modifier = Modifier.width(4.dp))
                         Text("添加规则")
                     }
-                    TextButton(onClick = onLock) {
-                        Icon(PerfIcon.Lock, contentDescription = null)
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text("锁定")
-                    }
+                }
+                
+                // 锁定按钮 - 始终显示（可延长锁定）
+                TextButton(onClick = onLock) {
+                    Icon(
+                        PerfIcon.Lock, 
+                        contentDescription = null,
+                        tint = if (group.isCurrentlyLocked) {
+                            MaterialTheme.colorScheme.error
+                        } else {
+                            MaterialTheme.colorScheme.primary
+                        }
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(if (group.isCurrentlyLocked) "延长锁定" else "锁定")
+                }
+                
+                // 删除按钮 - 仅未锁定时显示
+                if (!group.isCurrentlyLocked) {
                     TextButton(onClick = { showDeleteConfirm = true }) {
                         Icon(PerfIcon.Delete, contentDescription = null)
                         Spacer(modifier = Modifier.width(4.dp))
@@ -559,11 +587,14 @@ private fun AppRulesCard(
 
             // 显示规则列表
             rules.forEach { rule ->
+                var showDeleteConfirm by remember { mutableStateOf(false) }
+                
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 4.dp)
+                        .clickable { onEdit(rule) }
+                        .padding(vertical = 8.dp)
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -585,16 +616,67 @@ private fun AppRulesCard(
                             )
                         }
                         if (rule.isCurrentlyLocked) {
+                            // 显示锁定结束时间
+                            val lockEndTime = java.text.SimpleDateFormat("MM-dd HH:mm", java.util.Locale.getDefault())
+                                .format(java.util.Date(rule.lockEndTime))
                             Text(
-                                text = "已锁定",
+                                text = "🔒 锁定至 $lockEndTime",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.error
                             )
                         }
                     }
+                    
+                    // 操作按钮 - 锁定按钮始终显示（可延长锁定）
+                    IconButton(onClick = { onLock(rule) }) {
+                        Icon(
+                            PerfIcon.Lock,
+                            contentDescription = if (rule.isCurrentlyLocked) "延长锁定" else "锁定",
+                            tint = if (rule.isCurrentlyLocked) {
+                                MaterialTheme.colorScheme.error
+                            } else {
+                                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                            }
+                        )
+                    }
+                    
+                    // 删除按钮仅在未锁定时显示
+                    if (!rule.isCurrentlyLocked) {
+                        IconButton(onClick = { showDeleteConfirm = true }) {
+                            Icon(
+                                PerfIcon.Delete,
+                                contentDescription = "删除",
+                                tint = MaterialTheme.colorScheme.error
+                            )
+                        }
+                    }
+                    
                     Switch(
                         checked = rule.enabled,
-                        onCheckedChange = { onToggleEnabled(rule) }
+                        onCheckedChange = { onToggleEnabled(rule) },
+                        enabled = !rule.isCurrentlyLocked
+                    )
+                }
+                
+                // 删除确认对话框
+                if (showDeleteConfirm) {
+                    AlertDialog(
+                        onDismissRequest = { showDeleteConfirm = false },
+                        title = { Text("删除规则") },
+                        text = { Text("确定要删除这条时间规则吗？") },
+                        confirmButton = {
+                            TextButton(onClick = {
+                                onDelete(rule)
+                                showDeleteConfirm = false
+                            }) {
+                                Text("删除")
+                            }
+                        },
+                        dismissButton = {
+                            TextButton(onClick = { showDeleteConfirm = false }) {
+                                Text("取消")
+                            }
+                        }
                     )
                 }
             }
