@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    android:configure="li.songe.gkd.sdp.widget.FocusWidgetConfigActivity"
+    android:initialLayout="@layout/widget_focus_quick_start"
+    android:minWidth="160dp"
+    android:minHeight="100dp"
+    android:previewImage="@drawable/ic_flash_on"
+    android:resizeMode="horizontal|vertical"
+    android:updatePeriodMillis="86400000"
+    android:widgetCategory="home_screen" />
