@@ -1,11 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/item_root"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:gravity="center_vertical"
     android:orientation="horizontal"
-    android:padding="8dp">
+    android:padding="12dp">
 
     <LinearLayout
         android:layout_width="0dp"
@@ -17,25 +18,27 @@
             android:id="@+id/item_name"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:maxLines="1"
             android:textColor="@color/better_black"
-            android:textSize="14sp"
+            android:textSize="16sp"
             android:textStyle="bold" />
 
         <TextView
             android:id="@+id/item_duration"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textColor="@color/better_black"
+            android:layout_marginTop="2dp"
             android:alpha="0.7"
-            android:textSize="12sp" />
+            android:textColor="@color/better_black"
+            android:textSize="13sp" />
     </LinearLayout>
 
     <ImageView
-        android:id="@+id/item_icon"
-        android:layout_width="24dp"
-        android:layout_height="24dp"
-        android:src="@drawable/ic_flash_on"
-        app:tint="@color/better_black"
-        xmlns:app="http://schemas.android.com/apk/res-auto" />
+        android:id="@+id/item_play_button"
+        android:layout_width="32dp"
+        android:layout_height="32dp"
+        android:src="@drawable/ic_play_arrow"
+        app:tint="@color/better_black" />
 
 </LinearLayout>
