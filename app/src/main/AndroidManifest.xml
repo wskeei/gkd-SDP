@@ -330,7 +330,7 @@
         </service>
 
         <receiver
-            android:name=".sdp.widget.FocusQuickStartWidget"
+            android:name=".widget.FocusQuickStartWidget"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
@@ -341,7 +341,7 @@
         </receiver>
 
         <activity
-            android:name=".sdp.widget.FocusWidgetConfigActivity"
+            android:name=".widget.FocusWidgetConfigActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE" />
@@ -349,7 +349,7 @@
         </activity>
 
         <service
-            android:name=".sdp.widget.FocusWidgetService"
+            android:name=".widget.FocusWidgetService"
             android:exported="false"
             android:permission="android.permission.BIND_REMOTEVIEWS" />
 
