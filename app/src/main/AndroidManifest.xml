@@ -348,6 +348,11 @@
             </intent-filter>
         </activity>
 
+        <service
+            android:name=".sdp.widget.FocusWidgetService"
+            android:exported="false"
+            android:permission="android.permission.BIND_REMOTEVIEWS" />
+
     </application>
 
 </manifest>
