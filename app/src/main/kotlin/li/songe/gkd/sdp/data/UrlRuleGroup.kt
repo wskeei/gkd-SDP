@@ -22,11 +22,13 @@ data class UrlRuleGroup(
 
     @ColumnInfo(name = "enabled") val enabled: Boolean = true,
 
-    @ColumnInfo(name = "is_locked") val isLocked: Boolean = false,
+    @ColumnInfo(name = "is_locked", defaultValue = "0") val isLocked: Boolean = false,
 
-    @ColumnInfo(name = "lock_end_time") val lockEndTime: Long = 0,
+    @ColumnInfo(name = "lock_end_time", defaultValue = "0") val lockEndTime: Long = 0,
 
     @ColumnInfo(name = "order_index") val orderIndex: Int = 0,
+
+    @ColumnInfo(name = "created_at") val createdAt: Long = System.currentTimeMillis(),
 ) {
     /**
      * 检查是否已锁定
