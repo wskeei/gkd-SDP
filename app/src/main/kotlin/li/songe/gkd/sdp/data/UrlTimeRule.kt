@@ -19,9 +19,9 @@ data class UrlTimeRule(
     @PrimaryKey(autoGenerate = true)
     @ColumnInfo(name = "id") val id: Long = 0,
 
-    @ColumnInfo(name = "target_type") val targetType: Int,  // 0=单条规则, 1=规则组
+    @ColumnInfo(name = "target_type") val targetType: Int,  // 0=单个网址规则, 1=网址组
 
-    @ColumnInfo(name = "target_id") val targetId: String,  // 规则ID 或 规则组ID
+    @ColumnInfo(name = "target_id") val targetId: Long,  // UrlBlockRule.id 或 UrlRuleGroup.id
 
     @ColumnInfo(name = "start_time") val startTime: String,  // "22:00"
 
@@ -51,7 +51,7 @@ data class UrlTimeRule(
             return LocalTime.of(parts[0].toInt(), parts[1].toInt())
         }
 
-        // 预设模板 (复用 BlockTimeRule 的模板结构)
+        // 预设模板
         data class TimeTemplate(
             val name: String,
             val startTime: String,
@@ -89,8 +89,6 @@ data class UrlTimeRule(
 
     /**
      * 检查当前时间是否应该拦截
-     * - 禁止模式：时间段内拦截 (返回 true)
-     * - 允许模式：时间段外拦截 (时间段内返回 false，时间段外返回 true)
      */
     fun isActiveNow(): Boolean {
         if (!enabled) return false
@@ -130,13 +128,6 @@ data class UrlTimeRule(
     }
 
     /**
-     * 获取模式描述
-     */
-    fun formatModeDescription(): String {
-        return if (isAllowMode) "允许时间段" else "禁止时间段"
-    }
-
-    /**
      * 检查是否已锁定
      */
     val isCurrentlyLocked: Boolean
@@ -169,7 +160,7 @@ data class UrlTimeRule(
     @Dao
     interface UrlTimeRuleDao {
         @Query("SELECT * FROM url_time_rule WHERE target_type = :type AND target_id = :id ORDER BY created_at DESC")
-        fun queryByTarget(type: Int, id: String): Flow<List<UrlTimeRule>>
+        fun queryByTarget(type: Int, id: Long): Flow<List<UrlTimeRule>>
 
         @Query("SELECT * FROM url_time_rule WHERE enabled = 1")
         fun queryEnabled(): Flow<List<UrlTimeRule>>
@@ -193,6 +184,6 @@ data class UrlTimeRule(
         suspend fun deleteById(id: Long)
 
         @Query("DELETE FROM url_time_rule WHERE target_type = :type AND target_id = :id")
-        suspend fun deleteByTarget(type: Int, id: String)
+        suspend fun deleteByTarget(type: Int, id: Long)
     }
 }

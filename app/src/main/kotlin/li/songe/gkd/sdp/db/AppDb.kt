@@ -34,11 +34,12 @@ import li.songe.gkd.sdp.data.AppInstallLog
 import li.songe.gkd.sdp.data.MonitoredApp
 import li.songe.gkd.sdp.data.UrlRuleGroup
 import li.songe.gkd.sdp.data.UrlTimeRule
+import li.songe.gkd.sdp.data.UrlBlockerLock
 import li.songe.gkd.sdp.util.dbFolder
 import li.songe.gkd.sdp.util.json
 
 @Database(
-    version = 27,
+    version = 28,
     entities = [
         SubsItem::class,
         Snapshot::class,
@@ -64,6 +65,7 @@ import li.songe.gkd.sdp.util.json
         MonitoredApp::class,
         UrlRuleGroup::class,
         UrlTimeRule::class,
+        UrlBlockerLock::class,
     ],
     autoMigrations = [
         AutoMigration(from = 1, to = 2),
@@ -92,6 +94,7 @@ import li.songe.gkd.sdp.util.json
         AutoMigration(from = 24, to = 25),  // 添加 shortcut_id 字段
         AutoMigration(from = 25, to = 26),  // 添加 app_install_log 和 monitored_app 表
         AutoMigration(from = 26, to = 27),  // 添加 url_rule_group, url_time_rule 表和 group_id 字段
+        AutoMigration(from = 27, to = 28),  // 添加 url_blocker_lock 表
     ]
 )
 @TypeConverters(DbConverters::class)
@@ -120,6 +123,7 @@ abstract class AppDb : RoomDatabase() {
     abstract fun monitoredAppDao(): MonitoredApp.MonitoredAppDao
     abstract fun urlRuleGroupDao(): UrlRuleGroup.UrlRuleGroupDao
     abstract fun urlTimeRuleDao(): UrlTimeRule.UrlTimeRuleDao
+    abstract fun urlBlockerLockDao(): UrlBlockerLock.UrlBlockerLockDao
 }
 
 @RenameColumn(
@@ -198,4 +202,5 @@ object DbSet {
     val monitoredAppDao get() = db.monitoredAppDao()
     val urlRuleGroupDao get() = db.urlRuleGroupDao()
     val urlTimeRuleDao get() = db.urlTimeRuleDao()
+    val urlBlockerLockDao get() = db.urlBlockerLockDao()
 }

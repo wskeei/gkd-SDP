@@ -121,24 +121,27 @@ object UrlBlockerEngine {
      * 检查规则是否应该拦截（考虑时间规则）
      */
     private fun shouldBlockRule(rule: UrlBlockRule): Boolean {
+        // 0. 如果规则属于组，且组被禁用，则不拦截
+        if (rule.groupId > 0) {
+            val group = cachedGroups.find { it.id == rule.groupId }
+            if (group == null || !group.enabled) {
+                return false
+            }
+        }
+
         // 1. 检查规则自身的时间规则
         val ruleTimeRules = cachedTimeRules.filter { 
             it.targetType == UrlTimeRule.TARGET_TYPE_RULE && 
-            it.targetId == rule.id.toString() &&
+            it.targetId == rule.id &&
             it.enabled
         }
         
         // 2. 如果规则属于某个组，检查组的时间规则
         val groupTimeRules = if (rule.groupId > 0) {
-            val group = cachedGroups.find { it.id == rule.groupId }
-            if (group != null && group.enabled) {
-                cachedTimeRules.filter { 
-                    it.targetType == UrlTimeRule.TARGET_TYPE_GROUP && 
-                    it.targetId == rule.groupId.toString() &&
-                    it.enabled
-                }
-            } else {
-                emptyList()
+            cachedTimeRules.filter { 
+                it.targetType == UrlTimeRule.TARGET_TYPE_GROUP && 
+                it.targetId == rule.groupId &&
+                it.enabled
             }
         } else {
             emptyList()
