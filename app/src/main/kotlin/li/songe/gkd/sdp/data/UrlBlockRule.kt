@@ -33,6 +33,8 @@ data class UrlBlockRule(
     @ColumnInfo(name = "intercept_message") val interceptMessage: String = "这真的重要吗？",
 
     @ColumnInfo(name = "order_index") val orderIndex: Int = 0,  // 排序索引
+
+    @ColumnInfo(name = "group_id", defaultValue = "0") val groupId: Long = 0,  // 所属规则组ID，0表示不属于任何组
 ) {
     companion object {
         const val MATCH_TYPE_DOMAIN = 0  // 域名匹配
@@ -90,5 +92,8 @@ data class UrlBlockRule(
 
         @Query("SELECT COUNT(*) FROM url_block_rule WHERE enabled = 1")
         fun countEnabled(): Flow<Int>
+
+        @Query("SELECT * FROM url_block_rule WHERE group_id = :groupId ORDER BY order_index ASC, id ASC")
+        fun queryByGroupId(groupId: Long): Flow<List<UrlBlockRule>>
     }
 }

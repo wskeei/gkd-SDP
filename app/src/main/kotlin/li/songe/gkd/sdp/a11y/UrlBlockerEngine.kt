@@ -13,11 +13,14 @@ import li.songe.gkd.sdp.META
 import li.songe.gkd.sdp.appScope
 import li.songe.gkd.sdp.data.BrowserConfig
 import li.songe.gkd.sdp.data.UrlBlockRule
+import li.songe.gkd.sdp.data.UrlRuleGroup
+import li.songe.gkd.sdp.data.UrlTimeRule
 import li.songe.gkd.sdp.db.DbSet
 import li.songe.gkd.sdp.service.A11yService
 import li.songe.gkd.sdp.service.InterceptOverlayService
 import li.songe.gkd.sdp.util.LogUtils
 import java.util.concurrent.ConcurrentHashMap
+
 
 object UrlBlockerEngine {
     private const val TAG = "UrlBlockerEngine"
@@ -25,6 +28,8 @@ object UrlBlockerEngine {
     // 缓存的规则和浏览器配置
     private var cachedRules: List<UrlBlockRule> = emptyList()
     private var cachedBrowsers: Map<String, BrowserConfig> = emptyMap()
+    private var cachedGroups: List<UrlRuleGroup> = emptyList()
+    private var cachedTimeRules: List<UrlTimeRule> = emptyList()
 
     // 冷却时间缓存，防止重复触发
     private val cooldownMap = ConcurrentHashMap<String, Long>()
@@ -38,14 +43,18 @@ object UrlBlockerEngine {
         appScope.launch(Dispatchers.IO) {
             combine(
                 DbSet.urlBlockRuleDao.queryEnabled(),
-                DbSet.browserConfigDao.queryEnabled()
-            ) { rules, browsers ->
-                rules to browsers
-            }.collect { (rules, browsers) ->
+                DbSet.browserConfigDao.queryEnabled(),
+                DbSet.urlRuleGroupDao.queryEnabled(),
+                DbSet.urlTimeRuleDao.queryEnabled()
+            ) { rules, browsers, groups, timeRules ->
+                Quadruple(rules, browsers, groups, timeRules)
+            }.collect { (rules, browsers, groups, timeRules) ->
                 cachedRules = rules
                 cachedBrowsers = browsers.associateBy { it.packageName }
+                cachedGroups = groups
+                cachedTimeRules = timeRules
                 if (META.debuggable) {
-                    Log.d(TAG, "Rules updated: ${rules.size}, Browsers: ${browsers.size}")
+                    Log.d(TAG, "Rules updated: ${rules.size}, Browsers: ${browsers.size}, Groups: ${groups.size}, TimeRules: ${timeRules.size}")
                 }
             }
         }
@@ -55,6 +64,10 @@ object UrlBlockerEngine {
             DbSet.browserConfigDao.insertIgnore(BrowserConfig.BUILTIN_BROWSERS)
         }
     }
+
+    // 辅助数据类，用于combine四个流
+    private data class Quadruple<A, B, C, D>(val first: A, val second: B, val third: C, val fourth: D)
+
 
     /**
      * 处理无障碍事件，检测浏览器 URL
@@ -90,11 +103,58 @@ object UrlBlockerEngine {
         // 检查是否匹配任何规则
         val matchedRule = cachedRules.firstOrNull { it.matches(url) }
         if (matchedRule != null) {
+            // 检查时间规则
+            if (!shouldBlockRule(matchedRule)) {
+                if (META.debuggable) {
+                    Log.d(TAG, "Rule ${matchedRule.name} matched but not active now due to time rules")
+                }
+                return
+            }
+            
             cooldownMap[packageName] = now
             LogUtils.d("URL Blocked: $url matched rule: ${matchedRule.name}")
             executeBlock(service, matchedRule, packageName)
         }
     }
+
+    /**
+     * 检查规则是否应该拦截（考虑时间规则）
+     */
+    private fun shouldBlockRule(rule: UrlBlockRule): Boolean {
+        // 1. 检查规则自身的时间规则
+        val ruleTimeRules = cachedTimeRules.filter { 
+            it.targetType == UrlTimeRule.TARGET_TYPE_RULE && 
+            it.targetId == rule.id.toString() &&
+            it.enabled
+        }
+        
+        // 2. 如果规则属于某个组，检查组的时间规则
+        val groupTimeRules = if (rule.groupId > 0) {
+            val group = cachedGroups.find { it.id == rule.groupId }
+            if (group != null && group.enabled) {
+                cachedTimeRules.filter { 
+                    it.targetType == UrlTimeRule.TARGET_TYPE_GROUP && 
+                    it.targetId == rule.groupId.toString() &&
+                    it.enabled
+                }
+            } else {
+                emptyList()
+            }
+        } else {
+            emptyList()
+        }
+
+        val allTimeRules = ruleTimeRules + groupTimeRules
+
+        // 如果没有时间规则，默认全天拦截
+        if (allTimeRules.isEmpty()) {
+            return true
+        }
+
+        // 检查是否有任何一条时间规则当前激活
+        return allTimeRules.any { it.isActiveNow() }
+    }
+
 
     /**
      * 尝试从浏览器读取当前 URL

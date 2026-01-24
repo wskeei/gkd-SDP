@@ -42,6 +42,7 @@ import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.RocketLaunch
 import androidx.compose.material.icons.outlined.Save
+import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.SelfImprovement
 import androidx.compose.material.icons.outlined.Settings
@@ -50,6 +51,8 @@ import androidx.compose.material.icons.outlined.Title
 import androidx.compose.material.icons.outlined.ToggleOff
 import androidx.compose.material.icons.outlined.ToggleOn
 import androidx.compose.material.icons.outlined.VerifiedUser
+import androidx.compose.material.icons.outlined.CheckBox
+import androidx.compose.material.icons.outlined.CheckBoxOutlineBlank
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonColors
@@ -216,4 +219,7 @@ object PerfIcon {
     val Check get() = Icons.Outlined.Check
     val Search get() = Icons.Outlined.Search
     val Download get() = Icons.Outlined.Download
+    val Schedule get() = Icons.Outlined.Schedule
+    val CheckBox get() = Icons.Outlined.CheckBox
+    val CheckBoxOutlineBlank get() = Icons.Outlined.CheckBoxOutlineBlank
 }

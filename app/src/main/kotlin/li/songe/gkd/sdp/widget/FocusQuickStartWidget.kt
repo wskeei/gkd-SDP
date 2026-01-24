@@ -3,12 +3,10 @@ package li.songe.gkd.sdp.widget
 import android.app.PendingIntent
 import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProvider
-import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.widget.RemoteViews
-import android.widget.Toast
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
@@ -16,7 +14,6 @@ import kotlinx.coroutines.launch
 import li.songe.gkd.sdp.MainActivity
 import li.songe.gkd.sdp.R
 import li.songe.gkd.sdp.db.DbSet
-import li.songe.gkd.sdp.service.FocusOverlayService
 
 class FocusQuickStartWidget : AppWidgetProvider() {
 
@@ -68,9 +65,9 @@ class FocusQuickStartWidget : AppWidgetProvider() {
                         )
                         DbSet.focusSessionDao.insert(newSession)
                         
-                        // Start Service
-                        val serviceIntent = Intent(context, FocusOverlayService::class.java)
-                        context.startService(serviceIntent)
+                        // 注意：不需要直接启动 FocusOverlayService
+                        // 专注会话已保存到数据库，FocusModeEngine 会自动检测并在用户打开被阻止的应用时显示拦截页面
+                        // 直接启动 overlay 会导致无法退出的问题
 
                         // Launch Main Activity to show feedback
                         val appIntent = Intent(context, MainActivity::class.java).apply {

@@ -1,0 +1,55 @@
+package li.songe.gkd.sdp.data
+
+import androidx.room.ColumnInfo
+import androidx.room.Dao
+import androidx.room.Delete
+import androidx.room.Entity
+import androidx.room.Insert
+import androidx.room.OnConflictStrategy
+import androidx.room.PrimaryKey
+import androidx.room.Query
+import androidx.room.Update
+import kotlinx.coroutines.flow.Flow
+import kotlinx.serialization.Serializable
+
+@Serializable
+@Entity(tableName = "url_rule_group")
+data class UrlRuleGroup(
+    @PrimaryKey(autoGenerate = true)
+    @ColumnInfo(name = "id") val id: Long = 0,
+
+    @ColumnInfo(name = "name") val name: String,
+
+    @ColumnInfo(name = "enabled") val enabled: Boolean = true,
+
+    @ColumnInfo(name = "order_index") val orderIndex: Int = 0,
+
+    @ColumnInfo(name = "created_at") val createdAt: Long = System.currentTimeMillis(),
+) {
+    @Dao
+    interface UrlRuleGroupDao {
+        @Insert(onConflict = OnConflictStrategy.REPLACE)
+        suspend fun insert(group: UrlRuleGroup): Long
+
+        @Update
+        suspend fun update(group: UrlRuleGroup)
+
+        @Delete
+        suspend fun delete(group: UrlRuleGroup)
+
+        @Query("SELECT * FROM url_rule_group ORDER BY order_index ASC, id ASC")
+        fun queryAll(): Flow<List<UrlRuleGroup>>
+
+        @Query("SELECT * FROM url_rule_group WHERE enabled = 1 ORDER BY order_index ASC, id ASC")
+        fun queryEnabled(): Flow<List<UrlRuleGroup>>
+
+        @Query("SELECT * FROM url_rule_group WHERE id = :id")
+        suspend fun getById(id: Long): UrlRuleGroup?
+
+        @Query("DELETE FROM url_rule_group WHERE id = :id")
+        suspend fun deleteById(id: Long)
+
+        @Query("SELECT COUNT(*) FROM url_rule_group")
+        fun count(): Flow<Int>
+    }
+}

@@ -32,11 +32,13 @@ import li.songe.gkd.sdp.data.UrlBlockRule
 import li.songe.gkd.sdp.data.WechatContact
 import li.songe.gkd.sdp.data.AppInstallLog
 import li.songe.gkd.sdp.data.MonitoredApp
+import li.songe.gkd.sdp.data.UrlRuleGroup
+import li.songe.gkd.sdp.data.UrlTimeRule
 import li.songe.gkd.sdp.util.dbFolder
 import li.songe.gkd.sdp.util.json
 
 @Database(
-    version = 26,
+    version = 27,
     entities = [
         SubsItem::class,
         Snapshot::class,
@@ -60,6 +62,8 @@ import li.songe.gkd.sdp.util.json
         WechatContact::class,
         AppInstallLog::class,
         MonitoredApp::class,
+        UrlRuleGroup::class,
+        UrlTimeRule::class,
     ],
     autoMigrations = [
         AutoMigration(from = 1, to = 2),
@@ -87,6 +91,7 @@ import li.songe.gkd.sdp.util.json
         AutoMigration(from = 23, to = 24),  // 添加 is_allow_mode 字段
         AutoMigration(from = 24, to = 25),  // 添加 shortcut_id 字段
         AutoMigration(from = 25, to = 26),  // 添加 app_install_log 和 monitored_app 表
+        AutoMigration(from = 26, to = 27),  // 添加 url_rule_group, url_time_rule 表和 group_id 字段
     ]
 )
 @TypeConverters(DbConverters::class)
@@ -113,6 +118,8 @@ abstract class AppDb : RoomDatabase() {
     abstract fun wechatContactDao(): WechatContact.WechatContactDao
     abstract fun appInstallLogDao(): AppInstallLog.AppInstallLogDao
     abstract fun monitoredAppDao(): MonitoredApp.MonitoredAppDao
+    abstract fun urlRuleGroupDao(): UrlRuleGroup.UrlRuleGroupDao
+    abstract fun urlTimeRuleDao(): UrlTimeRule.UrlTimeRuleDao
 }
 
 @RenameColumn(
@@ -189,4 +196,6 @@ object DbSet {
     val wechatContactDao get() = db.wechatContactDao()
     val appInstallLogDao get() = db.appInstallLogDao()
     val monitoredAppDao get() = db.monitoredAppDao()
+    val urlRuleGroupDao get() = db.urlRuleGroupDao()
+    val urlTimeRuleDao get() = db.urlTimeRuleDao()
 }
