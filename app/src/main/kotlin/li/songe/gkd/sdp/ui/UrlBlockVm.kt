@@ -53,6 +53,7 @@ class UrlBlockVm : BaseViewModel() {
     var showUrlEditor by mutableStateOf(false)
     var showTimeRuleEditor by mutableStateOf(false)
     var showBrowserEditor by mutableStateOf(false)
+    var showBrowserList by mutableStateOf(false)
 
     // 当前编辑的对象
     var editingGroup by mutableStateOf<UrlRuleGroup?>(null)

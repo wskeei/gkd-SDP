@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -33,6 +34,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -43,12 +45,15 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import li.songe.gkd.sdp.data.BrowserConfig
 import li.songe.gkd.sdp.data.UrlBlockRule
 import li.songe.gkd.sdp.data.UrlRuleGroup
 import li.songe.gkd.sdp.data.UrlTimeRule
+import li.songe.gkd.sdp.ui.component.AppPickerDialog
 import li.songe.gkd.sdp.ui.component.PerfIcon
 import li.songe.gkd.sdp.ui.style.itemPadding
 import li.songe.gkd.sdp.ui.style.surfaceCardColors
+import li.songe.gkd.sdp.util.appInfoMapFlow
 
 @Composable
 fun UrlGroupCard(
@@ -828,6 +833,206 @@ fun UrlLockSheet(
 
             Spacer(modifier = Modifier.height(16.dp))
         }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun BrowserListSheet(
+    browsers: List<BrowserConfig>,
+    onDismiss: () -> Unit,
+    onAdd: () -> Unit,
+    onEdit: (BrowserConfig) -> Unit,
+    onDelete: (BrowserConfig) -> Unit,
+    onToggle: (BrowserConfig) -> Unit
+) {
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(500.dp) // Fixed height or use logic to fill appropriately
+                .padding(16.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "浏览器适配",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold
+                )
+                IconButton(onClick = onAdd) {
+                    Icon(PerfIcon.Add, contentDescription = "添加浏览器")
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            LazyColumn {
+                items(browsers, key = { it.packageName }) { browser ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onEdit(browser) }
+                            .padding(vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    text = browser.name,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.Medium
+                                )
+                                if (browser.isBuiltin) {
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text(
+                                        text = "(内置)",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.tertiary
+                                    )
+                                }
+                            }
+                            Text(
+                                text = browser.packageName,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+
+                        if (!browser.isBuiltin) {
+                            IconButton(onClick = { onDelete(browser) }) {
+                                Icon(
+                                    PerfIcon.Delete,
+                                    contentDescription = "删除",
+                                    tint = MaterialTheme.colorScheme.error.copy(alpha = 0.7f)
+                                )
+                            }
+                        }
+
+                        Switch(
+                            checked = browser.enabled,
+                            onCheckedChange = { onToggle(browser) }
+                        )
+                    }
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun BrowserEditSheet(
+    vm: UrlBlockVm,
+    onDismiss: () -> Unit,
+    onSave: () -> Unit
+) {
+    val isEditing = vm.editingBrowser != null
+    val isBuiltin = vm.editingBrowser?.isBuiltin == true
+    var showAppPicker by remember { mutableStateOf(false) }
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(24.dp)
+        ) {
+            Text(
+                text = if (isEditing) "编辑浏览器" else "添加浏览器",
+                style = MaterialTheme.typography.titleLarge,
+                modifier = Modifier.padding(bottom = 16.dp)
+            )
+
+            OutlinedTextField(
+                value = vm.browserName,
+                onValueChange = { vm.browserName = it },
+                label = { Text("浏览器名称") },
+                placeholder = { Text("如: Chrome") },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                OutlinedTextField(
+                    value = vm.browserPackageName,
+                    onValueChange = { if (!isBuiltin) vm.browserPackageName = it },
+                    label = { Text("包名 *") },
+                    placeholder = { Text("如: com.android.chrome") },
+                    modifier = Modifier.weight(1f),
+                    singleLine = true,
+                    enabled = !isBuiltin
+                )
+                if (!isBuiltin) {
+                    Spacer(modifier = Modifier.width(8.dp))
+                    TextButton(onClick = { showAppPicker = true }) {
+                        Text("选择应用")
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            OutlinedTextField(
+                value = vm.browserUrlBarId,
+                onValueChange = { vm.browserUrlBarId = it },
+                label = { Text("地址栏节点 ID *") },
+                placeholder = { Text("如: com.android.chrome:id/url_bar") },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Text(
+                text = "提示: 可使用 GKD 的快照功能查看浏览器地址栏的节点 ID",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Button(
+                onClick = onSave,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(if (isEditing) "保存修改" else "添加浏览器")
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+        }
+    }
+
+    if (showAppPicker) {
+        val appInfoMap by appInfoMapFlow.collectAsState()
+        AppPickerDialog(
+            currentApps = emptyList(),
+            onDismiss = { showAppPicker = false },
+            onConfirm = { selected ->
+                val pkg = selected.firstOrNull()
+                if (pkg != null) {
+                    vm.browserPackageName = pkg
+                    if (vm.browserName.isBlank()) {
+                        vm.browserName = appInfoMap[pkg]?.name ?: ""
+                    }
+                }
+                showAppPicker = false
+            },
+            singleSelect = true
+        )
     }
 }
 

@@ -52,6 +52,7 @@ fun UrlBlockPage() {
     val allUrlRules by vm.allUrlRulesFlow.collectAsState()
     val allTimeRules by vm.allTimeRulesFlow.collectAsState()
     val globalLock by vm.globalLockFlow.collectAsState()
+    val browsers by vm.browsersFlow.collectAsState()
 
     var showGlobalLockSheet by remember { mutableStateOf(false) }
     var showGroupLockSheet by remember { mutableStateOf(false) }
@@ -71,6 +72,14 @@ fun UrlBlockPage() {
                 },
                 title = { Text(text = "网址拦截") },
                 actions = {
+                    // 浏览器适配按钮
+                    IconButton(onClick = { vm.showBrowserList = true }) {
+                        Icon(
+                            PerfIcon.Settings,
+                            contentDescription = "浏览器适配",
+                            tint = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
                     // 全局锁定按钮
                     IconButton(onClick = { showGlobalLockSheet = true }) {
                         Icon(
@@ -313,6 +322,34 @@ fun UrlBlockPage() {
             onSave = {
                 vm.saveTimeRule()
                 vm.showTimeRuleEditor = false
+            }
+        )
+    }
+
+    if (vm.showBrowserList) {
+        BrowserListSheet(
+            browsers = browsers,
+            onDismiss = { vm.showBrowserList = false },
+            onAdd = {
+                vm.resetBrowserForm()
+                vm.showBrowserEditor = true
+            },
+            onEdit = { browser ->
+                vm.loadBrowserForEdit(browser)
+                vm.showBrowserEditor = true
+            },
+            onDelete = { vm.deleteBrowser(it) },
+            onToggle = { vm.toggleBrowserEnabled(it) }
+        )
+    }
+
+    if (vm.showBrowserEditor) {
+        BrowserEditSheet(
+            vm = vm,
+            onDismiss = { vm.showBrowserEditor = false },
+            onSave = {
+                vm.saveBrowser()
+                vm.showBrowserEditor = false
             }
         )
     }
