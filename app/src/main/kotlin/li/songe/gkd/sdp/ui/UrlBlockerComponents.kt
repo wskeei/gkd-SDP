@@ -211,6 +211,7 @@ fun UrlItemCard(
     onToggleEnabled: () -> Unit,
     onEdit: () -> Unit,
     onDelete: () -> Unit,
+    onLock: () -> Unit,
     onAddTimeRule: () -> Unit,
     onTimeRuleEdit: (UrlTimeRule) -> Unit,
     onTimeRuleDelete: (UrlTimeRule) -> Unit,
@@ -233,13 +234,23 @@ fun UrlItemCard(
                     .clickable(onClick = onEdit)
             ) {
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = rule.name.ifBlank { rule.pattern },
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = rule.name.ifBlank { rule.pattern },
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        if (rule.isCurrentlyLocked) {
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Icon(
+                                PerfIcon.Lock,
+                                contentDescription = "已锁定",
+                                tint = MaterialTheme.colorScheme.error
+                            )
+                        }
+                    }
                     Text(
                         text = rule.pattern,
                         style = MaterialTheme.typography.bodySmall,
@@ -247,10 +258,20 @@ fun UrlItemCard(
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
+                    if (rule.isCurrentlyLocked) {
+                        val lockEndTime = java.text.SimpleDateFormat("MM-dd HH:mm", java.util.Locale.getDefault())
+                            .format(java.util.Date(rule.lockEndTime))
+                        Text(
+                            text = "🔒 锁定至 $lockEndTime",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    }
                 }
                 Switch(
                     checked = rule.enabled,
-                    onCheckedChange = { onToggleEnabled() }
+                    onCheckedChange = { onToggleEnabled() },
+                    enabled = !rule.isCurrentlyLocked
                 )
             }
 
@@ -285,16 +306,34 @@ fun UrlItemCard(
                 horizontalArrangement = Arrangement.End,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                TextButton(onClick = onAddTimeRule) {
-                    Icon(PerfIcon.Add, contentDescription = null)
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text("时间规则")
+                if (!rule.isCurrentlyLocked) {
+                    TextButton(onClick = onAddTimeRule) {
+                        Icon(PerfIcon.Add, contentDescription = null)
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("时间规则")
+                    }
                 }
                 
-                TextButton(onClick = { showDeleteConfirm = true }) {
-                    Icon(PerfIcon.Delete, contentDescription = null)
+                TextButton(onClick = onLock) {
+                    Icon(
+                        PerfIcon.Lock,
+                        contentDescription = null,
+                        tint = if (rule.isCurrentlyLocked) {
+                            MaterialTheme.colorScheme.error
+                        } else {
+                            MaterialTheme.colorScheme.primary
+                        }
+                    )
                     Spacer(modifier = Modifier.width(4.dp))
-                    Text("删除")
+                    Text(if (rule.isCurrentlyLocked) "延长锁定" else "锁定")
+                }
+                
+                if (!rule.isCurrentlyLocked) {
+                    TextButton(onClick = { showDeleteConfirm = true }) {
+                        Icon(PerfIcon.Delete, contentDescription = null)
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("删除")
+                    }
                 }
             }
         }

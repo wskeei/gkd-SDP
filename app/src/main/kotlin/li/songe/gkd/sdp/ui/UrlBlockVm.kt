@@ -212,7 +212,9 @@ class UrlBlockVm : BaseViewModel() {
             showIntercept = urlShowIntercept,
             interceptMessage = urlInterceptMessage.ifBlank { "这真的重要吗？" },
             orderIndex = editingUrlRule?.orderIndex ?: 0,
-            groupId = urlGroupId
+            groupId = urlGroupId,
+            isLocked = editingUrlRule?.isLocked ?: false,
+            lockEndTime = editingUrlRule?.lockEndTime ?: 0
         )
 
         DbSet.urlBlockRuleDao.insert(rule)
@@ -226,6 +228,10 @@ class UrlBlockVm : BaseViewModel() {
             toast("全局锁定中，无法删除")
             return@launch
         }
+        if (rule.isCurrentlyLocked) {
+            toast("规则已锁定，无法删除")
+            return@launch
+        }
         // 删除关联的时间规则
         DbSet.urlTimeRuleDao.deleteByTarget(UrlTimeRule.TARGET_TYPE_RULE, rule.id)
         
@@ -234,10 +240,10 @@ class UrlBlockVm : BaseViewModel() {
     }
 
     fun toggleUrlRuleEnabled(rule: UrlBlockRule) = viewModelScope.launch(Dispatchers.IO) {
-         // 注意：URL 规则本身没有“锁定”字段，它的锁定受 Global Lock 控制
+        // 锁定受 Global Lock 和 自身 Lock 控制
         val globalLock = globalLockFlow.value
-        if (globalLock?.isCurrentlyLocked == true && rule.enabled) {
-            toast("全局锁定中，无法关闭")
+        if (rule.enabled && (globalLock?.isCurrentlyLocked == true || rule.isCurrentlyLocked)) {
+            toast("规则已锁定，无法关闭")
             return@launch
         }
         DbSet.urlBlockRuleDao.update(rule.copy(enabled = !rule.enabled))
@@ -391,6 +397,32 @@ class UrlBlockVm : BaseViewModel() {
 
         DbSet.urlRuleGroupDao.update(updatedGroup)
         toast("规则组已锁定")
+    }
+
+    fun lockUrlRule(rule: UrlBlockRule) = viewModelScope.launch(Dispatchers.IO) {
+        val durationMillis = calculateLockEndTime()
+        if (durationMillis == 0L) {
+            toast("请输入有效的锁定时长")
+            return@launch
+        }
+
+        val now = System.currentTimeMillis()
+        val currentEndTime = if (rule.isCurrentlyLocked) rule.lockEndTime else now
+
+        val newEndTime = if (currentEndTime > now) {
+            currentEndTime + durationMillis
+        } else {
+            now + durationMillis
+        }
+
+        val updatedRule = rule.copy(
+            isLocked = true,
+            lockEndTime = newEndTime,
+            enabled = true  // 锁定时自动启用
+        )
+
+        DbSet.urlBlockRuleDao.update(updatedRule)
+        toast("规则已锁定")
     }
 
     fun lockTimeRule(rule: UrlTimeRule) = viewModelScope.launch(Dispatchers.IO) {

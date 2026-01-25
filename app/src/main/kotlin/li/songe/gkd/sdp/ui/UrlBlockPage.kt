@@ -31,6 +31,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
+import li.songe.gkd.sdp.data.UrlBlockRule
 import li.songe.gkd.sdp.data.UrlRuleGroup
 import li.songe.gkd.sdp.data.UrlTimeRule
 import li.songe.gkd.sdp.ui.component.PerfIcon
@@ -57,9 +58,11 @@ fun UrlBlockPage() {
     var showGlobalLockSheet by remember { mutableStateOf(false) }
     var showGroupLockSheet by remember { mutableStateOf(false) }
     var showTimeRuleLockSheet by remember { mutableStateOf(false) }
+    var showUrlRuleLockSheet by remember { mutableStateOf(false) }
     
     var lockTargetGroup by remember { mutableStateOf<UrlRuleGroup?>(null) }
     var lockTargetTimeRule by remember { mutableStateOf<UrlTimeRule?>(null) }
+    var lockTargetUrlRule by remember { mutableStateOf<UrlBlockRule?>(null) }
 
     Scaffold(
         topBar = {
@@ -278,6 +281,10 @@ fun UrlBlockPage() {
                         onTimeRuleLock = { tr ->
                             lockTargetTimeRule = tr
                             showTimeRuleLockSheet = true
+                        },
+                        onLock = {
+                            lockTargetUrlRule = rule
+                            showUrlRuleLockSheet = true
                         }
                     )
                     Spacer(modifier = Modifier.height(8.dp))
@@ -409,6 +416,25 @@ fun UrlBlockPage() {
                 vm.lockTimeRule(lockTargetTimeRule!!)
                 showTimeRuleLockSheet = false
                 lockTargetTimeRule = null
+            }
+        )
+    }
+
+    // 网址规则锁定 Sheet
+    if (showUrlRuleLockSheet && lockTargetUrlRule != null) {
+        UrlLockSheet(
+            title = if (lockTargetUrlRule!!.isCurrentlyLocked) "延长锁定" else "锁定规则",
+            description = "锁定后无法关闭或删除此规则。",
+            currentLockEndTime = if (lockTargetUrlRule!!.isCurrentlyLocked) lockTargetUrlRule!!.lockEndTime else null,
+            vm = vm,
+            onDismiss = {
+                showUrlRuleLockSheet = false
+                lockTargetUrlRule = null
+            },
+            onLock = {
+                vm.lockUrlRule(lockTargetUrlRule!!)
+                showUrlRuleLockSheet = false
+                lockTargetUrlRule = null
             }
         )
     }

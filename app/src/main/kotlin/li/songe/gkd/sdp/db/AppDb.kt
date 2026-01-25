@@ -39,7 +39,7 @@ import li.songe.gkd.sdp.util.dbFolder
 import li.songe.gkd.sdp.util.json
 
 @Database(
-    version = 28,
+    version = 29,
     entities = [
         SubsItem::class,
         Snapshot::class,
@@ -95,6 +95,7 @@ import li.songe.gkd.sdp.util.json
         AutoMigration(from = 25, to = 26),  // 添加 app_install_log 和 monitored_app 表
         AutoMigration(from = 26, to = 27),  // 添加 url_rule_group, url_time_rule 表和 group_id 字段
         AutoMigration(from = 27, to = 28),  // 添加 url_blocker_lock 表
+        AutoMigration(from = 28, to = 29),  // UrlBlockRule 添加 is_locked, lock_end_time 字段
     ]
 )
 @TypeConverters(DbConverters::class)

@@ -35,12 +35,22 @@ data class UrlBlockRule(
     @ColumnInfo(name = "order_index") val orderIndex: Int = 0,  // 排序索引
 
     @ColumnInfo(name = "group_id", defaultValue = "0") val groupId: Long = 0,  // 所属规则组ID，0表示不属于任何组
+
+    @ColumnInfo(name = "is_locked", defaultValue = "0") val isLocked: Boolean = false,
+
+    @ColumnInfo(name = "lock_end_time", defaultValue = "0") val lockEndTime: Long = 0,
 ) {
     companion object {
         const val MATCH_TYPE_DOMAIN = 0  // 域名匹配
         const val MATCH_TYPE_PREFIX = 1  // 前缀匹配
         const val DEFAULT_REDIRECT_URL = "https://www.google.com"
     }
+
+    /**
+     * 检查是否已锁定
+     */
+    val isCurrentlyLocked: Boolean
+        get() = isLocked && lockEndTime > System.currentTimeMillis()
 
     /**
      * 检查 URL 是否匹配此规则
