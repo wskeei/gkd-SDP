@@ -273,8 +273,10 @@ fun AppBlockerPage() {
 
     // 应用组编辑器
     if (vm.showGroupEditor) {
+        val isLocked = globalLock?.isCurrentlyLocked == true || vm.editingGroup?.isCurrentlyLocked == true
         GroupEditorSheet(
             vm = vm,
+            isLocked = isLocked,
             onDismiss = { vm.resetGroupForm() },
             onSave = { vm.saveGroup() }
         )
@@ -282,9 +284,14 @@ fun AppBlockerPage() {
 
     // 规则编辑器
     if (vm.showRuleEditor) {
+        val targetIsLocked = if (vm.ruleTargetType == BlockTimeRule.TARGET_TYPE_GROUP) {
+            allGroups.find { it.id == vm.ruleTargetId.toLongOrNull() }?.isCurrentlyLocked == true
+        } else false
+        val isLocked = globalLock?.isCurrentlyLocked == true || vm.editingRule?.isCurrentlyLocked == true || targetIsLocked
         RuleEditorSheet(
             vm = vm,
             allGroups = allGroups,
+            isLocked = isLocked,
             onDismiss = { vm.resetRuleForm() },
             onSave = { vm.saveRule() }
         )
@@ -693,6 +700,7 @@ private fun AppRulesCard(
 @Composable
 private fun GroupEditorSheet(
     vm: AppBlockerVm,
+    isLocked: Boolean = false,
     onDismiss: () -> Unit,
     onSave: () -> Unit
 ) {
@@ -708,7 +716,9 @@ private fun GroupEditorSheet(
                 .padding(16.dp)
         ) {
             Text(
-                text = if (vm.editingGroup != null) "编辑应用组" else "添加应用组",
+                text = if (vm.editingGroup != null) {
+                    if (isLocked) "查看应用组 (已锁定)" else "编辑应用组"
+                } else "添加应用组",
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold
             )
@@ -722,7 +732,8 @@ private fun GroupEditorSheet(
                 label = { Text("应用组名称") },
                 placeholder = { Text("如：娱乐应用") },
                 modifier = Modifier.fillMaxWidth(),
-                singleLine = true
+                singleLine = true,
+                enabled = !isLocked
             )
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -737,7 +748,10 @@ private fun GroupEditorSheet(
                     style = MaterialTheme.typography.bodyMedium,
                     modifier = Modifier.weight(1f)
                 )
-                TextButton(onClick = { showAppPicker = true }) {
+                TextButton(
+                    onClick = { showAppPicker = true },
+                    enabled = !isLocked
+                ) {
                     Text("选择")
                 }
             }
@@ -760,7 +774,8 @@ private fun GroupEditorSheet(
                         FilterChip(
                             selected = true,
                             onClick = { vm.removeAppFromGroup(packageName) },
-                            label = { Text(appName) }
+                            label = { Text(appName) },
+                            enabled = !isLocked
                         )
                     }
                 }
@@ -768,11 +783,24 @@ private fun GroupEditorSheet(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            Button(
-                onClick = onSave,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("保存")
+            if (!isLocked) {
+                Button(
+                    onClick = onSave,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("保存")
+                }
+            } else {
+                Button(
+                    onClick = onDismiss,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                    )
+                ) {
+                    Text("确定")
+                }
             }
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -796,6 +824,7 @@ private fun GroupEditorSheet(
 private fun RuleEditorSheet(
     vm: AppBlockerVm,
     allGroups: List<AppGroup>,
+    isLocked: Boolean = false,
     onDismiss: () -> Unit,
     onSave: () -> Unit
 ) {
@@ -813,7 +842,9 @@ private fun RuleEditorSheet(
         ) {
             item {
                 Text(
-                    text = if (vm.editingRule != null) "编辑规则" else "添加规则",
+                    text = if (vm.editingRule != null) {
+                        if (isLocked) "查看规则 (已锁定)" else "编辑规则"
+                    } else "添加规则",
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold
                 )
@@ -835,7 +866,8 @@ private fun RuleEditorSheet(
                             vm.ruleTargetType = BlockTimeRule.TARGET_TYPE_APP
                             vm.ruleTargetId = ""
                         },
-                        label = { Text("单独应用") }
+                        label = { Text("单独应用") },
+                        enabled = !isLocked
                     )
                     FilterChip(
                         selected = vm.ruleTargetType == BlockTimeRule.TARGET_TYPE_GROUP,
@@ -843,7 +875,8 @@ private fun RuleEditorSheet(
                             vm.ruleTargetType = BlockTimeRule.TARGET_TYPE_GROUP
                             vm.ruleTargetId = ""
                         },
-                        label = { Text("应用组") }
+                        label = { Text("应用组") },
+                        enabled = !isLocked
                     )
                 }
 
@@ -867,7 +900,10 @@ private fun RuleEditorSheet(
                             style = MaterialTheme.typography.bodyMedium,
                             modifier = Modifier.weight(1f)
                         )
-                        TextButton(onClick = { showAppPicker = true }) {
+                        TextButton(
+                            onClick = { showAppPicker = true },
+                            enabled = !isLocked
+                        ) {
                             Text("选择应用")
                         }
                     }
@@ -893,7 +929,8 @@ private fun RuleEditorSheet(
                                 FilterChip(
                                     selected = vm.ruleTargetId == group.id.toString(),
                                     onClick = { vm.ruleTargetId = group.id.toString() },
-                                    label = { Text(group.name) }
+                                    label = { Text(group.name) },
+                                    enabled = !isLocked
                                 )
                             }
                         }
@@ -912,7 +949,10 @@ private fun RuleEditorSheet(
                         style = MaterialTheme.typography.bodyMedium,
                         modifier = Modifier.weight(1f)
                     )
-                    TextButton(onClick = { showTemplateDialog = true }) {
+                    TextButton(
+                        onClick = { showTemplateDialog = true },
+                        enabled = !isLocked
+                    ) {
                         Text("选择模板")
                     }
                 }
@@ -931,12 +971,14 @@ private fun RuleEditorSheet(
                     FilterChip(
                         selected = !vm.ruleIsAllowMode,
                         onClick = { vm.ruleIsAllowMode = false },
-                        label = { Text("🚫 禁止时间段") }
+                        label = { Text("🚫 禁止时间段") },
+                        enabled = !isLocked
                     )
                     FilterChip(
                         selected = vm.ruleIsAllowMode,
                         onClick = { vm.ruleIsAllowMode = true },
-                        label = { Text("✓ 允许时间段") }
+                        label = { Text("✓ 允许时间段") },
+                        enabled = !isLocked
                     )
                 }
                 if (vm.ruleIsAllowMode) {
@@ -959,7 +1001,8 @@ private fun RuleEditorSheet(
                         label = { Text("开始时间") },
                         placeholder = { Text("22:00") },
                         modifier = Modifier.weight(1f),
-                        singleLine = true
+                        singleLine = true,
+                        enabled = !isLocked
                     )
                     OutlinedTextField(
                         value = vm.ruleEndTime,
@@ -967,7 +1010,8 @@ private fun RuleEditorSheet(
                         label = { Text("结束时间") },
                         placeholder = { Text("08:00") },
                         modifier = Modifier.weight(1f),
-                        singleLine = true
+                        singleLine = true,
+                        enabled = !isLocked
                     )
                 }
 
@@ -994,7 +1038,8 @@ private fun RuleEditorSheet(
                                     (vm.ruleDaysOfWeek + day).sorted()
                                 }
                             },
-                            label = { Text("周${dayNames[day - 1]}") }
+                            label = { Text("周${dayNames[day - 1]}") },
+                            enabled = !isLocked
                         )
                     }
                 }
@@ -1008,16 +1053,30 @@ private fun RuleEditorSheet(
                     label = { Text("拦截提示语") },
                     placeholder = { Text("这真的重要吗？") },
                     modifier = Modifier.fillMaxWidth(),
-                    singleLine = true
+                    singleLine = true,
+                    enabled = !isLocked
                 )
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                Button(
-                    onClick = onSave,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text("保存")
+                if (!isLocked) {
+                    Button(
+                        onClick = onSave,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("保存")
+                    }
+                } else {
+                    Button(
+                        onClick = onDismiss,
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                            contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                        )
+                    ) {
+                        Text("确定")
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))

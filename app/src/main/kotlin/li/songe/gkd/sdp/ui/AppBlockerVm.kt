@@ -73,6 +73,16 @@ class AppBlockerVm : BaseViewModel() {
             return@launch
         }
 
+        val globalLock = globalLockFlow.value
+        if (globalLock?.isCurrentlyLocked == true) {
+            toast("全局锁定中，无法修改")
+            return@launch
+        }
+        if (editingGroup?.isCurrentlyLocked == true) {
+            toast("该组已锁定，无法修改")
+            return@launch
+        }
+
         val group = AppGroup(
             id = editingGroup?.id ?: 0,
             name = groupName.trim(),
@@ -156,6 +166,25 @@ class AppBlockerVm : BaseViewModel() {
         if (ruleTargetId.isBlank()) {
             toast("请选择拦截对象")
             return@launch
+        }
+
+        val globalLock = globalLockFlow.value
+        if (globalLock?.isCurrentlyLocked == true) {
+            toast("全局锁定中，无法修改")
+            return@launch
+        }
+        if (editingRule?.isCurrentlyLocked == true) {
+            toast("该规则已锁定，无法修改")
+            return@launch
+        }
+
+        // 检查目标对象是否锁定
+        if (ruleTargetType == BlockTimeRule.TARGET_TYPE_GROUP) {
+            val group = DbSet.appGroupDao.getById(ruleTargetId.toLongOrNull() ?: 0L)
+            if (group?.isCurrentlyLocked == true) {
+                toast("目标应用组已锁定，无法修改其时间规则")
+                return@launch
+            }
         }
 
         val rule = BlockTimeRule(

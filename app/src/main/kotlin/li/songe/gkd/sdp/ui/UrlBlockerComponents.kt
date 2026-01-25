@@ -59,6 +59,7 @@ import li.songe.gkd.sdp.util.appInfoMapFlow
 fun UrlGroupCard(
     group: UrlRuleGroup,
     rules: List<UrlTimeRule>,
+    urlRules: List<UrlBlockRule>,
     onToggleEnabled: () -> Unit,
     onEdit: () -> Unit,
     onDelete: () -> Unit,
@@ -66,7 +67,10 @@ fun UrlGroupCard(
     onAddTimeRule: () -> Unit,
     onTimeRuleEdit: (UrlTimeRule) -> Unit,
     onTimeRuleDelete: (UrlTimeRule) -> Unit,
-    onTimeRuleLock: (UrlTimeRule) -> Unit
+    onTimeRuleLock: (UrlTimeRule) -> Unit,
+    onAddUrlRule: () -> Unit,
+    onEditUrlRule: (UrlBlockRule) -> Unit,
+    onDeleteUrlRule: (UrlBlockRule) -> Unit
 ) {
     var showDeleteConfirm by remember { mutableStateOf(false) }
 
@@ -118,6 +122,27 @@ fun UrlGroupCard(
                 )
             }
 
+            // 网址规则列表
+            if (urlRules.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(12.dp))
+                HorizontalDivider()
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Text(
+                    text = "包含的网址 (${urlRules.size})",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                )
+
+                urlRules.forEach { urlRule ->
+                    UrlInGroupRow(
+                        rule = urlRule,
+                        onEdit = { onEditUrlRule(urlRule) },
+                        onDelete = { onDeleteUrlRule(urlRule) }
+                    )
+                }
+            }
+
             // 时间规则列表
             if (rules.isNotEmpty()) {
                 Spacer(modifier = Modifier.height(12.dp))
@@ -150,10 +175,16 @@ fun UrlGroupCard(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 if (!group.isCurrentlyLocked) {
+                    TextButton(onClick = onAddUrlRule) {
+                        Icon(PerfIcon.Add, contentDescription = null)
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("网址")
+                    }
+                    
                     TextButton(onClick = onAddTimeRule) {
                         Icon(PerfIcon.Add, contentDescription = null)
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("时间规则")
+                        Text("时间")
                     }
                 }
                 
@@ -186,7 +217,7 @@ fun UrlGroupCard(
         AlertDialog(
             onDismissRequest = { showDeleteConfirm = false },
             title = { Text("删除规则组") },
-            text = { Text("确定要删除规则组「${group.name}」吗？组内的时间规则也会被删除。") },
+            text = { Text("确定要删除规则组「${group.name}」吗？组内的所有规则也会被删除。") },
             confirmButton = {
                 TextButton(onClick = {
                     onDelete()
@@ -362,6 +393,77 @@ fun UrlItemCard(
 }
 
 @Composable
+fun UrlInGroupRow(
+    rule: UrlBlockRule,
+    onEdit: () -> Unit,
+    onDelete: () -> Unit
+) {
+    var showDeleteConfirm by remember { mutableStateOf(false) }
+
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onEdit)
+            .padding(vertical = 4.dp)
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = rule.name.ifBlank { rule.pattern },
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Medium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            Text(
+                text = rule.pattern,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
+
+        if (!rule.isCurrentlyLocked) {
+            IconButton(onClick = { showDeleteConfirm = true }) {
+                Icon(
+                    PerfIcon.Delete,
+                    contentDescription = "从组中删除",
+                    tint = MaterialTheme.colorScheme.error.copy(alpha = 0.6f)
+                )
+            }
+        }
+
+        Switch(
+            checked = rule.enabled,
+            onCheckedChange = { /* 内部逻辑处理 */ },
+            enabled = false // 只读展示，通过 Edit 修改
+        )
+    }
+
+    if (showDeleteConfirm) {
+        AlertDialog(
+            onDismissRequest = { showDeleteConfirm = false },
+            title = { Text("移除规则") },
+            text = { Text("确定要将此规则「${rule.pattern}」删除吗？") },
+            confirmButton = {
+                TextButton(onClick = {
+                    onDelete()
+                    showDeleteConfirm = false
+                }) {
+                    Text("删除")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteConfirm = false }) {
+                    Text("取消")
+                }
+            }
+        )
+    }
+}
+
+@Composable
 fun TimeRuleRow(
     rule: UrlTimeRule,
     onEdit: () -> Unit,
@@ -462,6 +564,7 @@ fun TimeRuleRow(
 @Composable
 fun UrlGroupEditorSheet(
     vm: UrlBlockVm,
+    isLocked: Boolean = false,
     onDismiss: () -> Unit,
     onSave: () -> Unit
 ) {
@@ -475,7 +578,9 @@ fun UrlGroupEditorSheet(
                 .padding(16.dp)
         ) {
             Text(
-                text = if (vm.editingGroup != null) "编辑规则组" else "添加规则组",
+                text = if (vm.editingGroup != null) {
+                    if (isLocked) "查看规则组 (已锁定)" else "编辑规则组"
+                } else "添加规则组",
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold
             )
@@ -488,16 +593,43 @@ fun UrlGroupEditorSheet(
                 label = { Text("规则组名称") },
                 placeholder = { Text("如：视频网站") },
                 modifier = Modifier.fillMaxWidth(),
-                singleLine = true
+                singleLine = true,
+                enabled = !isLocked
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            OutlinedTextField(
+                value = vm.groupQuickUrls,
+                onValueChange = { vm.groupQuickUrls = it },
+                label = { Text("批量添加网址 (可选)") },
+                placeholder = { Text("每行一个，如：\nbilibili.com\nyoutube.com") },
+                modifier = Modifier.fillMaxWidth(),
+                minLines = 3,
+                maxLines = 5,
+                enabled = !isLocked
             )
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            Button(
-                onClick = onSave,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("保存")
+            if (!isLocked) {
+                Button(
+                    onClick = onSave,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("保存")
+                }
+            } else {
+                Button(
+                    onClick = onDismiss,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                    )
+                ) {
+                    Text("确定")
+                }
             }
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -510,6 +642,7 @@ fun UrlGroupEditorSheet(
 fun UrlRuleEditorSheet(
     vm: UrlBlockVm,
     allGroups: List<UrlRuleGroup>,
+    isLocked: Boolean = false,
     onDismiss: () -> Unit,
     onSave: () -> Unit
 ) {
@@ -524,7 +657,9 @@ fun UrlRuleEditorSheet(
         ) {
             item {
                 Text(
-                    text = if (vm.editingUrlRule != null) "编辑规则" else "添加规则",
+                    text = if (vm.editingUrlRule != null) {
+                        if (isLocked) "查看规则 (已锁定)" else "编辑规则"
+                    } else "添加规则",
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold
                 )
@@ -537,7 +672,8 @@ fun UrlRuleEditorSheet(
                     label = { Text("网址匹配模式") },
                     placeholder = { Text("如：bilibili.com") },
                     modifier = Modifier.fillMaxWidth(),
-                    singleLine = true
+                    singleLine = true,
+                    enabled = !isLocked
                 )
                 Text(
                     text = "不带 http://，支持域名或前缀",
@@ -554,7 +690,8 @@ fun UrlRuleEditorSheet(
                     label = { Text("规则名称 (可选)") },
                     placeholder = { Text("如：B站") },
                     modifier = Modifier.fillMaxWidth(),
-                    singleLine = true
+                    singleLine = true,
+                    enabled = !isLocked
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
@@ -566,12 +703,14 @@ fun UrlRuleEditorSheet(
                     FilterChip(
                         selected = vm.urlMatchType == UrlBlockRule.MATCH_TYPE_DOMAIN,
                         onClick = { vm.urlMatchType = UrlBlockRule.MATCH_TYPE_DOMAIN },
-                        label = { Text("域名匹配") }
+                        label = { Text("域名匹配") },
+                        enabled = !isLocked
                     )
                     FilterChip(
                         selected = vm.urlMatchType == UrlBlockRule.MATCH_TYPE_PREFIX,
                         onClick = { vm.urlMatchType = UrlBlockRule.MATCH_TYPE_PREFIX },
-                        label = { Text("前缀匹配") }
+                        label = { Text("前缀匹配") },
+                        enabled = !isLocked
                     )
                 }
 
@@ -587,71 +726,26 @@ fun UrlRuleEditorSheet(
                     FilterChip(
                         selected = vm.urlGroupId == 0L,
                         onClick = { vm.urlGroupId = 0L },
-                        label = { Text("未分组") }
+                        label = { Text("未分组") },
+                        enabled = !isLocked
                     )
                     allGroups.forEach { group ->
                         FilterChip(
                             selected = vm.urlGroupId == group.id,
                             onClick = { vm.urlGroupId = group.id },
-                            label = { Text(group.name) }
+                            label = { Text(group.name) },
+                            enabled = !isLocked
                         )
                     }
                 }
 
                 Spacer(modifier = Modifier.height(24.dp))
-
-                Button(onClick = onSave, modifier = Modifier.fillMaxWidth()) {
-                    Text("保存")
-                }
-                
+                HorizontalDivider()
                 Spacer(modifier = Modifier.height(16.dp))
-            }
-        }
-    }
-}
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
-@Composable
-fun TimeRuleEditorSheet(
-    vm: UrlBlockVm,
-    onDismiss: () -> Unit,
-    onSave: () -> Unit
-) {
-    var showTemplateDialog by remember { mutableStateOf(false) }
-
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    ) {
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp)
-        ) {
-            item {
-                Text(
-                    text = if (vm.editingTimeRule != null) "编辑时间规则" else "添加时间规则",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold
-                )
-
-                Spacer(modifier = Modifier.height(24.dp))
-
-                // 时间模板
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text(
-                        text = "时间模板",
-                        style = MaterialTheme.typography.bodyMedium,
-                        modifier = Modifier.weight(1f)
-                    )
-                    TextButton(onClick = { showTemplateDialog = true }) {
-                        Text("选择模板")
-                    }
-                }
-
+                // ================== 时间规则设置 ==================
+                Text("时间设置 (拦截生效时间)", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                
                 Spacer(modifier = Modifier.height(16.dp))
 
                 // 模式选择
@@ -661,12 +755,14 @@ fun TimeRuleEditorSheet(
                     FilterChip(
                         selected = !vm.timeRuleIsAllowMode,
                         onClick = { vm.timeRuleIsAllowMode = false },
-                        label = { Text("🚫 禁止时间段") }
+                        label = { Text("🚫 禁止时间段") },
+                        enabled = !isLocked
                     )
                     FilterChip(
                         selected = vm.timeRuleIsAllowMode,
                         onClick = { vm.timeRuleIsAllowMode = true },
-                        label = { Text("✓ 允许时间段") }
+                        label = { Text("✓ 允许时间段") },
+                        enabled = !isLocked
                     )
                 }
 
@@ -682,14 +778,16 @@ fun TimeRuleEditorSheet(
                         onValueChange = { vm.timeRuleStartTime = it },
                         label = { Text("开始时间") },
                         modifier = Modifier.weight(1f),
-                        singleLine = true
+                        singleLine = true,
+                        enabled = !isLocked
                     )
                     OutlinedTextField(
                         value = vm.timeRuleEndTime,
                         onValueChange = { vm.timeRuleEndTime = it },
                         label = { Text("结束时间") },
                         modifier = Modifier.weight(1f),
-                        singleLine = true
+                        singleLine = true,
+                        enabled = !isLocked
                     )
                 }
 
@@ -715,15 +813,175 @@ fun TimeRuleEditorSheet(
                                 }
                                 vm.timeRuleDaysOfWeek = newDays
                             },
-                            label = { Text("周${dayNames[day - 1]}") }
+                            label = { Text("周${dayNames[day - 1]}") },
+                            enabled = !isLocked
                         )
                     }
                 }
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                Button(onClick = onSave, modifier = Modifier.fillMaxWidth()) {
-                    Text("保存")
+                if (!isLocked) {
+                    Button(onClick = onSave, modifier = Modifier.fillMaxWidth()) {
+                        Text("保存")
+                    }
+                } else {
+                    Button(
+                        onClick = onDismiss,
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                            contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                        )
+                    ) {
+                        Text("确定")
+                    }
+                }
+                
+                Spacer(modifier = Modifier.height(16.dp))
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
+@Composable
+fun TimeRuleEditorSheet(
+    vm: UrlBlockVm,
+    isLocked: Boolean = false,
+    onDismiss: () -> Unit,
+    onSave: () -> Unit
+) {
+    var showTemplateDialog by remember { mutableStateOf(false) }
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    ) {
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+        ) {
+            item {
+                Text(
+                    text = if (vm.editingTimeRule != null) {
+                        if (isLocked) "查看时间规则 (已锁定)" else "编辑时间规则"
+                    } else "添加时间规则",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold
+                )
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                // 时间模板
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = "时间模板",
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.weight(1f)
+                    )
+                    TextButton(
+                        onClick = { showTemplateDialog = true },
+                        enabled = !isLocked
+                    ) {
+                        Text("选择模板")
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // 模式选择
+                Text("规则模式", style = MaterialTheme.typography.bodyMedium)
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    FilterChip(
+                        selected = !vm.timeRuleIsAllowMode,
+                        onClick = { vm.timeRuleIsAllowMode = false },
+                        label = { Text("🚫 禁止时间段") },
+                        enabled = !isLocked
+                    )
+                    FilterChip(
+                        selected = vm.timeRuleIsAllowMode,
+                        onClick = { vm.timeRuleIsAllowMode = true },
+                        label = { Text("✓ 允许时间段") },
+                        enabled = !isLocked
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // 时间段
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    OutlinedTextField(
+                        value = vm.timeRuleStartTime,
+                        onValueChange = { vm.timeRuleStartTime = it },
+                        label = { Text("开始时间") },
+                        modifier = Modifier.weight(1f),
+                        singleLine = true,
+                        enabled = !isLocked
+                    )
+                    OutlinedTextField(
+                        value = vm.timeRuleEndTime,
+                        onValueChange = { vm.timeRuleEndTime = it },
+                        label = { Text("结束时间") },
+                        modifier = Modifier.weight(1f),
+                        singleLine = true,
+                        enabled = !isLocked
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // 星期选择
+                Text("生效日期", style = MaterialTheme.typography.bodyMedium)
+                Spacer(modifier = Modifier.height(8.dp))
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    val dayNames = listOf("一", "二", "三", "四", "五", "六", "日")
+                    val currentDays = vm.timeRuleDaysOfWeek
+                    (1..7).forEach { day ->
+                        FilterChip(
+                            selected = currentDays.contains(day),
+                            onClick = {
+                                val newDays = if (currentDays.contains(day)) {
+                                    currentDays - day
+                                } else {
+                                    (currentDays + day).sorted()
+                                }
+                                vm.timeRuleDaysOfWeek = newDays
+                            },
+                            label = { Text("周${dayNames[day - 1]}") },
+                            enabled = !isLocked
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                if (!isLocked) {
+                    Button(onClick = onSave, modifier = Modifier.fillMaxWidth()) {
+                        Text("保存")
+                    }
+                } else {
+                    Button(
+                        onClick = onDismiss, 
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                            contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                        )
+                    ) {
+                        Text("确定")
+                    }
                 }
                 
                 Spacer(modifier = Modifier.height(16.dp))

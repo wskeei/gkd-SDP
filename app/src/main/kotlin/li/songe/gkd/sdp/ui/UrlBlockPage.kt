@@ -176,10 +176,14 @@ fun UrlBlockPage() {
                         it.targetType == UrlTimeRule.TARGET_TYPE_GROUP &&
                         it.targetId == group.id
                     }
+                    val groupUrlRules = allUrlRules.filter {
+                        it.groupId == group.id
+                    }
                     
                     UrlGroupCard(
                         group = group,
                         rules = groupTimeRules,
+                        urlRules = groupUrlRules,
                         onToggleEnabled = { vm.toggleGroupEnabled(group) },
                         onEdit = {
                             vm.loadGroupForEdit(group)
@@ -204,6 +208,18 @@ fun UrlBlockPage() {
                         onTimeRuleLock = { tr ->
                             lockTargetTimeRule = tr
                             showTimeRuleLockSheet = true
+                        },
+                        onAddUrlRule = {
+                            vm.resetUrlForm()
+                            vm.urlGroupId = group.id
+                            vm.showUrlEditor = true
+                        },
+                        onEditUrlRule = { rule ->
+                            vm.loadUrlForEdit(rule)
+                            vm.showUrlEditor = true
+                        },
+                        onDeleteUrlRule = { rule ->
+                            vm.deleteUrlRule(rule)
                         }
                     )
                     Spacer(modifier = Modifier.height(8.dp))
@@ -300,8 +316,10 @@ fun UrlBlockPage() {
     // ================== Editors ==================
 
     if (vm.showGroupEditor) {
+        val isLocked = vm.editingGroup?.isCurrentlyLocked == true || globalLock?.isCurrentlyLocked == true
         UrlGroupEditorSheet(
             vm = vm,
+            isLocked = isLocked,
             onDismiss = { vm.showGroupEditor = false },
             onSave = { 
                 vm.saveGroup()
@@ -311,9 +329,12 @@ fun UrlBlockPage() {
     }
 
     if (vm.showUrlEditor) {
+        val editingRule = vm.editingUrlRule
+        val isLocked = globalLock?.isCurrentlyLocked == true || editingRule?.isCurrentlyLocked == true || (editingRule?.groupId ?: 0L > 0 && allGroups.find { it.id == editingRule?.groupId }?.isCurrentlyLocked == true)
         UrlRuleEditorSheet(
             vm = vm,
             allGroups = allGroups,
+            isLocked = isLocked,
             onDismiss = { vm.showUrlEditor = false },
             onSave = { 
                 vm.saveUrlRule()
@@ -323,8 +344,17 @@ fun UrlBlockPage() {
     }
     
     if (vm.showTimeRuleEditor) {
+        val editingTimeRule = vm.editingTimeRule
+        val targetIsLocked = if (vm.timeRuleTargetType == UrlTimeRule.TARGET_TYPE_RULE) {
+            allUrlRules.find { it.id == vm.timeRuleTargetId }?.isCurrentlyLocked == true
+        } else {
+            allGroups.find { it.id == vm.timeRuleTargetId }?.isCurrentlyLocked == true
+        }
+        val isLocked = globalLock?.isCurrentlyLocked == true || editingTimeRule?.isCurrentlyLocked == true || targetIsLocked
+        
         TimeRuleEditorSheet(
             vm = vm,
+            isLocked = isLocked,
             onDismiss = { vm.showTimeRuleEditor = false },
             onSave = {
                 vm.saveTimeRule()

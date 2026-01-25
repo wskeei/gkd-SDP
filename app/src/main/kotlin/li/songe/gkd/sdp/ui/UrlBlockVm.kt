@@ -69,6 +69,7 @@ class UrlBlockVm : BaseViewModel() {
 
     // --- 规则组表单 ---
     var groupName by mutableStateOf("")
+    var groupQuickUrls by mutableStateOf("")
 
     // --- 网址规则表单 ---
     var urlPattern by mutableStateOf("")
@@ -98,6 +99,7 @@ class UrlBlockVm : BaseViewModel() {
     fun resetGroupForm() {
         editingGroup = null
         groupName = ""
+        groupQuickUrls = ""
         showGroupEditor = false
     }
 
@@ -113,6 +115,16 @@ class UrlBlockVm : BaseViewModel() {
             return@launch
         }
 
+        val globalLock = globalLockFlow.value
+        if (globalLock?.isCurrentlyLocked == true) {
+            toast("全局锁定中，无法修改")
+            return@launch
+        }
+        if (editingGroup?.isCurrentlyLocked == true) {
+            toast("该组已锁定，无法修改")
+            return@launch
+        }
+
         val group = UrlRuleGroup(
             id = editingGroup?.id ?: 0,
             name = groupName.trim(),
@@ -122,7 +134,22 @@ class UrlBlockVm : BaseViewModel() {
             orderIndex = editingGroup?.orderIndex ?: 0
         )
 
-        DbSet.urlRuleGroupDao.insert(group)
+        val groupId = DbSet.urlRuleGroupDao.insert(group)
+
+        // 批量添加网址
+        val urls = groupQuickUrls.split("\n")
+            .map { it.trim() }
+            .filter { it.isNotBlank() }
+
+        urls.forEach { url ->
+            val rule = UrlBlockRule(
+                pattern = url,
+                name = url,
+                groupId = groupId
+            )
+            DbSet.urlBlockRuleDao.insert(rule)
+        }
+
         toast(if (editingGroup != null) "规则组已更新" else "规则组已添加")
         resetGroupForm()
     }
@@ -141,17 +168,10 @@ class UrlBlockVm : BaseViewModel() {
         // 级联删除：删除该组下的所有时间规则
         DbSet.urlTimeRuleDao.deleteByTarget(UrlTimeRule.TARGET_TYPE_GROUP, group.id)
         
-        // 注意：我们不删除组内的 URL 规则，而是将它们移动到“未分组” (id=0)，或者根据需求直接删除。
-        // 参考 AppBlocker，AppGroup 内部存的是 AppIds，组没了 App 还在。
-        // 这里 UrlBlockRule 是独立实体，如果组没了，它应该变成未分组，或者询问用户。
-        // 为了简单且安全，我们先保留 URL 规则，只重置 groupId = 0。
-        // 但目前 DAO 没有批量更新 groupId 的方法，所以我们可能需要手动处理。
-        // 实际上，如果用户删除了组，通常期望组内的规则也失效。
-        // 既然 UrlBlockRule 是实体，我们可以选择删除它们，或者保留。
-        // 让我们选择：将组内 URL 规则的 groupId 重置为 0。
+        // 级联删除：删除该组下的所有网址规则
         val rulesInGroup = DbSet.urlBlockRuleDao.queryByGroupId(group.id).firstOrNull() ?: emptyList()
         rulesInGroup.forEach { rule ->
-            DbSet.urlBlockRuleDao.update(rule.copy(groupId = 0))
+            DbSet.urlBlockRuleDao.delete(rule)
         }
 
         DbSet.urlRuleGroupDao.delete(group)
@@ -174,6 +194,7 @@ class UrlBlockVm : BaseViewModel() {
 
     fun resetUrlForm() {
         editingUrlRule = null
+        editingTimeRule = null
         urlPattern = ""
         urlMatchType = UrlBlockRule.MATCH_TYPE_DOMAIN
         urlName = ""
@@ -181,10 +202,17 @@ class UrlBlockVm : BaseViewModel() {
         urlShowIntercept = true
         urlInterceptMessage = "这真的重要吗？"
         urlGroupId = 0L
+        
+        // 重置时间规则字段为默认值 (全天拦截)
+        timeRuleStartTime = "00:00"
+        timeRuleEndTime = "23:59"
+        timeRuleDaysOfWeek = listOf(1, 2, 3, 4, 5, 6, 7)
+        timeRuleIsAllowMode = false
+        
         showUrlEditor = false
     }
 
-    fun loadUrlForEdit(rule: UrlBlockRule) {
+    fun loadUrlForEdit(rule: UrlBlockRule) = viewModelScope.launch {
         editingUrlRule = rule
         urlPattern = rule.pattern
         urlMatchType = rule.matchType
@@ -193,6 +221,26 @@ class UrlBlockVm : BaseViewModel() {
         urlShowIntercept = rule.showIntercept
         urlInterceptMessage = rule.interceptMessage
         urlGroupId = rule.groupId
+        
+        // 尝试加载该规则下的第一个时间规则
+        val timeRules = DbSet.urlTimeRuleDao.queryByTarget(UrlTimeRule.TARGET_TYPE_RULE, rule.id).firstOrNull() ?: emptyList()
+        if (timeRules.isNotEmpty()) {
+            val tr = timeRules.first()
+            editingTimeRule = tr
+            timeRuleStartTime = tr.startTime
+            timeRuleEndTime = tr.endTime
+            timeRuleDaysOfWeek = tr.getDaysOfWeekList()
+            timeRuleInterceptMsg = tr.interceptMessage
+            timeRuleIsAllowMode = tr.isAllowMode
+        } else {
+            // 如果没有时间规则，重置为默认值
+            editingTimeRule = null
+            timeRuleStartTime = "00:00"
+            timeRuleEndTime = "23:59"
+            timeRuleDaysOfWeek = listOf(1, 2, 3, 4, 5, 6, 7)
+            timeRuleIsAllowMode = false
+        }
+        
         showUrlEditor = true
     }
 
@@ -200,6 +248,23 @@ class UrlBlockVm : BaseViewModel() {
         if (urlPattern.isBlank()) {
             toast("请输入网址匹配模式")
             return@launch
+        }
+
+        val globalLock = globalLockFlow.value
+        if (globalLock?.isCurrentlyLocked == true) {
+            toast("全局锁定中，无法修改")
+            return@launch
+        }
+        if (editingUrlRule?.isCurrentlyLocked == true) {
+            toast("该规则已锁定，无法修改")
+            return@launch
+        }
+        if (urlGroupId > 0) {
+            val group = DbSet.urlRuleGroupDao.getById(urlGroupId)
+            if (group?.isCurrentlyLocked == true) {
+                toast("所属规则组已锁定，无法修改组内规则")
+                return@launch
+            }
         }
 
         val rule = UrlBlockRule(
@@ -217,7 +282,22 @@ class UrlBlockVm : BaseViewModel() {
             lockEndTime = editingUrlRule?.lockEndTime ?: 0
         )
 
-        DbSet.urlBlockRuleDao.insert(rule)
+        val ruleId = DbSet.urlBlockRuleDao.insert(rule)
+
+        // 同时保存/更新关联的时间规则
+        val tr = UrlTimeRule(
+            id = if (editingUrlRule != null) (editingTimeRule?.id ?: 0) else 0,
+            targetType = UrlTimeRule.TARGET_TYPE_RULE,
+            targetId = ruleId,
+            startTime = timeRuleStartTime,
+            endTime = timeRuleEndTime,
+            daysOfWeek = timeRuleDaysOfWeek.joinToString(","),
+            enabled = true,
+            isAllowMode = timeRuleIsAllowMode,
+            interceptMessage = urlInterceptMessage.ifBlank { "这真的重要吗？" }
+        )
+        DbSet.urlTimeRuleDao.insert(tr)
+
         toast(if (editingUrlRule != null) "规则已更新" else "规则已添加")
         resetUrlForm()
     }
@@ -285,6 +365,31 @@ class UrlBlockVm : BaseViewModel() {
         if (timeRuleTargetId == 0L) {
             toast("请选择拦截对象")
             return@launch
+        }
+
+        val globalLock = globalLockFlow.value
+        if (globalLock?.isCurrentlyLocked == true) {
+            toast("全局锁定中，无法修改")
+            return@launch
+        }
+        if (editingTimeRule?.isCurrentlyLocked == true) {
+            toast("该时间规则已锁定，无法修改")
+            return@launch
+        }
+        
+        // 检查目标对象（规则或组）是否锁定
+        if (timeRuleTargetType == UrlTimeRule.TARGET_TYPE_RULE) {
+            val rule = DbSet.urlBlockRuleDao.getById(timeRuleTargetId)
+            if (rule?.isCurrentlyLocked == true) {
+                toast("目标规则已锁定，无法修改其时间规则")
+                return@launch
+            }
+        } else {
+            val group = DbSet.urlRuleGroupDao.getById(timeRuleTargetId)
+            if (group?.isCurrentlyLocked == true) {
+                toast("目标规则组已锁定，无法修改其时间规则")
+                return@launch
+            }
         }
 
         val rule = UrlTimeRule(
