@@ -51,6 +51,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
 import li.songe.gkd.sdp.app
+import li.songe.gkd.sdp.data.AppBlockerLock
 import li.songe.gkd.sdp.data.AppGroup
 import li.songe.gkd.sdp.data.BlockTimeRule
 import li.songe.gkd.sdp.ui.component.AppIcon
@@ -186,6 +187,7 @@ fun AppBlockerPage() {
                             it.targetType == BlockTimeRule.TARGET_TYPE_GROUP &&
                             it.targetId == group.id.toString()
                         },
+                        globalLock = globalLock,
                         onToggleEnabled = { vm.toggleGroupEnabled(group) },
                         onEdit = {
                             vm.loadGroupForEdit(group)
@@ -346,6 +348,7 @@ fun AppBlockerPage() {
 private fun AppGroupCard(
     group: AppGroup,
     rules: List<BlockTimeRule>,
+    globalLock: AppBlockerLock?,
     onToggleEnabled: () -> Unit,
     onEdit: () -> Unit,
     onDelete: () -> Unit,
@@ -406,7 +409,8 @@ private fun AppGroupCard(
 
                 Switch(
                     checked = group.enabled,
-                    onCheckedChange = { onToggleEnabled() }
+                    onCheckedChange = { onToggleEnabled() },
+                    enabled = !group.isCurrentlyLocked && globalLock?.isCurrentlyLocked != true
                 )
             }
 

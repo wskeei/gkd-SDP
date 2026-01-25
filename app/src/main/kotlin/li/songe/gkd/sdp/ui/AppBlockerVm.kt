@@ -105,6 +105,10 @@ class AppBlockerVm : BaseViewModel() {
     }
 
     fun toggleGroupEnabled(group: AppGroup) = viewModelScope.launch(Dispatchers.IO) {
+        if (group.enabled && (group.isCurrentlyLocked || globalLockFlow.value?.isCurrentlyLocked == true)) {
+            toast("应用组已锁定，无法关闭")
+            return@launch
+        }
         DbSet.appGroupDao.update(group.copy(enabled = !group.enabled))
     }
 
