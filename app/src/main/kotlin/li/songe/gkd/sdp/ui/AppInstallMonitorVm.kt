@@ -110,6 +110,33 @@ class AppInstallMonitorVm : BaseViewModel() {
             }
         }.toSet()
         
+        // 补录“丢失”的卸载记录 (Ghost Installs)
+        // 场景：上次检测时应用还在（或有安装日志），但现在应用已不在，且最后一条日志是 INSTALL
+        val allLogs = DbSet.appInstallLogDao.getAll()
+        val logsByPackage = allLogs.groupBy { it.packageName }
+        
+        monitored.forEach { packageName ->
+            val isInstalled = installedPackages.contains(packageName)
+            // 如果当前未安装
+            if (!isInstalled) {
+                val packageLogs = logsByPackage[packageName]?.sortedBy { it.timestamp }
+                val lastLog = packageLogs?.lastOrNull()
+                
+                // 如果最后一条记录是 安装，说明我们错过了解载广播（或者在应用没运行时卸载了）
+                if (lastLog != null && lastLog.action == AppInstallLog.ACTION_INSTALL) {
+                    val now = System.currentTimeMillis()
+                    val log = AppInstallLog(
+                        packageName = packageName,
+                        appName = lastLog.appName, // 沿用之前的名字
+                        action = AppInstallLog.ACTION_UNINSTALL,
+                        timestamp = now,
+                        date = dateFormat.format(Date(now))
+                    )
+                    DbSet.appInstallLogDao.insert(log)
+                }
+            }
+        }
+        
         // 更新数据库中的安装状态
         monitored.forEach { packageName ->
             val isInstalled = installedPackages.contains(packageName)
@@ -119,62 +146,144 @@ class AppInstallMonitorVm : BaseViewModel() {
     
     private fun calculateHeatmapData(logs: List<AppInstallLog>): Map<String, Int> {
         val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-        val calendar = Calendar.getInstance()
+        val sortedLogs = logs.sortedBy { it.timestamp }
         val resultMap = mutableMapOf<String, Int>()
         
-        // 计算过去 90 天每一天的数据
-        for (i in 0 until 90) {
-            calendar.timeInMillis = System.currentTimeMillis() - i * 24 * 60 * 60 * 1000L
+        // 1. 确定日期范围：从最早日志的前一天到今天（或者固定过去90天）
+        // 这里为了和 UI 匹配，计算过去 90 天
+        val calendar = Calendar.getInstance()
+        val today = System.currentTimeMillis()
+        val startDateMillis = today - 90L * 24 * 60 * 60 * 1000L
+        
+        // 2. 初始化回放状态：找出起始日期之前的状态
+        val runningInstalledApps = mutableSetOf<String>()
+        
+        // 预处理：先回放到起始日期之前
+        sortedLogs.filter { it.timestamp < startDateMillis }.forEach { log ->
+            if (log.action == AppInstallLog.ACTION_INSTALL) {
+                runningInstalledApps.add(log.packageName)
+            } else if (log.action == AppInstallLog.ACTION_UNINSTALL) {
+                runningInstalledApps.remove(log.packageName)
+            }
+        }
+        
+        // 3. 逐天回放
+        for (i in 90 downTo 0) {
+            calendar.timeInMillis = today - i * 24 * 60 * 60 * 1000L
             val dateStr = dateFormat.format(calendar.time)
             
-            // 计算当天存在的应用数量
-            // 逻辑：在该日期之前（含）安装，且（在该日期之后卸载 OR 从未卸载）
-            val count = logs
-                .filter { it.action == AppInstallLog.ACTION_INSTALL && it.date <= dateStr }
-                .count { installLog ->
-                    val uninstallLog = logs.find { 
-                        it.packageName == installLog.packageName && 
-                        it.action == AppInstallLog.ACTION_UNINSTALL && 
-                        it.timestamp > installLog.timestamp 
-                    }
-                    // 如果没有卸载记录，或者卸载日期在当天之后，则认为当天仍存在
-                    uninstallLog == null || uninstallLog.date > dateStr
-                }
+            // 获取当天的开始和结束时间戳
+            // 注意：简单起见，这里假设日志按时间排序，只需处理当天的日志
+            // 更精确的做法是使用 Calendar 设置时分秒
+            val dayStart = calendar.apply {
+                set(Calendar.HOUR_OF_DAY, 0)
+                set(Calendar.MINUTE, 0)
+                set(Calendar.SECOND, 0)
+                set(Calendar.MILLISECOND, 0)
+            }.timeInMillis
             
-            resultMap[dateStr] = count
+            val dayEnd = dayStart + 24 * 60 * 60 * 1000L - 1
+            
+            // 找出当天的日志
+            val daysLogs = sortedLogs.filter { it.timestamp in dayStart..dayEnd }
+            
+            // 当天曾经存在的应用 = (当天开始时已存在的) + (当天安装的)
+            // 即使当天安装后又卸载，它在当天也算存在过
+            val activeAppsToday = runningInstalledApps.toMutableSet()
+            
+            daysLogs.forEach { log ->
+                if (log.action == AppInstallLog.ACTION_INSTALL) {
+                    runningInstalledApps.add(log.packageName)
+                    activeAppsToday.add(log.packageName)
+                } else if (log.action == AppInstallLog.ACTION_UNINSTALL) {
+                    runningInstalledApps.remove(log.packageName)
+                    // 注意：卸载了，但它今天确实存在过，所以 activeAppsToday 不移除
+                }
+            }
+            
+            resultMap[dateStr] = activeAppsToday.size
         }
+        
         return resultMap
     }
     
     fun loadLogsForDate(date: String) = viewModelScope.launch(Dispatchers.IO) {
-        // 获取对应日期存在的应用
-        val allLogs = DbSet.appInstallLogDao.getAll()
+        val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+        val targetDateStart = dateFormat.parse(date)?.time ?: return@launch
+        val targetDateEnd = targetDateStart + 24 * 60 * 60 * 1000L - 1
         
-        val presentApps = allLogs
-            .filter { it.action == AppInstallLog.ACTION_INSTALL && it.date <= date }
-            .mapNotNull { installLog ->
-                // 查找该安装记录之后的卸载记录
-                val uninstallLog = allLogs.find { 
-                    it.packageName == installLog.packageName && 
-                    it.action == AppInstallLog.ACTION_UNINSTALL && 
-                    it.timestamp > installLog.timestamp 
-                }
-                
-                // 如果在所选日期之前（含）就已卸载，则不属于当天存在的应用
-                if (uninstallLog != null && uninstallLog.date <= date) {
-                    return@mapNotNull null
-                }
-                
-                PresenceInfo(
+        val allLogs = DbSet.appInstallLogDao.getAll().sortedBy { it.timestamp }
+        
+        // 回放状态直到目标日期开始
+        val runningInstalledApps = mutableSetOf<String>()
+        val packageLastInstallTime = mutableMapOf<String, Long>()
+        
+        allLogs.filter { it.timestamp < targetDateStart }.forEach { log ->
+            if (log.action == AppInstallLog.ACTION_INSTALL) {
+                runningInstalledApps.add(log.packageName)
+                packageLastInstallTime[log.packageName] = log.timestamp
+            } else if (log.action == AppInstallLog.ACTION_UNINSTALL) {
+                runningInstalledApps.remove(log.packageName)
+            }
+        }
+        
+        // 收集当天存在的应用信息
+        val presentInfos = mutableListOf<PresenceInfo>()
+        
+        // 1. 当天开始时已存在的
+        runningInstalledApps.forEach { pkg ->
+            val installTime = packageLastInstallTime[pkg] ?: 0L
+            // 查找当天的卸载记录（如果有）
+            val uninstallLog = allLogs.find { 
+                it.packageName == pkg && 
+                it.action == AppInstallLog.ACTION_UNINSTALL && 
+                it.timestamp in targetDateStart..targetDateEnd 
+            }
+            
+            // 还需要查找应用名，这里可能需要从 logs 或 packageManager 获取
+            // 简单起见，我们从最近一条相关日志取名字
+            val lastLog = allLogs.findLast { it.packageName == pkg && it.timestamp <= targetDateEnd }
+            val appName = lastLog?.appName ?: pkg
+            
+            presentInfos.add(PresenceInfo(
+                packageName = pkg,
+                appName = appName,
+                installTime = installTime,
+                uninstallTime = uninstallLog?.timestamp,
+                isStillInstalledNow = checkIfStillInstalled(pkg)
+            ))
+        }
+        
+        // 2. 当天新安装的
+        val todayInstallLogs = allLogs.filter { 
+            it.timestamp in targetDateStart..targetDateEnd && 
+            it.action == AppInstallLog.ACTION_INSTALL 
+        }
+        
+        todayInstallLogs.forEach { installLog ->
+            // 如果已经在列表里（比如：之前存在，今天卸载又安装），需要小心处理重复
+            // 简单逻辑：如果 installLog 发生，它就是今天存在的。
+            // 查找对应的卸载（在该安装之后，且仍在当天）
+            val uninstallLog = allLogs.find { 
+                it.packageName == installLog.packageName && 
+                it.action == AppInstallLog.ACTION_UNINSTALL && 
+                it.timestamp > installLog.timestamp &&
+                it.timestamp <= targetDateEnd
+            }
+            
+            // 如果列表里还没有这个 installTime 的记录，添加
+            if (presentInfos.none { it.packageName == installLog.packageName && it.installTime == installLog.timestamp }) {
+                presentInfos.add(PresenceInfo(
                     packageName = installLog.packageName,
                     appName = installLog.appName,
                     installTime = installLog.timestamp,
                     uninstallTime = uninstallLog?.timestamp,
                     isStillInstalledNow = checkIfStillInstalled(installLog.packageName)
-                )
+                ))
             }
-            
-        _presentAppsOnDate.value = presentApps
+        }
+        
+        _presentAppsOnDate.value = presentInfos.sortedByDescending { it.installTime }
     }
     
     fun checkIfStillInstalled(packageName: String): Boolean {
