@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.withContext
 import li.songe.gkd.sdp.a11y.A11yContext
 import li.songe.gkd.sdp.a11y.A11yRuleEngine
+import li.songe.gkd.sdp.a11y.AntiUninstallEngine
 import li.songe.gkd.sdp.a11y.a11yContext
 import li.songe.gkd.sdp.a11y.appChangeTime
 import li.songe.gkd.sdp.a11y.isUseful
@@ -41,6 +42,7 @@ abstract class A11yService : AccessibilityService(), OnA11yLife {
     override val a11yEventCbs = mutableListOf<(AccessibilityEvent) -> Unit>()
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
         if (!event.isUseful()) return
+        AntiUninstallEngine.onAccessibilityEvent(event, this)
         onA11yEvent(event)
     }
 
