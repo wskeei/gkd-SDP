@@ -112,7 +112,7 @@ fun RuleGroupCard(
             categoryConfig,
         )
     }
-    val isLocked = FocusLockUtils.isRuleLocked(subs.id, group.key, appId)
+    val isLocked = FocusLockUtils.isRuleLocked(subs.id, appId, group.key)
     val onCheckedChange = appScope.launchAsFn<Boolean> { newChecked ->
         if (!newChecked && isLocked) {
             toast("规则已锁定，无法关闭")

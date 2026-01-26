@@ -239,7 +239,7 @@ class FocusLockVm : BaseViewModel() {
     }
 
     fun updateInterceptConfig(subsId: Long, appId: String?, groupKey: Int, enabled: Boolean, cooldown: Int, message: String) = viewModelScope.launch(Dispatchers.IO) {
-        if (!enabled && FocusLockUtils.isRuleLocked(subsId, groupKey, appId)) {
+        if (!enabled && FocusLockUtils.isRuleLocked(subsId, appId, groupKey)) {
             toast("当前规则已锁定，无法关闭自律模式")
             return@launch
         }
@@ -277,7 +277,7 @@ class FocusLockVm : BaseViewModel() {
         var skippedCount = 0
 
         targets.forEach { (s, a, g) ->
-            if (!enabled && FocusLockUtils.isRuleLocked(s, g, if (a.isEmpty()) null else a)) {
+            if (!enabled && FocusLockUtils.isRuleLocked(s, if (a.isEmpty()) null else a, g)) {
                 skippedCount++
                 return@forEach
             }

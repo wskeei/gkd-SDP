@@ -107,6 +107,7 @@ internal fun updateAppWidget(
         putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
         data = Uri.parse(toUri(Intent.URI_INTENT_SCHEME))
     }
+    @Suppress("DEPRECATION")
     views.setRemoteAdapter(R.id.widget_list, intent)
 
     // Set the empty view (optional, if we had one)
@@ -126,5 +127,5 @@ internal fun updateAppWidget(
 
     // Instruct the widget manager to update the widget
     appWidgetManager.updateAppWidget(appWidgetId, views)
-    appWidgetManager.notifyAppWidgetViewDataChanged(appWidgetId, R.id.widget_list)
+    appWidgetManager.notifyAppWidgetViewDataChanged(intArrayOf(appWidgetId), R.id.widget_list)
 }
