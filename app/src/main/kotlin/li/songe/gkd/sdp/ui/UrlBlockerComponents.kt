@@ -47,6 +47,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import li.songe.gkd.sdp.data.BrowserConfig
 import li.songe.gkd.sdp.data.UrlBlockRule
+import li.songe.gkd.sdp.data.UrlBlockerLock
 import li.songe.gkd.sdp.data.UrlRuleGroup
 import li.songe.gkd.sdp.data.UrlTimeRule
 import li.songe.gkd.sdp.ui.component.AppPickerDialog
@@ -60,6 +61,7 @@ fun UrlGroupCard(
     group: UrlRuleGroup,
     rules: List<UrlTimeRule>,
     urlRules: List<UrlBlockRule>,
+    globalLock: UrlBlockerLock?,
     onToggleEnabled: () -> Unit,
     onEdit: () -> Unit,
     onDelete: () -> Unit,
@@ -118,7 +120,8 @@ fun UrlGroupCard(
 
                 Switch(
                     checked = group.enabled,
-                    onCheckedChange = { onToggleEnabled() }
+                    onCheckedChange = { onToggleEnabled() },
+                    enabled = !group.isCurrentlyLocked && globalLock?.isCurrentlyLocked != true
                 )
             }
 
@@ -239,6 +242,7 @@ fun UrlGroupCard(
 fun UrlItemCard(
     rule: UrlBlockRule,
     timeRules: List<UrlTimeRule>,
+    globalLock: UrlBlockerLock?,
     onToggleEnabled: () -> Unit,
     onEdit: () -> Unit,
     onDelete: () -> Unit,
@@ -302,7 +306,7 @@ fun UrlItemCard(
                 Switch(
                     checked = rule.enabled,
                     onCheckedChange = { onToggleEnabled() },
-                    enabled = !rule.isCurrentlyLocked
+                    enabled = !rule.isCurrentlyLocked && globalLock?.isCurrentlyLocked != true
                 )
             }
 

@@ -421,6 +421,41 @@ private fun AppGroupCard(
                 )
             }
 
+            // 显示应用列表
+            val appList = group.getAppList()
+            if (appList.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(12.dp))
+                HorizontalDivider()
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "应用列表 (${appList.size})",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    appList.forEach { packageName ->
+                        val appName = remember(packageName) {
+                            try {
+                                val appInfo = app.packageManager.getApplicationInfo(packageName, 0)
+                                app.packageManager.getApplicationLabel(appInfo).toString()
+                            } catch (e: Exception) {
+                                packageName.split(".").lastOrNull() ?: packageName
+                            }
+                        }
+                        FilterChip(
+                            selected = true,
+                            onClick = { /* 只读显示，点击无操作或可跳转 */ },
+                            label = { Text(appName) },
+                            enabled = true // 保持激活状态以便查看，或者根据需要调整
+                        )
+                    }
+                }
+            }
+
             // 时间规则列表
             if (rules.isNotEmpty()) {
                 Spacer(modifier = Modifier.height(12.dp))

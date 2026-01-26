@@ -184,6 +184,7 @@ fun UrlBlockPage() {
                         group = group,
                         rules = groupTimeRules,
                         urlRules = groupUrlRules,
+                        globalLock = globalLock,
                         onToggleEnabled = { vm.toggleGroupEnabled(group) },
                         onEdit = {
                             vm.loadGroupForEdit(group)
@@ -277,6 +278,7 @@ fun UrlBlockPage() {
                     UrlItemCard(
                         rule = rule,
                         timeRules = ruleTimeRules,
+                        globalLock = globalLock,
                         onToggleEnabled = { vm.toggleUrlRuleEnabled(rule) },
                         onEdit = {
                             vm.loadUrlForEdit(rule)
