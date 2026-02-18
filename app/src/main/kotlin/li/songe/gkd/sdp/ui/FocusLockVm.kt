@@ -86,6 +86,7 @@ class FocusLockVm : BaseViewModel() {
         FocusLockUtils.allConstraintsFlow
     ) { summary, interceptConfigs, selectedRules, constraints ->
         val now = System.currentTimeMillis()
+        val latestConfigByKey = latestInterceptConfigByKey(interceptConfigs)
 
         // Helper to check constraints
         fun getLockStatus(targetType: Int, subsId: Long, appId: String?, groupKey: Int?): Pair<Boolean, Long> {
@@ -128,7 +129,7 @@ class FocusLockVm : BaseViewModel() {
                         else -> 0
                     }
                     val ruleKey = FocusLock.LockedRule(subs.id, group.group.key, app.id)
-                    val config = interceptConfigs.find { it.subsId == subs.id && it.appId == app.id && it.groupKey == group.group.key }
+                    val config = latestConfigByKey[Triple(subs.id, app.id, group.group.key)]
                     
                     RuleState(
                         group = group,
@@ -162,7 +163,7 @@ class FocusLockVm : BaseViewModel() {
                     else -> 0
                 }
                 val ruleKey = FocusLock.LockedRule(subs.id, group.group.key, null)
-                val config = interceptConfigs.find { it.subsId == subs.id && it.appId == "" && it.groupKey == group.group.key }
+                val config = latestConfigByKey[Triple(subs.id, "", group.group.key)]
 
                 RuleState(
                     group = group,
@@ -259,9 +260,11 @@ class FocusLockVm : BaseViewModel() {
             toast("当前规则已锁定，无法关闭自律模式")
             return@launch
         }
+        val normalizedAppId = appId ?: ""
+        DbSet.interceptConfigDao.delete(subsId, normalizedAppId, groupKey)
         val config = InterceptConfig(
             subsId = subsId,
-            appId = appId ?: "",
+            appId = normalizedAppId,
             groupKey = groupKey,
             enabled = enabled,
             cooldownSeconds = cooldown,
@@ -297,6 +300,7 @@ class FocusLockVm : BaseViewModel() {
                 skippedCount++
                 return@forEach
             }
+            DbSet.interceptConfigDao.delete(s, a, g)
             val config = InterceptConfig(
                 subsId = s,
                 appId = a,
@@ -339,6 +343,18 @@ class FocusLockVm : BaseViewModel() {
     }
 
     companion object {
+        fun latestInterceptConfigByKey(interceptConfigs: List<InterceptConfig>): Map<Triple<Long, String, Int>, InterceptConfig> {
+            val latest = LinkedHashMap<Triple<Long, String, Int>, InterceptConfig>()
+            interceptConfigs.forEach { config ->
+                val key = Triple(config.subsId, config.appId, config.groupKey)
+                val current = latest[key]
+                if (current == null || config.id > current.id) {
+                    latest[key] = config
+                }
+            }
+            return latest
+        }
+
         fun evaluateAutoReenableUiState(
             intervalMinutes: Int,
             lastChangedAt: Long,

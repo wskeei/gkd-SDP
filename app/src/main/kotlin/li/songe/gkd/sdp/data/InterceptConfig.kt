@@ -26,10 +26,10 @@ data class InterceptConfig(
         @Insert(onConflict = OnConflictStrategy.REPLACE)
         suspend fun insert(config: InterceptConfig): Long
 
-        @Query("SELECT * FROM intercept_config WHERE subs_id = :subsId AND app_id = :appId AND group_key = :groupKey")
+        @Query("SELECT * FROM intercept_config WHERE subs_id = :subsId AND app_id = :appId AND group_key = :groupKey ORDER BY id DESC LIMIT 1")
         fun getFlow(subsId: Long, appId: String, groupKey: Int): Flow<InterceptConfig?>
 
-        @Query("SELECT * FROM intercept_config WHERE subs_id = :subsId AND app_id = :appId AND group_key = :groupKey")
+        @Query("SELECT * FROM intercept_config WHERE subs_id = :subsId AND app_id = :appId AND group_key = :groupKey ORDER BY id DESC LIMIT 1")
         suspend fun get(subsId: Long, appId: String, groupKey: Int): InterceptConfig?
 
         @Query("SELECT * FROM intercept_config")
