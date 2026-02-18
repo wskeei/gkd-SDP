@@ -27,13 +27,6 @@ object FocusLockUtils {
         }
     }
 
-    fun isAntiUninstallLocked(): Boolean {
-        return allConstraintsFlow.value.any {
-            it.targetType == ConstraintConfig.TYPE_ANTI_UNINSTALL &&
-            it.isLocked
-        }
-    }
-
     fun isRuleLocked(subsId: Long, appId: String?, groupKey: Int): Boolean {
         return allConstraintsFlow.value.any {
             it.targetType == ConstraintConfig.TYPE_RULE_GROUP &&

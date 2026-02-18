@@ -58,7 +58,6 @@ import com.ramcosta.composedestinations.generated.destinations.FocusModePageDest
 import com.ramcosta.composedestinations.generated.destinations.UrlBlockPageDestination
 import com.ramcosta.composedestinations.generated.destinations.AppInstallMonitorPageDestination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
-import com.ramcosta.composedestinations.generated.destinations.AntiUninstallPageDestination
 import kotlinx.coroutines.launch
 import li.songe.gkd.sdp.a11y.FocusModeEngine
 import li.songe.gkd.sdp.a11y.UrlBlockerEngine
@@ -153,13 +152,6 @@ fun FocusLockPage() {
             }
 
             // 防卸载保护卡片
-            item(key = "anti_uninstall") {
-                AntiUninstallCard(
-                    onClick = { mainVm.navigatePage(AntiUninstallPageDestination) }
-                )
-                Spacer(modifier = Modifier.height(12.dp))
-            }
-
             item(key = "auto_reenable_guard") {
                 AutoReenableGuardCard(
                     intervalMinutes = settings.autoReenableIntervalMinutes,
@@ -1077,48 +1069,6 @@ fun AppInstallMonitorCard(
                 )
                 Text(
                     text = "记录分心软件安装历史",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-            PerfIcon(
-                imageVector = PerfIcon.KeyboardArrowRight,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-    }
-}
-
-@Composable
-fun AntiUninstallCard(
-    onClick: () -> Unit
-) {
-    ElevatedCard(
-        colors = surfaceCardColors,
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp)
-            .clickable { onClick() },
-    ) {
-        Row(
-            modifier = Modifier
-                .padding(16.dp)
-                .fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            PerfIcon(
-                imageVector = PerfIcon.Lock, // Security 不存在，用 Lock
-                tint = MaterialTheme.colorScheme.error
-            )
-            Spacer(modifier = Modifier.width(16.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = "防卸载保护",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold
-                )
-                Text(
-                    text = "防止应用被强制卸载",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
