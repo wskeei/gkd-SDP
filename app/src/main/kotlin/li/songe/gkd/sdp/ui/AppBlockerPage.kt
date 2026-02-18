@@ -109,6 +109,31 @@ fun AppBlockerPage() {
         }
     ) { padding ->
         LazyColumn(modifier = Modifier.scaffoldPadding(padding)) {
+            item(key = "auto_reenable_notice") {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .itemPadding(),
+                    colors = surfaceCardColors
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Text(
+                            text = "自动重开始终启用，无法关闭。",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.primary,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "间隔可调：0~240 分钟；每 3 天仅可修改一次。",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.height(12.dp))
+            }
+
             // 全局锁定状态提示
             if (globalLock?.isCurrentlyLocked == true) {
                 item(key = "global_lock_status") {

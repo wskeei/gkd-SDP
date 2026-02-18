@@ -64,5 +64,8 @@ data class UrlRuleGroup(
 
         @Query("SELECT COUNT(*) FROM url_rule_group WHERE enabled = 1")
         fun countEnabled(): Flow<Int>
+
+        @Query("UPDATE url_rule_group SET enabled = 1 WHERE enabled = 0")
+        suspend fun enableAllDisabled(): Int
     }
 }

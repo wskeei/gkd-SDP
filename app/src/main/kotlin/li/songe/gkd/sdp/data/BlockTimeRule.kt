@@ -194,5 +194,8 @@ data class BlockTimeRule(
 
         @Query("DELETE FROM block_time_rule WHERE target_type = :type AND target_id = :id")
         suspend fun deleteByTarget(type: Int, id: String)
+
+        @Query("UPDATE block_time_rule SET enabled = 1 WHERE enabled = 0")
+        suspend fun enableAllDisabled(): Int
     }
 }

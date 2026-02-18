@@ -105,5 +105,8 @@ data class UrlBlockRule(
 
         @Query("SELECT * FROM url_block_rule WHERE group_id = :groupId ORDER BY order_index ASC, id ASC")
         fun queryByGroupId(groupId: Long): Flow<List<UrlBlockRule>>
+
+        @Query("UPDATE url_block_rule SET enabled = 1 WHERE enabled = 0")
+        suspend fun enableAllDisabled(): Int
     }
 }

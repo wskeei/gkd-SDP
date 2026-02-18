@@ -90,5 +90,8 @@ data class AppGroup(
 
         @Query("SELECT COUNT(*) FROM app_group WHERE enabled = 1")
         fun countEnabled(): Flow<Int>
+
+        @Query("UPDATE app_group SET enabled = 1 WHERE enabled = 0")
+        suspend fun enableAllDisabled(): Int
     }
 }

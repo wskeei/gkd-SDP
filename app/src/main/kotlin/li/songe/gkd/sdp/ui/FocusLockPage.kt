@@ -68,9 +68,12 @@ import li.songe.gkd.sdp.ui.component.PerfIcon
 import li.songe.gkd.sdp.ui.component.PerfIconButton
 import li.songe.gkd.sdp.ui.component.PerfTopAppBar
 import li.songe.gkd.sdp.ui.share.LocalMainViewModel
+import li.songe.gkd.sdp.store.storeFlow
 import li.songe.gkd.sdp.ui.style.itemPadding
 import li.songe.gkd.sdp.ui.style.scaffoldPadding
 import li.songe.gkd.sdp.ui.style.surfaceCardColors
+import li.songe.gkd.sdp.util.AutoReenablePolicy
+import li.songe.gkd.sdp.util.format
 import kotlin.math.roundToInt
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -83,6 +86,7 @@ fun FocusLockPage() {
     val expandedSubs by vm.expandedSubs.collectAsState()
     val expandedApps by vm.expandedApps.collectAsState()
     val context = LocalContext.current
+    val settings by storeFlow.collectAsState()
 
     val lockSheetState = rememberModalBottomSheetState()
     val pauseSheetState = rememberModalBottomSheetState()
@@ -90,6 +94,7 @@ fun FocusLockPage() {
     var showLockSheet by remember { mutableStateOf(false) }
     var showPauseSheet by remember { mutableStateOf(false) }
     var showPermissionDialog by remember { mutableStateOf(false) }
+    var showAutoReenableDialog by remember { mutableStateOf(false) }
     
     var currentLockTarget by remember { mutableStateOf<LockTarget?>(null) }
     var currentPauseTarget by remember { mutableStateOf<PauseTarget?>(null) }
@@ -151,6 +156,15 @@ fun FocusLockPage() {
             item(key = "anti_uninstall") {
                 AntiUninstallCard(
                     onClick = { mainVm.navigatePage(AntiUninstallPageDestination) }
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+            }
+
+            item(key = "auto_reenable_guard") {
+                AutoReenableGuardCard(
+                    intervalMinutes = settings.autoReenableIntervalMinutes,
+                    changedAt = settings.autoReenableIntervalChangedAt,
+                    onClick = { showAutoReenableDialog = true }
                 )
                 Spacer(modifier = Modifier.height(12.dp))
             }
@@ -272,6 +286,73 @@ fun FocusLockPage() {
                 },
                 dismissButton = {
                     TextButton(onClick = { showPermissionDialog = false }) {
+                        Text("取消")
+                    }
+                }
+            )
+        }
+
+        if (showAutoReenableDialog) {
+            var inputText by remember { mutableStateOf(settings.autoReenableIntervalMinutes.toString()) }
+            val autoReenableUiState = FocusLockVm.evaluateAutoReenableUiState(
+                intervalMinutes = settings.autoReenableIntervalMinutes,
+                lastChangedAt = settings.autoReenableIntervalChangedAt,
+                now = System.currentTimeMillis()
+            )
+            val nextEditableText = if (autoReenableUiState.canEditInterval) {
+                "可立即修改"
+            } else {
+                autoReenableUiState.nextEditableAt.format("MM-dd HH:mm")
+            }
+            val nextEnforceText = autoReenableUiState.nextEnforceAt.format("MM-dd HH:mm")
+            val parsed = inputText.toIntOrNull()
+            val inputValid = parsed != null && parsed in 0..AutoReenablePolicy.MAX_INTERVAL_MINUTES
+
+            AlertDialog(
+                onDismissRequest = { showAutoReenableDialog = false },
+                title = { Text("自动重开间隔") },
+                text = {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text("自动重开始终启用，无法关闭。间隔可调：0~240 分钟；每 3 天仅可修改一次。")
+                        Text("下一次自动重开：$nextEnforceText")
+                        if (!autoReenableUiState.canEditInterval) {
+                            Text("冷却中，下次可修改：$nextEditableText")
+                        }
+                        OutlinedTextField(
+                            value = inputText,
+                            onValueChange = { value ->
+                                if (value.all { it.isDigit() }) {
+                                    inputText = value
+                                }
+                            },
+                            label = { Text("间隔（分钟）") },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            singleLine = true,
+                            enabled = autoReenableUiState.canEditInterval,
+                            isError = !inputValid
+                        )
+                        if (!inputValid) {
+                            Text(
+                                text = "请输入 0~240 的整数分钟",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.error
+                            )
+                        }
+                    }
+                },
+                confirmButton = {
+                    TextButton(
+                        enabled = inputValid && autoReenableUiState.canEditInterval,
+                        onClick = {
+                            vm.updateAutoReenableInterval(parsed ?: 0)
+                            showAutoReenableDialog = false
+                        }
+                    ) {
+                        Text("保存")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showAutoReenableDialog = false }) {
                         Text("取消")
                     }
                 }
@@ -779,6 +860,62 @@ private fun formatRemainingTime(millis: Long): String {
         "${hours}小时${remainingMinutes}分钟"
     } else {
         "${minutes}分钟"
+    }
+}
+
+@Composable
+fun AutoReenableGuardCard(
+    intervalMinutes: Int,
+    changedAt: Long,
+    onClick: () -> Unit
+) {
+    val autoReenableUiState = FocusLockVm.evaluateAutoReenableUiState(
+        intervalMinutes = intervalMinutes,
+        lastChangedAt = changedAt,
+        now = System.currentTimeMillis()
+    )
+    val nextEditableText = if (autoReenableUiState.canEditInterval) "可立即修改" else autoReenableUiState.nextEditableAt.format("MM-dd HH:mm")
+    val nextEnforceText = autoReenableUiState.nextEnforceAt.format("MM-dd HH:mm")
+
+    ElevatedCard(
+        colors = surfaceCardColors,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp)
+            .clickable { onClick() },
+    ) {
+        Column(
+            modifier = Modifier
+                .padding(16.dp)
+                .fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            Text(
+                text = "自动重开保护",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold
+            )
+            Text(
+                text = "自动重开始终启用，无法关闭",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.primary
+            )
+            Text(
+                text = "当前间隔：$intervalMinutes 分钟（0 为高频巡检）",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Text(
+                text = "下次可修改：$nextEditableText",
+                style = MaterialTheme.typography.bodySmall,
+                color = if (!autoReenableUiState.canEditInterval) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Text(
+                text = "下一次自动重开：$nextEnforceText",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
     }
 }
 

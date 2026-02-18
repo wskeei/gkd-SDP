@@ -74,6 +74,9 @@ data class SubsItem(
 
         @Query("DELETE FROM subs_item WHERE id IN (:ids)")
         suspend fun deleteById(vararg ids: Long): Int
+
+        @Query("UPDATE subs_item SET enable = 1 WHERE enable = 0")
+        suspend fun enableAllDisabled(): Int
     }
 
 }

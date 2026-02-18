@@ -22,6 +22,7 @@ import kotlinx.coroutines.MainScope
 import kotlinx.serialization.Serializable
 import li.songe.gkd.sdp.data.selfAppInfo
 import li.songe.gkd.sdp.notif.initChannel
+import li.songe.gkd.sdp.service.AutoReenableEnforcer
 import li.songe.gkd.sdp.service.clearHttpSubs
 import li.songe.gkd.sdp.service.initA11yWhiteAppList
 import li.songe.gkd.sdp.shizuku.initShizuku
@@ -183,6 +184,7 @@ class App : Application() {
         initAppState()
         initShizuku()
         initSubsState()
+        AutoReenableEnforcer.start()
         initA11yWhiteAppList()
         clearHttpSubs()
         syncFixState()

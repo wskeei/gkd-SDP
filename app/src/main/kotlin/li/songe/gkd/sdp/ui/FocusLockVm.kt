@@ -18,11 +18,14 @@ import li.songe.gkd.sdp.data.InterceptConfig
 import li.songe.gkd.sdp.data.ResolvedAppGroup
 import li.songe.gkd.sdp.data.ResolvedGroup
 import li.songe.gkd.sdp.db.DbSet
+import li.songe.gkd.sdp.store.storeFlow
 import li.songe.gkd.sdp.ui.share.BaseViewModel
+import li.songe.gkd.sdp.util.AutoReenablePolicy
 import li.songe.gkd.sdp.util.FocusLockUtils
 import li.songe.gkd.sdp.util.launchTry
 import li.songe.gkd.sdp.util.ruleSummaryFlow
 import li.songe.gkd.sdp.util.toast
+import kotlinx.coroutines.flow.update
 
 data class RuleState(
     val group: ResolvedGroup,
@@ -50,6 +53,19 @@ data class SubscriptionState(
     val isLocked: Boolean,
     val lockEndTime: Long,
     val allInterceptEnabled: Boolean
+)
+
+data class AutoReenableIntervalUpdateResult(
+    val accepted: Boolean,
+    val intervalMinutes: Int,
+    val changedAt: Long,
+    val remainingCooldownMs: Long,
+)
+
+data class AutoReenableUiState(
+    val canEditInterval: Boolean,
+    val nextEditableAt: Long,
+    val nextEnforceAt: Long,
 )
 
 class FocusLockVm : BaseViewModel() {
@@ -296,6 +312,80 @@ class FocusLockVm : BaseViewModel() {
             toast("更新 $updatedCount 条，跳过 $skippedCount 条(已锁定)")
         } else {
             toast("已批量更新配置")
+        }
+    }
+
+    fun updateAutoReenableInterval(requestedIntervalMinutes: Int, now: Long = System.currentTimeMillis()) {
+        val settings = storeFlow.value
+        val result = evaluateAutoReenableIntervalUpdate(
+            currentIntervalMinutes = settings.autoReenableIntervalMinutes,
+            lastChangedAt = settings.autoReenableIntervalChangedAt,
+            requestedIntervalMinutes = requestedIntervalMinutes,
+            now = now
+        )
+
+        if (!result.accepted) {
+            toast("间隔冷却中，还需${formatCooldown(result.remainingCooldownMs)}后可修改")
+            return
+        }
+
+        storeFlow.update {
+            it.copy(
+                autoReenableIntervalMinutes = result.intervalMinutes,
+                autoReenableIntervalChangedAt = result.changedAt
+            )
+        }
+        toast("已更新自动重开间隔：${result.intervalMinutes} 分钟")
+    }
+
+    companion object {
+        fun evaluateAutoReenableUiState(
+            intervalMinutes: Int,
+            lastChangedAt: Long,
+            now: Long = System.currentTimeMillis(),
+        ): AutoReenableUiState {
+            val canEditInterval = AutoReenablePolicy.canChangeInterval(lastChangedAt, now)
+            val nextEditableAt = if (lastChangedAt <= 0L) 0L else lastChangedAt + AutoReenablePolicy.CHANGE_COOLDOWN_MS
+            val delayMs = AutoReenablePolicy.nextEnforceDelayMs(intervalMinutes)
+            return AutoReenableUiState(
+                canEditInterval = canEditInterval,
+                nextEditableAt = nextEditableAt,
+                nextEnforceAt = now + delayMs
+            )
+        }
+
+        fun evaluateAutoReenableIntervalUpdate(
+            currentIntervalMinutes: Int,
+            lastChangedAt: Long,
+            requestedIntervalMinutes: Int,
+            now: Long,
+        ): AutoReenableIntervalUpdateResult {
+            val normalized = AutoReenablePolicy.normalizeIntervalMinutes(requestedIntervalMinutes)
+            val currentNormalized = AutoReenablePolicy.normalizeIntervalMinutes(currentIntervalMinutes)
+            val remaining = (lastChangedAt + AutoReenablePolicy.CHANGE_COOLDOWN_MS - now).coerceAtLeast(0L)
+            val canChange = normalized == currentNormalized ||
+                AutoReenablePolicy.canChangeInterval(lastChangedAt, now)
+            if (!canChange) {
+                return AutoReenableIntervalUpdateResult(
+                    accepted = false,
+                    intervalMinutes = currentNormalized,
+                    changedAt = lastChangedAt,
+                    remainingCooldownMs = remaining
+                )
+            }
+            return AutoReenableIntervalUpdateResult(
+                accepted = true,
+                intervalMinutes = normalized,
+                changedAt = if (normalized == currentNormalized) lastChangedAt else now,
+                remainingCooldownMs = 0L
+            )
+        }
+
+        private fun formatCooldown(ms: Long): String {
+            val minutes = (ms / 60_000L).coerceAtLeast(0L)
+            val hours = minutes / 60
+            val remainMinutes = minutes % 60
+            return if (hours > 0) "${hours}小时${remainMinutes}分钟" else "${remainMinutes}分钟"
         }
     }
 }

@@ -50,4 +50,6 @@ data class SettingsStore(
     val appGroupType: Int = (1 shl AppGroupOption.normalObjects.size) - 1,
     val a11yAppGroupType: Int = appGroupType,
     val subsExcludeAppGroupType: Int = appGroupType,
+    val autoReenableIntervalMinutes: Int = 0,
+    val autoReenableIntervalChangedAt: Long = 0L,
 )
