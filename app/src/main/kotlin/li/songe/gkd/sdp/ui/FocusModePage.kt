@@ -94,20 +94,20 @@ fun FocusModePage() {
                         onClick = { mainVm.popBackStack() },
                     )
                 },
-                title = { Text(text = "涓撴敞妯″紡") },
+                title = { Text(text = "专注模式") },
                 actions = {
                     IconButton(onClick = {
                         vm.resetRuleForm()
                         showRuleEditorSheet = true
                     }) {
-                        Icon(PerfIcon.Add, contentDescription = "娣诲姞瑙勫垯")
+                        Icon(PerfIcon.Add, contentDescription = "添加规则")
                     }
                 }
             )
         }
     ) { padding ->
         LazyColumn(modifier = Modifier.scaffoldPadding(padding)) {
-            // 褰撳墠鐘舵€佸崱鐗?
+            // 当前状态卡片
             item(key = "status") {
                 ActiveSessionCard(
                     session = activeSession,
@@ -119,7 +119,7 @@ fun FocusModePage() {
                 Spacer(modifier = Modifier.height(16.dp))
             }
 
-            // 蹇€熷惎鍔ㄦ寜閽?
+            // 快速启动按钮
             if (!isActive) {
                 item(key = "quick_start") {
                     Button(
@@ -128,16 +128,16 @@ fun FocusModePage() {
                             .fillMaxWidth()
                             .itemPadding()
                     ) {
-                        Text("绔嬪嵆寮€濮嬩笓娉?)
+                        Text("立即开始专注")
                     }
                     Spacer(modifier = Modifier.height(16.dp))
                 }
             }
 
-            // 瑙勫垯鍒楄〃鏍囬
+            // 规则列表标题
             item(key = "rules_header") {
                 Text(
-                    text = "瀹氭椂瑙勫垯",
+                    text = "定时规则",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.itemPadding()
@@ -148,7 +148,7 @@ fun FocusModePage() {
             if (allRules.isEmpty()) {
                 item(key = "no_rules") {
                     Text(
-                        text = "鏆傛棤瀹氭椂瑙勫垯锛岀偣鍑诲彸涓婅 + 娣诲姞",
+                        text = "暂无定时规则，点击右上角 + 添加",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                         modifier = Modifier.itemPadding()
@@ -176,7 +176,7 @@ fun FocusModePage() {
         }
     }
 
-    // 蹇€熷惎鍔?Sheet
+    // 快速启动 Sheet
     if (showQuickStartSheet) {
         QuickStartSheet(
             vm = vm,
@@ -192,7 +192,7 @@ fun FocusModePage() {
         )
     }
 
-    // 瑙勫垯缂栬緫 Sheet
+    // 规则编辑 Sheet
     if (showRuleEditorSheet || vm.showRuleEditor) {
         RuleEditorSheet(
             vm = vm,
@@ -211,7 +211,7 @@ fun FocusModePage() {
         )
     }
 
-    // 鐧藉悕鍗曢€夋嫨鍣?
+    // 白名单选择器
     if (showWhitelistPicker) {
         WhitelistPickerDialog(
             currentWhitelist = if (whitelistPickerMode == "rule") vm.ruleWhitelistApps else vm.manualWhitelistApps,
@@ -227,7 +227,7 @@ fun FocusModePage() {
         )
     }
 
-    // 閿佸畾 Sheet
+    // 锁定 Sheet
     if (showLockSheet && lockTargetRule != null) {
         LockRuleSheet(
             vm = vm,
@@ -272,7 +272,7 @@ private fun ActiveSessionCard(
                 Spacer(modifier = Modifier.width(12.dp))
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = if (isActive) "涓撴敞妯″紡杩涜涓? else "涓撴敞妯″紡鏈惎鍔?,
+                        text = if (isActive) "专注模式进行中" else "专注模式未启动",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold
                     )
@@ -280,16 +280,16 @@ private fun ActiveSessionCard(
                         val remainingMinutes = session.getRemainingTime() / 60000
                         Text(
                             text = if (remainingMinutes >= 60) {
-                                "鍓╀綑 ${remainingMinutes / 60} 灏忔椂 ${remainingMinutes % 60} 鍒嗛挓"
+                                "剩余 ${remainingMinutes / 60} 小时 ${remainingMinutes % 60} 分钟"
                             } else {
-                                "鍓╀綑 $remainingMinutes 鍒嗛挓"
+                                "剩余 $remainingMinutes 分钟"
                             },
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
                         )
                         if (session.isCurrentlyLocked) {
                             Text(
-                                text = "锛堝凡閿佸畾锛?,
+                                text = "（已锁定）",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.error.copy(alpha = 0.8f)
                             )
@@ -298,7 +298,7 @@ private fun ActiveSessionCard(
                 }
                 if (isActive && session?.isManual == true && !session.isCurrentlyLocked) {
                     OutlinedButton(onClick = onStop) {
-                        Text("缁撴潫")
+                        Text("结束")
                     }
                 }
             }
@@ -308,7 +308,7 @@ private fun ActiveSessionCard(
                 HorizontalDivider()
                 Spacer(modifier = Modifier.height(12.dp))
                 Text(
-                    text = "鐧藉悕鍗曞簲鐢紙鐐瑰嚮绉婚櫎锛?,
+                    text = "白名单应用（点击移除）",
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                 )
@@ -357,7 +357,7 @@ private fun WhitelistAppRow(
         )
         if (canRemove) {
             IconButton(onClick = onRemove) {
-                Icon(PerfIcon.Close, contentDescription = "绉婚櫎")
+                Icon(PerfIcon.Close, contentDescription = "移除")
             }
         }
     }
@@ -371,7 +371,7 @@ private fun FocusRuleCard(
     onEdit: () -> Unit,
     onDelete: () -> Unit,
     onLock: () -> Unit,
-    onStart: () -> Unit  // 蹇€熷惎鍔?
+    onStart: () -> Unit  // 快速启动
 ) {
     var showDeleteConfirm by remember { mutableStateOf(false) }
 
@@ -397,7 +397,7 @@ private fun FocusRuleCard(
                         if (rule.isQuickStart) {
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                text = "蹇€熷惎鍔?,
+                                text = "快速启动",
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.secondary
                             )
@@ -406,14 +406,14 @@ private fun FocusRuleCard(
                             Spacer(modifier = Modifier.width(8.dp))
                             Icon(
                                 PerfIcon.Lock,
-                                contentDescription = "宸查攣瀹?,
+                                contentDescription = "已锁定",
                                 tint = MaterialTheme.colorScheme.error
                             )
                         }
                         if (!rule.isQuickStart && rule.isActiveNow()) {
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                text = "杩涜涓?,
+                                text = "进行中",
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.primary
                             )
@@ -421,16 +421,16 @@ private fun FocusRuleCard(
                     }
                     Spacer(modifier = Modifier.height(4.dp))
 
-                    // 鏍规嵁瑙勫垯绫诲瀷鏄剧ず涓嶅悓淇℃伅
+                    // 根据规则类型显示不同信息
                     if (rule.isQuickStart) {
                         Text(
-                            text = "鏃堕暱锛?{rule.formatDuration()}",
+                            text = "时长：${rule.formatDuration()}",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
                         )
                         if (rule.isLocked) {
                             Text(
-                                text = "鍚姩鍚庨攣瀹?,
+                                text = "启动后锁定",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.error.copy(alpha = 0.7f)
                             )
@@ -450,12 +450,12 @@ private fun FocusRuleCard(
                 }
 
                 if (rule.isQuickStart) {
-                    // 蹇€熷惎鍔細鏄剧ず寮€濮嬫寜閽?
+                    // 快速启动：显示开始按钮
                     Button(onClick = onStart) {
-                        Text("寮€濮?)
+                        Text("开始")
                     }
                 } else {
-                    // 瀹氭椂瑙勫垯锛氭樉绀哄紑鍏?
+                    // 定时规则：显示开关
                     Switch(
                         checked = rule.enabled,
                         onCheckedChange = { onToggleEnabled() }
@@ -475,14 +475,14 @@ private fun FocusRuleCard(
                     TextButton(onClick = onLock) {
                         Icon(PerfIcon.Lock, contentDescription = null)
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text(if (rule.isCurrentlyLocked) "寤堕暱閿佸畾" else "閿佸畾")
+                        Text(if (rule.isCurrentlyLocked) "延长锁定" else "锁定")
                     }
                 }
                 if (!rule.isCurrentlyLocked) {
                     TextButton(onClick = { showDeleteConfirm = true }) {
                         Icon(PerfIcon.Delete, contentDescription = null)
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("鍒犻櫎")
+                        Text("删除")
                     }
                 }
             }
@@ -492,19 +492,19 @@ private fun FocusRuleCard(
     if (showDeleteConfirm) {
         AlertDialog(
             onDismissRequest = { showDeleteConfirm = false },
-            title = { Text("鍒犻櫎瑙勫垯") },
-            text = { Text("纭畾瑕佸垹闄よ鍒欍€?{rule.name}銆嶅悧锛?) },
+            title = { Text("删除规则") },
+            text = { Text("确定要删除规则「${rule.name}」吗？") },
             confirmButton = {
                 TextButton(onClick = {
                     onDelete()
                     showDeleteConfirm = false
                 }) {
-                    Text("鍒犻櫎")
+                    Text("删除")
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showDeleteConfirm = false }) {
-                    Text("鍙栨秷")
+                    Text("取消")
                 }
             }
         )
@@ -529,16 +529,16 @@ private fun QuickStartSheet(
                 .padding(16.dp)
         ) {
             Text(
-                text = "绔嬪嵆寮€濮嬩笓娉?,
+                text = "立即开始专注",
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold
             )
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // 鏃堕暱閫夋嫨
+            // 时长选择
             Text(
-                text = "涓撴敞鏃堕暱",
+                text = "专注时长",
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.Medium
             )
@@ -554,7 +554,7 @@ private fun QuickStartSheet(
                         val hours = it.toIntOrNull()?.coerceIn(0, 48) ?: 0
                         vm.manualHours = hours
                     },
-                    label = { Text("灏忔椂") },
+                    label = { Text("小时") },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     modifier = Modifier.weight(1f),
                     singleLine = true
@@ -566,18 +566,18 @@ private fun QuickStartSheet(
                         val minutes = it.toIntOrNull()?.coerceIn(0, 59) ?: 0
                         vm.manualMinutes = minutes
                     },
-                    label = { Text("鍒嗛挓") },
+                    label = { Text("分钟") },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     modifier = Modifier.weight(1f),
                     singleLine = true
                 )
             }
 
-            // 鏄剧ず楠岃瘉鎻愮ず
+            // 显示验证提示
             if (vm.totalDurationMinutes < 5) {
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = "鏈€鐭椂闀夸负 5 鍒嗛挓",
+                    text = "最短时长为 5 分钟",
                     color = MaterialTheme.colorScheme.error,
                     style = MaterialTheme.typography.bodySmall
                 )
@@ -585,29 +585,29 @@ private fun QuickStartSheet(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // 鎷︽埅娑堟伅
+            // 拦截消息
             OutlinedTextField(
                 value = vm.manualMessage,
                 onValueChange = { vm.manualMessage = it },
-                label = { Text("鎷︽埅鎻愮ず璇?) },
+                label = { Text("拦截提示语") },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true
             )
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // 鐧藉悕鍗?
+            // 白名单
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text(
-                    text = "鐧藉悕鍗曞簲鐢?(${vm.manualWhitelistApps.size})",
+                    text = "白名单应用 (${vm.manualWhitelistApps.size})",
                     style = MaterialTheme.typography.bodyMedium,
                     modifier = Modifier.weight(1f)
                 )
                 TextButton(onClick = onShowWhitelistPicker) {
-                    Text("閫夋嫨")
+                    Text("选择")
                 }
             }
 
@@ -636,7 +636,7 @@ private fun QuickStartSheet(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // 閿佸畾閫夐」
+            // 锁定选项
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.fillMaxWidth()
@@ -646,7 +646,7 @@ private fun QuickStartSheet(
                     onCheckedChange = { vm.manualIsLocked = it }
                 )
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("閿佸畾锛堟棤娉曟彁鍓嶇粨鏉燂級")
+                Text("锁定（无法提前结束）")
             }
 
             Spacer(modifier = Modifier.height(24.dp))
@@ -655,7 +655,7 @@ private fun QuickStartSheet(
                 onClick = onStart,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text("寮€濮嬩笓娉?)
+                Text("开始专注")
             }
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -681,28 +681,28 @@ private fun RuleEditorSheet(
                 .padding(16.dp)
         ) {
             Text(
-                text = if (vm.editingRule != null) "缂栬緫瑙勫垯" else "娣诲姞瑙勫垯",
+                text = if (vm.editingRule != null) "编辑规则" else "添加规则",
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold
             )
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // 瑙勫垯鍚嶇О
+            // 规则名称
             OutlinedTextField(
                 value = vm.ruleName,
                 onValueChange = { vm.ruleName = it },
-                label = { Text("瑙勫垯鍚嶇О") },
-                placeholder = { Text("濡傦細鏅氶棿澶嶇洏") },
+                label = { Text("规则名称") },
+                placeholder = { Text("如：晚间复盘") },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true
             )
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // 瑙勫垯绫诲瀷閫夋嫨
+            // 规则类型选择
             Text(
-                text = "瑙勫垯绫诲瀷",
+                text = "规则类型",
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.Medium
             )
@@ -714,22 +714,22 @@ private fun RuleEditorSheet(
                 FilterChip(
                     selected = vm.ruleType == FocusRule.RULE_TYPE_QUICK_START,
                     onClick = { vm.ruleType = FocusRule.RULE_TYPE_QUICK_START },
-                    label = { Text("蹇€熷惎鍔?) }
+                    label = { Text("快速启动") }
                 )
                 FilterChip(
                     selected = vm.ruleType == FocusRule.RULE_TYPE_SCHEDULED,
                     onClick = { vm.ruleType = FocusRule.RULE_TYPE_SCHEDULED },
-                    label = { Text("瀹氭椂瑙勫垯") }
+                    label = { Text("定时规则") }
                 )
             }
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // 鏍规嵁瑙勫垯绫诲瀷鏄剧ず涓嶅悓鐨勮緭鍏?
+            // 根据规则类型显示不同的输入
             if (vm.ruleType == FocusRule.RULE_TYPE_QUICK_START) {
-                // 蹇€熷惎鍔細鏃堕暱杈撳叆
+                // 快速启动：时长输入
                 Text(
-                    text = "涓撴敞鏃堕暱",
+                    text = "专注时长",
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Medium
                 )
@@ -744,7 +744,7 @@ private fun RuleEditorSheet(
                         onValueChange = {
                             vm.ruleDurationHours = it.toIntOrNull()?.coerceIn(0, 48) ?: 0
                         },
-                        label = { Text("灏忔椂") },
+                        label = { Text("小时") },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         modifier = Modifier.weight(1f),
                         singleLine = true
@@ -754,7 +754,7 @@ private fun RuleEditorSheet(
                         onValueChange = {
                             vm.ruleDurationMinutes = it.toIntOrNull()?.coerceIn(0, 59) ?: 0
                         },
-                        label = { Text("鍒嗛挓") },
+                        label = { Text("分钟") },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         modifier = Modifier.weight(1f),
                         singleLine = true
@@ -763,7 +763,7 @@ private fun RuleEditorSheet(
                 if (vm.ruleTotalDurationMinutes < 5) {
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = "鏈€鐭椂闀夸负 5 鍒嗛挓",
+                        text = "最短时长为 5 分钟",
                         color = MaterialTheme.colorScheme.error,
                         style = MaterialTheme.typography.bodySmall
                     )
@@ -771,7 +771,7 @@ private fun RuleEditorSheet(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // 閿佸畾閫夐」
+                // 锁定选项
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.fillMaxWidth()
@@ -781,10 +781,10 @@ private fun RuleEditorSheet(
                         onCheckedChange = { vm.ruleIsLocked = it }
                     )
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("閿佸畾锛堟棤娉曟彁鍓嶇粨鏉燂級")
+                    Text("锁定（无法提前结束）")
                 }
             } else {
-                // 瀹氭椂瑙勫垯锛氭椂闂存
+                // 定时规则：时间段
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(16.dp),
                     modifier = Modifier.fillMaxWidth()
@@ -792,7 +792,7 @@ private fun RuleEditorSheet(
                     OutlinedTextField(
                         value = vm.ruleStartTime,
                         onValueChange = { vm.ruleStartTime = it },
-                        label = { Text("寮€濮嬫椂闂?) },
+                        label = { Text("开始时间") },
                         placeholder = { Text("22:00") },
                         modifier = Modifier.weight(1f),
                         singleLine = true
@@ -800,7 +800,7 @@ private fun RuleEditorSheet(
                     OutlinedTextField(
                         value = vm.ruleEndTime,
                         onValueChange = { vm.ruleEndTime = it },
-                        label = { Text("缁撴潫鏃堕棿") },
+                        label = { Text("结束时间") },
                         placeholder = { Text("23:00") },
                         modifier = Modifier.weight(1f),
                         singleLine = true
@@ -809,9 +809,9 @@ private fun RuleEditorSheet(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // 鏄熸湡閫夋嫨
+                // 星期选择
                 Text(
-                    text = "鐢熸晥鏃ユ湡",
+                    text = "生效日期",
                     style = MaterialTheme.typography.bodyMedium
                 )
                 Spacer(modifier = Modifier.height(8.dp))
@@ -819,7 +819,7 @@ private fun RuleEditorSheet(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    val dayNames = listOf("涓€", "浜?, "涓?, "鍥?, "浜?, "鍏?, "鏃?)
+                    val dayNames = listOf("一", "二", "三", "四", "五", "六", "日")
                     (1..7).forEach { day ->
                         FilterChip(
                             selected = vm.ruleDaysOfWeek.contains(day),
@@ -830,7 +830,7 @@ private fun RuleEditorSheet(
                                     (vm.ruleDaysOfWeek + day).sorted()
                                 }
                             },
-                            label = { Text("鍛?{dayNames[day - 1]}") }
+                            label = { Text("周${dayNames[day - 1]}") }
                         )
                     }
                 }
@@ -838,29 +838,29 @@ private fun RuleEditorSheet(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // 鎷︽埅娑堟伅
+            // 拦截消息
             OutlinedTextField(
                 value = vm.ruleInterceptMessage,
                 onValueChange = { vm.ruleInterceptMessage = it },
-                label = { Text("鎷︽埅鎻愮ず璇?) },
+                label = { Text("拦截提示语") },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true
             )
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // 鐧藉悕鍗?
+            // 白名单
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text(
-                    text = "鐧藉悕鍗曞簲鐢?(${vm.ruleWhitelistApps.size})",
+                    text = "白名单应用 (${vm.ruleWhitelistApps.size})",
                     style = MaterialTheme.typography.bodyMedium,
                     modifier = Modifier.weight(1f)
                 )
                 TextButton(onClick = onShowWhitelistPicker) {
-                    Text("閫夋嫨")
+                    Text("选择")
                 }
             }
 
@@ -893,7 +893,7 @@ private fun RuleEditorSheet(
                 onClick = onSave,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text("淇濆瓨")
+                Text("保存")
             }
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -913,19 +913,19 @@ private fun WhitelistPickerDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("閫夋嫨鐧藉悕鍗曞簲鐢?) },
+        title = { Text("选择白名单应用") },
         text = {
             Column(modifier = Modifier.fillMaxWidth()) {
-                // 鎼滅储妗?
+                // 搜索框
                 OutlinedTextField(
                     value = vm.whitelistSearchQuery,
                     onValueChange = { vm.whitelistSearchQuery = it },
-                    placeholder = { Text("鎼滅储搴旂敤") },
+                    placeholder = { Text("搜索应用") },
                     leadingIcon = { Icon(PerfIcon.Search, null) },
                     trailingIcon = {
                         if (vm.whitelistSearchQuery.isNotEmpty()) {
                             IconButton(onClick = { vm.whitelistSearchQuery = "" }) {
-                                Icon(PerfIcon.Close, "娓呴櫎")
+                                Icon(PerfIcon.Close, "清除")
                             }
                         }
                     },
@@ -935,7 +935,7 @@ private fun WhitelistPickerDialog(
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                // 绯荤粺搴旂敤寮€鍏?
+                // 系统应用开关
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -944,7 +944,7 @@ private fun WhitelistPickerDialog(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("鏄剧ず绯荤粺搴旂敤")
+                    Text("显示系统应用")
                     Switch(
                         checked = vm.showSystemAppsInWhitelist,
                         onCheckedChange = { vm.showSystemAppsInWhitelist = it }
@@ -953,7 +953,7 @@ private fun WhitelistPickerDialog(
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                // 搴旂敤鍒楄〃
+                // 应用列表
                 LazyColumn {
                     items(
                         appInfoMap.values
@@ -1018,12 +1018,12 @@ private fun WhitelistPickerDialog(
         },
         confirmButton = {
             TextButton(onClick = { onConfirm(selectedApps.toList()) }) {
-                Text("纭畾")
+                Text("确定")
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("鍙栨秷")
+                Text("取消")
             }
         }
     )
@@ -1047,7 +1047,7 @@ private fun LockRuleSheet(
                 .padding(16.dp)
         ) {
             Text(
-                text = if (rule.isCurrentlyLocked) "寤堕暱閿佸畾" else "閿佸畾瑙勫垯",
+                text = if (rule.isCurrentlyLocked) "延长锁定" else "锁定规则",
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold
             )
@@ -1055,7 +1055,7 @@ private fun LockRuleSheet(
             Spacer(modifier = Modifier.height(8.dp))
 
             Text(
-                text = "閿佸畾鍚庢棤娉曞叧闂垨鍒犻櫎姝よ鍒?,
+                text = "锁定后无法关闭或删除此规则",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
             )
@@ -1063,7 +1063,7 @@ private fun LockRuleSheet(
             if (rule.isCurrentlyLocked) {
                 val remainingMinutes = ((rule.lockEndTime - System.currentTimeMillis()) / 60000).coerceAtLeast(0)
                 Text(
-                    text = "褰撳墠鍓╀綑: ${if (remainingMinutes >= 60) "${remainingMinutes / 60}灏忔椂${remainingMinutes % 60}鍒嗛挓" else "${remainingMinutes}鍒嗛挓"}",
+                    text = "当前剩余: ${if (remainingMinutes >= 60) "${remainingMinutes / 60}小时${remainingMinutes % 60}分钟" else "${remainingMinutes}分钟"}",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.primary
                 )
@@ -1071,11 +1071,11 @@ private fun LockRuleSheet(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // 棰勮鏃堕暱
+            // 预设时长
             val presets = listOf(
-                480 to "8灏忔椂",
-                1440 to "1澶?,
-                4320 to "3澶?
+                480 to "8小时",
+                1440 to "1天",
+                4320 to "3天"
             )
             presets.forEach { (minutes, label) ->
                 Row(
@@ -1100,7 +1100,7 @@ private fun LockRuleSheet(
                 }
             }
 
-            // 鑷畾涔夋椂闀?
+            // 自定义时长
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
@@ -1113,7 +1113,7 @@ private fun LockRuleSheet(
                     onCheckedChange = { vm.isCustomLockDuration = it }
                 )
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("鑷畾涔?)
+                Text("自定义")
             }
 
             if (vm.isCustomLockDuration) {
@@ -1124,7 +1124,7 @@ private fun LockRuleSheet(
                     OutlinedTextField(
                         value = vm.customLockDaysText,
                         onValueChange = { vm.customLockDaysText = it },
-                        label = { Text("澶?) },
+                        label = { Text("天") },
                         modifier = Modifier.weight(1f),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         singleLine = true
@@ -1132,7 +1132,7 @@ private fun LockRuleSheet(
                     OutlinedTextField(
                         value = vm.customLockHoursText,
                         onValueChange = { vm.customLockHoursText = it },
-                        label = { Text("灏忔椂") },
+                        label = { Text("小时") },
                         modifier = Modifier.weight(1f),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         singleLine = true
@@ -1146,10 +1146,11 @@ private fun LockRuleSheet(
                 onClick = onLock,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text(if (rule.isCurrentlyLocked) "寤堕暱閿佸畾" else "纭閿佸畾")
+                Text(if (rule.isCurrentlyLocked) "延长锁定" else "确认锁定")
             }
 
             Spacer(modifier = Modifier.height(16.dp))
         }
     }
 }
+
