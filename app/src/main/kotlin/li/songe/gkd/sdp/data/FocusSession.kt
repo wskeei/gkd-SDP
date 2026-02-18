@@ -27,7 +27,8 @@ data class FocusSession(
 
     @ColumnInfo(name = "whitelist_apps") val whitelistApps: String = "[]",  // 当前生效的白名单
 
-    @ColumnInfo(name = "wechat_whitelist", defaultValue = "[]") val wechatWhitelist: String = "[]",  // 微信联系人白名单
+    // Legacy column kept for DB compatibility after removing WeChat contact whitelist from focus mode.
+    @ColumnInfo(name = "wechat_whitelist", defaultValue = "[]") val legacyWechatWhitelistJson: String = "[]",
 
     @ColumnInfo(name = "intercept_message") val interceptMessage: String = "专注当下",
 
@@ -53,24 +54,6 @@ data class FocusSession(
      */
     fun withWhitelistPackages(packages: List<String>): FocusSession {
         return copy(whitelistApps = json.encodeToString(packages))
-    }
-
-    /**
-     * 获取微信白名单联系人列表
-     */
-    fun getWechatWhitelist(): List<String> {
-        return try {
-            json.decodeFromString<List<String>>(wechatWhitelist)
-        } catch (e: Exception) {
-            emptyList()
-        }
-    }
-
-    /**
-     * 设置微信白名单联系人列表
-     */
-    fun withWechatWhitelist(wechatIds: List<String>): FocusSession {
-        return copy(wechatWhitelist = json.encodeToString(wechatIds))
     }
 
     /**
@@ -114,7 +97,7 @@ data class FocusSession(
             startTime = 0,
             endTime = 0,
             whitelistApps = "[]",
-            wechatWhitelist = "[]",
+            legacyWechatWhitelistJson = "[]",
             interceptMessage = "专注当下",
             isManual = false,
             isLocked = false,
@@ -138,9 +121,6 @@ data class FocusSession(
 
         @Query("UPDATE focus_session SET whitelist_apps = :whitelistApps WHERE id = 1")
         suspend fun updateWhitelist(whitelistApps: String)
-
-        @Query("UPDATE focus_session SET wechat_whitelist = :wechatWhitelist WHERE id = 1")
-        suspend fun updateWechatWhitelist(wechatWhitelist: String)
 
         @Query("DELETE FROM focus_session WHERE id = 1")
         suspend fun clear()

@@ -69,7 +69,6 @@ class FocusOverlayService : LifecycleService(), SavedStateRegistryOwner {
         super.onStartCommand(intent, flags, startId)
         val message = intent?.getStringExtra("message") ?: "专注当下"
         val whitelistJson = intent?.getStringExtra("whitelist") ?: "[]"
-        val wechatWhitelistJson = intent?.getStringExtra("wechatWhitelist") ?: "[]"
         val blockedApp = intent?.getStringExtra("blockedApp") ?: ""
         val isLocked = intent?.getBooleanExtra("isLocked", false) ?: false
         val endTime = intent?.getLongExtra("endTime", 0L) ?: 0L
@@ -80,20 +79,13 @@ class FocusOverlayService : LifecycleService(), SavedStateRegistryOwner {
             emptyList()
         }
 
-        val wechatWhitelist = try {
-            json.decodeFromString<List<String>>(wechatWhitelistJson)
-        } catch (e: Exception) {
-            emptyList()
-        }
-
-        showOverlay(message, whitelist, wechatWhitelist, blockedApp, isLocked, endTime)
+        showOverlay(message, whitelist, blockedApp, isLocked, endTime)
         return START_NOT_STICKY
     }
 
     private fun showOverlay(
         message: String,
         whitelist: List<String>,
-        wechatWhitelist: List<String>,
         blockedApp: String,
         isLocked: Boolean,
         endTime: Long
@@ -108,7 +100,6 @@ class FocusOverlayService : LifecycleService(), SavedStateRegistryOwner {
                     FocusInterceptScreen(
                         message = message,
                         whitelist = whitelist,
-                        wechatWhitelist = wechatWhitelist,
                         blockedApp = blockedApp,
                         isLocked = isLocked,
                         endTime = endTime,
@@ -136,37 +127,6 @@ class FocusOverlayService : LifecycleService(), SavedStateRegistryOwner {
                                 }
                             } catch (e: Exception) {
                                 Toast.makeText(this@FocusOverlayService, "启动失败：${e.message}", Toast.LENGTH_SHORT).show()
-                            }
-                        },
-                        onOpenWechatChat = { wechatId ->
-                            try {
-                                // 严格清洗：只保留字母、数字、下划线、减号
-                                val cleanId = wechatId.filter { it.isLetterOrDigit() || it == '_' || it == '-' }
-                                
-                                // 获取联系人信息（包括 shortcutId）
-                                val contact = try {
-                                    kotlinx.coroutines.runBlocking {
-                                        li.songe.gkd.sdp.db.DbSet.wechatContactDao.getByIds(listOf(cleanId))
-                                            .firstOrNull()
-                                    }
-                                } catch (e: Exception) {
-                                    null
-                                }
-                                
-                                val contactName = contact?.displayName ?: cleanId
-                                val shortcutId = contact?.shortcutId ?: ""
-                                
-                                // 启动跳转流程（优先使用快捷方式直跳）
-                                li.songe.gkd.sdp.a11y.FocusModeEngine.startWechatJump(cleanId, contactName, shortcutId)
-                                
-                                // 关闭当前的拦截页面，允许跳转进行
-                                stopSelf()
-                            } catch (e: Exception) {
-                                Toast.makeText(
-                                    this@FocusOverlayService,
-                                    "跳转失败：${e.message}",
-                                    Toast.LENGTH_LONG
-                                ).show()
                             }
                         }
                     )
@@ -197,13 +157,11 @@ class FocusOverlayService : LifecycleService(), SavedStateRegistryOwner {
 fun FocusInterceptScreen(
     message: String,
     whitelist: List<String>,
-    wechatWhitelist: List<String>,
     blockedApp: String,
     isLocked: Boolean,
     endTime: Long,
     onSessionExpired: () -> Unit,
-    onOpenApp: (String) -> Unit,
-    onOpenWechatChat: (String) -> Unit
+    onOpenApp: (String) -> Unit
 ) {
     var showWhitelistPicker by remember { mutableStateOf(false) }
 
@@ -214,16 +172,13 @@ fun FocusInterceptScreen(
         if (showWhitelistPicker) {
             WhitelistPickerContent(
                 whitelist = whitelist,
-                wechatWhitelist = wechatWhitelist,
                 onBack = { showWhitelistPicker = false },
-                onSelectApp = onOpenApp,
-                onSelectWechatContact = onOpenWechatChat
+                onSelectApp = onOpenApp
             )
         } else {
             MainInterceptContent(
                 message = message,
                 whitelist = whitelist,
-                wechatWhitelist = wechatWhitelist,
                 isLocked = isLocked,
                 endTime = endTime,
                 onSessionExpired = onSessionExpired,
@@ -237,7 +192,6 @@ fun FocusInterceptScreen(
 private fun MainInterceptContent(
     message: String,
     whitelist: List<String>,
-    wechatWhitelist: List<String>,
     isLocked: Boolean,
     endTime: Long,
     onSessionExpired: () -> Unit,
@@ -293,7 +247,7 @@ private fun MainInterceptContent(
 
         Spacer(modifier = Modifier.height(48.dp))
 
-        if (whitelist.isNotEmpty() || wechatWhitelist.isNotEmpty()) {
+        if (whitelist.isNotEmpty()) {
             Button(
                 onClick = onShowWhitelist,
                 modifier = Modifier.fillMaxWidth()
@@ -314,10 +268,8 @@ private fun MainInterceptContent(
 @Composable
 private fun WhitelistPickerContent(
     whitelist: List<String>,
-    wechatWhitelist: List<String>,
     onBack: () -> Unit,
-    onSelectApp: (String) -> Unit,
-    onSelectWechatContact: (String) -> Unit
+    onSelectApp: (String) -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -340,7 +292,7 @@ private fun WhitelistPickerContent(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        if (whitelist.isEmpty() && wechatWhitelist.isEmpty()) {
+        if (whitelist.isEmpty()) {
             Text(
                 text = "暂无白名单应用",
                 style = MaterialTheme.typography.bodyMedium,
@@ -366,23 +318,6 @@ private fun WhitelistPickerContent(
                     }
                 }
 
-                // 微信联系人白名单
-                if (wechatWhitelist.isNotEmpty()) {
-                    item {
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Text(
-                            text = "微信联系人",
-                            style = MaterialTheme.typography.titleMedium,
-                            modifier = Modifier.padding(vertical = 8.dp)
-                        )
-                    }
-                    items(wechatWhitelist) { wechatId ->
-                        WechatContactItem(
-                            wechatId = wechatId,
-                            onClick = { onSelectWechatContact(wechatId) }
-                        )
-                    }
-                }
             }
         }
     }
@@ -446,50 +381,3 @@ private fun WhitelistAppItem(
     }
 }
 
-@Composable
-private fun WechatContactItem(
-    wechatId: String,
-    onClick: () -> Unit
-) {
-    val contact = remember(wechatId) {
-        try {
-            kotlinx.coroutines.runBlocking {
-                li.songe.gkd.sdp.db.DbSet.wechatContactDao.getByIds(listOf(wechatId)).firstOrNull()
-            }
-        } catch (e: Exception) {
-            null
-        }
-    }
-
-    val displayName = contact?.displayName ?: wechatId
-
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp)
-            .clickable(onClick = onClick)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = displayName,
-                    style = MaterialTheme.typography.bodyLarge,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-                Text(
-                    text = "微信号: $wechatId",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
-        }
-    }
-}

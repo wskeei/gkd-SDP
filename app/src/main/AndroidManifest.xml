@@ -197,10 +197,6 @@
             android:name=".service.AppBlockerOverlayService"
             android:exported="false" />
 
-        <service
-            android:name=".service.WechatJumpHintService"
-            android:exported="false" />
-
         <receiver
             android:name=".receiver.AppInstallReceiver"
             android:enabled="true"

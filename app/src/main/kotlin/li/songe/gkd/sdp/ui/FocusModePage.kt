@@ -1,4 +1,4 @@
-package li.songe.gkd.sdp.ui
+﻿package li.songe.gkd.sdp.ui
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -79,12 +79,9 @@ fun FocusModePage() {
     var showQuickStartSheet by remember { mutableStateOf(false) }
     var showRuleEditorSheet by remember { mutableStateOf(false) }
     var showWhitelistPicker by remember { mutableStateOf(false) }
-    var showWechatContactPicker by remember { mutableStateOf(false) }
     var showLockSheet by remember { mutableStateOf(false) }
     var lockTargetRule by remember { mutableStateOf<FocusRule?>(null) }
     var whitelistPickerMode by remember { mutableStateOf("rule") } // "rule" or "manual"
-    var wechatContactPickerMode by remember { mutableStateOf("rule") } // "rule" or "manual"
-    var showManualAddDialog by remember { mutableStateOf(false) }
 
     val scope = rememberCoroutineScope()
 
@@ -188,10 +185,6 @@ fun FocusModePage() {
                 whitelistPickerMode = "manual"
                 showWhitelistPicker = true
             },
-            onShowWechatContactPicker = {
-                wechatContactPickerMode = "manual"
-                showWechatContactPicker = true
-            },
             onStart = {
                 vm.startManualSession()
                 showQuickStartSheet = false
@@ -210,10 +203,6 @@ fun FocusModePage() {
             onShowWhitelistPicker = {
                 whitelistPickerMode = "rule"
                 showWhitelistPicker = true
-            },
-            onShowWechatContactPicker = {
-                wechatContactPickerMode = "rule"
-                showWechatContactPicker = true
             },
             onSave = {
                 vm.saveRule()
@@ -234,34 +223,6 @@ fun FocusModePage() {
                     vm.manualWhitelistApps = selected
                 }
                 showWhitelistPicker = false
-            }
-        )
-    }
-
-    // 微信联系人选择器
-    if (showWechatContactPicker) {
-        WechatContactPickerDialog(
-            currentWhitelist = if (wechatContactPickerMode == "rule") vm.ruleWechatWhitelist else vm.manualWechatWhitelist,
-            allContacts = vm.allWechatContactsFlow.collectAsState().value,
-            onDismiss = { showWechatContactPicker = false },
-            onConfirm = { selected ->
-                if (wechatContactPickerMode == "rule") {
-                    vm.ruleWechatWhitelist = selected
-                } else {
-                    vm.manualWechatWhitelist = selected
-                }
-                showWechatContactPicker = false
-            },
-            onShowManualAdd = { showManualAddDialog = true }
-        )
-    }
-
-    if (showManualAddDialog) {
-        ManualContactAddDialog(
-            onDismiss = { showManualAddDialog = false },
-            onConfirm = { id, name ->
-                vm.addManualContact(id, name)
-                showManualAddDialog = false
             }
         )
     }
@@ -556,7 +517,6 @@ private fun QuickStartSheet(
     vm: FocusModeVm,
     onDismiss: () -> Unit,
     onShowWhitelistPicker: () -> Unit,
-    onShowWechatContactPicker: () -> Unit,
     onStart: () -> Unit
 ) {
     ModalBottomSheet(
@@ -676,48 +636,6 @@ private fun QuickStartSheet(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // 微信联系人白名单
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text(
-                    text = "微信联系人白名单 (${vm.manualWechatWhitelist.size})",
-                    style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.weight(1f)
-                )
-                TextButton(onClick = onShowWechatContactPicker) {
-                    Text("选择")
-                }
-            }
-
-            if (vm.manualWechatWhitelist.isNotEmpty()) {
-                FlowRow(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    vm.manualWechatWhitelist.forEach { wechatId ->
-                        val contact = remember(wechatId) {
-                            try {
-                                kotlinx.coroutines.runBlocking {
-                                    li.songe.gkd.sdp.db.DbSet.wechatContactDao.getByIds(listOf(wechatId)).firstOrNull()
-                                }
-                            } catch (e: Exception) {
-                                null
-                            }
-                        }
-                        val displayName = contact?.displayName ?: wechatId
-                        FilterChip(
-                            selected = true,
-                            onClick = { vm.removeFromManualWechatWhitelist(wechatId) },
-                            label = { Text(displayName) }
-                        )
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
             // 锁定选项
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -751,7 +669,6 @@ private fun RuleEditorSheet(
     vm: FocusModeVm,
     onDismiss: () -> Unit,
     onShowWhitelistPicker: () -> Unit,
-    onShowWechatContactPicker: () -> Unit,
     onSave: () -> Unit
 ) {
     ModalBottomSheet(
@@ -965,48 +882,6 @@ private fun RuleEditorSheet(
                             selected = true,
                             onClick = { vm.removeFromRuleWhitelist(packageName) },
                             label = { Text(appName) }
-                        )
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // 微信联系人白名单
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text(
-                    text = "微信联系人白名单 (${vm.ruleWechatWhitelist.size})",
-                    style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.weight(1f)
-                )
-                TextButton(onClick = onShowWechatContactPicker) {
-                    Text("选择")
-                }
-            }
-
-            if (vm.ruleWechatWhitelist.isNotEmpty()) {
-                FlowRow(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    vm.ruleWechatWhitelist.forEach { wechatId ->
-                        val contact = remember(wechatId) {
-                            try {
-                                kotlinx.coroutines.runBlocking {
-                                    li.songe.gkd.sdp.db.DbSet.wechatContactDao.getByIds(listOf(wechatId)).firstOrNull()
-                                }
-                            } catch (e: Exception) {
-                                null
-                            }
-                        }
-                        val displayName = contact?.displayName ?: wechatId
-                        FilterChip(
-                            selected = true,
-                            onClick = { vm.removeFromRuleWechatWhitelist(wechatId) },
-                            label = { Text(displayName) }
                         )
                     }
                 }
@@ -1279,187 +1154,3 @@ private fun LockRuleSheet(
     }
 }
 
-@Composable
-private fun WechatContactPickerDialog(
-    currentWhitelist: List<String>,
-    allContacts: List<li.songe.gkd.sdp.data.WechatContact>,
-    onDismiss: () -> Unit,
-    onConfirm: (List<String>) -> Unit,
-    onShowManualAdd: () -> Unit
-) {
-    var selectedContacts by remember { mutableStateOf(currentWhitelist.toSet()) }
-    var searchQuery by remember { mutableStateOf("") }
-
-    val filteredContacts = remember(allContacts, searchQuery) {
-        if (searchQuery.isBlank()) {
-            allContacts
-        } else {
-            allContacts.filter {
-                it.displayName.contains(searchQuery, ignoreCase = true) ||
-                        it.wechatId.contains(searchQuery, ignoreCase = true)
-            }
-        }
-    }
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("选择微信联系人") },
-        text = {
-            Column(modifier = Modifier.fillMaxWidth()) {
-                // 搜索框
-                OutlinedTextField(
-                    value = searchQuery,
-                    onValueChange = { searchQuery = it },
-                    placeholder = { Text("搜索联系人") },
-                    leadingIcon = { Icon(PerfIcon.Search, null) },
-                    trailingIcon = {
-                        if (searchQuery.isNotEmpty()) {
-                            IconButton(onClick = { searchQuery = "" }) {
-                                Icon(PerfIcon.Close, "清除")
-                            }
-                        }
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true
-                )
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                // 更新微信联系人按钮
-                val isFetching by li.songe.gkd.sdp.a11y.WechatContactFetcher.isFetchingFlow.collectAsState()
-                val fetchProgress by li.songe.gkd.sdp.a11y.WechatContactFetcher.fetchProgressFlow.collectAsState()
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Button(
-                        onClick = {
-                            li.songe.gkd.sdp.service.A11yService.instance?.let { service ->
-                                li.songe.gkd.sdp.a11y.WechatContactFetcher.startFetch(service)
-                            }
-                        },
-                        enabled = !isFetching,
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Text(if (isFetching) fetchProgress else "更新联系人")
-                    }
-                    
-                    OutlinedButton(onClick = onShowManualAdd) {
-                        Text("手动添加")
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                if (filteredContacts.isEmpty()) {
-                    Text(
-                        text = if (allContacts.isEmpty()) "暂无联系人，请先更新微信联系人" else "未找到匹配的联系人",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(16.dp)
-                    )
-                } else {
-                    LazyColumn(modifier = Modifier.height(400.dp)) {
-                        items(filteredContacts, key = { it.wechatId }) { contact ->
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clickable {
-                                        selectedContacts = if (contact.wechatId in selectedContacts) {
-                                            selectedContacts - contact.wechatId
-                                        } else {
-                                            selectedContacts + contact.wechatId
-                                        }
-                                    }
-                                    .padding(vertical = 8.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Checkbox(
-                                    checked = contact.wechatId in selectedContacts,
-                                    onCheckedChange = {
-                                        selectedContacts = if (it) {
-                                            selectedContacts + contact.wechatId
-                                        } else {
-                                            selectedContacts - contact.wechatId
-                                        }
-                                    }
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Column {
-                                    Text(
-                                        text = contact.displayName,
-                                        style = MaterialTheme.typography.bodyMedium
-                                    )
-                                    Text(
-                                        text = "微信号: ${contact.wechatId}",
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = { onConfirm(selectedContacts.toList()) }) {
-                Text("确定")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("取消")
-            }
-        }
-    )
-}
-
-@Composable
-private fun ManualContactAddDialog(
-    onDismiss: () -> Unit,
-    onConfirm: (String, String) -> Unit
-) {
-    var wechatId by remember { mutableStateOf("") }
-    var name by remember { mutableStateOf("") }
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("手动添加联系人") },
-        text = {
-            Column(modifier = Modifier.fillMaxWidth()) {
-                OutlinedTextField(
-                    value = wechatId,
-                    onValueChange = { wechatId = it },
-                    label = { Text("微信号 (必填)") },
-                    placeholder = { Text("请输入准确的微信号") },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                OutlinedTextField(
-                    value = name,
-                    onValueChange = { name = it },
-                    label = { Text("昵称/备注 (选填)") },
-                    placeholder = { Text("用于显示") },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true
-                )
-            }
-        },
-        confirmButton = {
-            TextButton(
-                onClick = { onConfirm(wechatId, name) },
-                enabled = wechatId.isNotBlank()
-            ) {
-                Text("添加")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("取消")
-            }
-        }
-    )
-}
