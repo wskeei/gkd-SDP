@@ -391,7 +391,10 @@ object FocusModeEngine {
      */
     fun onAppChanged(packageName: String, service: A11yService) {
         if (!enabledFlow.value) return
-        if (!isInFocusMode()) return
+        if (!isInFocusMode()) {
+            closeFocusOverlay()
+            return
+        }
 
         // 如果正在自动跳转中，且是微信
         if (isJumpInProgress && packageName == "com.tencent.mm") {

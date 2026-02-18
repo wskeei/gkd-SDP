@@ -29,7 +29,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -48,6 +48,7 @@ import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import li.songe.gkd.sdp.app
 import li.songe.gkd.sdp.ui.component.AppIcon
 import li.songe.gkd.sdp.ui.style.AppTheme
+import li.songe.gkd.sdp.util.FocusTimeFormatter
 import li.songe.gkd.sdp.util.json
 
 class FocusOverlayService : LifecycleService(), SavedStateRegistryOwner {
@@ -111,6 +112,7 @@ class FocusOverlayService : LifecycleService(), SavedStateRegistryOwner {
                         blockedApp = blockedApp,
                         isLocked = isLocked,
                         endTime = endTime,
+                        onSessionExpired = { stopSelf() },
                         onOpenApp = { packageName ->
                             try {
                                 val launchIntent = app.packageManager.getLaunchIntentForPackage(packageName)
@@ -199,6 +201,7 @@ fun FocusInterceptScreen(
     blockedApp: String,
     isLocked: Boolean,
     endTime: Long,
+    onSessionExpired: () -> Unit,
     onOpenApp: (String) -> Unit,
     onOpenWechatChat: (String) -> Unit
 ) {
@@ -223,6 +226,7 @@ fun FocusInterceptScreen(
                 wechatWhitelist = wechatWhitelist,
                 isLocked = isLocked,
                 endTime = endTime,
+                onSessionExpired = onSessionExpired,
                 onShowWhitelist = { showWhitelistPicker = true }
             )
         }
@@ -236,15 +240,21 @@ private fun MainInterceptContent(
     wechatWhitelist: List<String>,
     isLocked: Boolean,
     endTime: Long,
+    onSessionExpired: () -> Unit,
     onShowWhitelist: () -> Unit
 ) {
-    // 添加自动刷新机制
-    var refreshTrigger by remember { mutableIntStateOf(0) }
+    var now by remember { mutableLongStateOf(System.currentTimeMillis()) }
 
     LaunchedEffect(endTime) {
-        while (endTime > 0) {
-            kotlinx.coroutines.delay(60_000L)  // 每 60 秒刷新一次
-            refreshTrigger++
+        if (endTime <= 0L) return@LaunchedEffect
+        while (true) {
+            val current = System.currentTimeMillis()
+            now = current
+            if (current >= endTime) {
+                onSessionExpired()
+                break
+            }
+            kotlinx.coroutines.delay(1_000L)
         }
     }
 
@@ -264,23 +274,13 @@ private fun MainInterceptContent(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // 显示剩余时间（会随 refreshTrigger 变化自动重组）
-        if (endTime > 0) {
-            val now = System.currentTimeMillis()
-            val remainingMinutes = ((endTime - now) / 60000).coerceAtLeast(0)
-
-            if (remainingMinutes > 0) {
-                Text(
-                    text = if (remainingMinutes >= 60) {
-                        "剩余 ${remainingMinutes / 60} 小时 ${remainingMinutes % 60} 分钟"
-                    } else {
-                        "剩余 $remainingMinutes 分钟"
-                    },
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-            }
+        FocusTimeFormatter.formatRemainingText(endTime = endTime, now = now)?.let { remaining ->
+            Text(
+                text = remaining,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
+            )
+            Spacer(modifier = Modifier.height(8.dp))
         }
 
         if (isLocked) {

@@ -77,9 +77,12 @@ data class FocusSession(
      * 检查会话是否有效（在时间范围内）
      */
     fun isValidNow(): Boolean {
+        return isValidAt(System.currentTimeMillis())
+    }
+
+    fun isValidAt(now: Long): Boolean {
         if (!isActive) return false
-        val now = System.currentTimeMillis()
-        return now in startTime..endTime
+        return now >= startTime && now < endTime
     }
 
     /**
