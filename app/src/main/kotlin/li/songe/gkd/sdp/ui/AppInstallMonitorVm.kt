@@ -27,6 +27,14 @@ import java.io.File
 import java.text.SimpleDateFormat
 import java.util.*
 
+internal fun resolveCurrentInstallState(
+    packageName: String,
+    monitoredInstalledMap: Map<String, Boolean>,
+    cachedInstalledPackages: Set<String>
+): Boolean {
+    return monitoredInstalledMap[packageName] ?: cachedInstalledPackages.contains(packageName)
+}
+
 class AppInstallMonitorVm : BaseViewModel() {
     
     val monitoredAppsFlow = DbSet.monitoredAppDao.queryAll()
@@ -287,7 +295,14 @@ class AppInstallMonitorVm : BaseViewModel() {
     }
     
     fun checkIfStillInstalled(packageName: String): Boolean {
-        return installedPackages.contains(packageName)
+        val monitoredInstalledMap = monitoredAppsFlow.value.associate {
+            it.packageName to it.isCurrentlyInstalled
+        }
+        return resolveCurrentInstallState(
+            packageName = packageName,
+            monitoredInstalledMap = monitoredInstalledMap,
+            cachedInstalledPackages = installedPackages
+        )
     }
     
     fun toggleAppEnabled(app: MonitoredApp) = viewModelScope.launch(Dispatchers.IO) {
