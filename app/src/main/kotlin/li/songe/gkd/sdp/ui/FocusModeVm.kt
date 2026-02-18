@@ -7,6 +7,7 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import li.songe.gkd.sdp.META
 import li.songe.gkd.sdp.a11y.FocusModeEngine
 import li.songe.gkd.sdp.data.FocusRule
 import li.songe.gkd.sdp.db.DbSet
@@ -15,6 +16,12 @@ import li.songe.gkd.sdp.util.json
 import li.songe.gkd.sdp.util.toast
 
 class FocusModeVm : BaseViewModel() {
+    companion object {
+        fun ensureSelfWhitelisted(packages: List<String>, selfPackage: String = META.appId): List<String> {
+            if (packages.contains(selfPackage)) return packages
+            return listOf(selfPackage) + packages
+        }
+    }
 
     val allRulesFlow = FocusModeEngine.allRulesFlow
     val activeSessionFlow = FocusModeEngine.activeSessionFlow
@@ -33,7 +40,7 @@ class FocusModeVm : BaseViewModel() {
     var ruleDaysOfWeek by mutableStateOf(listOf(1, 2, 3, 4, 5, 6, 7))
     var ruleDurationHours by mutableIntStateOf(0)
     var ruleDurationMinutes by mutableIntStateOf(30)
-    var ruleWhitelistApps by mutableStateOf<List<String>>(emptyList())
+    var ruleWhitelistApps by mutableStateOf(ensureSelfWhitelisted(emptyList()))
     var ruleInterceptMessage by mutableStateOf("专注当下")
     var ruleIsLocked by mutableStateOf(false)
     var ruleLockDurationMinutes by mutableIntStateOf(30)
@@ -47,7 +54,7 @@ class FocusModeVm : BaseViewModel() {
     val totalDurationMinutes: Int
         get() = manualHours * 60 + manualMinutes
 
-    var manualWhitelistApps by mutableStateOf<List<String>>(emptyList())
+    var manualWhitelistApps by mutableStateOf(ensureSelfWhitelisted(emptyList()))
     var manualMessage by mutableStateOf("专注当下")
     var manualIsLocked by mutableStateOf(false)
     var manualLockDurationMinutes by mutableIntStateOf(30)
@@ -71,7 +78,7 @@ class FocusModeVm : BaseViewModel() {
         ruleDaysOfWeek = listOf(1, 2, 3, 4, 5, 6, 7)
         ruleDurationHours = 0
         ruleDurationMinutes = 30
-        ruleWhitelistApps = emptyList()
+        ruleWhitelistApps = ensureSelfWhitelisted(emptyList())
         ruleInterceptMessage = "专注当下"
         ruleIsLocked = false
         ruleLockDurationMinutes = 30

@@ -43,10 +43,6 @@ object FocusModeEngine {
      * GKD-SDP 搴旂敤鏈韩榛樿鍦ㄧ櫧鍚嶅崟涓紝浠ヤ究鐢ㄦ埛鍙互闅忔椂璁块棶璁剧疆
      */
     private fun isWhitelisted(packageName: String): Boolean {
-        // GKD-SDP 搴旂敤濮嬬粓鍦ㄧ櫧鍚嶅崟涓紙浣嗙敤鎴峰彲浠ュ湪 UI 涓墜鍔ㄧЩ闄わ級
-        if (packageName == META.appId) {
-            return true
-        }
         return currentWhitelistFlow.value.contains(packageName)
     }
     

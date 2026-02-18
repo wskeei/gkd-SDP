@@ -72,6 +72,8 @@ fun FocusModePage() {
     val mainVm = LocalMainViewModel.current
     val vm = viewModel<FocusModeVm>()
     val allRules by vm.allRulesFlow.collectAsState()
+    val quickStartRules = remember(allRules) { allRules.filter { it.isQuickStart } }
+    val scheduledRules = remember(allRules) { allRules.filterNot { it.isQuickStart } }
     val activeSession by vm.activeSessionFlow.collectAsState()
     val isActive by vm.isActiveFlow.collectAsState()
     val currentWhitelist by vm.currentWhitelistFlow.collectAsState()
@@ -134,8 +136,52 @@ fun FocusModePage() {
                 }
             }
 
-            // 规则列表标题
-            item(key = "rules_header") {
+            // 快速启动模板
+            item(key = "quick_rules_header") {
+                Text(
+                    text = "快速启动模板",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.itemPadding()
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+            }
+
+            if (quickStartRules.isEmpty()) {
+                item(key = "no_quick_rules") {
+                    Text(
+                        text = "暂无快速启动模板，点击右上角 + 添加",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                        modifier = Modifier.itemPadding()
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                }
+            } else {
+                items(quickStartRules, key = { "rule_${it.id}" }) { rule ->
+                    FocusRuleCard(
+                        rule = rule,
+                        onToggleEnabled = { vm.toggleRuleEnabled(rule) },
+                        onEdit = {
+                            vm.loadRuleForEdit(rule)
+                            showRuleEditorSheet = true
+                        },
+                        onDelete = { vm.deleteRule(rule) },
+                        onLock = {
+                            lockTargetRule = rule
+                            showLockSheet = true
+                        },
+                        onStart = { vm.startQuickRule(rule) }
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
+                item(key = "quick_rules_spacer") {
+                    Spacer(modifier = Modifier.height(16.dp))
+                }
+            }
+
+            // 定时规则
+            item(key = "scheduled_rules_header") {
                 Text(
                     text = "定时规则",
                     style = MaterialTheme.typography.titleMedium,
@@ -145,8 +191,8 @@ fun FocusModePage() {
                 Spacer(modifier = Modifier.height(8.dp))
             }
 
-            if (allRules.isEmpty()) {
-                item(key = "no_rules") {
+            if (scheduledRules.isEmpty()) {
+                item(key = "no_scheduled_rules") {
                     Text(
                         text = "暂无定时规则，点击右上角 + 添加",
                         style = MaterialTheme.typography.bodyMedium,
@@ -155,7 +201,7 @@ fun FocusModePage() {
                     )
                 }
             } else {
-                items(allRules, key = { "rule_${it.id}" }) { rule ->
+                items(scheduledRules, key = { "rule_${it.id}" }) { rule ->
                     FocusRuleCard(
                         rule = rule,
                         onToggleEnabled = { vm.toggleRuleEnabled(rule) },
