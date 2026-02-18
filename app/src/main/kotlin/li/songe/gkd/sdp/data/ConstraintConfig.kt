@@ -28,7 +28,6 @@ data class ConstraintConfig(
         const val TYPE_APP = 0
         const val TYPE_SUBSCRIPTION = 1
         const val TYPE_RULE_GROUP = 2
-        const val TYPE_ANTI_UNINSTALL = 3
     }
 
     val isLocked: Boolean
