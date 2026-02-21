@@ -15,6 +15,7 @@ import li.songe.gkd.sdp.data.AppGroup
 import li.songe.gkd.sdp.data.BlockTimeRule
 import li.songe.gkd.sdp.db.DbSet
 import li.songe.gkd.sdp.ui.share.BaseViewModel
+import li.songe.gkd.sdp.util.AutoReenableDisableGuard
 import li.songe.gkd.sdp.util.json
 import li.songe.gkd.sdp.util.toast
 
@@ -119,7 +120,15 @@ class AppBlockerVm : BaseViewModel() {
             toast("应用组已锁定，无法关闭")
             return@launch
         }
-        DbSet.appGroupDao.update(group.copy(enabled = !group.enabled))
+        val requestedEnabled = !group.enabled
+        if (shouldConsumeDisableQuota(currentEnabled = group.enabled, requestedEnabled = requestedEnabled)) {
+            val attempt = AutoReenableDisableGuard.tryConsumeForDisable()
+            if (!attempt.allowed) {
+                toast(quotaBlockedToast(attempt.limit))
+                return@launch
+            }
+        }
+        DbSet.appGroupDao.update(group.copy(enabled = requestedEnabled))
     }
 
     fun addAppToGroup(packageName: String) {
@@ -222,7 +231,15 @@ class AppBlockerVm : BaseViewModel() {
     }
 
     fun toggleRuleEnabled(rule: BlockTimeRule) = viewModelScope.launch(Dispatchers.IO) {
-        DbSet.blockTimeRuleDao.update(rule.copy(enabled = !rule.enabled))
+        val requestedEnabled = !rule.enabled
+        if (shouldConsumeDisableQuota(currentEnabled = rule.enabled, requestedEnabled = requestedEnabled)) {
+            val attempt = AutoReenableDisableGuard.tryConsumeForDisable()
+            if (!attempt.allowed) {
+                toast(quotaBlockedToast(attempt.limit))
+                return@launch
+            }
+        }
+        DbSet.blockTimeRuleDao.update(rule.copy(enabled = requestedEnabled))
     }
 
     fun lockGlobal() = viewModelScope.launch(Dispatchers.IO) {
@@ -326,5 +343,15 @@ class AppBlockerVm : BaseViewModel() {
 
         DbSet.blockTimeRuleDao.update(updatedRule)
         toast("规则已锁定")
+    }
+
+    companion object {
+        fun shouldConsumeDisableQuota(currentEnabled: Boolean, requestedEnabled: Boolean): Boolean {
+            return currentEnabled && !requestedEnabled
+        }
+
+        private fun quotaBlockedToast(limit: Int): String {
+            return "今日关闭次数已用完（$limit 次），将于明日 00:00 重置"
+        }
     }
 }

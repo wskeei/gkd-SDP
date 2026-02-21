@@ -156,6 +156,9 @@ fun FocusLockPage() {
                 AutoReenableGuardCard(
                     intervalMinutes = settings.autoReenableIntervalMinutes,
                     changedAt = settings.autoReenableIntervalChangedAt,
+                    dailyDisableLimit = settings.autoReenableDailyDisableLimit,
+                    dailyDisableUsed = settings.autoReenableDailyDisableUsed,
+                    dailyDisableDayStartAt = settings.autoReenableDailyDisableDayStartAt,
                     onClick = { showAutoReenableDialog = true }
                 )
                 Spacer(modifier = Modifier.height(12.dp))
@@ -286,9 +289,13 @@ fun FocusLockPage() {
 
         if (showAutoReenableDialog) {
             var inputText by remember { mutableStateOf(settings.autoReenableIntervalMinutes.toString()) }
+            var dailyLimitText by remember { mutableStateOf(settings.autoReenableDailyDisableLimit.toString()) }
             val autoReenableUiState = FocusLockVm.evaluateAutoReenableUiState(
                 intervalMinutes = settings.autoReenableIntervalMinutes,
                 lastChangedAt = settings.autoReenableIntervalChangedAt,
+                dailyDisableLimit = settings.autoReenableDailyDisableLimit,
+                dailyDisableUsed = settings.autoReenableDailyDisableUsed,
+                dailyDisableDayStartAt = settings.autoReenableDailyDisableDayStartAt,
                 now = System.currentTimeMillis()
             )
             val nextEditableText = if (autoReenableUiState.canEditInterval) {
@@ -297,8 +304,17 @@ fun FocusLockPage() {
                 autoReenableUiState.nextEditableAt.format("MM-dd HH:mm")
             }
             val nextEnforceText = autoReenableUiState.nextEnforceAt.format("MM-dd HH:mm")
+            val nextDailyResetText = autoReenableUiState.nextDailyResetAt.format("MM-dd HH:mm")
             val parsed = inputText.toIntOrNull()
-            val inputValid = parsed != null && parsed in 0..AutoReenablePolicy.MAX_INTERVAL_MINUTES
+            val intervalInputValid = parsed != null && parsed in 0..AutoReenablePolicy.MAX_INTERVAL_MINUTES
+            val parsedDailyLimit = dailyLimitText.toIntOrNull()
+            val dailyLimitInputValid =
+                parsedDailyLimit != null && parsedDailyLimit in AutoReenablePolicy.MIN_DAILY_DISABLE_LIMIT..AutoReenablePolicy.MAX_DAILY_DISABLE_LIMIT
+            val intervalChanged = parsed != null && parsed != settings.autoReenableIntervalMinutes
+            val dailyLimitChanged = parsedDailyLimit != null &&
+                AutoReenablePolicy.normalizeDailyDisableLimit(parsedDailyLimit) != autoReenableUiState.dailyDisableLimit
+            val canSaveInterval = intervalInputValid && (!intervalChanged || autoReenableUiState.canEditInterval)
+            val canSave = canSaveInterval && dailyLimitInputValid && (intervalChanged || dailyLimitChanged)
 
             AlertDialog(
                 onDismissRequest = { showAutoReenableDialog = false },
@@ -307,6 +323,9 @@ fun FocusLockPage() {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text("自动重开始终启用，无法关闭。间隔可调：0~240 分钟；每 3 天仅可修改一次。")
                         Text("下一次自动重开：$nextEnforceText")
+                        Text("今日已用/总额：${autoReenableUiState.dailyDisableUsed}/${autoReenableUiState.dailyDisableLimit}")
+                        Text("剩余次数：${autoReenableUiState.dailyDisableRemaining}")
+                        Text("下一次重置时间：$nextDailyResetText")
                         if (!autoReenableUiState.canEditInterval) {
                             Text("冷却中，下次可修改：$nextEditableText")
                         }
@@ -321,11 +340,30 @@ fun FocusLockPage() {
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                             singleLine = true,
                             enabled = autoReenableUiState.canEditInterval,
-                            isError = !inputValid
+                            isError = !intervalInputValid
                         )
-                        if (!inputValid) {
+                        if (!intervalInputValid) {
                             Text(
                                 text = "请输入 0~240 的整数分钟",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.error
+                            )
+                        }
+                        OutlinedTextField(
+                            value = dailyLimitText,
+                            onValueChange = { value ->
+                                if (value.all { it.isDigit() }) {
+                                    dailyLimitText = value
+                                }
+                            },
+                            label = { Text("每日关闭限额（次）") },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            singleLine = true,
+                            isError = !dailyLimitInputValid
+                        )
+                        if (!dailyLimitInputValid) {
+                            Text(
+                                text = "请输入 1~5 的整数次数",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.error
                             )
@@ -334,9 +372,16 @@ fun FocusLockPage() {
                 },
                 confirmButton = {
                     TextButton(
-                        enabled = inputValid && autoReenableUiState.canEditInterval,
+                        enabled = canSave,
                         onClick = {
-                            vm.updateAutoReenableInterval(parsed ?: 0)
+                            if (intervalChanged) {
+                                vm.updateAutoReenableInterval(parsed ?: settings.autoReenableIntervalMinutes)
+                            }
+                            if (dailyLimitChanged) {
+                                vm.updateAutoReenableDailyDisableLimit(
+                                    parsedDailyLimit ?: autoReenableUiState.dailyDisableLimit
+                                )
+                            }
                             showAutoReenableDialog = false
                         }
                     ) {
@@ -859,15 +904,22 @@ private fun formatRemainingTime(millis: Long): String {
 fun AutoReenableGuardCard(
     intervalMinutes: Int,
     changedAt: Long,
+    dailyDisableLimit: Int,
+    dailyDisableUsed: Int,
+    dailyDisableDayStartAt: Long,
     onClick: () -> Unit
 ) {
     val autoReenableUiState = FocusLockVm.evaluateAutoReenableUiState(
         intervalMinutes = intervalMinutes,
         lastChangedAt = changedAt,
+        dailyDisableLimit = dailyDisableLimit,
+        dailyDisableUsed = dailyDisableUsed,
+        dailyDisableDayStartAt = dailyDisableDayStartAt,
         now = System.currentTimeMillis()
     )
     val nextEditableText = if (autoReenableUiState.canEditInterval) "可立即修改" else autoReenableUiState.nextEditableAt.format("MM-dd HH:mm")
     val nextEnforceText = autoReenableUiState.nextEnforceAt.format("MM-dd HH:mm")
+    val nextDailyResetText = autoReenableUiState.nextDailyResetAt.format("MM-dd HH:mm")
 
     ElevatedCard(
         colors = surfaceCardColors,
@@ -904,6 +956,16 @@ fun AutoReenableGuardCard(
             )
             Text(
                 text = "下一次自动重开：$nextEnforceText",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Text(
+                text = "今日关闭次数：${autoReenableUiState.dailyDisableUsed}/${autoReenableUiState.dailyDisableLimit}（剩余 ${autoReenableUiState.dailyDisableRemaining}）",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Text(
+                text = "下次配额重置：$nextDailyResetText",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )

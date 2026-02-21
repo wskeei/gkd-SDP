@@ -20,6 +20,7 @@ import li.songe.gkd.sdp.data.UrlRuleGroup
 import li.songe.gkd.sdp.data.UrlTimeRule
 import li.songe.gkd.sdp.db.DbSet
 import li.songe.gkd.sdp.ui.share.BaseViewModel
+import li.songe.gkd.sdp.util.AutoReenableDisableGuard
 import li.songe.gkd.sdp.util.toast
 
 class UrlBlockVm : BaseViewModel() {
@@ -187,7 +188,15 @@ class UrlBlockVm : BaseViewModel() {
                  return@launch
              }
         }
-        DbSet.urlRuleGroupDao.update(group.copy(enabled = !group.enabled))
+        val requestedEnabled = !group.enabled
+        if (shouldConsumeDisableQuota(currentEnabled = group.enabled, requestedEnabled = requestedEnabled)) {
+            val attempt = AutoReenableDisableGuard.tryConsumeForDisable()
+            if (!attempt.allowed) {
+                toast(quotaBlockedToast(attempt.limit))
+                return@launch
+            }
+        }
+        DbSet.urlRuleGroupDao.update(group.copy(enabled = requestedEnabled))
     }
 
     // ======================== URL 规则 Logic ========================
@@ -326,7 +335,15 @@ class UrlBlockVm : BaseViewModel() {
             toast("规则已锁定，无法关闭")
             return@launch
         }
-        DbSet.urlBlockRuleDao.update(rule.copy(enabled = !rule.enabled))
+        val requestedEnabled = !rule.enabled
+        if (shouldConsumeDisableQuota(currentEnabled = rule.enabled, requestedEnabled = requestedEnabled)) {
+            val attempt = AutoReenableDisableGuard.tryConsumeForDisable()
+            if (!attempt.allowed) {
+                toast(quotaBlockedToast(attempt.limit))
+                return@launch
+            }
+        }
+        DbSet.urlBlockRuleDao.update(rule.copy(enabled = requestedEnabled))
     }
 
     // ======================== 时间规则 Logic ========================
@@ -431,7 +448,15 @@ class UrlBlockVm : BaseViewModel() {
             toast("规则已锁定，无法关闭")
             return@launch
         }
-        DbSet.urlTimeRuleDao.update(rule.copy(enabled = !rule.enabled))
+        val requestedEnabled = !rule.enabled
+        if (shouldConsumeDisableQuota(currentEnabled = rule.enabled, requestedEnabled = requestedEnabled)) {
+            val attempt = AutoReenableDisableGuard.tryConsumeForDisable()
+            if (!attempt.allowed) {
+                toast(quotaBlockedToast(attempt.limit))
+                return@launch
+            }
+        }
+        DbSet.urlTimeRuleDao.update(rule.copy(enabled = requestedEnabled))
     }
 
     // ======================== 锁定 Logic ========================
@@ -614,5 +639,15 @@ class UrlBlockVm : BaseViewModel() {
             return@launch
         }
         DbSet.browserConfigDao.update(browser.copy(enabled = !browser.enabled))
+    }
+
+    companion object {
+        fun shouldConsumeDisableQuota(currentEnabled: Boolean, requestedEnabled: Boolean): Boolean {
+            return currentEnabled && !requestedEnabled
+        }
+
+        private fun quotaBlockedToast(limit: Int): String {
+            return "今日关闭次数已用完（$limit 次），将于明日 00:00 重置"
+        }
     }
 }

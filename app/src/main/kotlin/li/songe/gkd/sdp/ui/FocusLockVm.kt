@@ -20,6 +20,7 @@ import li.songe.gkd.sdp.data.ResolvedGroup
 import li.songe.gkd.sdp.db.DbSet
 import li.songe.gkd.sdp.store.storeFlow
 import li.songe.gkd.sdp.ui.share.BaseViewModel
+import li.songe.gkd.sdp.util.AutoReenableDisableGuard
 import li.songe.gkd.sdp.util.AutoReenablePolicy
 import li.songe.gkd.sdp.util.FocusLockUtils
 import li.songe.gkd.sdp.util.launchTry
@@ -66,6 +67,10 @@ data class AutoReenableUiState(
     val canEditInterval: Boolean,
     val nextEditableAt: Long,
     val nextEnforceAt: Long,
+    val dailyDisableLimit: Int,
+    val dailyDisableUsed: Int,
+    val dailyDisableRemaining: Int,
+    val nextDailyResetAt: Long,
 )
 
 class FocusLockVm : BaseViewModel() {
@@ -260,6 +265,14 @@ class FocusLockVm : BaseViewModel() {
             toast("当前规则已锁定，无法关闭自律模式")
             return@launch
         }
+        val currentEnabled = resolveCurrentInterceptEnabled(subsId, appId, groupKey)
+        if (shouldConsumeDisableQuota(currentEnabled = currentEnabled, requestedEnabled = enabled)) {
+            val attempt = AutoReenableDisableGuard.tryConsumeForDisable()
+            if (!attempt.allowed) {
+                toast(quotaBlockedToast(attempt.limit))
+                return@launch
+            }
+        }
         val normalizedAppId = appId ?: ""
         DbSet.interceptConfigDao.delete(subsId, normalizedAppId, groupKey)
         val config = InterceptConfig(
@@ -294,6 +307,16 @@ class FocusLockVm : BaseViewModel() {
 
         var updatedCount = 0
         var skippedCount = 0
+        if (!enabled && targets.any { (s, a, g) ->
+                resolveCurrentInterceptEnabled(s, if (a.isEmpty()) null else a, g)
+            }
+        ) {
+            val attempt = AutoReenableDisableGuard.tryConsumeForDisable()
+            if (!attempt.allowed) {
+                toast(quotaBlockedToast(attempt.limit))
+                return@launch
+            }
+        }
 
         targets.forEach { (s, a, g) ->
             if (!enabled && FocusLockUtils.isRuleLocked(s, if (a.isEmpty()) null else a, g)) {
@@ -316,6 +339,42 @@ class FocusLockVm : BaseViewModel() {
             toast("更新 $updatedCount 条，跳过 $skippedCount 条(已锁定)")
         } else {
             toast("已批量更新配置")
+        }
+    }
+
+    fun updateAutoReenableDailyDisableLimit(requestedLimit: Int, now: Long = System.currentTimeMillis()) {
+        val normalizedLimit = AutoReenablePolicy.normalizeDailyDisableLimit(requestedLimit)
+        val currentDayStartAt = AutoReenablePolicy.localDayStartEpochMs(now)
+        storeFlow.update { settings ->
+            val dayChanged = AutoReenablePolicy.shouldResetDailyCounter(
+                dayStartAt = settings.autoReenableDailyDisableDayStartAt,
+                now = now
+            )
+            val normalizedUsed = if (dayChanged) {
+                0
+            } else {
+                settings.autoReenableDailyDisableUsed.coerceIn(0, normalizedLimit)
+            }
+            settings.copy(
+                autoReenableDailyDisableLimit = normalizedLimit,
+                autoReenableDailyDisableUsed = normalizedUsed,
+                autoReenableDailyDisableDayStartAt = currentDayStartAt
+            )
+        }
+        toast("已更新每日关闭限额：$normalizedLimit 次")
+    }
+
+    private fun resolveCurrentInterceptEnabled(subsId: Long, appId: String?, groupKey: Int): Boolean {
+        val subState = subStatesFlow.value.find { it.subsId == subsId } ?: return false
+        return if (appId.isNullOrEmpty()) {
+            subState.globalRules.find { it.group.group.key == groupKey }?.interceptConfig?.enabled == true
+        } else {
+            subState.apps
+                .find { it.appId == appId }
+                ?.rules
+                ?.find { it.group.group.key == groupKey }
+                ?.interceptConfig
+                ?.enabled == true
         }
     }
 
@@ -343,6 +402,14 @@ class FocusLockVm : BaseViewModel() {
     }
 
     companion object {
+        fun shouldConsumeDisableQuota(currentEnabled: Boolean, requestedEnabled: Boolean): Boolean {
+            return currentEnabled && !requestedEnabled
+        }
+
+        fun quotaBlockedToast(limit: Int): String {
+            return "今日关闭次数已用完（$limit 次），将于明日 00:00 重置"
+        }
+
         fun latestInterceptConfigByKey(interceptConfigs: List<InterceptConfig>): Map<Triple<Long, String, Int>, InterceptConfig> {
             val latest = LinkedHashMap<Triple<Long, String, Int>, InterceptConfig>()
             interceptConfigs.forEach { config ->
@@ -358,15 +425,31 @@ class FocusLockVm : BaseViewModel() {
         fun evaluateAutoReenableUiState(
             intervalMinutes: Int,
             lastChangedAt: Long,
+            dailyDisableLimit: Int = AutoReenablePolicy.MIN_DAILY_DISABLE_LIMIT,
+            dailyDisableUsed: Int = 0,
+            dailyDisableDayStartAt: Long = 0L,
             now: Long = System.currentTimeMillis(),
         ): AutoReenableUiState {
             val canEditInterval = AutoReenablePolicy.canChangeInterval(lastChangedAt, now)
             val nextEditableAt = if (lastChangedAt <= 0L) 0L else lastChangedAt + AutoReenablePolicy.CHANGE_COOLDOWN_MS
             val delayMs = AutoReenablePolicy.nextEnforceDelayMs(intervalMinutes)
+            val normalizedLimit = AutoReenablePolicy.normalizeDailyDisableLimit(dailyDisableLimit)
+            val currentDayStartAt = AutoReenablePolicy.localDayStartEpochMs(now)
+            val dayChanged = AutoReenablePolicy.shouldResetDailyCounter(dailyDisableDayStartAt, now)
+            val effectiveDayStartAt = if (dayChanged) currentDayStartAt else dailyDisableDayStartAt
+            val normalizedUsed = if (dayChanged) {
+                0
+            } else {
+                dailyDisableUsed.coerceIn(0, normalizedLimit)
+            }
             return AutoReenableUiState(
                 canEditInterval = canEditInterval,
                 nextEditableAt = nextEditableAt,
-                nextEnforceAt = now + delayMs
+                nextEnforceAt = now + delayMs,
+                dailyDisableLimit = normalizedLimit,
+                dailyDisableUsed = normalizedUsed,
+                dailyDisableRemaining = (normalizedLimit - normalizedUsed).coerceAtLeast(0),
+                nextDailyResetAt = effectiveDayStartAt + 24L * 60 * 60 * 1000
             )
         }
 

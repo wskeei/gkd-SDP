@@ -78,6 +78,7 @@ import li.songe.gkd.sdp.ui.share.LocalMainViewModel
 import li.songe.gkd.sdp.ui.style.EmptyHeight
 import li.songe.gkd.sdp.ui.style.itemVerticalPadding
 import li.songe.gkd.sdp.util.LOCAL_SUBS_ID
+import li.songe.gkd.sdp.util.AutoReenableDisableGuard
 import li.songe.gkd.sdp.util.ShortUrlSet
 import li.songe.gkd.sdp.util.UpdateTimeOption
 import li.songe.gkd.sdp.util.checkSubsUpdate
@@ -506,6 +507,13 @@ fun useSubsManagePage(): ScaffoldExt {
                                         confirmText = "仍然启用",
                                         error = true
                                     )
+                                }
+                                if (subItem.enable && !checked) {
+                                    val attempt = AutoReenableDisableGuard.tryConsumeForDisable()
+                                    if (!attempt.allowed) {
+                                        toast("今日关闭次数已用完（${attempt.limit} 次），将于明日 00:00 重置")
+                                        return@launchAsFn
+                                    }
                                 }
                                 DbSet.subsItemDao.updateEnable(subItem.id, checked)
                             },

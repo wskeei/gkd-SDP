@@ -29,6 +29,7 @@ import li.songe.gkd.sdp.ui.style.scaffoldPadding
 import li.songe.gkd.sdp.util.getGroupEnable
 import li.songe.gkd.sdp.util.launchAsFn
 import li.songe.gkd.sdp.util.launchTry
+import li.songe.gkd.sdp.util.AutoReenableDisableGuard
 import li.songe.gkd.sdp.util.subsMapFlow
 import li.songe.gkd.sdp.util.throttle
 import li.songe.gkd.sdp.util.toast
@@ -202,6 +203,13 @@ suspend fun batchUpdateGroupEnable(
     val newSubsConfigs = diffDataList.map { it.second }
     val canDeleteList = newSubsConfigs.filter {
         it.type == SubsConfig.AppGroupType && it.enable == null && it.exclude.isEmpty()
+    }
+    if (enable == false && diffDataList.isNotEmpty()) {
+        val attempt = AutoReenableDisableGuard.tryConsumeForDisable()
+        if (!attempt.allowed) {
+            toast("今日关闭次数已用完（${attempt.limit} 次），将于明日 00:00 重置")
+            return emptyList()
+        }
     }
     DbSet.subsConfigDao.insertAndDelete(
         newSubsConfigs.filterNot { canDeleteList.contains(it) },
