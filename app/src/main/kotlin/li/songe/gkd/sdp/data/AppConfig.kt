@@ -43,5 +43,8 @@ data class AppConfig(
 
         @Query("SELECT * FROM app_config WHERE subs_id IN (:subsItemIds)")
         suspend fun querySubsItemConfig(subsItemIds: List<Long>): List<AppConfig>
+
+        @Query("UPDATE app_config SET enable = 1 WHERE enable = 0")
+        suspend fun enableAllDisabled(): Int
     }
 }

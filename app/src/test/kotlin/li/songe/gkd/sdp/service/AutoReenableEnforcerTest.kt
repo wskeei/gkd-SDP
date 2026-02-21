@@ -2,6 +2,7 @@ package li.songe.gkd.sdp.service
 
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class AutoReenableEnforcerTest {
@@ -20,5 +21,10 @@ class AutoReenableEnforcerTest {
             )
         )
         assertEquals(5, updated)
+    }
+
+    @Test
+    fun defaultOperationsIncludeAppConfigReenable() {
+        assertTrue(AutoReenableEnforcer.defaultOperationNames().contains("app_config"))
     }
 }

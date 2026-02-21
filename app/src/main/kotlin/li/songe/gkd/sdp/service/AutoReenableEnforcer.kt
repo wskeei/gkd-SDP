@@ -34,7 +34,7 @@ object AutoReenableEnforcer {
     }
 
     suspend fun enforceAll(): Int {
-        return runEnableOperations(defaultEnableOperations())
+        return runEnableOperations(defaultEnableOperationEntries().map { it.second })
     }
 
     internal suspend fun runEnableOperations(operations: List<suspend () -> Int>): Int {
@@ -45,14 +45,19 @@ object AutoReenableEnforcer {
         return updatedCount
     }
 
-    private fun defaultEnableOperations(): List<suspend () -> Int> {
+    internal fun defaultOperationNames(): List<String> {
+        return defaultEnableOperationEntries().map { it.first }
+    }
+
+    private fun defaultEnableOperationEntries(): List<Pair<String, suspend () -> Int>> {
         return listOf(
-            { DbSet.subsItemDao.enableAllDisabled() },
-            { DbSet.appGroupDao.enableAllDisabled() },
-            { DbSet.blockTimeRuleDao.enableAllDisabled() },
-            { DbSet.urlRuleGroupDao.enableAllDisabled() },
-            { DbSet.urlBlockRuleDao.enableAllDisabled() },
-            { DbSet.urlTimeRuleDao.enableAllDisabled() },
+            "subs_item" to { DbSet.subsItemDao.enableAllDisabled() },
+            "app_config" to { DbSet.appConfigDao.enableAllDisabled() },
+            "app_group" to { DbSet.appGroupDao.enableAllDisabled() },
+            "block_time_rule" to { DbSet.blockTimeRuleDao.enableAllDisabled() },
+            "url_rule_group" to { DbSet.urlRuleGroupDao.enableAllDisabled() },
+            "url_block_rule" to { DbSet.urlBlockRuleDao.enableAllDisabled() },
+            "url_time_rule" to { DbSet.urlTimeRuleDao.enableAllDisabled() },
         )
     }
 }
