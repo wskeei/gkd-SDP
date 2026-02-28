@@ -158,6 +158,9 @@ fun useControlPage(): ScaffoldExt {
                 },
                 checked = a11yRunning,
                 onCheckedChange = vm.viewModelScope.launchAsFn { newEnabled ->
+                    if (!canToggleServiceStatusFromUi(a11yRunning, newEnabled)) {
+                        return@launchAsFn
+                    }
                     if (newEnabled && !writeSecureSettingsState.value) {
                         mainVm.navigatePage(AuthA11YPageDestination)
                     } else {
