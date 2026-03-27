@@ -1,17 +1,19 @@
 [versions]
-kotlin = "2.2.21"
-ksp = "2.3.3"
-agp = "8.13.2"
-compose = "1.10.0"
+kotlin = "2.3.20"
+serialization = "1.10.0"
+ksp = "2.3.6"
+agp = "9.1.0"
+compose = "1.10.6"
+nav3 = "1.0.1"
 room = "2.8.4"
-paging = "3.3.6"
-ktor = "3.3.3"
-atomicfu = "0.29.0"
+paging = "3.4.2"
+ktor = "3.4.2"
+atomicfu = "0.32.1"
 destinations = "2.3.0"
-coil = "3.3.0"
-rikka_refine = "4.4.0"
-rikka_shizuku = "13.1.5"
-loc = "0.5.3"
+coil = "3.4.0"
+refine = "4.4.0"
+shizuku = "13.1.5"
+loc = "0.5.4"
 vico = "2.0.0-alpha.28"
 
 [libraries]
@@ -56,11 +58,11 @@ androidx_paging_runtime = { module = "androidx.paging:paging-runtime", version.r
 androidx_paging_compose = { module = "androidx.paging:paging-compose", version.ref = "paging" }
 google_accompanist_drawablepainter = "com.google.accompanist:accompanist-drawablepainter:0.37.3"
 junit = "junit:junit:4.13.2"
-rikka_refine_processor = { module = "dev.rikka.tools.refine:annotation-processor", version.ref = "rikka_refine" }
-rikka_refine_annotation = { module = "dev.rikka.tools.refine:annotation", version.ref = "rikka_refine" }
-rikka_refine_runtime = { module = "dev.rikka.tools.refine:runtime", version.ref = "rikka_refine" }
-rikka_shizuku_api = { module = "dev.rikka.shizuku:api", version.ref = "rikka_shizuku" }
-rikka_shizuku_provider = { module = "dev.rikka.shizuku:provider", version.ref = "rikka_shizuku" }
+rikka_refine_processor = { module = "dev.rikka.tools.refine:annotation-processor", version.ref = "refine" }
+rikka_refine_annotation = { module = "dev.rikka.tools.refine:annotation", version.ref = "refine" }
+rikka_refine_runtime = { module = "dev.rikka.tools.refine:runtime", version.ref = "refine" }
+rikka_shizuku_api = { module = "dev.rikka.shizuku:api", version.ref = "shizuku" }
+rikka_shizuku_provider = { module = "dev.rikka.shizuku:provider", version.ref = "shizuku" }
 lsposed_hiddenapibypass = "org.lsposed.hiddenapibypass:hiddenapibypass:6.1"
 destinations_core = { module = "io.github.raamcosta.compose-destinations:core", version.ref = "destinations" }
 destinations_ksp = { module = "io.github.raamcosta.compose-destinations:ksp", version.ref = "destinations" }
@@ -87,7 +89,7 @@ android_library = { id = "com.android.library", version.ref = "agp" }
 android_application = { id = "com.android.application", version.ref = "agp" }
 androidx_room = { id = "androidx.room", version.ref = "room" }
 google_ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
-rikka_refine = { id = "dev.rikka.tools.refine", version.ref = "rikka_refine" }
+rikka_refine = { id = "dev.rikka.tools.refine", version.ref = "refine" }
 loc = { id = "li.songe.loc", version.ref = "loc" }
 benmanes_version = "com.github.ben-manes.versions:0.53.0"
 littlerobots_version = "nl.littlerobots.version-catalog-update:1.0.1"
