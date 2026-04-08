@@ -16,6 +16,9 @@ import li.songe.gkd.sdp.data.ActivityLog
 import li.songe.gkd.sdp.data.AppBlockerLock
 import li.songe.gkd.sdp.data.AppConfig
 import li.songe.gkd.sdp.data.AppGroup
+import li.songe.gkd.sdp.data.UsageGuardAppProfile
+import li.songe.gkd.sdp.data.UsageGuardRecord
+import li.songe.gkd.sdp.data.UsageGuardTag
 import li.songe.gkd.sdp.data.AppVisitLog
 import li.songe.gkd.sdp.data.BlockTimeRule
 import li.songe.gkd.sdp.data.BrowserConfig
@@ -39,7 +42,7 @@ import li.songe.gkd.sdp.util.dbFolder
 import li.songe.gkd.sdp.util.json
 
 @Database(
-    version = 29,
+    version = 30,
     entities = [
         SubsItem::class,
         Snapshot::class,
@@ -66,6 +69,9 @@ import li.songe.gkd.sdp.util.json
         UrlRuleGroup::class,
         UrlTimeRule::class,
         UrlBlockerLock::class,
+        UsageGuardAppProfile::class,
+        UsageGuardTag::class,
+        UsageGuardRecord::class,
     ],
     autoMigrations = [
         AutoMigration(from = 1, to = 2),
@@ -96,6 +102,7 @@ import li.songe.gkd.sdp.util.json
         AutoMigration(from = 26, to = 27),  // 添加 url_rule_group, url_time_rule 表和 group_id 字段
         AutoMigration(from = 27, to = 28),  // 添加 url_blocker_lock 表
         AutoMigration(from = 28, to = 29),  // UrlBlockRule 添加 is_locked, lock_end_time 字段
+        AutoMigration(from = 29, to = 30),  // 添加 usage_guard_* 表
     ]
 )
 @TypeConverters(DbConverters::class)
@@ -125,6 +132,9 @@ abstract class AppDb : RoomDatabase() {
     abstract fun urlRuleGroupDao(): UrlRuleGroup.UrlRuleGroupDao
     abstract fun urlTimeRuleDao(): UrlTimeRule.UrlTimeRuleDao
     abstract fun urlBlockerLockDao(): UrlBlockerLock.UrlBlockerLockDao
+    abstract fun usageGuardAppProfileDao(): UsageGuardAppProfile.UsageGuardAppProfileDao
+    abstract fun usageGuardTagDao(): UsageGuardTag.UsageGuardTagDao
+    abstract fun usageGuardRecordDao(): UsageGuardRecord.UsageGuardRecordDao
 }
 
 @RenameColumn(
@@ -204,4 +214,7 @@ object DbSet {
     val urlRuleGroupDao get() = db.urlRuleGroupDao()
     val urlTimeRuleDao get() = db.urlTimeRuleDao()
     val urlBlockerLockDao get() = db.urlBlockerLockDao()
+    val usageGuardAppProfileDao get() = db.usageGuardAppProfileDao()
+    val usageGuardTagDao get() = db.usageGuardTagDao()
+    val usageGuardRecordDao get() = db.usageGuardRecordDao()
 }

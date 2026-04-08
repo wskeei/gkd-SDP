@@ -7,6 +7,7 @@ import li.songe.gkd.sdp.util.AppSortOption
 import li.songe.gkd.sdp.util.RuleSortOption
 import li.songe.gkd.sdp.util.UpdateChannelOption
 import li.songe.gkd.sdp.util.UpdateTimeOption
+import li.songe.gkd.sdp.util.UsageGuardPolicy
 
 @Serializable
 data class SettingsStore(
@@ -56,4 +57,8 @@ data class SettingsStore(
     val autoReenableDailyDisableLimit: Int = 1,
     val autoReenableDailyDisableUsed: Int = 0,
     val autoReenableDailyDisableDayStartAt: Long = 0L,
+    val usageGuardEnabled: Boolean = false,
+    val usageGuardScopeMode: Int = UsageGuardPolicy.SCOPE_SELECTED_ONLY,
+    val usageGuardDefaultGrantMode: Int = UsageGuardPolicy.GRANT_MODE_RESUMABLE,
+    val usageGuardMinReasonLength: Int = 8,
 )
