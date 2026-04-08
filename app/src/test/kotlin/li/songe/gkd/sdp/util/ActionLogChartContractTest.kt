@@ -1,7 +1,6 @@
-package li.songe.gkd.sdp.ui
+package li.songe.gkd.sdp.util
 
 import li.songe.gkd.sdp.data.DailyStat
-import li.songe.gkd.sdp.util.ActionLogStatsPolicy
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import java.time.LocalDateTime
