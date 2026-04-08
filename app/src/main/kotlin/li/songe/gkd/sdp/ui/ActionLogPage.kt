@@ -256,14 +256,14 @@ fun ActionLogPage(
 
 @Composable
 private fun ActionLogStatsView(vm: ActionLogVm) {
-    val stats by vm.dailyStatsFlow.collectAsState()
-    val hasAnyStats by vm.hasAnyStatsFlow.collectAsState()
-    if (!hasAnyStats) {
+    val statsUiState by vm.statsUiStateFlow.collectAsState()
+    if (!statsUiState.hasAnyStats) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             EmptyText(text = "暂无统计数据")
         }
         return
     }
+    val stats = statsUiState.stats
 
     val modelProducer = remember { CartesianChartModelProducer() }
     LaunchedEffect(stats) {

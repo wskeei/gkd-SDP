@@ -22,6 +22,11 @@ import li.songe.gkd.sdp.util.ActionLogStatsPolicy
 import li.songe.gkd.sdp.util.subsMapFlow
 
 class ActionLogVm(stateHandle: SavedStateHandle) : ViewModel() {
+    data class StatsUiState(
+        val stats: List<DailyStat> = emptyList(),
+        val hasAnyStats: Boolean = false,
+    )
+
     companion object {
         private const val CHART_DAYS = 14
     }
@@ -40,19 +45,18 @@ class ActionLogVm(stateHandle: SavedStateHandle) : ViewModel() {
 
     val selectedTabIndex = MutableStateFlow(0)
 
-    val dailyStatsFlow: StateFlow<List<DailyStat>> = rawDailyStatsFlow
+    val statsUiStateFlow: StateFlow<StatsUiState> = rawDailyStatsFlow
         .map { rawStats ->
-            ActionLogStatsPolicy.normalizeDailyStats(
-                rawStats = rawStats,
-                now = statsNow,
-                days = CHART_DAYS,
+            StatsUiState(
+                stats = ActionLogStatsPolicy.normalizeDailyStats(
+                    rawStats = rawStats,
+                    now = statsNow,
+                    days = CHART_DAYS,
+                ),
+                hasAnyStats = rawStats.isNotEmpty(),
             )
         }
-        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
-
-    val hasAnyStatsFlow: StateFlow<Boolean> = rawDailyStatsFlow
-        .map { rawStats -> rawStats.isNotEmpty() }
-        .stateIn(viewModelScope, SharingStarted.Eagerly, false)
+        .stateIn(viewModelScope, SharingStarted.Eagerly, StatsUiState())
 
     val pagingDataFlow = Pager(PagingConfig(pageSize = 100)) {
         if (args.subsId != null) {
