@@ -12,23 +12,47 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import li.songe.gkd.sdp.data.ActionLog
 import li.songe.gkd.sdp.data.DailyStat
 import li.songe.gkd.sdp.data.SubsConfig
 import li.songe.gkd.sdp.db.DbSet
+import li.songe.gkd.sdp.util.ActionLogStatsPolicy
 import li.songe.gkd.sdp.util.subsMapFlow
 
 class ActionLogVm(stateHandle: SavedStateHandle) : ViewModel() {
+    companion object {
+        private const val CHART_DAYS = 14
+    }
+
     private val args = ActionLogPageDestination.argsFrom(stateHandle)
+    private val statsNow = System.currentTimeMillis()
+    private val statsWindowStart = ActionLogStatsPolicy.windowStartEpochMs(
+        now = statsNow,
+        days = CHART_DAYS,
+    )
+    private val rawDailyStatsFlow = DbSet.actionLogDao.queryDailyStats(
+        startTime = statsWindowStart,
+        subsId = args.subsId,
+        appId = args.appId,
+    )
 
     val selectedTabIndex = MutableStateFlow(0)
 
-    val dailyStatsFlow: StateFlow<List<DailyStat>> = DbSet.actionLogDao.queryDailyStats(
-        startTime = System.currentTimeMillis() - 14 * 24 * 60 * 60 * 1000L,
-        subsId = args.subsId,
-        appId = args.appId
-    ).stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+    val dailyStatsFlow: StateFlow<List<DailyStat>> = rawDailyStatsFlow
+        .map { rawStats ->
+            ActionLogStatsPolicy.normalizeDailyStats(
+                rawStats = rawStats,
+                now = statsNow,
+                days = CHART_DAYS,
+            )
+        }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+
+    val hasAnyStatsFlow: StateFlow<Boolean> = rawDailyStatsFlow
+        .map { rawStats -> rawStats.isNotEmpty() }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, false)
 
     val pagingDataFlow = Pager(PagingConfig(pageSize = 100)) {
         if (args.subsId != null) {

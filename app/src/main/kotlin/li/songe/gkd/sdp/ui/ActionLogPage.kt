@@ -257,7 +257,8 @@ fun ActionLogPage(
 @Composable
 private fun ActionLogStatsView(vm: ActionLogVm) {
     val stats by vm.dailyStatsFlow.collectAsState()
-    if (stats.isEmpty()) {
+    val hasAnyStats by vm.hasAnyStatsFlow.collectAsState()
+    if (!hasAnyStats) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             EmptyText(text = "暂无统计数据")
         }
@@ -282,7 +283,7 @@ private fun ActionLogStatsView(vm: ActionLogVm) {
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(
-                        text = "触发趋势 (最近14天)",
+                        text = "触发趋势（最近14个自然日）",
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.primary
                     )
