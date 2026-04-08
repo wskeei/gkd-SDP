@@ -78,5 +78,14 @@ class UsageGuardCountdownOverlayPolicyTest {
                 now = 1_000L,
             )
         )
+        assertFalse(
+            UsageGuardCountdownOverlayPolicy.shouldDisplay(
+                activeRecord = record,
+                foregroundAppId = "com.example.reader",
+                requestOverlayAppId = null,
+                timeoutOverlayAppId = "com.example.reader",
+                now = 1_000L,
+            )
+        )
     }
 }
