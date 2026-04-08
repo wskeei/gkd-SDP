@@ -78,7 +78,7 @@ class UsageGuardCountdownOverlayService : LifecycleService(), SavedStateRegistry
     private fun showOverlay() {
         if (view != null) return
 
-        view = ComposeView(this).apply {
+        val overlayView = ComposeView(this).apply {
             setViewTreeLifecycleOwner(this@UsageGuardCountdownOverlayService)
             setViewTreeSavedStateRegistryOwner(this@UsageGuardCountdownOverlayService)
             setContent {
@@ -106,8 +106,15 @@ class UsageGuardCountdownOverlayService : LifecycleService(), SavedStateRegistry
             x = margin
             y = margin
         }
+        view = overlayView
         layoutParams = params
-        windowManager.addView(view, params)
+        runCatching {
+            windowManager.addView(overlayView, params)
+        }.onFailure {
+            view = null
+            layoutParams = null
+            stopSelf()
+        }
     }
 
     private fun updatePosition(dx: Float, dy: Float) {
@@ -119,12 +126,20 @@ class UsageGuardCountdownOverlayService : LifecycleService(), SavedStateRegistry
         val maxY = (screenHeight - overlayView.height).coerceAtLeast(0)
         params.x = (params.x + dx).roundToInt().coerceIn(0, maxX)
         params.y = (params.y + dy).roundToInt().coerceIn(0, maxY)
-        windowManager.updateViewLayout(overlayView, params)
+        runCatching {
+            windowManager.updateViewLayout(overlayView, params)
+        }.onFailure {
+            stopSelf()
+        }
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        view?.let { windowManager.removeView(it) }
+        view?.let {
+            runCatching {
+                windowManager.removeView(it)
+            }
+        }
         UsageGuardEngine.onCountdownOverlayStopped(appId.ifBlank { null })
         view = null
         layoutParams = null

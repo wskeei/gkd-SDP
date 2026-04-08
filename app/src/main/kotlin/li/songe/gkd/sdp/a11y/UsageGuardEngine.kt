@@ -54,11 +54,26 @@ object UsageGuardEngine {
     }
 
     fun onRequestOverlayStopped(appId: String?) {
-        appScope.launch {
+        appScope.launch(Dispatchers.IO) {
             stateMutex.withLock {
                 if (requestOverlayAppId == appId) {
                     requestOverlayAppId = null
                 }
+                if (appId == null) return@withLock
+                if (topActivityFlow.value.appId != appId) {
+                    stopCountdownOverlay(A11yService.instance, appId)
+                    return@withLock
+                }
+                val record = DbSet.usageGuardRecordDao.getActiveRecord(appId) ?: run {
+                    stopCountdownOverlay(A11yService.instance, appId)
+                    return@withLock
+                }
+                scheduleExpiryWatch(record)
+                syncCountdownOverlay(
+                    service = A11yService.instance,
+                    activeRecord = record,
+                    foregroundAppId = appId,
+                )
             }
         }
     }
@@ -86,20 +101,13 @@ object UsageGuardEngine {
     fun onRequestGranted(appId: String) {
         appScope.launch(Dispatchers.IO) {
             stateMutex.withLock {
-                requestOverlayAppId = null
                 lastProtectedAppId = appId
                 val record = DbSet.usageGuardRecordDao.getActiveRecord(appId) ?: run {
                     stopCountdownOverlay(A11yService.instance, appId)
                     return@withLock
                 }
                 scheduleExpiryWatch(record)
-                if (topActivityFlow.value.appId == appId) {
-                    syncCountdownOverlay(
-                        service = A11yService.instance,
-                        activeRecord = record,
-                        foregroundAppId = appId,
-                    )
-                } else {
+                if (topActivityFlow.value.appId != appId) {
                     stopCountdownOverlay(A11yService.instance, appId)
                 }
             }
