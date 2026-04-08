@@ -68,6 +68,7 @@ class UsageGuardRequestOverlayService : LifecycleService(), SavedStateRegistryOw
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         super.onStartCommand(intent, flags, startId)
+        if (view != null) return START_NOT_STICKY
         appId = intent?.getStringExtra("appId").orEmpty()
         appName = intent?.getStringExtra("appName").orEmpty().ifBlank { appId }
         grantMode = intent?.getIntExtra("grantMode", UsageGuardPolicy.GRANT_MODE_RESUMABLE)

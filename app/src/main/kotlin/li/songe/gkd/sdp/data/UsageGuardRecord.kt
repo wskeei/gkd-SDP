@@ -53,5 +53,8 @@ data class UsageGuardRecord(
 
         @Query("UPDATE usage_guard_record SET ended_at = :endedAt, end_reason = :endReason WHERE id = :id")
         suspend fun closeRecord(id: Long, endedAt: Long, endReason: Int): Int
+
+        @Query("UPDATE usage_guard_record SET end_reason = :endReason WHERE id = :id")
+        suspend fun updateEndReason(id: Long, endReason: Int): Int
     }
 }

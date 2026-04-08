@@ -30,7 +30,14 @@ data class UsageGuardAppProfile(
         @Query("SELECT * FROM usage_guard_app_profile WHERE app_id = :appId LIMIT 1")
         suspend fun getByAppId(appId: String): UsageGuardAppProfile?
 
-        @Query("DELETE FROM usage_guard_app_profile WHERE selected_target = 0 AND global_whitelist = 0")
-        suspend fun deleteUnusedProfiles(): Int
+        @Query(
+            """
+            DELETE FROM usage_guard_app_profile
+            WHERE selected_target = 0
+              AND global_whitelist = 0
+              AND grant_mode = :defaultGrantMode
+            """
+        )
+        suspend fun deleteUnusedProfiles(defaultGrantMode: Int): Int
     }
 }

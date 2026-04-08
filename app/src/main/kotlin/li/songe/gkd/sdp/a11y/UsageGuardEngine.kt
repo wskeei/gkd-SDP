@@ -79,6 +79,16 @@ object UsageGuardEngine {
         }
     }
 
+    fun markRecordHomeButton(recordId: Long) {
+        if (recordId <= 0L) return
+        appScope.launch(Dispatchers.IO) {
+            DbSet.usageGuardRecordDao.updateEndReason(
+                id = recordId,
+                endReason = UsageGuardRecord.END_REASON_HOME_BUTTON,
+            )
+        }
+    }
+
     private suspend fun handleAppChanged(packageName: String, service: A11yService) {
         closePreviousSessionIfNeeded(packageName)
 
@@ -110,7 +120,7 @@ object UsageGuardEngine {
         }
 
         lastProtectedAppId = packageName
-        if (requestOverlayAppId == packageName || timeoutOverlayAppId == packageName) {
+        if (requestOverlayAppId != null || timeoutOverlayAppId != null) {
             return
         }
 
@@ -130,7 +140,7 @@ object UsageGuardEngine {
                 endedAt = now,
                 endReason = UsageGuardRecord.END_REASON_EXPIRED,
             )
-            showTimeoutOverlay(service, packageName, activeRecord.reasonText)
+            showTimeoutOverlay(service, packageName, activeRecord.id, activeRecord.reasonText)
             timeoutOverlayAppId = packageName
             return
         }
@@ -198,7 +208,7 @@ object UsageGuardEngine {
 
                 cancelExpiryWatch(record.appId)
                 A11yService.instance?.let { service ->
-                    showTimeoutOverlay(service, record.appId, activeRecord.reasonText)
+                    showTimeoutOverlay(service, record.appId, activeRecord.id, activeRecord.reasonText)
                     timeoutOverlayAppId = record.appId
                 }
             }
@@ -230,9 +240,15 @@ object UsageGuardEngine {
         })
     }
 
-    private fun showTimeoutOverlay(service: A11yService, appId: String, reasonText: String) {
+    private fun showTimeoutOverlay(
+        service: A11yService,
+        appId: String,
+        recordId: Long,
+        reasonText: String,
+    ) {
         service.startService(Intent(service, UsageGuardTimeoutOverlayService::class.java).apply {
             putExtra("appId", appId)
+            putExtra("recordId", recordId)
             putExtra("reasonText", reasonText)
         })
     }

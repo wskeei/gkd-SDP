@@ -49,6 +49,7 @@ fun onA11yFeatInit() = service.run {
     useRuleChangedLog()
     useUrlBlocker()
     useFocusMode()
+    useUsageGuard()
     onA11yEvent { onA11yFeatEvent(it) }
     onCreated { StatusService.autoStart() }
     onDestroyed {
@@ -302,12 +303,21 @@ private fun A11yService.useFocusMode() {
             val currentAppId = activity.appId
             if (currentAppId.isNotEmpty() && currentAppId != lastAppId) {
                 lastAppId = currentAppId
-                // 先检查专注模式
                 FocusModeEngine.onAppChanged(currentAppId, this@useFocusMode)
-                // 再检查使用申请
-                UsageGuardEngine.onAppChanged(currentAppId, this@useFocusMode)
-                // 再检查应用拦截
-                AppBlockerEngine.onAppChanged(currentAppId, this@useFocusMode)
+            }
+        }
+    }
+}
+
+private fun A11yService.useUsageGuard() {
+    var lastAppId = ""
+    scope.launch(Dispatchers.Default) {
+        topActivityFlow.collect { activity ->
+            val currentAppId = activity.appId
+            if (currentAppId.isNotEmpty() && currentAppId != lastAppId) {
+                lastAppId = currentAppId
+                UsageGuardEngine.onAppChanged(currentAppId, this@useUsageGuard)
+                AppBlockerEngine.onAppChanged(currentAppId, this@useUsageGuard)
             }
         }
     }

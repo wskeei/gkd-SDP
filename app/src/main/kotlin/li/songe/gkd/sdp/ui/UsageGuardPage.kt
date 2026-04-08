@@ -66,6 +66,9 @@ fun UsageGuardPage() {
     val selectedTargetApps = appProfiles.filter { it.selectedTarget }.map { it.appId }
     val whitelistApps = appProfiles.filter { it.globalWhitelist }.map { it.appId }
     val profileMap = appProfiles.associateBy { it.appId }
+    val globalOverrideApps = appProfiles.filter {
+        !it.globalWhitelist && it.grantMode != settings.usageGuardDefaultGrantMode
+    }.map { it.appId }.distinct()
 
     var minReasonLengthText by remember(settings.usageGuardMinReasonLength) {
         mutableStateOf(settings.usageGuardMinReasonLength.toString())
@@ -73,6 +76,7 @@ fun UsageGuardPage() {
     var customTagText by remember { mutableStateOf("") }
     var showSelectedPicker by remember { mutableStateOf(false) }
     var showWhitelistPicker by remember { mutableStateOf(false) }
+    var showOverridePicker by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -216,6 +220,36 @@ fun UsageGuardPage() {
                                 )
                             }
                         }
+
+                        if (!isSelectedMode) {
+                            HorizontalDivider()
+                            Text(
+                                text = "授权模式覆盖",
+                                style = androidx.compose.material3.MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.SemiBold,
+                            )
+                            Text(
+                                text = "为全局受控应用单独指定严格/普通模式",
+                                style = androidx.compose.material3.MaterialTheme.typography.bodySmall,
+                            )
+                            Button(onClick = { showOverridePicker = true }) {
+                                Text("选择覆盖应用")
+                            }
+                            if (globalOverrideApps.isEmpty()) {
+                                Text("尚未添加覆盖应用")
+                            } else {
+                                globalOverrideApps.forEach { appId ->
+                                    val appName = appInfoMap[appId]?.name ?: appId
+                                    AppProfileRow(
+                                        appId = appId,
+                                        appName = appName,
+                                        grantMode = profileMap[appId]?.grantMode ?: settings.usageGuardDefaultGrantMode,
+                                        onGrantModeChange = { vm.saveAppGrantMode(appId, it) },
+                                        onClearOverride = { vm.clearAppGrantModeOverride(appId) },
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -315,6 +349,17 @@ fun UsageGuardPage() {
             },
         )
     }
+
+    if (showOverridePicker) {
+        AppPickerDialog(
+            currentApps = globalOverrideApps,
+            onDismiss = { showOverridePicker = false },
+            onConfirm = {
+                vm.saveGrantModeOverrideApps(it)
+                showOverridePicker = false
+            },
+        )
+    }
 }
 
 @Composable
@@ -376,6 +421,7 @@ private fun AppProfileRow(
     appName: String,
     grantMode: Int,
     onGrantModeChange: (Int) -> Unit,
+    onClearOverride: (() -> Unit)? = null,
 ) {
     Column(
         modifier = Modifier.fillMaxWidth(),
@@ -406,6 +452,13 @@ private fun AppProfileRow(
                 onClick = { onGrantModeChange(UsageGuardPolicy.GRANT_MODE_RESUMABLE) },
                 label = { Text("普通") },
             )
+            if (onClearOverride != null) {
+                FilterChip(
+                    selected = false,
+                    onClick = onClearOverride,
+                    label = { Text("移除覆盖") },
+                )
+            }
         }
     }
 }

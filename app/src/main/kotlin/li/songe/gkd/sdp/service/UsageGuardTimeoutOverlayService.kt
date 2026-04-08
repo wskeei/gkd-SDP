@@ -18,10 +18,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.LifecycleService
+import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.setViewTreeLifecycleOwner
 import androidx.savedstate.SavedStateRegistryController
 import androidx.savedstate.SavedStateRegistryOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import li.songe.gkd.sdp.a11y.UsageGuardEngine
 import li.songe.gkd.sdp.ui.style.AppTheme
 
@@ -33,6 +36,7 @@ class UsageGuardTimeoutOverlayService : LifecycleService(), SavedStateRegistryOw
     override val savedStateRegistry = savedStateRegistryController.savedStateRegistry
 
     private var appId: String = ""
+    private var recordId: Long = 0L
     private var reasonText: String = ""
 
     override fun onCreate() {
@@ -43,7 +47,9 @@ class UsageGuardTimeoutOverlayService : LifecycleService(), SavedStateRegistryOw
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         super.onStartCommand(intent, flags, startId)
+        if (view != null) return START_NOT_STICKY
         appId = intent?.getStringExtra("appId").orEmpty()
+        recordId = intent?.getLongExtra("recordId", 0L) ?: 0L
         reasonText = intent?.getStringExtra("reasonText").orEmpty()
         showOverlay()
         return START_NOT_STICKY
@@ -60,10 +66,13 @@ class UsageGuardTimeoutOverlayService : LifecycleService(), SavedStateRegistryOw
                     UsageGuardTimeoutScreen(
                         reasonText = reasonText,
                         onGoHome = {
-                            A11yService.instance?.performGlobalAction(
-                                android.accessibilityservice.AccessibilityService.GLOBAL_ACTION_HOME
-                            )
-                            stopSelf()
+                            lifecycleScope.launch(Dispatchers.IO) {
+                                UsageGuardEngine.markRecordHomeButton(recordId)
+                                A11yService.instance?.performGlobalAction(
+                                    android.accessibilityservice.AccessibilityService.GLOBAL_ACTION_HOME
+                                )
+                                stopSelf()
+                            }
                         },
                     )
                 }
