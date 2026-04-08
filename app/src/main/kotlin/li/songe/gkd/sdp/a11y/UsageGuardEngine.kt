@@ -15,8 +15,10 @@ import li.songe.gkd.sdp.data.UsageGuardAppProfile
 import li.songe.gkd.sdp.data.UsageGuardRecord
 import li.songe.gkd.sdp.db.DbSet
 import li.songe.gkd.sdp.service.A11yService
+import li.songe.gkd.sdp.service.UsageGuardCountdownOverlayService
 import li.songe.gkd.sdp.service.UsageGuardRequestOverlayService
 import li.songe.gkd.sdp.service.UsageGuardTimeoutOverlayService
+import li.songe.gkd.sdp.util.UsageGuardCountdownOverlayPolicy
 import li.songe.gkd.sdp.store.storeFlow
 import li.songe.gkd.sdp.util.UsageGuardPolicy
 import li.songe.gkd.sdp.util.appInfoMapFlow
@@ -28,6 +30,9 @@ object UsageGuardEngine {
     private var lastProtectedAppId: String? = null
     private var requestOverlayAppId: String? = null
     private var timeoutOverlayAppId: String? = null
+    private var countdownOverlayAppId: String? = null
+    private var countdownOverlayRecordId: Long? = null
+    private var countdownOverlayExpiresAt: Long = 0L
 
     private var expiryWatchAppId: String? = null
     private var expiryWatchRecordId: Long? = null
@@ -68,13 +73,35 @@ object UsageGuardEngine {
         }
     }
 
+    fun onCountdownOverlayStopped(appId: String?) {
+        appScope.launch {
+            stateMutex.withLock {
+                if (appId == null || countdownOverlayAppId == appId) {
+                    clearCountdownOverlayState()
+                }
+            }
+        }
+    }
+
     fun onRequestGranted(appId: String) {
         appScope.launch(Dispatchers.IO) {
             stateMutex.withLock {
                 requestOverlayAppId = null
                 lastProtectedAppId = appId
-                val record = DbSet.usageGuardRecordDao.getActiveRecord(appId) ?: return@withLock
+                val record = DbSet.usageGuardRecordDao.getActiveRecord(appId) ?: run {
+                    stopCountdownOverlay(A11yService.instance, appId)
+                    return@withLock
+                }
                 scheduleExpiryWatch(record)
+                if (topActivityFlow.value.appId == appId) {
+                    syncCountdownOverlay(
+                        service = A11yService.instance,
+                        activeRecord = record,
+                        foregroundAppId = appId,
+                    )
+                } else {
+                    stopCountdownOverlay(A11yService.instance, appId)
+                }
             }
         }
     }
@@ -90,9 +117,10 @@ object UsageGuardEngine {
     }
 
     private suspend fun handleAppChanged(packageName: String, service: A11yService) {
-        closePreviousSessionIfNeeded(packageName)
+        closePreviousSessionIfNeeded(packageName, service)
 
         if (shouldSkipApp(packageName)) {
+            stopCountdownOverlay(service)
             lastProtectedAppId = null
             return
         }
@@ -101,10 +129,12 @@ object UsageGuardEngine {
         if (FocusModeEngine.isActiveFlow.value &&
             !FocusModeEngine.currentWhitelistFlow.value.contains(packageName)
         ) {
+            stopCountdownOverlay(service)
             lastProtectedAppId = null
             return
         }
         if (AppBlockerEngine.shouldBlock(packageName).first) {
+            stopCountdownOverlay(service)
             lastProtectedAppId = null
             return
         }
@@ -115,12 +145,14 @@ object UsageGuardEngine {
             appProfile = profile?.toSnapshot(),
         )
         if (!shouldProtect) {
+            stopCountdownOverlay(service)
             lastProtectedAppId = null
             return
         }
 
         lastProtectedAppId = packageName
         if (requestOverlayAppId != null || timeoutOverlayAppId != null) {
+            stopCountdownOverlay(service, packageName)
             return
         }
 
@@ -146,12 +178,19 @@ object UsageGuardEngine {
         }
 
         scheduleExpiryWatch(activeRecord)
+        syncCountdownOverlay(
+            service = service,
+            activeRecord = activeRecord,
+            foregroundAppId = packageName,
+            now = now,
+        )
     }
 
-    private suspend fun closePreviousSessionIfNeeded(nextAppId: String) {
+    private suspend fun closePreviousSessionIfNeeded(nextAppId: String, service: A11yService) {
         val previousAppId = lastProtectedAppId ?: return
         if (previousAppId == nextAppId) return
 
+        stopCountdownOverlay(service, previousAppId)
         cancelExpiryWatch(previousAppId)
 
         val active = DbSet.usageGuardRecordDao.getActiveRecord(previousAppId) ?: return
@@ -174,6 +213,7 @@ object UsageGuardEngine {
 
     private fun scheduleExpiryWatch(record: UsageGuardRecord) {
         if (topActivityFlow.value.appId != record.appId) {
+            stopCountdownOverlay(A11yService.instance, record.appId)
             cancelExpiryWatch(record.appId)
             return
         }
@@ -206,6 +246,7 @@ object UsageGuardEngine {
                     endReason = UsageGuardRecord.END_REASON_EXPIRED,
                 )
 
+                stopCountdownOverlay(A11yService.instance, record.appId)
                 cancelExpiryWatch(record.appId)
                 A11yService.instance?.let { service ->
                     showTimeoutOverlay(service, record.appId, activeRecord.id, activeRecord.reasonText)
@@ -224,12 +265,69 @@ object UsageGuardEngine {
         expiryWatchExpiresAt = 0L
     }
 
+    private fun syncCountdownOverlay(
+        service: A11yService?,
+        activeRecord: UsageGuardRecord?,
+        foregroundAppId: String,
+        now: Long = System.currentTimeMillis(),
+    ) {
+        val record = activeRecord
+        if (
+            record == null ||
+            !UsageGuardCountdownOverlayPolicy.shouldDisplay(
+                activeRecord = record,
+                foregroundAppId = foregroundAppId,
+                requestOverlayAppId = requestOverlayAppId,
+                timeoutOverlayAppId = timeoutOverlayAppId,
+                now = now,
+            )
+        ) {
+            stopCountdownOverlay(service, activeRecord?.appId ?: foregroundAppId)
+            return
+        }
+        val overlayService = service ?: return
+        showCountdownOverlay(overlayService, record)
+    }
+
+    private fun showCountdownOverlay(
+        service: A11yService,
+        record: UsageGuardRecord,
+    ) {
+        if (
+            countdownOverlayAppId == record.appId &&
+            countdownOverlayRecordId == record.id &&
+            countdownOverlayExpiresAt == record.expiresAt
+        ) {
+            return
+        }
+
+        stopCountdownOverlay(service)
+        countdownOverlayAppId = record.appId
+        countdownOverlayRecordId = record.id
+        countdownOverlayExpiresAt = record.expiresAt
+        service.startService(Intent(service, UsageGuardCountdownOverlayService::class.java).apply {
+            putExtra("appId", record.appId)
+            putExtra("recordId", record.id)
+            putExtra("expiresAt", record.expiresAt)
+        })
+    }
+
+    private fun stopCountdownOverlay(service: A11yService? = A11yService.instance, appId: String? = null) {
+        if (appId != null && countdownOverlayAppId != appId) return
+        val shouldStop = countdownOverlayAppId != null
+        clearCountdownOverlayState()
+        if (shouldStop) {
+            service?.stopService(Intent(service, UsageGuardCountdownOverlayService::class.java))
+        }
+    }
+
     private fun showRequestOverlay(
         service: A11yService,
         appId: String,
         profile: UsageGuardAppProfile?,
         minReasonLength: Int,
     ) {
+        stopCountdownOverlay(service, appId)
         val appName = appInfoMapFlow.value[appId]?.name ?: appId
         val grantMode = profile?.grantMode ?: storeFlow.value.usageGuardDefaultGrantMode
         service.startService(Intent(service, UsageGuardRequestOverlayService::class.java).apply {
@@ -246,11 +344,18 @@ object UsageGuardEngine {
         recordId: Long,
         reasonText: String,
     ) {
+        stopCountdownOverlay(service, appId)
         service.startService(Intent(service, UsageGuardTimeoutOverlayService::class.java).apply {
             putExtra("appId", appId)
             putExtra("recordId", recordId)
             putExtra("reasonText", reasonText)
         })
+    }
+
+    private fun clearCountdownOverlayState() {
+        countdownOverlayAppId = null
+        countdownOverlayRecordId = null
+        countdownOverlayExpiresAt = 0L
     }
 
     private fun UsageGuardAppProfile.toSnapshot(): UsageGuardPolicy.AppProfileSnapshot {
