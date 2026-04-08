@@ -8,17 +8,22 @@ import androidx.paging.PagingConfig
 import androidx.paging.cachedIn
 import androidx.paging.map
 import com.ramcosta.composedestinations.generated.destinations.ActionLogPageDestination
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
 import li.songe.gkd.sdp.data.ActionLog
 import li.songe.gkd.sdp.data.DailyStat
 import li.songe.gkd.sdp.data.SubsConfig
 import li.songe.gkd.sdp.db.DbSet
 import li.songe.gkd.sdp.util.ActionLogStatsPolicy
+import java.time.ZoneId
 import li.songe.gkd.sdp.util.subsMapFlow
 
 class ActionLogVm(stateHandle: SavedStateHandle) : ViewModel() {
@@ -29,32 +34,73 @@ class ActionLogVm(stateHandle: SavedStateHandle) : ViewModel() {
 
     companion object {
         private const val CHART_DAYS = 14
-    }
 
-    private val args = ActionLogPageDestination.argsFrom(stateHandle)
-    private val statsNow = System.currentTimeMillis()
-    private val statsWindowStart = ActionLogStatsPolicy.windowStartEpochMs(
-        now = statsNow,
-        days = CHART_DAYS,
-    )
-    private val rawDailyStatsFlow = DbSet.actionLogDao.queryDailyStats(
-        startTime = statsWindowStart,
-        subsId = args.subsId,
-        appId = args.appId,
-    )
-
-    val selectedTabIndex = MutableStateFlow(0)
-
-    val statsUiStateFlow: StateFlow<StatsUiState> = rawDailyStatsFlow
-        .map { rawStats ->
-            StatsUiState(
+        fun evaluateStatsUiState(
+            rawStats: List<DailyStat>,
+            now: Long,
+            days: Int,
+            zoneId: ZoneId = ZoneId.systemDefault(),
+        ): StatsUiState {
+            return StatsUiState(
                 stats = ActionLogStatsPolicy.normalizeDailyStats(
                     rawStats = rawStats,
-                    now = statsNow,
-                    days = CHART_DAYS,
+                    now = now,
+                    days = days,
+                    zoneId = zoneId,
                 ),
                 hasAnyStats = rawStats.isNotEmpty(),
             )
+        }
+
+        fun shouldRefreshStatsWindow(
+            anchorNow: Long,
+            currentNow: Long,
+            zoneId: ZoneId = ZoneId.systemDefault(),
+        ): Boolean {
+            return ActionLogStatsPolicy.localDate(anchorNow, zoneId) !=
+                ActionLogStatsPolicy.localDate(currentNow, zoneId)
+        }
+    }
+
+    private val args = ActionLogPageDestination.argsFrom(stateHandle)
+    private val statsNowFlow = MutableStateFlow(System.currentTimeMillis())
+
+    val selectedTabIndex = MutableStateFlow(0)
+
+    init {
+        viewModelScope.launch {
+            while (isActive) {
+                val anchorNow = statsNowFlow.value
+                delay(
+                    ActionLogStatsPolicy.nextWindowRefreshDelayMs(
+                        now = anchorNow,
+                    )
+                )
+                val currentNow = System.currentTimeMillis()
+                if (shouldRefreshStatsWindow(anchorNow, currentNow)) {
+                    statsNowFlow.value = currentNow
+                }
+            }
+        }
+    }
+
+    val statsUiStateFlow: StateFlow<StatsUiState> = statsNowFlow
+        .flatMapLatest { statsNow ->
+            DbSet.actionLogDao.queryDailyStats(
+                startTime = ActionLogStatsPolicy.windowStartEpochMs(
+                    now = statsNow,
+                    days = CHART_DAYS,
+                ),
+                subsId = args.subsId,
+                appId = args.appId,
+            )
+                .map { rawStats ->
+                    evaluateStatsUiState(
+                        rawStats = rawStats,
+                        now = statsNow,
+                        days = CHART_DAYS,
+                    )
+                }
         }
         .stateIn(viewModelScope, SharingStarted.Eagerly, StatsUiState())
 
