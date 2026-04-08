@@ -55,8 +55,9 @@ import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
 import com.ramcosta.composedestinations.generated.destinations.AppBlockerPageDestination
 import com.ramcosta.composedestinations.generated.destinations.FocusModePageDestination
-import com.ramcosta.composedestinations.generated.destinations.UrlBlockPageDestination
 import com.ramcosta.composedestinations.generated.destinations.AppInstallMonitorPageDestination
+import com.ramcosta.composedestinations.generated.destinations.UrlBlockPageDestination
+import com.ramcosta.composedestinations.generated.destinations.UsageGuardPageDestination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import kotlinx.coroutines.launch
 import li.songe.gkd.sdp.a11y.FocusModeEngine
@@ -139,6 +140,15 @@ fun FocusLockPage() {
             item(key = "app_blocker") {
                 AppBlockerCard(
                     onClick = { mainVm.navigatePage(AppBlockerPageDestination) }
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+            }
+
+            item(key = "usage_guard") {
+                UsageGuardCard(
+                    enabled = settings.usageGuardEnabled,
+                    scopeMode = settings.usageGuardScopeMode,
+                    onClick = { mainVm.navigatePage(UsageGuardPageDestination) }
                 )
                 Spacer(modifier = Modifier.height(12.dp))
             }
@@ -1095,6 +1105,55 @@ fun AppBlockerCard(
                     text = "拦截指定应用",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            PerfIcon(
+                imageVector = PerfIcon.KeyboardArrowRight,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+}
+
+@Composable
+fun UsageGuardCard(
+    enabled: Boolean,
+    scopeMode: Int,
+    onClick: () -> Unit
+) {
+    ElevatedCard(
+        colors = surfaceCardColors,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp)
+            .clickable { onClick() },
+    ) {
+        Row(
+            modifier = Modifier
+                .padding(16.dp)
+                .fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            PerfIcon(
+                imageVector = PerfIcon.Mindful,
+                tint = if (enabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(modifier = Modifier.width(16.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "使用申请",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Text(
+                    text = if (enabled) {
+                        val scopeText = if (scopeMode == 0) "仅选中应用" else "全局生效"
+                        "打开受控应用前先说明原因并申请时长 · $scopeText"
+                    } else {
+                        "未启用"
+                    },
+                    style = MaterialTheme.typography.bodySmall,
+                    color = if (enabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
             PerfIcon(

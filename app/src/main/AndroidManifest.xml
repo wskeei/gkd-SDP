@@ -197,6 +197,14 @@
             android:name=".service.AppBlockerOverlayService"
             android:exported="false" />
 
+        <service
+            android:name=".service.UsageGuardRequestOverlayService"
+            android:exported="false" />
+
+        <service
+            android:name=".service.UsageGuardTimeoutOverlayService"
+            android:exported="false" />
+
         <receiver
             android:name=".receiver.AppInstallReceiver"
             android:enabled="true"

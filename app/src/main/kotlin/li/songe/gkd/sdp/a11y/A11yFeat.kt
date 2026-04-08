@@ -304,6 +304,8 @@ private fun A11yService.useFocusMode() {
                 lastAppId = currentAppId
                 // 先检查专注模式
                 FocusModeEngine.onAppChanged(currentAppId, this@useFocusMode)
+                // 再检查使用申请
+                UsageGuardEngine.onAppChanged(currentAppId, this@useFocusMode)
                 // 再检查应用拦截
                 AppBlockerEngine.onAppChanged(currentAppId, this@useFocusMode)
             }
