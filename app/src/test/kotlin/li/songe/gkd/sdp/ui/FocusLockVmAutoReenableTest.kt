@@ -39,9 +39,23 @@ class FocusLockVmAutoReenableTest {
         val state = FocusLockVm.evaluateAutoReenableUiState(
             intervalMinutes = 15,
             lastChangedAt = 0L,
+            scheduledNextEnforceAt = now + 5L * 60_000L,
             now = now
         )
         assertTrue(state.canEditInterval)
+        assertEquals(now + 5L * 60_000L, state.nextEnforceAt)
+    }
+
+    @Test
+    fun autoReenableUiStateFallsBackWhenScheduledTimeExpired() {
+        val now = 3_000_000_000L
+        val state = FocusLockVm.evaluateAutoReenableUiState(
+            intervalMinutes = 15,
+            lastChangedAt = 0L,
+            scheduledNextEnforceAt = now - 1L,
+            now = now
+        )
+
         assertEquals(now + 15L * 60_000L, state.nextEnforceAt)
     }
 

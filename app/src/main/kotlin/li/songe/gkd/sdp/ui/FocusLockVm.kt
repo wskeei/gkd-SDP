@@ -425,6 +425,7 @@ class FocusLockVm : BaseViewModel() {
         fun evaluateAutoReenableUiState(
             intervalMinutes: Int,
             lastChangedAt: Long,
+            scheduledNextEnforceAt: Long = 0L,
             dailyDisableLimit: Int = AutoReenablePolicy.MIN_DAILY_DISABLE_LIMIT,
             dailyDisableUsed: Int = 0,
             dailyDisableDayStartAt: Long = 0L,
@@ -445,7 +446,7 @@ class FocusLockVm : BaseViewModel() {
             return AutoReenableUiState(
                 canEditInterval = canEditInterval,
                 nextEditableAt = nextEditableAt,
-                nextEnforceAt = now + delayMs,
+                nextEnforceAt = scheduledNextEnforceAt.takeIf { it > now } ?: (now + delayMs),
                 dailyDisableLimit = normalizedLimit,
                 dailyDisableUsed = normalizedUsed,
                 dailyDisableRemaining = (normalizedLimit - normalizedUsed).coerceAtLeast(0),

@@ -8,6 +8,7 @@ import kotlinx.coroutines.launch
 import li.songe.gkd.sdp.appScope
 import li.songe.gkd.sdp.db.DbSet
 import li.songe.gkd.sdp.store.storeFlow
+import kotlinx.coroutines.flow.update
 import li.songe.gkd.sdp.util.AutoReenablePolicy
 import li.songe.gkd.sdp.util.LogUtils
 
@@ -24,13 +25,19 @@ object AutoReenableEnforcer {
                 } catch (e: Throwable) {
                     LogUtils.d(e)
                 }
-                delay(computeDelayMs(storeFlow.value.autoReenableIntervalMinutes))
+                val delayMs = computeDelayMs(storeFlow.value.autoReenableIntervalMinutes)
+                persistNextEnforceAt(computeNextEnforceAt(System.currentTimeMillis(), delayMs))
+                delay(delayMs)
             }
         }
     }
 
     internal fun computeDelayMs(intervalMinutes: Int): Long {
         return AutoReenablePolicy.nextEnforceDelayMs(intervalMinutes)
+    }
+
+    internal fun computeNextEnforceAt(now: Long, delayMs: Long): Long {
+        return now + delayMs
     }
 
     suspend fun enforceAll(): Int {
@@ -59,5 +66,16 @@ object AutoReenableEnforcer {
             "url_block_rule" to { DbSet.urlBlockRuleDao.enableAllDisabled() },
             "url_time_rule" to { DbSet.urlTimeRuleDao.enableAllDisabled() },
         )
+    }
+
+    private fun persistNextEnforceAt(nextEnforceAt: Long) {
+        if (storeFlow.value.autoReenableNextEnforceAt == nextEnforceAt) return
+        storeFlow.update { settings ->
+            if (settings.autoReenableNextEnforceAt == nextEnforceAt) {
+                settings
+            } else {
+                settings.copy(autoReenableNextEnforceAt = nextEnforceAt)
+            }
+        }
     }
 }

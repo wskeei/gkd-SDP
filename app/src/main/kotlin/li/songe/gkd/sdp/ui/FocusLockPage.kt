@@ -156,6 +156,7 @@ fun FocusLockPage() {
                 AutoReenableGuardCard(
                     intervalMinutes = settings.autoReenableIntervalMinutes,
                     changedAt = settings.autoReenableIntervalChangedAt,
+                    nextEnforceAt = settings.autoReenableNextEnforceAt,
                     dailyDisableLimit = settings.autoReenableDailyDisableLimit,
                     dailyDisableUsed = settings.autoReenableDailyDisableUsed,
                     dailyDisableDayStartAt = settings.autoReenableDailyDisableDayStartAt,
@@ -293,6 +294,7 @@ fun FocusLockPage() {
             val autoReenableUiState = FocusLockVm.evaluateAutoReenableUiState(
                 intervalMinutes = settings.autoReenableIntervalMinutes,
                 lastChangedAt = settings.autoReenableIntervalChangedAt,
+                scheduledNextEnforceAt = settings.autoReenableNextEnforceAt,
                 dailyDisableLimit = settings.autoReenableDailyDisableLimit,
                 dailyDisableUsed = settings.autoReenableDailyDisableUsed,
                 dailyDisableDayStartAt = settings.autoReenableDailyDisableDayStartAt,
@@ -904,6 +906,7 @@ private fun formatRemainingTime(millis: Long): String {
 fun AutoReenableGuardCard(
     intervalMinutes: Int,
     changedAt: Long,
+    nextEnforceAt: Long,
     dailyDisableLimit: Int,
     dailyDisableUsed: Int,
     dailyDisableDayStartAt: Long,
@@ -912,6 +915,7 @@ fun AutoReenableGuardCard(
     val autoReenableUiState = FocusLockVm.evaluateAutoReenableUiState(
         intervalMinutes = intervalMinutes,
         lastChangedAt = changedAt,
+        scheduledNextEnforceAt = nextEnforceAt,
         dailyDisableLimit = dailyDisableLimit,
         dailyDisableUsed = dailyDisableUsed,
         dailyDisableDayStartAt = dailyDisableDayStartAt,

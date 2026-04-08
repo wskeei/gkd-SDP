@@ -52,6 +52,7 @@ data class SettingsStore(
     val subsExcludeAppGroupType: Int = appGroupType,
     val autoReenableIntervalMinutes: Int = 0,
     val autoReenableIntervalChangedAt: Long = 0L,
+    val autoReenableNextEnforceAt: Long = 0L,
     val autoReenableDailyDisableLimit: Int = 1,
     val autoReenableDailyDisableUsed: Int = 0,
     val autoReenableDailyDisableDayStartAt: Long = 0L,
