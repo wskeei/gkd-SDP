@@ -1,0 +1,270 @@
+# GKD-SDP Developer README
+
+This document is for developers, collaborators, and coding agents working on this repository.
+
+`GKD-SDP` is a fork of GKD that keeps the original selector/subscription automation core, then layers on self-control features intended to reduce compulsive phone usage. The repository still carries a lot of upstream naming (`gkd`, upstream URLs, selector terminology), so always verify whether a piece of code belongs to the original automation stack or to the self-discipline features added in this fork.
+
+## What This Fork Adds
+
+Compared with upstream GKD, this project is not only an accessibility automation app. It also contains several intervention systems built around the same runtime:
+
+- `Focus Mode`: temporary or scheduled focus sessions with a whitelist, lock window, and blocking overlay.
+- `App Blocker`: time-based blocking for specific apps or app groups.
+- `URL Blocker`: browser URL detection via accessibility tree inspection, optional redirect, and intercept overlay.
+- `Auto Re-enable`: periodic recovery of disabled rules/groups so restrictions are harder to permanently turn off.
+- `Constraint / intercept management`: extra state used to lock or guard rule groups beyond the original subscription enable/disable model.
+
+## Tech Stack
+
+- Android app, Kotlin, Jetpack Compose, Compose Destinations
+- Room for structured data
+- File-backed JSON/TXT state flows for lightweight settings
+- Kotlinx Serialization
+- Ktor client/server
+- Shizuku + hidden API stubs + Rikka Refine for privileged integrations
+- Kotlin Multiplatform `selector` module for selector parsing/matching
+
+Important versions are centralized in [`gradle/libs.versions.toml`](gradle/libs.versions.toml).
+
+Current Android/build settings:
+
+- `applicationId`: `li.songe.gkd.sdp`
+- `minSdk`: 26
+- `compileSdk` / `targetSdk`: 36
+- Kotlin target: JVM 11
+- Product flavors: `gkd` and `play`
+
+Practical note: Gradle task plans in this repo have been run with JDK 21, while the app itself targets Java 11 bytecode.
+
+## Repository Shape
+
+- [`app`](app): main Android application
+- [`selector`](selector): selector parser/matcher shared logic, Kotlin Multiplatform
+- [`hidden_api`](hidden_api): compile-only Android hidden API stubs used by Shizuku/refine code
+- [`docs/plans`](docs/plans): implementation handoff notes and AI-oriented plans
+
+Within `app`, the most important directories are:
+
+- [`app/src/main/kotlin/li/songe/gkd/sdp/a11y`](app/src/main/kotlin/li/songe/gkd/sdp/a11y): accessibility runtime, activity tracking, rule engines, feature hooks
+- [`app/src/main/kotlin/li/songe/gkd/sdp/service`](app/src/main/kotlin/li/songe/gkd/sdp/service): Android services, overlays, background loops
+- [`app/src/main/kotlin/li/songe/gkd/sdp/ui`](app/src/main/kotlin/li/songe/gkd/sdp/ui): Compose pages and view models
+- [`app/src/main/kotlin/li/songe/gkd/sdp/data`](app/src/main/kotlin/li/songe/gkd/sdp/data): Room entities, DAOs, DTOs, rule models
+- [`app/src/main/kotlin/li/songe/gkd/sdp/store`](app/src/main/kotlin/li/songe/gkd/sdp/store): file-backed settings/state flows
+- [`app/src/main/kotlin/li/songe/gkd/sdp/shizuku`](app/src/main/kotlin/li/songe/gkd/sdp/shizuku): privileged helpers and binder wrappers
+- [`app/src/test`](app/src/test): JVM unit tests
+- [`app/schemas`](app/schemas): exported Room schemas
+
+## Runtime Architecture
+
+The runtime model is easier to reason about if you separate it into four layers.
+
+### 1. App bootstrap
+
+[`app/src/main/kotlin/li/songe/gkd/sdp/App.kt`](app/src/main/kotlin/li/songe/gkd/sdp/App.kt) is the process entry point. On startup it initializes:
+
+- file-backed store flows
+- notification channels
+- app/subscription state caches
+- Shizuku integration
+- auto re-enable loop
+- accessibility whitelist / cleanup helpers
+
+[`app/src/main/kotlin/li/songe/gkd/sdp/MainActivity.kt`](app/src/main/kotlin/li/songe/gkd/sdp/MainActivity.kt) hosts the Compose app and also calls `syncFixState()`, which refreshes permissions, service state, top-app state, and Shizuku-backed capabilities.
+
+### 2. Accessibility and activity tracking
+
+[`app/src/main/kotlin/li/songe/gkd/sdp/service/A11yService.kt`](app/src/main/kotlin/li/songe/gkd/sdp/service/A11yService.kt) is the main accessibility service base class.
+
+At runtime:
+
+1. Accessibility events enter `A11yService`.
+2. [`A11yRuleEngine`](app/src/main/kotlin/li/songe/gkd/sdp/a11y/A11yRuleEngine.kt) consumes relevant events, keeps `topActivityFlow` in sync, queries the node tree, and executes upstream-style selector actions.
+3. [`A11yFeat.kt`](app/src/main/kotlin/li/songe/gkd/sdp/a11y/A11yFeat.kt) wires additional behavior on top of that same runtime.
+
+Top activity detection is hybrid:
+
+- accessibility events are the primary signal
+- Shizuku task-stack queries are used as a fallback/correction path
+- several caches and throttles exist because some apps are slow or inconsistent when exposing `rootInActiveWindow`
+
+If you touch app-change logic, test both with and without Shizuku enabled.
+
+### 3. Restriction engines
+
+There are multiple engines, and they do not all trigger the same way.
+
+- [`A11yRuleEngine`](app/src/main/kotlin/li/songe/gkd/sdp/a11y/A11yRuleEngine.kt): upstream selector/subscription matching and action execution
+- [`FocusModeEngine`](app/src/main/kotlin/li/songe/gkd/sdp/a11y/FocusModeEngine.kt): reacts to foreground app changes and shows a full-screen focus overlay for non-whitelisted apps while a focus session or scheduled focus rule is active
+- [`AppBlockerEngine`](app/src/main/kotlin/li/songe/gkd/sdp/a11y/AppBlockerEngine.kt): reacts to foreground app changes and blocks configured apps/groups during active time windows
+- [`UrlBlockerEngine`](app/src/main/kotlin/li/songe/gkd/sdp/a11y/UrlBlockerEngine.kt): reacts to accessibility events inside supported browsers, reads the address bar, matches URL rules, optionally redirects, then may show an intercept overlay
+
+This split matters. Not every restriction is a selector rule, and not every disable/enable action goes through the subscription system.
+
+### 4. Overlays and services
+
+Interventions are surfaced through Android services rather than only Compose screens.
+
+Common examples:
+
+- [`FocusOverlayService`](app/src/main/kotlin/li/songe/gkd/sdp/service/FocusOverlayService.kt)
+- [`AppBlockerOverlayService`](app/src/main/kotlin/li/songe/gkd/sdp/service/AppBlockerOverlayService.kt)
+- [`InterceptOverlayService`](app/src/main/kotlin/li/songe/gkd/sdp/service/InterceptOverlayService.kt)
+- [`StatusService`](app/src/main/kotlin/li/songe/gkd/sdp/service/StatusService.kt)
+- [`AutoReenableEnforcer`](app/src/main/kotlin/li/songe/gkd/sdp/service/AutoReenableEnforcer.kt)
+
+The app manifest is large because many behaviors are service-driven. See [`app/src/main/AndroidManifest.xml`](app/src/main/AndroidManifest.xml) before changing permissions or background behavior.
+
+## Persistence Model
+
+This project uses both Room and file-backed state. Do not assume all toggles belong in the database.
+
+### Room
+
+The main Room database is defined in [`app/src/main/kotlin/li/songe/gkd/sdp/db/AppDb.kt`](app/src/main/kotlin/li/songe/gkd/sdp/db/AppDb.kt) and stored under the app external files directory at `db/gkd.db`.
+
+High-level table groups:
+
+- Upstream GKD-style data: subscriptions, snapshots, action/activity/a11y logs, app config
+- Focus mode: `focus_rule`, `focus_session`
+- App blocker: `app_group`, `block_time_rule`, `app_blocker_lock`
+- URL blocker: `browser_config`, `url_block_rule`, `url_rule_group`, `url_time_rule`, `url_blocker_lock`
+- Constraint/intercept state: `intercept_config`, `constraint_config`
+
+When you change entities:
+
+- keep Room schema export enabled
+- update migrations in `AppDb`
+- preserve legacy columns when needed for compatibility
+- check [`app/schemas`](app/schemas) diffs as part of review
+
+### File-backed store
+
+[`app/src/main/kotlin/li/songe/gkd/sdp/store/StorageExt.kt`](app/src/main/kotlin/li/songe/gkd/sdp/store/StorageExt.kt) implements persistent `MutableStateFlow`s backed by JSON/TXT files.
+
+Key points:
+
+- `SettingsStore` lives in [`app/src/main/kotlin/li/songe/gkd/sdp/store/SettingsStore.kt`](app/src/main/kotlin/li/songe/gkd/sdp/store/SettingsStore.kt)
+- atomic writes use a temp file + move
+- not every setting belongs in Room
+- `privateStoreFolder` is separate from the regular external `store` folder
+
+Filesystem locations are defined in [`app/src/main/kotlin/li/songe/gkd/sdp/util/FolderExt.kt`](app/src/main/kotlin/li/songe/gkd/sdp/util/FolderExt.kt):
+
+- `db/`
+- `store/`
+- `subscription/`
+- `snapshot/`
+- `log/`
+- `sh/`
+
+`ExposeService` also writes a helper shell script to `sh/expose.sh`.
+
+## Important Mental Models
+
+### Upstream naming still exists
+
+The root project name is still `gkd`, upstream URLs are still present in several constants, and some strings/docs still describe the original automation app. That is historical carry-over, not a reliable signal of current product intent.
+
+### `enabled`, `locked`, and `intercepted` are different concepts
+
+Examples:
+
+- global selector matching is controlled by `SettingsStore.enableMatch`
+- focus mode active state is driven by `focus_session` and active `focus_rule`s
+- app/url blocker rules have their own `enabled` fields
+- intercept overlays are configured through `intercept_config`
+- lock windows are enforced through `constraint_config`, `is_locked`, and `lock_end_time` fields depending on domain
+- auto re-enable can turn disabled content back on later
+
+If you change disable behavior, audit all related entry points instead of patching only one UI switch.
+
+### Browser support is partly data-driven
+
+URL blocking depends on `BrowserConfig.urlBarId`. Built-in browser definitions are seeded in [`app/src/main/kotlin/li/songe/gkd/sdp/data/BrowserConfig.kt`](app/src/main/kotlin/li/songe/gkd/sdp/data/BrowserConfig.kt). If a browser cannot expose its address bar consistently, URL blocking will degrade.
+
+### Accessibility code is timing-sensitive
+
+`A11yRuleEngine` uses separate single-thread dispatchers for event ingestion, querying, and actions. A lot of logic exists to debounce noisy events, preserve ordering, and avoid stale node reads. Avoid “simple cleanup” refactors here unless you can prove behavior stays correct.
+
+### Encoding matters
+
+Gradle is configured with `-Dfile.encoding=UTF-8` in [`gradle.properties`](gradle.properties). Keep edits UTF-8. Some files already contain historical mojibake in comments or strings; do not spread that further when patching adjacent code.
+
+## Build and Test
+
+From the repository root:
+
+```bash
+./gradlew :app:assembleGkdDebug
+./gradlew :app:testGkdDebugUnitTest
+./gradlew :selector:jvmTest
+```
+
+For Windows PowerShell, use:
+
+```powershell
+.\gradlew.bat :app:assembleGkdDebug
+.\gradlew.bat :app:testGkdDebugUnitTest
+.\gradlew.bat :selector:jvmTest
+```
+
+Other useful tasks:
+
+- `:app:assemblePlayDebug`
+- `dependencyUpdates`
+- `versionCatalogUpdate`
+
+Signing is optional for local debug work. Release/play signing configs are loaded only when matching Gradle properties are present in the local environment.
+
+## Suggested Reading Order
+
+If you are new to the codebase, read in this order:
+
+1. [`app/build.gradle.kts`](app/build.gradle.kts)
+2. [`app/src/main/AndroidManifest.xml`](app/src/main/AndroidManifest.xml)
+3. [`app/src/main/kotlin/li/songe/gkd/sdp/App.kt`](app/src/main/kotlin/li/songe/gkd/sdp/App.kt)
+4. [`app/src/main/kotlin/li/songe/gkd/sdp/MainActivity.kt`](app/src/main/kotlin/li/songe/gkd/sdp/MainActivity.kt)
+5. [`app/src/main/kotlin/li/songe/gkd/sdp/a11y/A11yState.kt`](app/src/main/kotlin/li/songe/gkd/sdp/a11y/A11yState.kt)
+6. [`app/src/main/kotlin/li/songe/gkd/sdp/a11y/A11yFeat.kt`](app/src/main/kotlin/li/songe/gkd/sdp/a11y/A11yFeat.kt)
+7. [`app/src/main/kotlin/li/songe/gkd/sdp/a11y/A11yRuleEngine.kt`](app/src/main/kotlin/li/songe/gkd/sdp/a11y/A11yRuleEngine.kt)
+8. [`app/src/main/kotlin/li/songe/gkd/sdp/db/AppDb.kt`](app/src/main/kotlin/li/songe/gkd/sdp/db/AppDb.kt)
+9. [`app/src/main/kotlin/li/songe/gkd/sdp/store/SettingsStore.kt`](app/src/main/kotlin/li/songe/gkd/sdp/store/SettingsStore.kt)
+10. domain engines:
+    - [`app/src/main/kotlin/li/songe/gkd/sdp/a11y/FocusModeEngine.kt`](app/src/main/kotlin/li/songe/gkd/sdp/a11y/FocusModeEngine.kt)
+    - [`app/src/main/kotlin/li/songe/gkd/sdp/a11y/AppBlockerEngine.kt`](app/src/main/kotlin/li/songe/gkd/sdp/a11y/AppBlockerEngine.kt)
+    - [`app/src/main/kotlin/li/songe/gkd/sdp/a11y/UrlBlockerEngine.kt`](app/src/main/kotlin/li/songe/gkd/sdp/a11y/UrlBlockerEngine.kt)
+
+Then move to the view models for the feature you want to change.
+
+## When Modifying Features
+
+### If you change focus mode
+
+Audit at least:
+
+- `FocusModeEngine`
+- `FocusSession`
+- `FocusRule`
+- `FocusModeVm`
+- `FocusLockVm`
+- `FocusOverlayService`
+
+### If you change app or URL blocking
+
+Audit at least:
+
+- the Room entities and DAOs for that domain
+- the engine object
+- the related VM/page
+- auto re-enable interactions
+- lock state interactions
+
+### If you change “turn off” behavior
+
+Audit all disable entry points. In this codebase, “disable” is product-sensitive and may be guarded by quota, lock windows, or later automatic re-enable. Do not assume a single switch is authoritative.
+
+## Agent Notes
+
+For coding agents, the main trap is treating this as only a GKD selector project. It is not. The selector engine is only one subsystem. Many user-facing restrictions are implemented as separate Room-backed domain models plus overlay services, and they are merely coordinated through the same accessibility/runtime layer.
+
+A second trap is over-trusting names. `gkd`, `subs`, `match`, `enable`, and `lock` have different meanings depending on the layer. Read the data model before changing behavior.
