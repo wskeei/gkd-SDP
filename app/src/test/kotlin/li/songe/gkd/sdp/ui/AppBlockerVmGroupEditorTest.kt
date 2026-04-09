@@ -16,6 +16,17 @@ class AppBlockerVmGroupEditorTest {
     }
 
     @Test
+    fun editModeKeepsCurrentSelectionEditable() {
+        val config = AppBlockerVm.buildGroupPickerConfig(
+            currentApps = listOf("video.app", "chat.app"),
+            mode = AppBlockerVm.GroupEditorMode.Edit,
+        )
+
+        assertEquals(listOf("video.app", "chat.app"), config.initialSelection)
+        assertEquals(emptySet<String>(), config.excludedApps)
+    }
+
+    @Test
     fun createModeKeepsSelectionEditable() {
         val config = AppBlockerVm.buildGroupPickerConfig(
             currentApps = listOf("video.app"),

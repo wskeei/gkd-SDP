@@ -12,14 +12,16 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
-import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
@@ -36,6 +38,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -227,6 +230,9 @@ fun AppBlockerPage() {
                             vm.ruleTargetType = BlockTimeRule.TARGET_TYPE_GROUP
                             vm.ruleTargetId = group.id.toString()
                             vm.showRuleEditor = true
+                        },
+                        onAddApps = {
+                            vm.loadGroupForEdit(group, AppBlockerVm.GroupEditorMode.AppendApps)
                         }
                     )
                     Spacer(modifier = Modifier.height(8.dp))
@@ -385,7 +391,8 @@ private fun AppGroupCard(
     onEdit: () -> Unit,
     onDelete: () -> Unit,
     onLock: () -> Unit,
-    onAddRule: () -> Unit
+    onAddRule: () -> Unit,
+    onAddApps: () -> Unit,
 ) {
     var showDeleteConfirm by remember { mutableStateOf(false) }
 
@@ -548,6 +555,14 @@ private fun AppGroupCard(
                 horizontalArrangement = Arrangement.End,
                 modifier = Modifier.fillMaxWidth()
             ) {
+                if (!group.isCurrentlyLocked) {
+                    TextButton(onClick = onAddApps) {
+                        Icon(PerfIcon.Add, contentDescription = null)
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("添加应用")
+                    }
+                }
+
                 // 添加规则按钮 - 仅未锁定时显示
                 if (!group.isCurrentlyLocked) {
                     TextButton(onClick = onAddRule) {
@@ -765,27 +780,53 @@ private fun GroupEditorSheet(
     onSave: () -> Unit
 ) {
     var showAppPicker by remember { mutableStateOf(false) }
+    val pickerConfig = remember(vm.groupApps, vm.groupEditorMode) {
+        AppBlockerVm.buildGroupPickerConfig(
+            currentApps = vm.groupApps,
+            mode = vm.groupEditorMode,
+        )
+    }
+    val isAppendMode = vm.groupEditorMode == AppBlockerVm.GroupEditorMode.AppendApps
+    val isExistingGroup = vm.editingGroup != null
+    val appsReadOnly = isExistingGroup
+    val canOpenAppPicker = !isLocked && (!isExistingGroup || isAppendMode)
+    val scrollState = rememberScrollState()
+    var swipeEnabled by remember { mutableStateOf(true) }
+    val sheetState = rememberModalBottomSheetState(
+        skipPartiallyExpanded = true,
+        confirmValueChange = { swipeEnabled },
+    )
+
+    LaunchedEffect(scrollState.value) {
+        swipeEnabled = AppBlockerEditorPolicy.canDragSheet(
+            firstVisibleItemIndex = 0,
+            firstVisibleItemScrollOffset = scrollState.value,
+        )
+    }
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
-        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+        sheetState = sheetState,
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
+                .verticalScroll(scrollState)
                 .padding(16.dp)
         ) {
             Text(
-                text = if (vm.editingGroup != null) {
-                    if (isLocked) "查看应用组 (已锁定)" else "编辑应用组"
-                } else "添加应用组",
+                text = when {
+                    vm.editingGroup == null -> "添加应用组"
+                    isAppendMode -> "添加应用"
+                    isLocked -> "查看应用组 (已锁定)"
+                    else -> "编辑应用组"
+                },
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold
             )
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // 应用组名称
             OutlinedTextField(
                 value = vm.groupName,
                 onValueChange = { vm.groupName = it },
@@ -793,12 +834,20 @@ private fun GroupEditorSheet(
                 placeholder = { Text("如：娱乐应用") },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
-                enabled = !isLocked
+                enabled = !isLocked && !isAppendMode
             )
+
+            if (isExistingGroup) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "已添加的应用不可移除；如需移除，请删除整个应用组后重建。",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // 应用列表
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.fillMaxWidth()
@@ -808,11 +857,10 @@ private fun GroupEditorSheet(
                     style = MaterialTheme.typography.bodyMedium,
                     modifier = Modifier.weight(1f)
                 )
-                TextButton(
-                    onClick = { showAppPicker = true },
-                    enabled = !isLocked
-                ) {
-                    Text("选择")
+                if (canOpenAppPicker) {
+                    TextButton(onClick = { showAppPicker = true }) {
+                        Text(if (isAppendMode) "添加应用" else "选择")
+                    }
                 }
             }
 
@@ -833,9 +881,13 @@ private fun GroupEditorSheet(
                         }
                         FilterChip(
                             selected = true,
-                            onClick = { vm.removeAppFromGroup(packageName) },
+                            onClick = {
+                                if (!appsReadOnly && !isLocked) {
+                                    vm.removeAppFromGroup(packageName)
+                                }
+                            },
                             label = { Text(appName) },
-                            enabled = !isLocked
+                            enabled = !isLocked && !appsReadOnly
                         )
                     }
                 }
@@ -869,10 +921,13 @@ private fun GroupEditorSheet(
 
     if (showAppPicker) {
         AppPickerDialog(
-            currentApps = vm.groupApps,
+            currentApps = pickerConfig.initialSelection,
+            excludedApps = pickerConfig.excludedApps,
+            titleText = if (isAppendMode) "添加应用" else "选择应用列表",
+            emptyText = if (isAppendMode) "没有可继续添加的应用" else "未找到匹配的应用",
             onDismiss = { showAppPicker = false },
             onConfirm = { selected ->
-                vm.groupApps = selected
+                vm.applyPickedApps(selected)
                 showAppPicker = false
             }
         )
@@ -890,12 +945,29 @@ private fun RuleEditorSheet(
 ) {
     var showAppPicker by remember { mutableStateOf(false) }
     var showTemplateDialog by remember { mutableStateOf(false) }
+    val listState = rememberLazyListState()
+    var swipeEnabled by remember { mutableStateOf(true) }
+    val sheetState = rememberModalBottomSheetState(
+        skipPartiallyExpanded = true,
+        confirmValueChange = { swipeEnabled },
+    )
+
+    LaunchedEffect(
+        listState.firstVisibleItemIndex,
+        listState.firstVisibleItemScrollOffset,
+    ) {
+        swipeEnabled = AppBlockerEditorPolicy.canDragSheet(
+            firstVisibleItemIndex = listState.firstVisibleItemIndex,
+            firstVisibleItemScrollOffset = listState.firstVisibleItemScrollOffset,
+        )
+    }
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
-        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+        sheetState = sheetState
     ) {
         LazyColumn(
+            state = listState,
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(16.dp)

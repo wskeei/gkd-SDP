@@ -35,17 +35,20 @@ fun AppPickerDialog(
     currentApps: List<String>,
     onDismiss: () -> Unit,
     onConfirm: (List<String>) -> Unit,
-    singleSelect: Boolean = false
+    singleSelect: Boolean = false,
+    excludedApps: Set<String> = emptySet(),
+    titleText: String = if (singleSelect) "选择应用" else "选择应用列表",
+    emptyText: String = "未找到匹配的应用",
 ) {
-    var selectedApps by remember { mutableStateOf(currentApps.toSet()) }
+    var selectedApps by remember(currentApps) { mutableStateOf(currentApps.toSet()) }
     var searchQuery by remember { mutableStateOf("") }
     var showSystemApps by remember { mutableStateOf(false) }
     val appInfoMap by appInfoMapFlow.collectAsState()
 
     // 过滤应用列表
-    val filteredApps = remember(appInfoMap, searchQuery, showSystemApps) {
+    val filteredApps = remember(appInfoMap, searchQuery, showSystemApps, excludedApps) {
         appInfoMap.values
-            .filterNot { it.hidden }
+            .filterNot { it.hidden || excludedApps.contains(it.id) }
             .filter { appInfo ->
                 // 系统应用过滤
                 if (!showSystemApps && appInfo.isSystem) {
@@ -65,7 +68,7 @@ fun AppPickerDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(if (singleSelect) "选择应用" else "选择应用列表") },
+        title = { Text(titleText) },
         text = {
             Column {
                 // 搜索框
@@ -120,7 +123,7 @@ fun AppPickerDialog(
                     if (filteredApps.isEmpty()) {
                         item {
                             Text(
-                                text = "未找到匹配的应用",
+                                text = emptyText,
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                                 modifier = Modifier.padding(16.dp)
