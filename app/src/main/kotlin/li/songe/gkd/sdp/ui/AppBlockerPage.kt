@@ -555,7 +555,7 @@ private fun AppGroupCard(
                 horizontalArrangement = Arrangement.End,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                if (!group.isCurrentlyLocked) {
+                if (!group.isCurrentlyLocked && globalLock?.isCurrentlyLocked != true) {
                     TextButton(onClick = onAddApps) {
                         Icon(PerfIcon.Add, contentDescription = null)
                         Spacer(modifier = Modifier.width(4.dp))
@@ -817,8 +817,8 @@ private fun GroupEditorSheet(
             Text(
                 text = when {
                     vm.editingGroup == null -> "添加应用组"
-                    isAppendMode -> "添加应用"
                     isLocked -> "查看应用组 (已锁定)"
+                    isAppendMode -> "添加应用"
                     else -> "编辑应用组"
                 },
                 style = MaterialTheme.typography.titleLarge,
