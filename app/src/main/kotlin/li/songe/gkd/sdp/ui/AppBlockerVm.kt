@@ -20,6 +20,16 @@ import li.songe.gkd.sdp.util.json
 import li.songe.gkd.sdp.util.toast
 
 class AppBlockerVm : BaseViewModel() {
+    enum class GroupEditorMode {
+        Create,
+        Edit,
+        AppendApps,
+    }
+
+    data class GroupPickerConfig(
+        val initialSelection: List<String>,
+        val excludedApps: Set<String>,
+    )
 
     val allGroupsFlow = AppBlockerEngine.allGroupsFlow
     val allRulesFlow = AppBlockerEngine.allRulesFlow
@@ -34,6 +44,7 @@ class AppBlockerVm : BaseViewModel() {
     // 应用组表单
     var groupName by mutableStateOf("")
     var groupApps by mutableStateOf<List<String>>(emptyList())
+    var groupEditorMode by mutableStateOf(GroupEditorMode.Create)
 
     // 规则表单
     var ruleTargetType by mutableIntStateOf(BlockTimeRule.TARGET_TYPE_APP)
@@ -52,13 +63,18 @@ class AppBlockerVm : BaseViewModel() {
 
     fun resetGroupForm() {
         editingGroup = null
+        groupEditorMode = GroupEditorMode.Create
         groupName = ""
         groupApps = emptyList()
         showGroupEditor = false
     }
 
-    fun loadGroupForEdit(group: AppGroup) {
+    fun loadGroupForEdit(
+        group: AppGroup,
+        mode: GroupEditorMode = GroupEditorMode.Edit,
+    ) {
         editingGroup = group
+        groupEditorMode = mode
         groupName = group.name
         groupApps = group.getAppList()
         showGroupEditor = true
@@ -131,10 +147,12 @@ class AppBlockerVm : BaseViewModel() {
         DbSet.appGroupDao.update(group.copy(enabled = requestedEnabled))
     }
 
-    fun addAppToGroup(packageName: String) {
-        if (!groupApps.contains(packageName)) {
-            groupApps = groupApps + packageName
-        }
+    fun applyPickedApps(pickedApps: List<String>) {
+        groupApps = AppBlockerEditorPolicy.resolveGroupApps(
+            existingApps = groupApps,
+            pickedApps = pickedApps,
+            appendOnly = groupEditorMode == GroupEditorMode.AppendApps,
+        )
     }
 
     fun removeAppFromGroup(packageName: String) {
@@ -346,6 +364,23 @@ class AppBlockerVm : BaseViewModel() {
     }
 
     companion object {
+        fun buildGroupPickerConfig(
+            currentApps: List<String>,
+            mode: GroupEditorMode,
+        ): GroupPickerConfig {
+            return if (mode == GroupEditorMode.AppendApps) {
+                GroupPickerConfig(
+                    initialSelection = emptyList(),
+                    excludedApps = currentApps.toSet(),
+                )
+            } else {
+                GroupPickerConfig(
+                    initialSelection = currentApps,
+                    excludedApps = emptySet(),
+                )
+            }
+        }
+
         fun shouldConsumeDisableQuota(currentEnabled: Boolean, requestedEnabled: Boolean): Boolean {
             return currentEnabled && !requestedEnabled
         }
