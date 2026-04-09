@@ -321,4 +321,7 @@ private fun A11yService.useUsageGuard() {
             }
         }
     }
+    onDestroyed {
+        UsageGuardEngine.onA11yServiceDestroyed(this@useUsageGuard)
+    }
 }

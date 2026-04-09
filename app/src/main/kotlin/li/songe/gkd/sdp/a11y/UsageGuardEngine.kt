@@ -98,6 +98,14 @@ object UsageGuardEngine {
         }
     }
 
+    fun onA11yServiceDestroyed(service: A11yService? = A11yService.instance) {
+        appScope.launch {
+            stateMutex.withLock {
+                stopCountdownOverlay(service)
+            }
+        }
+    }
+
     fun onRequestGranted(appId: String) {
         appScope.launch(Dispatchers.IO) {
             stateMutex.withLock {
