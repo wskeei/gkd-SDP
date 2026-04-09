@@ -45,8 +45,10 @@ import li.songe.gkd.sdp.a11y.UsageGuardEngine
 import li.songe.gkd.sdp.data.UsageGuardRecord
 import li.songe.gkd.sdp.data.UsageGuardTag
 import li.songe.gkd.sdp.db.DbSet
+import li.songe.gkd.sdp.store.storeFlow
 import li.songe.gkd.sdp.ui.style.AppTheme
 import li.songe.gkd.sdp.util.UsageGuardPolicy
+import li.songe.gkd.sdp.util.UsageGuardUiStatePolicy
 
 class UsageGuardRequestOverlayService : LifecycleService(), SavedStateRegistryOwner {
     private val windowManager by lazy { getSystemService(WINDOW_SERVICE) as WindowManager }
@@ -87,11 +89,15 @@ class UsageGuardRequestOverlayService : LifecycleService(), SavedStateRegistryOw
             setContent {
                 AppTheme {
                     val tags by DbSet.usageGuardTagDao.queryAll().collectAsState(initial = emptyList())
+                    val settings by storeFlow.collectAsState()
                     UsageGuardRequestContent(
                         appName = appName,
                         tags = tags,
                         grantMode = grantMode,
-                        minReasonLength = minReasonLength,
+                        minReasonLength = settings.usageGuardMinReasonLength,
+                        durationOptions = UsageGuardUiStatePolicy.normalizeDurationOptions(
+                            settings.usageGuardDurationOptionsMinutes,
+                        ),
                         onAddTag = { name, existing ->
                             lifecycleScope.launch(Dispatchers.IO) {
                                 addCustomTag(name, existing)
@@ -171,17 +177,18 @@ private fun UsageGuardRequestContent(
     tags: List<UsageGuardTag>,
     grantMode: Int,
     minReasonLength: Int,
+    durationOptions: List<Int>,
     onAddTag: (String, List<UsageGuardTag>) -> Unit,
     onSubmit: (List<String>, String, Int) -> Unit,
     onCancel: () -> Unit,
 ) {
-    val durationOptions = listOf(10, 15, 30, 60)
-
     var selectedTags by remember { mutableStateOf(setOf<String>()) }
     var reasonText by remember { mutableStateOf("") }
-    var selectedDuration by remember { mutableStateOf(10) }
+    var selectedDuration by remember(durationOptions) { mutableStateOf(durationOptions.firstOrNull() ?: 10) }
     var customMinutesText by remember { mutableStateOf("") }
     var newTagText by remember { mutableStateOf("") }
+    var showAddTagEditor by remember { mutableStateOf(false) }
+    var showCustomDuration by remember { mutableStateOf(false) }
 
     var reasonError by remember { mutableStateOf<String?>(null) }
     var durationError by remember { mutableStateOf<String?>(null) }
@@ -244,24 +251,30 @@ private fun UsageGuardRequestContent(
                 )
             }
 
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedTextField(
-                    value = newTagText,
-                    onValueChange = { newTagText = it },
-                    modifier = Modifier.weight(1f),
-                    label = { Text("添加标签") },
-                    singleLine = true,
-                )
-                Button(
-                    onClick = {
-                        val normalized = newTagText.trim()
-                        if (normalized.isBlank()) return@Button
-                        onAddTag(normalized, tags)
-                        selectedTags = selectedTags + normalized
-                        newTagText = ""
-                    },
-                ) {
-                    Text("加入")
+            TextButton(onClick = { showAddTagEditor = !showAddTagEditor }) {
+                Text(if (showAddTagEditor) "收起添加标签" else "没有合适的标签？添加标签")
+            }
+            if (showAddTagEditor) {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedTextField(
+                        value = newTagText,
+                        onValueChange = { newTagText = it },
+                        modifier = Modifier.weight(1f),
+                        label = { Text("添加标签") },
+                        singleLine = true,
+                    )
+                    Button(
+                        onClick = {
+                            val normalized = newTagText.trim()
+                            if (normalized.isBlank()) return@Button
+                            onAddTag(normalized, tags)
+                            selectedTags = selectedTags + normalized
+                            newTagText = ""
+                            showAddTagEditor = false
+                        },
+                    ) {
+                        Text("加入")
+                    }
                 }
             }
 
@@ -273,7 +286,15 @@ private fun UsageGuardRequestContent(
                 },
                 modifier = Modifier.fillMaxWidth(),
                 label = { Text("申请理由") },
-                supportingText = { Text("至少 $minReasonLength 个字") },
+                supportingText = {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                    ) {
+                        Text("至少 $minReasonLength 个字")
+                        Text("${reasonText.trim().length} 字")
+                    }
+                },
                 isError = reasonError != null,
                 minLines = 3,
             )
@@ -292,31 +313,37 @@ private fun UsageGuardRequestContent(
             ) {
                 durationOptions.forEach { minutes ->
                     FilterChip(
-                        selected = selectedDuration == minutes && customMinutesText.isBlank(),
+                        selected = selectedDuration == minutes && !showCustomDuration,
                         onClick = {
                             durationError = null
                             selectedDuration = minutes
                             customMinutesText = ""
+                            showCustomDuration = false
                         },
                         label = { Text("${minutes}分钟") },
                     )
                 }
             }
 
-            OutlinedTextField(
-                value = customMinutesText,
-                onValueChange = {
-                    durationError = null
-                    if (it.all(Char::isDigit)) {
-                        customMinutesText = it
-                    }
-                },
-                modifier = Modifier.fillMaxWidth(),
-                label = { Text("自定义分钟数") },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                singleLine = true,
-                isError = durationError != null,
-            )
+            TextButton(onClick = { showCustomDuration = !showCustomDuration }) {
+                Text(if (showCustomDuration) "收起自定义时长" else "自定义时长")
+            }
+            if (showCustomDuration) {
+                OutlinedTextField(
+                    value = customMinutesText,
+                    onValueChange = {
+                        durationError = null
+                        if (it.all(Char::isDigit)) {
+                            customMinutesText = it
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    label = { Text("自定义分钟数") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    singleLine = true,
+                    isError = durationError != null,
+                )
+            }
             durationError?.let {
                 Text(
                     text = it,
@@ -329,7 +356,11 @@ private fun UsageGuardRequestContent(
 
             Button(
                 onClick = {
-                    val requestedDurationMinutes = customMinutesText.toIntOrNull() ?: selectedDuration
+                    val requestedDurationMinutes = if (showCustomDuration) {
+                        customMinutesText.toIntOrNull() ?: 0
+                    } else {
+                        selectedDuration
+                    }
                     val validation = UsageGuardPolicy.validateRequest(
                         selectedTags = selectedTags.toList(),
                         reason = reasonText,

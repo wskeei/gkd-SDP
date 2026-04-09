@@ -333,7 +333,7 @@ fun FocusLockPage() {
                 title = { Text("自动重开间隔") },
                 text = {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text("自动重开始终启用，无法关闭。间隔可调：0~240 分钟；每 3 天仅可修改一次。")
+                        Text("自动重开始终启用，无法关闭。会恢复已关闭的规则与使用申请开关。")
                         Text("下一次自动重开：$nextEnforceText")
                         Text("今日已用/总额：${autoReenableUiState.dailyDisableUsed}/${autoReenableUiState.dailyDisableLimit}")
                         Text("剩余次数：${autoReenableUiState.dailyDisableRemaining}")
@@ -954,7 +954,7 @@ fun AutoReenableGuardCard(
                 fontWeight = FontWeight.SemiBold
             )
             Text(
-                text = "自动重开始终启用，无法关闭",
+                text = "自动重开始终启用，无法关闭；会恢复规则与使用申请开关",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.primary
             )

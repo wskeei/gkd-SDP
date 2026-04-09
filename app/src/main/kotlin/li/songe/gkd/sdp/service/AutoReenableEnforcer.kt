@@ -65,6 +65,15 @@ object AutoReenableEnforcer {
             "url_rule_group" to { DbSet.urlRuleGroupDao.enableAllDisabled() },
             "url_block_rule" to { DbSet.urlBlockRuleDao.enableAllDisabled() },
             "url_time_rule" to { DbSet.urlTimeRuleDao.enableAllDisabled() },
+            "usage_guard_switch" to {
+                val settings = storeFlow.value
+                if (settings.usageGuardEnabled) {
+                    0
+                } else {
+                    storeFlow.update { it.copy(usageGuardEnabled = true) }
+                    1
+                }
+            },
         )
     }
 

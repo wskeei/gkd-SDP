@@ -27,4 +27,9 @@ class AutoReenableEnforcerTest {
     fun defaultOperationsIncludeAppConfigReenable() {
         assertTrue(AutoReenableEnforcer.defaultOperationNames().contains("app_config"))
     }
+
+    @Test
+    fun defaultOperationsIncludeUsageGuardSwitchRecovery() {
+        assertTrue(AutoReenableEnforcer.defaultOperationNames().contains("usage_guard_switch"))
+    }
 }
