@@ -5,6 +5,10 @@ import li.songe.gkd.sdp.data.UsageGuardAppProfile
 object UsageGuardUiStatePolicy {
     val defaultDurationOptions = listOf(10, 15, 30, 60)
 
+    fun protectionStatusAutoReenableMessage(): String {
+        return "自动重开保护会恢复使用申请总开关，不会改动范围、默认授权模式或时长选项。"
+    }
+
     data class SelectedAppSections(
         val strictAppIds: List<String>,
         val resumableAppIds: List<String>,

@@ -75,6 +75,7 @@ import li.songe.gkd.sdp.ui.style.itemPadding
 import li.songe.gkd.sdp.ui.style.scaffoldPadding
 import li.songe.gkd.sdp.ui.style.surfaceCardColors
 import li.songe.gkd.sdp.util.UsageGuardPolicy
+import li.songe.gkd.sdp.util.UsageGuardUiStatePolicy
 import li.songe.gkd.sdp.util.appInfoMapFlow
 
 private val usageGuardDateFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
@@ -190,6 +191,11 @@ fun UsageGuardPage() {
                     CompactInfoRow(
                         label = "快速时长",
                         value = durationOptions.joinToString(" / ") { "${it}分钟" },
+                    )
+                    Text(
+                        text = UsageGuardUiStatePolicy.protectionStatusAutoReenableMessage(),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.primary,
                     )
                 }
             }

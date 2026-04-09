@@ -6,6 +6,14 @@ import org.junit.Test
 
 class UsageGuardUiStatePolicyTest {
     @Test
+    fun protectionStatusAutoReenableMessageStatesOnlyMainSwitchRecovery() {
+        assertEquals(
+            "自动重开保护会恢复使用申请总开关，不会改动范围、默认授权模式或时长选项。",
+            UsageGuardUiStatePolicy.protectionStatusAutoReenableMessage(),
+        )
+    }
+
+    @Test
     fun normalizeDurationOptionsPadsAndCleansInvalidValues() {
         val normalized = UsageGuardUiStatePolicy.normalizeDurationOptions(
             raw = listOf(0, 25, -3),
