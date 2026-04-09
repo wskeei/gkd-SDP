@@ -2,19 +2,45 @@ package li.songe.gkd.sdp.ui
 
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
+import java.time.LocalDate
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 import li.songe.gkd.sdp.data.UsageGuardAppProfile
 import li.songe.gkd.sdp.data.UsageGuardTag
 import li.songe.gkd.sdp.db.DbSet
 import li.songe.gkd.sdp.store.storeFlow
 import li.songe.gkd.sdp.ui.share.BaseViewModel
+import li.songe.gkd.sdp.util.UsageGuardHistoryPolicy
 import li.songe.gkd.sdp.util.UsageGuardPolicy
+import li.songe.gkd.sdp.util.UsageGuardUiStatePolicy
+import li.songe.gkd.sdp.util.toast
 
 class UsageGuardVm : BaseViewModel() {
     val appProfilesFlow = DbSet.usageGuardAppProfileDao.queryAll().stateInit(emptyList())
     val tagsFlow = DbSet.usageGuardTagDao.queryAll().stateInit(emptyList())
-    val historyFlow = DbSet.usageGuardRecordDao.queryLatest(50).stateInit(emptyList())
+    val selectedAppSectionsFlow = combine(appProfilesFlow, storeFlow) { profiles, settings ->
+        UsageGuardUiStatePolicy.groupSelectedApps(
+            profiles = profiles,
+            defaultGrantMode = settings.usageGuardDefaultGrantMode,
+        )
+    }.stateInit(
+        UsageGuardUiStatePolicy.groupSelectedApps(
+            profiles = emptyList(),
+            defaultGrantMode = storeFlow.value.usageGuardDefaultGrantMode,
+        )
+    )
+    val durationOptionsFlow = storeFlow.map { settings ->
+        UsageGuardUiStatePolicy.normalizeDurationOptions(settings.usageGuardDurationOptionsMinutes)
+    }.stateInit(UsageGuardUiStatePolicy.defaultDurationOptions)
+    private val selectedHistoryDateFlow = MutableStateFlow(LocalDate.now())
+    val historyFlow = selectedHistoryDateFlow.flatMapLatest { date ->
+        val (startAt, endAt) = UsageGuardHistoryPolicy.dayRange(date)
+        DbSet.usageGuardRecordDao.queryByRequestedAtRange(startAt, endAt)
+    }.stateInit(emptyList())
 
     init {
         viewModelScope.launch(Dispatchers.IO) {
@@ -44,6 +70,13 @@ class UsageGuardVm : BaseViewModel() {
 
     fun updateMinReasonLength(minLength: Int) {
         storeFlow.update { it.copy(usageGuardMinReasonLength = minLength.coerceAtLeast(1)) }
+        toast("最少理由字数已保存")
+    }
+
+    fun updateDurationOptions(raw: List<Int>) {
+        val normalized = UsageGuardUiStatePolicy.normalizeDurationOptions(raw)
+        storeFlow.update { it.copy(usageGuardDurationOptionsMinutes = normalized) }
+        toast("申请时长选项已保存")
     }
 
     fun saveSelectedTargets(appIds: List<String>) = viewModelScope.launch(Dispatchers.IO) {
@@ -63,6 +96,7 @@ class UsageGuardVm : BaseViewModel() {
                 )
             },
         )
+        toast("受控应用已保存")
     }
 
     fun saveWhitelist(appIds: List<String>) = viewModelScope.launch(Dispatchers.IO) {
@@ -82,6 +116,7 @@ class UsageGuardVm : BaseViewModel() {
                 )
             },
         )
+        toast("白名单已保存")
     }
 
     fun saveAppGrantMode(appId: String, grantMode: Int) = viewModelScope.launch(Dispatchers.IO) {
@@ -96,6 +131,11 @@ class UsageGuardVm : BaseViewModel() {
             )
         )
         DbSet.usageGuardAppProfileDao.deleteUnusedProfiles(storeFlow.value.usageGuardDefaultGrantMode)
+        toast("应用模式已保存")
+    }
+
+    fun moveSelectedAppToGrantMode(appId: String, grantMode: Int) {
+        saveAppGrantMode(appId, grantMode)
     }
 
     fun saveGrantModeOverrideApps(appIds: List<String>) = viewModelScope.launch(Dispatchers.IO) {
@@ -149,6 +189,10 @@ class UsageGuardVm : BaseViewModel() {
     fun deleteCustomTag(tag: UsageGuardTag) = viewModelScope.launch(Dispatchers.IO) {
         if (tag.isPreset) return@launch
         DbSet.usageGuardTagDao.deleteCustomTag(tag.id)
+    }
+
+    fun updateSelectedHistoryDate(date: LocalDate) {
+        selectedHistoryDateFlow.value = date
     }
 
     private suspend fun saveProfileFlags(

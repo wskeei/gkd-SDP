@@ -51,6 +51,15 @@ data class UsageGuardRecord(
         @Query("SELECT * FROM usage_guard_record ORDER BY id DESC LIMIT :limit")
         fun queryLatest(limit: Int = 100): Flow<List<UsageGuardRecord>>
 
+        @Query(
+            """
+            SELECT * FROM usage_guard_record
+            WHERE requested_at >= :startAt AND requested_at < :endAt
+            ORDER BY requested_at DESC
+            """
+        )
+        fun queryByRequestedAtRange(startAt: Long, endAt: Long): Flow<List<UsageGuardRecord>>
+
         @Query("UPDATE usage_guard_record SET ended_at = :endedAt, end_reason = :endReason WHERE id = :id")
         suspend fun closeRecord(id: Long, endedAt: Long, endReason: Int): Int
 
