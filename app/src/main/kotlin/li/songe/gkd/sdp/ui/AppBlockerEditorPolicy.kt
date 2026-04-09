@@ -14,10 +14,13 @@ object AppBlockerEditorPolicy {
         }
     }
 
-    fun canDragSheet(
+    fun shouldConsumeTopEdgeUpwardSwipe(
         firstVisibleItemIndex: Int,
         firstVisibleItemScrollOffset: Int,
+        availableY: Float,
     ): Boolean {
-        return firstVisibleItemIndex > 0 || firstVisibleItemScrollOffset > 0
+        return firstVisibleItemIndex == 0 &&
+            firstVisibleItemScrollOffset == 0 &&
+            availableY < 0f
     }
 }

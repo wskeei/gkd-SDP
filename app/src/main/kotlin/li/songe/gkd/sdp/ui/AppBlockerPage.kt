@@ -46,6 +46,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
@@ -791,26 +795,35 @@ private fun GroupEditorSheet(
     val appsReadOnly = isExistingGroup
     val canOpenAppPicker = !isLocked && (!isExistingGroup || isAppendMode)
     val scrollState = rememberScrollState()
+    val blockTopEdgeUpwardSwipe = remember(scrollState) {
+        object : NestedScrollConnection {
+            override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
+                if (
+                    source == NestedScrollSource.UserInput &&
+                    AppBlockerEditorPolicy.shouldConsumeTopEdgeUpwardSwipe(
+                        firstVisibleItemIndex = 0,
+                        firstVisibleItemScrollOffset = scrollState.value,
+                        availableY = available.y,
+                    )
+                ) {
+                    return Offset(x = 0f, y = available.y)
+                }
+                return Offset.Zero
+            }
+        }
+    }
     val sheetState = rememberModalBottomSheetState(
         skipPartiallyExpanded = true,
     )
-    var swipeEnabled by remember { mutableStateOf(false) }
-
-    LaunchedEffect(scrollState.value) {
-        swipeEnabled = AppBlockerEditorPolicy.canDragSheet(
-            firstVisibleItemIndex = 0,
-            firstVisibleItemScrollOffset = scrollState.value,
-        )
-    }
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
-        sheetGesturesEnabled = swipeEnabled,
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
+                .nestedScroll(blockTopEdgeUpwardSwipe)
                 .verticalScroll(scrollState)
                 .padding(16.dp)
         ) {
@@ -946,30 +959,36 @@ private fun RuleEditorSheet(
     var showAppPicker by remember { mutableStateOf(false) }
     var showTemplateDialog by remember { mutableStateOf(false) }
     val listState = rememberLazyListState()
+    val blockTopEdgeUpwardSwipe = remember(listState) {
+        object : NestedScrollConnection {
+            override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
+                if (
+                    source == NestedScrollSource.UserInput &&
+                    AppBlockerEditorPolicy.shouldConsumeTopEdgeUpwardSwipe(
+                        firstVisibleItemIndex = listState.firstVisibleItemIndex,
+                        firstVisibleItemScrollOffset = listState.firstVisibleItemScrollOffset,
+                        availableY = available.y,
+                    )
+                ) {
+                    return Offset(x = 0f, y = available.y)
+                }
+                return Offset.Zero
+            }
+        }
+    }
     val sheetState = rememberModalBottomSheetState(
         skipPartiallyExpanded = true,
     )
-    var swipeEnabled by remember { mutableStateOf(false) }
-
-    LaunchedEffect(
-        listState.firstVisibleItemIndex,
-        listState.firstVisibleItemScrollOffset,
-    ) {
-        swipeEnabled = AppBlockerEditorPolicy.canDragSheet(
-            firstVisibleItemIndex = listState.firstVisibleItemIndex,
-            firstVisibleItemScrollOffset = listState.firstVisibleItemScrollOffset,
-        )
-    }
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
-        sheetGesturesEnabled = swipeEnabled,
     ) {
         LazyColumn(
             state = listState,
             modifier = Modifier
                 .fillMaxWidth()
+                .nestedScroll(blockTopEdgeUpwardSwipe)
                 .padding(16.dp)
         ) {
             item {

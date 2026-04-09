@@ -32,23 +32,40 @@ class AppBlockerEditorPolicyTest {
     }
 
     @Test
-    fun sheetDragIsDisabledWhileScrollableContentIsAlreadyAtTop() {
-        assertFalse(
-            AppBlockerEditorPolicy.canDragSheet(
+    fun topEdgeUpwardSwipeIsConsumedButDownwardDismissRemainsAvailable() {
+        assertTrue(
+            AppBlockerEditorPolicy.shouldConsumeTopEdgeUpwardSwipe(
                 firstVisibleItemIndex = 0,
                 firstVisibleItemScrollOffset = 0,
+                availableY = -12f,
             )
         )
-        assertTrue(
-            AppBlockerEditorPolicy.canDragSheet(
+        assertFalse(
+            AppBlockerEditorPolicy.shouldConsumeTopEdgeUpwardSwipe(
                 firstVisibleItemIndex = 0,
                 firstVisibleItemScrollOffset = 12,
+                availableY = -12f,
             )
         )
-        assertTrue(
-            AppBlockerEditorPolicy.canDragSheet(
+        assertFalse(
+            AppBlockerEditorPolicy.shouldConsumeTopEdgeUpwardSwipe(
                 firstVisibleItemIndex = 1,
                 firstVisibleItemScrollOffset = 0,
+                availableY = -12f,
+            )
+        )
+        assertFalse(
+            AppBlockerEditorPolicy.shouldConsumeTopEdgeUpwardSwipe(
+                firstVisibleItemIndex = 0,
+                firstVisibleItemScrollOffset = 0,
+                availableY = 12f,
+            )
+        )
+        assertFalse(
+            AppBlockerEditorPolicy.shouldConsumeTopEdgeUpwardSwipe(
+                firstVisibleItemIndex = 0,
+                firstVisibleItemScrollOffset = 0,
+                availableY = 0f,
             )
         )
     }
