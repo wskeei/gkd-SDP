@@ -29,8 +29,10 @@ import androidx.savedstate.SavedStateRegistryOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import kotlinx.coroutines.delay
 import li.songe.gkd.sdp.a11y.UsageGuardEngine
+import li.songe.gkd.sdp.util.BarUtils
 import li.songe.gkd.sdp.ui.style.AppTheme
 import li.songe.gkd.sdp.util.ScreenUtils
+import li.songe.gkd.sdp.util.UsageGuardCountdownOverlayLayoutPolicy
 import li.songe.gkd.sdp.util.UsageGuardCountdownOverlayPolicy
 import li.songe.gkd.sdp.util.px
 import kotlin.math.roundToInt
@@ -65,12 +67,20 @@ class UsageGuardCountdownOverlayService : LifecycleService(), SavedStateRegistry
             return START_NOT_STICKY
         }
 
+        val shouldResetPosition = UsageGuardCountdownOverlayLayoutPolicy.shouldResetPosition(
+            previousAppId = appId,
+            previousRecordId = recordId,
+            nextAppId = incomingAppId,
+            nextRecordId = incomingRecordId,
+        )
         appId = incomingAppId
         recordId = incomingRecordId
         expiresAt = incomingExpiresAt
         expiresAtState = incomingExpiresAt
         if (view == null) {
             showOverlay()
+        } else if (shouldResetPosition) {
+            resetPosition()
         }
         return START_NOT_STICKY
     }
@@ -92,7 +102,7 @@ class UsageGuardCountdownOverlayService : LifecycleService(), SavedStateRegistry
             }
         }
 
-        val margin = 12.dp.px.toInt()
+        val initialPosition = getInitialPosition()
         val params = WindowManager.LayoutParams(
             WindowManager.LayoutParams.WRAP_CONTENT,
             WindowManager.LayoutParams.WRAP_CONTENT,
@@ -103,8 +113,8 @@ class UsageGuardCountdownOverlayService : LifecycleService(), SavedStateRegistry
             PixelFormat.TRANSLUCENT
         ).apply {
             gravity = Gravity.START or Gravity.TOP
-            x = margin
-            y = margin
+            x = initialPosition.x
+            y = initialPosition.y
         }
         view = overlayView
         layoutParams = params
@@ -131,6 +141,26 @@ class UsageGuardCountdownOverlayService : LifecycleService(), SavedStateRegistry
         }.onFailure {
             stopSelf()
         }
+    }
+
+    private fun resetPosition() {
+        val params = layoutParams ?: return
+        val overlayView = view ?: return
+        val initialPosition = getInitialPosition()
+        params.x = initialPosition.x
+        params.y = initialPosition.y
+        runCatching {
+            windowManager.updateViewLayout(overlayView, params)
+        }.onFailure {
+            stopSelf()
+        }
+    }
+
+    private fun getInitialPosition(): UsageGuardCountdownOverlayLayoutPolicy.Position {
+        return UsageGuardCountdownOverlayLayoutPolicy.initialPosition(
+            marginPx = 12.dp.px.toInt(),
+            statusBarHeightPx = BarUtils.getStatusBarHeight(),
+        )
     }
 
     override fun onDestroy() {
