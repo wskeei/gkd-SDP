@@ -32,20 +32,20 @@ class AppBlockerEditorPolicyTest {
     }
 
     @Test
-    fun sheetDragIsAllowedOnlyWhenScrollableContentIsAtTop() {
-        assertTrue(
+    fun sheetDragIsDisabledWhileScrollableContentIsAlreadyAtTop() {
+        assertFalse(
             AppBlockerEditorPolicy.canDragSheet(
                 firstVisibleItemIndex = 0,
                 firstVisibleItemScrollOffset = 0,
             )
         )
-        assertFalse(
+        assertTrue(
             AppBlockerEditorPolicy.canDragSheet(
                 firstVisibleItemIndex = 0,
                 firstVisibleItemScrollOffset = 12,
             )
         )
-        assertFalse(
+        assertTrue(
             AppBlockerEditorPolicy.canDragSheet(
                 firstVisibleItemIndex = 1,
                 firstVisibleItemScrollOffset = 0,

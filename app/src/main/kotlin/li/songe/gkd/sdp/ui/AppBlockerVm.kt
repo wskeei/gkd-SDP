@@ -368,15 +368,15 @@ class AppBlockerVm : BaseViewModel() {
             currentApps: List<String>,
             mode: GroupEditorMode,
         ): GroupPickerConfig {
-            return if (mode == GroupEditorMode.AppendApps) {
-                GroupPickerConfig(
-                    initialSelection = emptyList(),
-                    excludedApps = currentApps.toSet(),
-                )
-            } else {
+            return if (mode == GroupEditorMode.Create) {
                 GroupPickerConfig(
                     initialSelection = currentApps,
                     excludedApps = emptySet(),
+                )
+            } else {
+                GroupPickerConfig(
+                    initialSelection = emptyList(),
+                    excludedApps = currentApps.toSet(),
                 )
             }
         }

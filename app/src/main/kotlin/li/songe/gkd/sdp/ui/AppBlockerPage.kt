@@ -564,7 +564,7 @@ private fun AppGroupCard(
                 }
 
                 // 添加规则按钮 - 仅未锁定时显示
-                if (!group.isCurrentlyLocked) {
+                if (!group.isCurrentlyLocked && globalLock?.isCurrentlyLocked != true) {
                     TextButton(onClick = onAddRule) {
                         Icon(PerfIcon.Add, contentDescription = null)
                         Spacer(modifier = Modifier.width(4.dp))
@@ -791,11 +791,10 @@ private fun GroupEditorSheet(
     val appsReadOnly = isExistingGroup
     val canOpenAppPicker = !isLocked && (!isExistingGroup || isAppendMode)
     val scrollState = rememberScrollState()
-    var swipeEnabled by remember { mutableStateOf(true) }
     val sheetState = rememberModalBottomSheetState(
         skipPartiallyExpanded = true,
-        confirmValueChange = { swipeEnabled },
     )
+    var swipeEnabled by remember { mutableStateOf(false) }
 
     LaunchedEffect(scrollState.value) {
         swipeEnabled = AppBlockerEditorPolicy.canDragSheet(
@@ -807,6 +806,7 @@ private fun GroupEditorSheet(
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
+        sheetGesturesEnabled = swipeEnabled,
     ) {
         Column(
             modifier = Modifier
@@ -946,11 +946,10 @@ private fun RuleEditorSheet(
     var showAppPicker by remember { mutableStateOf(false) }
     var showTemplateDialog by remember { mutableStateOf(false) }
     val listState = rememberLazyListState()
-    var swipeEnabled by remember { mutableStateOf(true) }
     val sheetState = rememberModalBottomSheetState(
         skipPartiallyExpanded = true,
-        confirmValueChange = { swipeEnabled },
     )
+    var swipeEnabled by remember { mutableStateOf(false) }
 
     LaunchedEffect(
         listState.firstVisibleItemIndex,
@@ -964,7 +963,8 @@ private fun RuleEditorSheet(
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
-        sheetState = sheetState
+        sheetState = sheetState,
+        sheetGesturesEnabled = swipeEnabled,
     ) {
         LazyColumn(
             state = listState,

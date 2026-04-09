@@ -18,6 +18,6 @@ object AppBlockerEditorPolicy {
         firstVisibleItemIndex: Int,
         firstVisibleItemScrollOffset: Int,
     ): Boolean {
-        return firstVisibleItemIndex == 0 && firstVisibleItemScrollOffset == 0
+        return firstVisibleItemIndex > 0 || firstVisibleItemScrollOffset > 0
     }
 }
