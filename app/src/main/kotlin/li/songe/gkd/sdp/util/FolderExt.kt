@@ -21,7 +21,15 @@ fun File.autoMk(): File {
 }
 
 private val filesDir: File by lazy {
-    app.getExternalFilesDir(null) ?: error("failed getExternalFilesDir")
+    val markFile = app.filesDir.resolve(".gkd")
+    if (markFile.isFile) {
+        app.filesDir
+    } else {
+        // fix #1333
+        app.getExternalFilesDir(null) ?: app.filesDir.also {
+            markFile.createNewFile()
+        }
+    }
 }
 
 val dbFolder: File
@@ -38,7 +46,7 @@ val logFolder: File
     get() = filesDir.resolve("log").autoMk()
 
 val privateStoreFolder: File
-    get() = app.filesDir.resolve("store").autoMk()
+    get() = app.filesDir.resolve("private-store").autoMk()
 
 private val cacheDir by lazy { app.externalCacheDir ?: app.cacheDir }
 val coilCacheDir: File
@@ -106,8 +114,11 @@ fun buildLogFile(): File {
         it.appendText("\nappListAuthAbnormalFlow: ${appListAuthAbnormalFlow.value}")
         files.add(it)
     }
+    val formattedJson = Json(from = json) {
+        prettyPrint = true
+    }
     tempDir.resolve("gkd-${META.versionCode}-v${META.versionName}.json").also {
-        it.writeText(json.encodeToString(META))
+        it.writeText(formattedJson.encodeToString(META))
         files.add(it)
     }
     val logZipFile = sharedDir.resolve("log-${System.currentTimeMillis()}.zip")
