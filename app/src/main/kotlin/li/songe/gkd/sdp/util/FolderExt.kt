@@ -82,7 +82,9 @@ private data class AppJsonData(
 @WorkerThread
 fun buildLogFile(): File {
     val tempDir = createTempDir()
-    val files = mutableListOf(dbFolder, storeFolder, subsFolder, logFolder)
+    val files = listOf(dbFolder, storeFolder, subsFolder, logFolder).filter {
+        it.list()?.isNotEmpty() == true
+    }.toMutableList()
     tempDir.resolve("meta.json").also {
         it.writeText(toJson5String(META))
         files.add(it)
