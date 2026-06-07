@@ -1,78 +1,143 @@
-# gkd
+# GKD-SDP
 
-<p align="center">
-<a href="https://gkd.li/"><img src="https://e.gkd.li/2a0a7787-f2dd-4529-a885-93f3b8c857c3" alt="GKD.LI" width="40%" /></a>
-</p>
+`GKD-SDP` 是一个基于 [GKD](https://github.com/gkd-kit/gkd) fork 的 Android 数字自律工具。
 
-基于 [高级选择器](https://gkd.li/guide/selector) + [订阅规则](https://gkd.li/guide/subscription) + [快照审查](https://github.com/gkd-kit/inspect) 的自定义屏幕点击 Android 应用
+本项目保留了 GKD 的高级选择器、订阅规则、无障碍运行时和快照能力，并在此基础上加入一组面向“减少冲动使用手机”的二开功能。它不是上游 GKD 的官方版本，也不再只是一个自动点击工具。
 
-通过自定义规则，在指定界面，满足指定条件(如屏幕上存在特定文字)时，点击特定的节点或位置或执行其他操作
+## 项目定位
 
-- **快捷操作**
+GKD 原本擅长通过选择器和订阅规则，在指定界面自动点击控件、跳过流程、执行快捷操作。`GKD-SDP` 在这个运行时之上增加了自律干预层：
 
-  帮助你简化一些重复的流程, 如某些软件自动确认电脑登录
+- 在打开受控应用前，让用户先说明理由并申请有限使用时长。
+- 在专注、应用拦截、URL 拦截等场景中主动阻断分心入口。
+- 在规则被关闭后，通过自动重开和锁定机制降低“临时放纵”变成永久关闭的概率。
+- 通过申请记录和复盘视图，把使用行为从流水账转成可分析的模式。
 
-- **跳过流程**
+简单说，它的目标不是帮你更快地使用手机，而是让每一次“我要打开它”都变得更清醒。
 
-  某些软件可能在启动时存在一些烦人的流程, 这个软件可以帮助你点击跳过这个流程
+## 主要功能
+
+### 使用申请
+
+对受控应用启用“申请后使用”的流程：
+
+- 支持仅选中应用或全局生效。
+- 支持严格模式和普通模式。
+- 申请时需要选择标签、填写理由、选择时长。
+- 记录每次申请的应用、标签、理由、时长、结束状态。
+- 提供申请复盘页和桌面小组件，查看今日/近 7 天申请模式。
+
+### 专注模式
+
+通过专注会话和白名单限制临时访问：
+
+- 支持手动或规则化的专注时段。
+- 非白名单应用会被拦截覆盖层阻断。
+- 支持锁定窗口，避免中途轻易关闭。
+
+### 应用拦截
+
+对指定应用或应用组建立时间规则：
+
+- 按时间段拦截应用。
+- 支持应用组管理。
+- 支持锁定与自动恢复相关策略。
+
+### URL 拦截
+
+针对浏览器地址栏进行 URL 检测和阻断：
+
+- 通过无障碍树读取支持浏览器的地址栏。
+- 匹配 URL 规则后进行拦截或跳转。
+- 支持浏览器配置和 URL 规则组。
+
+### 自动重开
+
+用于恢复被临时关闭的自律保护：
+
+- 可恢复使用申请总开关。
+- 可恢复规则或拦截相关状态。
+- 适合避免“只关一下”变成长期失效。
+
+### GKD 原有能力
+
+本 fork 仍保留上游 GKD 的核心能力：
+
+- 高级选择器。
+- 订阅规则。
+- 快照捕获与审查。
+- 自动点击和快捷操作。
+- 触发记录、界面日志、调试服务等开发能力。
+
+## 与上游 GKD 的关系
+
+本项目是二次开发版本，基础能力来自上游 GKD：
+
+- 上游项目：[gkd-kit/gkd](https://github.com/gkd-kit/gkd)
+- 选择器文档：[gkd.li/guide/selector](https://gkd.li/guide/selector)
+- 订阅规则文档：[gkd.li/guide/subscription](https://gkd.li/guide/subscription)
+
+由于 fork 历史原因，仓库中仍可能存在 `gkd`、`subs`、`match`、上游链接、原始文案等命名和痕迹。开发时请根据上下文区分：
+
+- 上游自动化/选择器系统。
+- 本 fork 新增的数字自律系统。
+
+## 技术栈
+
+- Kotlin
+- Android / Jetpack Compose
+- Compose Destinations
+- Room
+- Kotlinx Serialization
+- Ktor
+- Shizuku / hidden API stubs
+- Kotlin Multiplatform `selector` 模块
+
+主要模块：
+
+- `app`：Android 主应用。
+- `selector`：选择器解析与匹配逻辑。
+- `hidden_api`：隐藏 API 编译桩。
+
+## 构建
+
+Windows PowerShell：
+
+```powershell
+.\gradlew.bat :app:assembleGkdDebug
+.\gradlew.bat :app:testGkdDebugUnitTest
+.\gradlew.bat :selector:jvmTest
+```
+
+Unix-like shell：
+
+```bash
+./gradlew :app:assembleGkdDebug
+./gradlew :app:testGkdDebugUnitTest
+./gradlew :selector:jvmTest
+```
+
+常用信息：
+
+- `applicationId`: `li.songe.gkd.sdp`
+- `minSdk`: 26
+- `compileSdk` / `targetSdk`: 36
+- Debug 应用名：`GKD-SDP`
+
+## 开发说明
+
+更详细的工程结构、运行时架构、Room/Store 数据模型和开发注意事项见：
+
+[README_DEV.md](README_DEV.md)
+
+如果你要改动无障碍运行时、自动重开、应用/URL 拦截或使用申请，请优先阅读 `README_DEV.md`，这些功能之间存在较多状态联动。
 
 ## 免责声明
 
-**本项目遵循 [GPL-3.0](/LICENSE) 开源，项目仅供学习交流，禁止用于商业或非法用途**
+本项目遵循 [GPL-3.0](LICENSE) 开源。
 
-## 安装
+本项目仅供学习、研究和个人自律使用，禁止用于商业用途、非法用途或绕过应用/系统安全策略。使用无障碍、悬浮窗、Shizuku 等能力时，请自行理解相关权限风险，并遵守所在地区法律法规和目标应用服务条款。
 
-<a href="https://gkd.li/guide/"><img src="https://e.gkd.li/f23b704d-d781-494b-9719-393f95683b89" alt="Download from GKD.LI" width="32%" /></a><a href="https://play.google.com/store/apps/details?id=li.songe.gkd"><img src="https://e.gkd.li/f63fabeb-0342-4961-a46d-cac61b0f8856" alt="Download from Google Play" width="32%" /></a><a href="https://github.com/gkd-kit/gkd/releases"><img src="https://e.gkd.li/c1ef2bb9-7472-46d5-9806-81b4c37e5b4d" alt="Download from GitHub releases" width="32%" /></a>
+## 致谢
 
-如遇问题请先查看 [疑难解答](https://gkd.li/guide/faq)
-
-## 截图
-
-|                                                               |                                                               |                                                               |                                                               |
-| ------------------------------------------------------------- | ------------------------------------------------------------- | ------------------------------------------------------------- | ------------------------------------------------------------- |
-| ![img](https://e.gkd.li/1e8934c1-2303-4182-9ef2-ad4c46882570) | ![img](https://e.gkd.li/01f230d7-9b89-4314-b573-38bd233d22f9) | ![img](https://e.gkd.li/dfa0a782-b21e-473a-96e4-eef27773b71b) | ![img](https://e.gkd.li/641decd1-2e60-4e95-b78c-df38d1d98a4d) |
-| ![img](https://e.gkd.li/b216b703-d3de-4798-81ba-29e0ae63264f) | ![img](https://e.gkd.li/76c25ac9-4189-47cd-b40b-b9e72c79b584) | ![img](https://e.gkd.li/7288502e-808b-4d9a-88b5-1085abaa0d46) | ![img](https://e.gkd.li/aa974940-7773-409a-ae84-3c02fee9c770) |
-
-## 订阅
-
-GKD **默认不提供规则**，需自行添加本地规则，或者通过订阅链接的方式获取远程规则
-
-也可通过 [subscription-template](https://github.com/gkd-kit/subscription-template) 快速构建自己的远程订阅
-
-第三方订阅列表可在 <https://github.com/topics/gkd-subscription> 查看
-
-要加入此列表, 需点击仓库主页右上角设置图标后在 Topics 中添加 `gkd-subscription`
-
-<details>
-<summary>示例图片 - 添加至 Topics (点击展开)</summary>
-
-![image](https://e.gkd.li/9e340459-254f-4ca0-8a44-cc823069e5a7)
-
-</details>
-
-## 选择器
-
-一个类似 CSS 选择器的选择器, 能联系节点上下文信息, 更容易也更精确找到目标节点
-
-<https://gkd.li/guide/selector>
-
-[@[vid=\"menu\"] < [vid=\"menu_container\"] - [vid=\"dot_text_layout\"] > [text^=\"广告\"]](https://i.gkd.li/i/14881985?gkd=QFt2aWQ9Im1lbnUiXSA8IFt2aWQ9Im1lbnVfY29udGFpbmVyIl0gLSBbdmlkPSJkb3RfdGV4dF9sYXlvdXQiXSA-IFt0ZXh0Xj0i5bm_5ZGKIl0)
-
-<details>
-<summary>示例图片 - 选择器路径视图 (点击展开)</summary>
-
-[![image](https://e.gkd.li/a2ae667b-b8c5-4556-a816-37743347b972)](https://i.gkd.li/i/14881985?gkd=QFt2aWQ9Im1lbnUiXSA8IFt2aWQ9Im1lbnVfY29udGFpbmVyIl0gLSBbdmlkPSJkb3RfdGV4dF9sYXlvdXQiXSA-IFt0ZXh0Xj0i5bm_5ZGKIl0)
-
-</details>
-
-## 捐赠
-
-如果 GKD 对你有用, 可以通过以下链接支持该项目
-
-<https://github.com/lisonge/sponsor>
-
-或前往 [Google Play](https://play.google.com/store/apps/details?id=li.songe.gkd) 给个好评
-
-## Star History
-
-[![Stargazers over time](https://starchart.cc/gkd-kit/gkd.svg?variant=adaptive)](https://starchart.cc/gkd-kit/gkd)
+感谢 [GKD](https://github.com/gkd-kit/gkd) 原项目及其生态提供的选择器、订阅规则和无障碍自动化基础。本项目的二开能力建立在这些基础之上。

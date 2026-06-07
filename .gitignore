@@ -19,6 +19,8 @@ local.properties
 
 *.jks
 *.keystore
+*.base64
+/GKD-DEP
 
 /_assets
 /.kotlin

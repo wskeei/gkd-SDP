@@ -1,49 +1,86 @@
-name: Build-Apk
+name: Build Latest APK
 
 on:
   workflow_dispatch:
-
   push:
     branches:
-      - '**'
+      - main
     paths-ignore:
       - 'LICENSE'
       - '*.md'
-      - '.github/**'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: latest-apk-release
+  cancel-in-progress: true
 
 jobs:
-  build:
+  build-latest:
     if: ${{ !startsWith(github.event.head_commit.message, 'chore:') && !startsWith(github.event.head_commit.message, 'chore(') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
 
       - uses: actions/setup-java@v5
         with:
-          distribution: 'zulu'
+          distribution: zulu
           java-version: '21'
 
       - uses: gradle/actions/setup-gradle@v5
         with:
           cache-encryption-key: ${{ secrets.GRADLE_CACHE_ENCRYPTION_KEY }}
 
-      - name: write gkd secrets info
+      - name: Configure release signing
         run: |
-          echo ${{ secrets.GKD_STORE_FILE_BASE64 }} | base64 --decode > ${{ github.workspace }}/gkd.jks
-          echo GKD_STORE_FILE='${{ github.workspace }}/gkd.jks' >> gradle.properties
-          echo GKD_STORE_PASSWORD='${{ secrets.GKD_STORE_PASSWORD }}' >> gradle.properties
-          echo GKD_KEY_ALIAS='${{ secrets.GKD_KEY_ALIAS }}' >> gradle.properties
-          echo GKD_KEY_PASSWORD='${{ secrets.GKD_KEY_PASSWORD }}' >> gradle.properties
+          if [ -z "${{ secrets.GKD_STORE_FILE_BASE64 }}" ]; then
+            echo "Missing signing secret: GKD_STORE_FILE_BASE64" >&2
+            exit 1
+          fi
+          echo "${{ secrets.GKD_STORE_FILE_BASE64 }}" | base64 --decode > "${{ github.workspace }}/gkd-sdp.jks"
+          {
+            echo "GKD_STORE_FILE=${{ github.workspace }}/gkd-sdp.jks"
+            echo "GKD_STORE_PASSWORD=${{ secrets.GKD_STORE_PASSWORD }}"
+            echo "GKD_KEY_ALIAS=${{ secrets.GKD_KEY_ALIAS }}"
+            echo "GKD_KEY_PASSWORD=${{ secrets.GKD_KEY_PASSWORD }}"
+          } >> gradle.properties
 
-      - run: chmod 777 ./gradlew
-      - run: ./gradlew app:assembleGkdRelease
+      - name: Build release APK
+        run: |
+          chmod +x ./gradlew
+          ./gradlew :app:assembleGkdRelease
+
+      - name: Prepare APK asset
+        run: |
+          mkdir -p release
+          cp app/build/outputs/apk/gkd/release/app-gkd-release.apk release/gkd-sdp-latest.apk
+
+      - name: Move latest tag
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -f latest "${GITHUB_SHA}"
+          git push -f origin latest
+
+      - name: Publish latest prerelease
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest
+          name: GKD-SDP Latest
+          body: |
+            Automated latest build for `${{ github.sha }}`.
+
+            This release is refreshed on every successful push to `main`.
+          prerelease: true
+          make_latest: false
+          files: release/gkd-sdp-latest.apk
+          fail_on_unmatched_files: true
+          overwrite_files: true
 
       - uses: actions/upload-artifact@v4
         with:
-          name: release
-          path: app/build/outputs/apk/gkd/release
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: outputs
-          path: app/build/outputs
+          name: gkd-sdp-latest-apk
+          path: release/gkd-sdp-latest.apk
