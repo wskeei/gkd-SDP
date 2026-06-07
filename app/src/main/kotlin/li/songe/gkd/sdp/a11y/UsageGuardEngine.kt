@@ -135,6 +135,30 @@ object UsageGuardEngine {
         }
     }
 
+    fun terminateActiveUsage(appId: String, recordId: Long) {
+        if (appId.isBlank() || recordId <= 0L) return
+        appScope.launch(Dispatchers.IO) {
+            stateMutex.withLock {
+                val activeRecord = DbSet.usageGuardRecordDao.getActiveRecord(appId) ?: return@withLock
+                if (activeRecord.id != recordId) return@withLock
+
+                val now = System.currentTimeMillis()
+                DbSet.usageGuardRecordDao.closeRecord(
+                    id = activeRecord.id,
+                    endedAt = now,
+                    endReason = UsageGuardRecord.END_REASON_USER_TERMINATED,
+                )
+                UsageGuardReviewWidget.refreshAll(app)
+                cancelExpiryWatch(appId)
+                stopCountdownOverlay(A11yService.instance, appId)
+                lastProtectedAppId = null
+                A11yService.instance?.performGlobalAction(
+                    android.accessibilityservice.AccessibilityService.GLOBAL_ACTION_HOME
+                )
+            }
+        }
+    }
+
     private suspend fun handleAppChanged(packageName: String, service: A11yService) {
         closePreviousSessionIfNeeded(packageName, service)
 

@@ -29,6 +29,7 @@ class UsageGuardVmTest {
         assertEquals(UsageGuardRecord.END_REASON_EXPIRED, 1)
         assertEquals(UsageGuardRecord.END_REASON_LEFT_APP, 2)
         assertEquals(UsageGuardRecord.END_REASON_HOME_BUTTON, 4)
+        assertEquals(UsageGuardRecord.END_REASON_USER_TERMINATED, 5)
     }
 
     @Test

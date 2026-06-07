@@ -38,6 +38,7 @@ data class UsageGuardRecord(
         const val END_REASON_LEFT_APP = 2
         const val END_REASON_REPLACED = 3
         const val END_REASON_HOME_BUTTON = 4
+        const val END_REASON_USER_TERMINATED = 5
     }
 
     @Dao

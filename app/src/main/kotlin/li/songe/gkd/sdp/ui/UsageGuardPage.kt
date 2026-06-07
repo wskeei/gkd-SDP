@@ -75,6 +75,7 @@ import li.songe.gkd.sdp.ui.style.itemPadding
 import li.songe.gkd.sdp.ui.style.scaffoldPadding
 import li.songe.gkd.sdp.ui.style.surfaceCardColors
 import li.songe.gkd.sdp.util.UsageGuardPolicy
+import li.songe.gkd.sdp.util.UsageGuardReviewPolicy
 import li.songe.gkd.sdp.util.UsageGuardUiStatePolicy
 import li.songe.gkd.sdp.util.appInfoMapFlow
 
@@ -827,7 +828,11 @@ private fun HistoryRow(record: UsageGuardRecord, appName: String) {
         }
         Text(record.tagNames.joinToString(" · "), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
         Text(record.reasonText, style = MaterialTheme.typography.bodyMedium)
-        Text("申请 ${record.requestedDurationMinutes} 分钟", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(
+            "申请 ${record.requestedDurationMinutes} 分钟 · 实用 ${UsageGuardReviewPolicy.formatUsedDuration(UsageGuardReviewPolicy.effectiveUsedSeconds(record))}",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
         Text(record.endStateText(), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
@@ -839,6 +844,7 @@ private fun UsageGuardRecord.endStateText(): String {
         UsageGuardRecord.END_REASON_LEFT_APP -> "离开应用结束"
         UsageGuardRecord.END_REASON_REPLACED -> "已被新的申请替换"
         UsageGuardRecord.END_REASON_HOME_BUTTON -> "已回到桌面"
+        UsageGuardRecord.END_REASON_USER_TERMINATED -> "已主动终止"
         else -> "未知状态"
     }
 }

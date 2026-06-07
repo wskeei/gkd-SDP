@@ -4,12 +4,21 @@ import android.content.Intent
 import android.graphics.PixelFormat
 import android.view.Gravity
 import android.view.WindowManager
+import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -17,6 +26,7 @@ import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
@@ -29,8 +39,8 @@ import androidx.savedstate.SavedStateRegistryOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import kotlinx.coroutines.delay
 import li.songe.gkd.sdp.a11y.UsageGuardEngine
-import li.songe.gkd.sdp.util.BarUtils
 import li.songe.gkd.sdp.ui.style.AppTheme
+import li.songe.gkd.sdp.util.BarUtils
 import li.songe.gkd.sdp.util.ScreenUtils
 import li.songe.gkd.sdp.util.UsageGuardCountdownOverlayLayoutPolicy
 import li.songe.gkd.sdp.util.UsageGuardCountdownOverlayPolicy
@@ -49,6 +59,7 @@ class UsageGuardCountdownOverlayService : LifecycleService(), SavedStateRegistry
     private var recordId: Long = 0L
     private var expiresAt: Long = 0L
     private var expiresAtState by mutableStateOf(0L)
+    private var showTerminateConfirm by mutableStateOf(false)
 
     override fun onCreate() {
         super.onCreate()
@@ -80,6 +91,7 @@ class UsageGuardCountdownOverlayService : LifecycleService(), SavedStateRegistry
         if (view == null) {
             showOverlay()
         } else if (shouldResetPosition) {
+            showTerminateConfirm = false
             resetPosition()
         }
         return START_NOT_STICKY
@@ -93,10 +105,17 @@ class UsageGuardCountdownOverlayService : LifecycleService(), SavedStateRegistry
             setViewTreeSavedStateRegistryOwner(this@UsageGuardCountdownOverlayService)
             setContent {
                 AppTheme {
-                    UsageGuardCountdownPill(
+                    UsageGuardCountdownOverlayContent(
                         expiresAt = expiresAtState,
+                        showTerminateConfirm = showTerminateConfirm,
+                        onPillTap = { showTerminateConfirmScreen() },
                         onDrag = { dx, dy -> updatePosition(dx, dy) },
                         onExpired = { stopSelf() },
+                        onDismissTerminate = { hideTerminateConfirm() },
+                        onConfirmTerminate = {
+                            UsageGuardEngine.terminateActiveUsage(appId, recordId)
+                            stopSelf()
+                        },
                     )
                 }
             }
@@ -127,7 +146,39 @@ class UsageGuardCountdownOverlayService : LifecycleService(), SavedStateRegistry
         }
     }
 
+    private fun showTerminateConfirmScreen() {
+        val params = layoutParams ?: return
+        val overlayView = view ?: return
+        params.width = WindowManager.LayoutParams.MATCH_PARENT
+        params.height = WindowManager.LayoutParams.MATCH_PARENT
+        params.x = 0
+        params.y = 0
+        showTerminateConfirm = true
+        runCatching {
+            windowManager.updateViewLayout(overlayView, params)
+        }.onFailure {
+            stopSelf()
+        }
+    }
+
+    private fun hideTerminateConfirm() {
+        showTerminateConfirm = false
+        val params = layoutParams ?: return
+        val overlayView = view ?: return
+        params.width = WindowManager.LayoutParams.WRAP_CONTENT
+        params.height = WindowManager.LayoutParams.WRAP_CONTENT
+        val initialPosition = getInitialPosition()
+        params.x = initialPosition.x
+        params.y = initialPosition.y
+        runCatching {
+            windowManager.updateViewLayout(overlayView, params)
+        }.onFailure {
+            stopSelf()
+        }
+    }
+
     private fun updatePosition(dx: Float, dy: Float) {
+        if (showTerminateConfirm) return
         val params = layoutParams ?: return
         val overlayView = view ?: return
         val screenWidth = ScreenUtils.getScreenWidth()
@@ -147,6 +198,8 @@ class UsageGuardCountdownOverlayService : LifecycleService(), SavedStateRegistry
         val params = layoutParams ?: return
         val overlayView = view ?: return
         val initialPosition = getInitialPosition()
+        params.width = WindowManager.LayoutParams.WRAP_CONTENT
+        params.height = WindowManager.LayoutParams.WRAP_CONTENT
         params.x = initialPosition.x
         params.y = initialPosition.y
         runCatching {
@@ -177,12 +230,39 @@ class UsageGuardCountdownOverlayService : LifecycleService(), SavedStateRegistry
         recordId = 0L
         expiresAt = 0L
         expiresAtState = 0L
+        showTerminateConfirm = false
+    }
+}
+
+@Composable
+private fun UsageGuardCountdownOverlayContent(
+    expiresAt: Long,
+    showTerminateConfirm: Boolean,
+    onPillTap: () -> Unit,
+    onDrag: (Float, Float) -> Unit,
+    onExpired: () -> Unit,
+    onDismissTerminate: () -> Unit,
+    onConfirmTerminate: () -> Unit,
+) {
+    if (showTerminateConfirm) {
+        UsageGuardTerminateConfirmScreen(
+            onDismiss = onDismissTerminate,
+            onConfirm = onConfirmTerminate,
+        )
+    } else {
+        UsageGuardCountdownPill(
+            expiresAt = expiresAt,
+            onTap = onPillTap,
+            onDrag = onDrag,
+            onExpired = onExpired,
+        )
     }
 }
 
 @Composable
 private fun UsageGuardCountdownPill(
     expiresAt: Long,
+    onTap: () -> Unit,
     onDrag: (Float, Float) -> Unit,
     onExpired: () -> Unit,
 ) {
@@ -202,12 +282,16 @@ private fun UsageGuardCountdownPill(
     Surface(
         color = Color.Black.copy(alpha = 0.72f),
         shape = RoundedCornerShape(999.dp),
-        modifier = Modifier.pointerInput(Unit) {
-            detectDragGestures { change, dragAmount ->
-                change.consume()
-                onDrag(dragAmount.x, dragAmount.y)
+        modifier = Modifier
+            .pointerInput(Unit) {
+                detectTapGestures(onTap = { onTap() })
             }
-        },
+            .pointerInput(Unit) {
+                detectDragGestures { change, dragAmount ->
+                    change.consume()
+                    onDrag(dragAmount.x, dragAmount.y)
+                }
+            },
     ) {
         Text(
             text = remainingText,
@@ -215,5 +299,52 @@ private fun UsageGuardCountdownPill(
             style = MaterialTheme.typography.labelLarge,
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
         )
+    }
+}
+
+@Composable
+private fun UsageGuardTerminateConfirmScreen(
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit,
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black.copy(alpha = 0.45f))
+            .padding(24.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Surface(
+            shape = RoundedCornerShape(24.dp),
+            color = MaterialTheme.colorScheme.surface,
+            tonalElevation = 6.dp,
+        ) {
+            Column(
+                modifier = Modifier.padding(24.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+            ) {
+                Text(
+                    text = "是否终止使用？",
+                    style = MaterialTheme.typography.titleLarge,
+                )
+                Text(
+                    text = "终止后本次倒计时将归零，并立即回到桌面。记录会按实际使用时长统计。",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Row(
+                    modifier = Modifier.align(Alignment.End),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    TextButton(onClick = onDismiss) {
+                        Text("否")
+                    }
+                    Button(onClick = onConfirm) {
+                        Text("是，终止")
+                    }
+                }
+            }
+        }
     }
 }
