@@ -49,6 +49,7 @@ import li.songe.gkd.sdp.store.storeFlow
 import li.songe.gkd.sdp.ui.style.AppTheme
 import li.songe.gkd.sdp.util.UsageGuardPolicy
 import li.songe.gkd.sdp.util.UsageGuardUiStatePolicy
+import li.songe.gkd.sdp.widget.UsageGuardReviewWidget
 
 class UsageGuardRequestOverlayService : LifecycleService(), SavedStateRegistryOwner {
     private val windowManager by lazy { getSystemService(WINDOW_SERVICE) as WindowManager }
@@ -126,6 +127,7 @@ class UsageGuardRequestOverlayService : LifecycleService(), SavedStateRegistryOw
                                         expiresAt = now + requestedDurationMinutes * 60_000L,
                                     )
                                 )
+                                UsageGuardReviewWidget.refreshAll(applicationContext)
                                 UsageGuardEngine.onRequestGranted(appId)
                                 stopSelf()
                             }

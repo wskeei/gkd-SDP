@@ -41,6 +41,7 @@ import com.ramcosta.composedestinations.generated.destinations.ActivityLogPageDe
 import com.ramcosta.composedestinations.generated.destinations.AppConfigPageDestination
 import com.ramcosta.composedestinations.generated.destinations.AppOpsAllowPageDestination
 import com.ramcosta.composedestinations.generated.destinations.AuthA11YPageDestination
+import com.ramcosta.composedestinations.generated.destinations.UsageGuardReviewPageDestination
 import com.ramcosta.composedestinations.generated.destinations.WebViewPageDestination
 import li.songe.gkd.sdp.MainActivity
 import li.songe.gkd.sdp.R
@@ -65,6 +66,7 @@ import li.songe.gkd.sdp.ui.style.itemHorizontalPadding
 import li.songe.gkd.sdp.ui.style.itemVerticalPadding
 import li.songe.gkd.sdp.ui.style.surfaceCardColors
 import li.songe.gkd.sdp.util.HOME_PAGE_URL
+import li.songe.gkd.sdp.util.UsageGuardReviewPolicy
 import li.songe.gkd.sdp.util.latestRecordDescFlow
 import li.songe.gkd.sdp.util.latestRecordFlow
 import li.songe.gkd.sdp.util.launchAsFn
@@ -187,6 +189,18 @@ fun useControlPage(): ScaffoldExt {
             )
 
             ServerStatusCard()
+
+            val usageGuardSummary by vm.usageGuardReviewSummaryFlow.collectAsState()
+            val usageGuardWidgetSummary = UsageGuardReviewPolicy.widgetSummary(usageGuardSummary)
+            PageItemCard(
+                title = "数字自律复盘",
+                subtitle = "${usageGuardWidgetSummary.metric}｜${usageGuardWidgetSummary.hint}",
+                imageVector = PerfIcon.Equalizer,
+                onClickLabel = "打开数字自律复盘页面",
+                onClick = {
+                    mainVm.navigatePage(UsageGuardReviewPageDestination)
+                },
+            )
 
             PageItemCard(
                 title = "触发记录",

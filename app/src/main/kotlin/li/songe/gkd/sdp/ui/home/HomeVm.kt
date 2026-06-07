@@ -2,7 +2,9 @@ package li.songe.gkd.sdp.ui.home
 
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
 import li.songe.gkd.sdp.MainViewModel
+import li.songe.gkd.sdp.db.DbSet
 import li.songe.gkd.sdp.store.actionCountFlow
 import li.songe.gkd.sdp.store.blockMatchAppListFlow
 import li.songe.gkd.sdp.store.storeFlow
@@ -11,10 +13,13 @@ import li.songe.gkd.sdp.ui.share.asMutableStateFlow
 import li.songe.gkd.sdp.ui.share.useAppFilter
 import li.songe.gkd.sdp.util.AppSortOption
 import li.songe.gkd.sdp.util.EMPTY_RULE_TIP
+import li.songe.gkd.sdp.util.UsageGuardHistoryPolicy
+import li.songe.gkd.sdp.util.UsageGuardReviewPolicy
 import li.songe.gkd.sdp.util.findOption
 import li.songe.gkd.sdp.util.getSubsStatus
 import li.songe.gkd.sdp.util.ruleSummaryFlow
 import li.songe.gkd.sdp.util.usedSubsEntriesFlow
+import java.time.LocalDate
 
 class HomeVm : BaseViewModel() {
 
@@ -25,6 +30,12 @@ class HomeVm : BaseViewModel() {
     }
 
     val usedSubsItemCountFlow = usedSubsEntriesFlow.mapNew { it.size }
+
+    private val usageGuardTodayRange = UsageGuardHistoryPolicy.dayRange(LocalDate.now())
+    val usageGuardReviewSummaryFlow = DbSet.usageGuardRecordDao
+        .queryByRequestedAtRange(usageGuardTodayRange.first, usageGuardTodayRange.second)
+        .map { records -> UsageGuardReviewPolicy.summarize(records) }
+        .stateInit(UsageGuardReviewPolicy.summarize(emptyList()))
 
     val sortTypeFlow = storeFlow.asMutableStateFlow(
         getter = { AppSortOption.objects.findOption(it.appSort) },

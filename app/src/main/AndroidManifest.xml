@@ -347,6 +347,17 @@
                 android:resource="@xml/focus_quick_start_widget_info" />
         </receiver>
 
+        <receiver
+            android:name=".widget.UsageGuardReviewWidget"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/usage_guard_review_widget_info" />
+        </receiver>
+
         <activity
             android:name=".widget.FocusWidgetConfigActivity"
             android:exported="true">

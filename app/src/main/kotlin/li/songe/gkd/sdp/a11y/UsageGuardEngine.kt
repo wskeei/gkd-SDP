@@ -10,6 +10,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import li.songe.gkd.sdp.META
+import li.songe.gkd.sdp.app
 import li.songe.gkd.sdp.appScope
 import li.songe.gkd.sdp.data.UsageGuardAppProfile
 import li.songe.gkd.sdp.data.UsageGuardRecord
@@ -23,6 +24,7 @@ import li.songe.gkd.sdp.store.storeFlow
 import li.songe.gkd.sdp.util.UsageGuardPolicy
 import li.songe.gkd.sdp.util.appInfoMapFlow
 import li.songe.gkd.sdp.util.systemUiAppId
+import li.songe.gkd.sdp.widget.UsageGuardReviewWidget
 
 object UsageGuardEngine {
     private val stateMutex = Mutex()
@@ -129,6 +131,7 @@ object UsageGuardEngine {
                 id = recordId,
                 endReason = UsageGuardRecord.END_REASON_HOME_BUTTON,
             )
+            UsageGuardReviewWidget.refreshAll(app)
         }
     }
 
@@ -188,6 +191,7 @@ object UsageGuardEngine {
                 endedAt = now,
                 endReason = UsageGuardRecord.END_REASON_EXPIRED,
             )
+            UsageGuardReviewWidget.refreshAll(app)
             showTimeoutOverlay(service, packageName, activeRecord.id, activeRecord.reasonText)
             timeoutOverlayAppId = packageName
             return
@@ -217,6 +221,7 @@ object UsageGuardEngine {
             endedAt = System.currentTimeMillis(),
             endReason = UsageGuardRecord.END_REASON_LEFT_APP,
         )
+        UsageGuardReviewWidget.refreshAll(app)
     }
 
     private fun shouldSkipApp(packageName: String): Boolean {
@@ -261,6 +266,7 @@ object UsageGuardEngine {
                     endedAt = System.currentTimeMillis(),
                     endReason = UsageGuardRecord.END_REASON_EXPIRED,
                 )
+                UsageGuardReviewWidget.refreshAll(app)
 
                 stopCountdownOverlay(A11yService.instance, record.appId)
                 cancelExpiryWatch(record.appId)
