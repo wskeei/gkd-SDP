@@ -47,7 +47,6 @@ val debugSuffixPairList by lazy {
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.androidx.room)
-    alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlinx.atomicfu)
@@ -89,6 +88,7 @@ android {
     buildFeatures {
         compose = true
         aidl = true
+        resValues = true
     }
 
     val gkdSigningConfig = if (project.hasProperty("GKD_STORE_FILE")) {
@@ -156,7 +156,7 @@ android {
             resValue("bool", "is_accessibility_tool", "false")
         }
         all {
-            dimension = flavorDimensionList.first()
+            dimension = "channel"
             manifestPlaceholders["channel"] = name
         }
     }
@@ -165,7 +165,7 @@ android {
         targetCompatibility = rootProject.ext["android.javaVersion"] as JavaVersion
     }
     dependenciesInfo.includeInApk = false
-    packagingOptions.resources.excludes += setOf(
+    packaging.resources.excludes += setOf(
         // https://github.com/Kotlin/kotlinx.coroutines/issues/2023
         "META-INF/**", "**/attach_hotspot_windows.dll",
 

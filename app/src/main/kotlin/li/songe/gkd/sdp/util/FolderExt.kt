@@ -3,6 +3,7 @@ package li.songe.gkd.sdp.util
 import android.text.format.DateUtils
 import androidx.annotation.WorkerThread
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.Json
 import li.songe.gkd.sdp.META
 import li.songe.gkd.sdp.app
 import li.songe.gkd.sdp.data.AppInfo
