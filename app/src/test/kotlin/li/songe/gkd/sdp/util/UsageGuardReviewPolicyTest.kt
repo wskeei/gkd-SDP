@@ -51,7 +51,7 @@ class UsageGuardReviewPolicyTest {
         val widget = UsageGuardReviewPolicy.widgetSummary(summary)
 
         assertEquals("今日申请 2 次", widget.title)
-        assertEquals("累计 20 分钟 · 高频 微信", widget.metric)
+        assertEquals("累计使用 20 分钟 · 高频 微信", widget.metric)
         assertEquals("夜间申请偏多，睡前先收紧入口。", widget.hint)
     }
 
@@ -68,6 +68,35 @@ class UsageGuardReviewPolicyTest {
         assertEquals("今日申请 0 次", widget.title)
         assertEquals("保持安静", widget.metric)
         assertEquals("还没有新的使用申请。", widget.hint)
+    }
+
+    @Test
+    fun manualTerminationUsesActualElapsedTimeInSummaryAndWidget() {
+        val requestedAt = at(9)
+        val record = UsageGuardRecord(
+            id = 99L,
+            appId = "chat.app",
+            appName = "微信",
+            tagNames = listOf("回复消息"),
+            reasonText = "回一条消息",
+            requestedDurationMinutes = 2,
+            requestedAt = requestedAt,
+            grantedAt = requestedAt,
+            expiresAt = requestedAt + 2 * 60_000L,
+            endedAt = requestedAt + 10_000L,
+            endReason = UsageGuardRecord.END_REASON_USER_TERMINATED,
+        )
+
+        val summary = UsageGuardReviewPolicy.summarize(
+            records = listOf(record),
+            now = requestedAt + 20_000L,
+            zoneId = zoneId,
+        )
+        val widget = UsageGuardReviewPolicy.widgetSummary(summary)
+
+        assertEquals(10, summary.totalUsedSeconds)
+        assertEquals("累计使用 10 秒 · 高频 微信", widget.metric)
+        assertEquals("主动终止", UsageGuardReviewPolicy.endReasonLabel(UsageGuardRecord.END_REASON_USER_TERMINATED))
     }
 
     private fun recordAt(

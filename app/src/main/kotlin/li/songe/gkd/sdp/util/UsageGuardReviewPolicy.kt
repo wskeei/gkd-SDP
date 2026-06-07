@@ -18,6 +18,7 @@ object UsageGuardReviewPolicy {
     data class Summary(
         val requestCount: Int,
         val totalRequestedMinutes: Int,
+        val totalUsedSeconds: Long,
         val topApps: List<RankedItem>,
         val topTags: List<RankedItem>,
         val endReasonCounts: Map<Int, Int>,
@@ -47,6 +48,7 @@ object UsageGuardReviewPolicy {
         return Summary(
             requestCount = effectiveRecords.size,
             totalRequestedMinutes = effectiveRecords.sumOf { it.requestedDurationMinutes },
+            totalUsedSeconds = effectiveRecords.sumOf { effectiveUsedSeconds(it, now) },
             topApps = rankByCount(effectiveRecords.map { it.appName.ifBlank { it.appId } }),
             topTags = rankByCount(effectiveRecords.flatMap { it.tagNames }),
             endReasonCounts = effectiveRecords.groupingBy { it.endReason }.eachCount(),
@@ -65,7 +67,7 @@ object UsageGuardReviewPolicy {
         val topAppText = summary.topApps.firstOrNull()?.let { " · 高频 ${it.label}" }.orEmpty()
         return WidgetSummary(
             title = "今日申请 ${summary.requestCount} 次",
-            metric = "累计 ${summary.totalRequestedMinutes} 分钟$topAppText",
+            metric = "累计使用 ${formatUsedDuration(summary.totalUsedSeconds)}$topAppText",
             hint = riskHint(summary.riskPeriod),
         )
     }
@@ -77,8 +79,27 @@ object UsageGuardReviewPolicy {
             UsageGuardRecord.END_REASON_LEFT_APP -> "离开结束"
             UsageGuardRecord.END_REASON_REPLACED -> "被替换"
             UsageGuardRecord.END_REASON_HOME_BUTTON -> "回桌面"
+            UsageGuardRecord.END_REASON_USER_TERMINATED -> "主动终止"
             else -> "未知"
         }
+    }
+
+    fun effectiveUsedSeconds(record: UsageGuardRecord, now: Long = System.currentTimeMillis()): Long {
+        val endAt = when {
+            record.endedAt > 0L -> record.endedAt
+            record.expiresAt > 0L -> minOf(now, record.expiresAt)
+            else -> now
+        }
+        return ((endAt - record.grantedAt).coerceAtLeast(0L) / 1_000L)
+    }
+
+    fun formatUsedDuration(totalSeconds: Long): String {
+        val safeSeconds = totalSeconds.coerceAtLeast(0L)
+        if (safeSeconds < 60L) return "${safeSeconds} 秒"
+        val minutes = safeSeconds / 60L
+        val seconds = safeSeconds % 60L
+        if (seconds == 0L) return "${minutes} 分钟"
+        return "${minutes} 分 ${seconds} 秒"
     }
 
     private fun rankByCount(labels: List<String>): List<RankedItem> {
