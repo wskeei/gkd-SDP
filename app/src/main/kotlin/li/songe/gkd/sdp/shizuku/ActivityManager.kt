@@ -2,24 +2,18 @@ package li.songe.gkd.sdp.shizuku
 
 import android.app.ActivityManager
 import android.app.IActivityManager
-import li.songe.gkd.sdp.permission.shizukuGrantedState
+import android.content.Context
+import android.content.Intent
 import li.songe.gkd.sdp.util.AndroidTarget
-import li.songe.gkd.sdp.util.checkExistClass
 
 class SafeActivityManager(private val value: IActivityManager) {
     companion object {
-        val isAvailable: Boolean
-            get() = checkExistClass("android.app.IActivityManager")
-
-        fun newBinder() = getStubService(
-            "activity",
-            isAvailable,
-        )?.let {
+        fun newBinder() = getShizukuService(Context.ACTIVITY_SERVICE)?.let {
             SafeActivityManager(IActivityManager.Stub.asInterface(it))
         }
     }
 
-    fun getTasks(maxNum: Int): List<ActivityManager.RunningTaskInfo> = safeInvokeMethod {
+    fun getTasks(maxNum: Int = 1): List<ActivityManager.RunningTaskInfo> = safeInvokeShizuku {
         if (AndroidTarget.P) {
             value.getTasks(maxNum)
         } else {
@@ -27,18 +21,43 @@ class SafeActivityManager(private val value: IActivityManager) {
         }
     } ?: emptyList()
 
+    fun startForegroundService(intent: Intent) {
+        // 被启动的服务必须设置 android:exported="true"
+        // https://github.com/android-cs/16/blob/main/services/core/java/com/android/server/am/ActivityManagerShellCommand.java#L982
+        val requireForeground = true
+        val callingPackage = "com.android.shell"
+        val callingFeatureId: String? = null
+        if (AndroidTarget.R) {
+            value.startService(
+                null,
+                intent,
+                intent.type,
+                requireForeground,
+                callingPackage,
+                callingFeatureId,
+                currentUserId
+            )
+        } else {
+            value.startService(
+                null,
+                intent,
+                intent.type,
+                requireForeground,
+                callingPackage,
+                currentUserId
+            )
+        }
+    }
+
     fun registerDefault() {
-        if (!SafeTaskListener.isAvailable) return
-        safeInvokeMethod {
-            value.registerTaskStackListener(SafeTaskListener.instance)
+        safeInvokeShizuku {
+            value.registerTaskStackListener(FixedTaskStackListener)
         }
     }
 
     fun unregisterDefault() {
-        if (!shizukuGrantedState.stateFlow.value) return
-        if (!SafeTaskListener.isAvailable) return
-        safeInvokeMethod {
-            value.unregisterTaskStackListener(SafeTaskListener.instance)
+        safeInvokeShizuku {
+            value.unregisterTaskStackListener(FixedTaskStackListener)
         }
     }
 }

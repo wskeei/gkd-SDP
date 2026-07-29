@@ -1,10 +1,10 @@
 package li.songe.gkd.sdp.service
 
-import android.accessibilityservice.AccessibilityService
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.isActive
+import li.songe.gkd.sdp.a11y.A11yRuleEngine
 import li.songe.gkd.sdp.appScope
 import li.songe.gkd.sdp.util.LogUtils
 import li.songe.gkd.sdp.util.SnapshotExt
@@ -21,41 +21,52 @@ class SnapshotTileService() : BaseTileService() {
 
 private fun execSnapshot() {
     LogUtils.d("SnapshotTileService::onClick")
-    val service = A11yService.instance
+    val service = A11yRuleEngine.instance
     if (service == null) {
-        toast("无障碍没有开启")
+        A11yRuleEngine.performActionBack()
+        toast("服务未连接", forced = true)
         return
     }
     appScope.launchTry(Dispatchers.IO) {
         val oldAppId = service.safeActiveWindowAppId
-            ?: return@launchTry toast("获取界面信息根节点失败")
+
+        if (oldAppId == null) {
+            A11yRuleEngine.performActionBack()
+            toast("获取信息根节点失败", forced = true)
+            return@launchTry
+        }
 
         val startTime = System.currentTimeMillis()
         fun timeout(): Boolean {
             return System.currentTimeMillis() - startTime > 3000L
         }
 
+        var ok = false
         while (isActive) {
             val latestAppId = service.safeActiveWindowAppId
             if (latestAppId == null) {
                 // https://github.com/gkd-kit/gkd/issues/713
                 delay(250)
                 if (timeout()) {
-                    toast("当前应用没有无障碍信息，捕获失败")
+                    toast("当前应用没有无障碍信息，捕获失败", forced = true)
                     break
                 }
             } else if (latestAppId != oldAppId) {
+                ok = true
                 LogUtils.d("SnapshotTileService::eventExecutor.execute")
-                appScope.launchTry { SnapshotExt.captureSnapshot() }
+                appScope.launchTry { SnapshotExt.captureSnapshot(forcedCropStatusBar = true) }
                 break
             } else {
-                service.performGlobalAction(AccessibilityService.GLOBAL_ACTION_BACK)
+                A11yRuleEngine.performActionBack()
                 delay(500)
                 if (timeout()) {
-                    toast("未检测到界面切换，捕获失败")
+                    toast("未检测到界面切换，捕获失败", forced = true)
                     break
                 }
             }
+        }
+        if (!ok) {
+            A11yRuleEngine.performActionBack()
         }
     }
 }

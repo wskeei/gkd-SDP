@@ -1,3 +1,4 @@
+import com.android.build.api.variant.impl.VariantOutputImpl
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import kotlin.reflect.full.declaredMemberProperties
 
@@ -17,7 +18,9 @@ data class GitInfo(
     val commitId: String,
     val commitTime: String,
     val tagName: String?,
-)
+) {
+    val versionNameSuffix get() = if (tagName == null) ("-" + commitId.take(7)) else null
+}
 
 val gitInfo = GitInfo(
     commitId = "git rev-parse HEAD".runCommand(),
@@ -47,11 +50,12 @@ val debugSuffixPairList by lazy {
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.androidx.room)
+    alias(libs.plugins.kotlin.parcelize)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlinx.atomicfu)
     alias(libs.plugins.google.ksp)
-    alias(libs.plugins.rikka.refine)
+    alias(libs.plugins.remap)
     alias(libs.plugins.loc)
 }
 
@@ -65,8 +69,8 @@ android {
         targetSdk = rootProject.ext["android.targetSdk"] as Int
 
         applicationId = "li.songe.gkd.sdp"
-        versionCode = 81
-        versionName = "1.11.6"
+        versionCode = 92
+        versionName = "1.12.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -94,12 +98,12 @@ android {
     val gkdSigningConfig = if (project.hasProperty("GKD_STORE_FILE")) {
         signingConfigs.create("gkd") {
             storeFile = file(project.properties["GKD_STORE_FILE"] as String)
-            storePassword = project.properties["GKD_STORE_PASSWORD"].toString()
-            keyAlias = project.properties["GKD_KEY_ALIAS"].toString()
-            keyPassword = project.properties["GKD_KEY_PASSWORD"].toString()
+            storePassword = project.findProperty("GKD_STORE_PASSWORD")?.toString()
+            keyAlias = project.findProperty("GKD_KEY_ALIAS")?.toString()
+            keyPassword = project.findProperty("GKD_KEY_PASSWORD")?.toString()
         }
     } else {
-        null
+        signingConfigs.getByName("debug")
     }
 
     val playSigningConfig = if (project.hasProperty("PLAY_STORE_FILE")) {
@@ -110,14 +114,12 @@ android {
             keyPassword = project.properties["PLAY_KEY_PASSWORD"].toString()
         }
     } else {
-        null
+        gkdSigningConfig
     }
 
     buildTypes {
         all {
-            if (gitInfo.tagName == null) {
-                versionNameSuffix = "-${gitInfo.commitId.take(7)}"
-            }
+            versionNameSuffix = gitInfo.versionNameSuffix
         }
         release {
             isMinifyEnabled = true
@@ -129,9 +131,7 @@ android {
             )
         }
         debug {
-            if (gkdSigningConfig != null) {
-                signingConfig = gkdSigningConfig
-            }
+            signingConfig = gkdSigningConfig
             applicationIdSuffix = ".debug"
             resValue("color", "better_black", "#FF5D92")
             debugSuffixPairList.onEach { (key, value) ->
@@ -143,20 +143,15 @@ android {
         flavorDimensions += "channel"
         create("gkd") {
             isDefault = true
-            if (gkdSigningConfig != null) {
-                signingConfig = gkdSigningConfig
-            }
+            signingConfig = gkdSigningConfig
             resValue("bool", "is_accessibility_tool", "true")
         }
         create("play") {
-            val config = playSigningConfig ?: gkdSigningConfig
-            if (config != null) {
-                signingConfig = config
-            }
+            signingConfig = playSigningConfig
             resValue("bool", "is_accessibility_tool", "false")
         }
         all {
-            dimension = "channel"
+            dimension = flavorDimensions.first()
             manifestPlaceholders["channel"] = name
         }
     }
@@ -178,6 +173,15 @@ android {
     )
 }
 
+if (project.hasProperty("GKD_RENAME_APK_FLAG")) {
+    androidComponents.onVariants { variant ->
+        variant.outputs.onEach { output ->
+            output as VariantOutputImpl
+            output.outputFileName = "gkd-v${output.versionName.get()}.apk"
+        }
+    }
+}
+
 kotlin {
     compilerOptions {
         jvmTarget.set(rootProject.ext["kotlin.jvmTarget"] as JvmTarget)
@@ -193,7 +197,8 @@ kotlin {
             "-opt-in=androidx.compose.ui.ExperimentalComposeUiApi",
             "-opt-in=androidx.compose.foundation.layout.ExperimentalLayoutApi",
             "-Xcontext-parameters",
-            "-XXLanguage:+MultiDollarInterpolation"
+            "-Xexplicit-backing-fields",
+            "-XXLanguage:+MultiDollarInterpolation",
         )
     }
 }
@@ -235,7 +240,10 @@ dependencies {
 
     implementation(libs.compose.activity)
     implementation(libs.compose.material3)
-    implementation(libs.compose.navigation)
+
+    implementation(libs.androidx.navigation3.ui)
+    implementation(libs.androidx.navigation3.runtime)
+    implementation(libs.androidx.lifecycle.viewmodel.navigation3)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
@@ -244,7 +252,6 @@ dependencies {
     compileOnly(project(":hidden_api"))
     implementation(libs.rikka.shizuku.api)
     implementation(libs.rikka.shizuku.provider)
-    implementation(libs.rikka.refine.runtime)
     implementation(libs.lsposed.hiddenapibypass)
 
     implementation(libs.androidx.room.runtime)
@@ -266,14 +273,12 @@ dependencies {
 
     implementation(libs.google.accompanist.drawablepainter)
 
+    implementation(libs.kotlinx.serialization.core)
     implementation(libs.kotlinx.serialization.json)
     // https://github.com/Kotlin/kotlinx-atomicfu/issues/145
     implementation(libs.kotlinx.atomicfu)
 
     implementation(libs.activityResultLauncher)
-
-    implementation(libs.destinations.core)
-    ksp(libs.destinations.ksp)
 
     implementation(libs.reorderable)
 
@@ -282,6 +287,7 @@ dependencies {
     implementation(libs.coil.compose)
     implementation(libs.coil.network)
     implementation(libs.coil.gif)
+    implementation(libs.telephoto.zoomable)
 
     implementation(libs.exp4j)
 
@@ -292,9 +298,9 @@ dependencies {
     implementation(libs.json5)
     compileOnly(libs.loc.annotation)
 
+    implementation(libs.kevinnzouWebview)
+
     implementation(libs.vico.compose)
     implementation(libs.vico.compose.m3)
     implementation(libs.vico.core)
-
-    implementation(libs.kevinnzouWebview)
 }

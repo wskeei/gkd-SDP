@@ -1,7 +1,6 @@
 package li.songe.gkd.sdp.util
 
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.state.ToggleableState
 import li.songe.gkd.sdp.ui.component.PerfIcon
 
 sealed interface Option<T> {
@@ -20,12 +19,6 @@ sealed interface OptionMenuLabel {
 
 fun <V, T : Option<V>> Iterable<T>.findOption(value: V): T {
     return find { it.value == value } ?: first()
-}
-
-fun Option<Boolean?>.toToggleableState() = when (value) {
-    true -> ToggleableState.On
-    false -> ToggleableState.Off
-    null -> ToggleableState.Indeterminate
 }
 
 sealed class AppSortOption(override val value: Int, override val label: String) : Option<Int> {
@@ -151,3 +144,18 @@ sealed class AppGroupOption(
         val allObjects by lazy { listOf(SystemGroup, UserGroup, UnInstalledGroup) }
     }
 }
+
+sealed class AutomatorModeOption(
+    override val value: Int,
+    override val label: String,
+) : Option<Int> {
+    override val options get() = objects
+
+    data object A11yMode : AutomatorModeOption(1, "无障碍")
+    data object AutomationMode : AutomatorModeOption(2, "自动化")
+
+    companion object {
+        val objects by lazy { listOf(A11yMode, AutomationMode) }
+    }
+}
+

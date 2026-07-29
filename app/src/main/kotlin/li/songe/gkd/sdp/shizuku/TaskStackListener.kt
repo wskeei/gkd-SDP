@@ -4,10 +4,13 @@ import android.app.ActivityManager
 import android.app.ITaskStackListener
 import android.content.ComponentName
 import android.os.Parcel
+import android.view.Display
 import li.songe.gkd.sdp.a11y.ActivityScene
+import li.songe.gkd.sdp.a11y.topActivityFlow
 import li.songe.gkd.sdp.a11y.updateTopActivity
+import li.songe.gkd.sdp.util.AndroidTarget
 
-class FixedTaskStackListener : ITaskStackListener.Stub() {
+object FixedTaskStackListener : ITaskStackListener.Stub() {
 
     // https://github.com/gkd-kit/gkd/issues/941#issuecomment-2784035441
     override fun onTransact(code: Int, data: Parcel, reply: Parcel?, flags: Int): Boolean = try {
@@ -16,12 +19,12 @@ class FixedTaskStackListener : ITaskStackListener.Stub() {
         true
     }
 
-    override fun onTaskStackChanged() {
-        if (lastFront > 0 && System.currentTimeMillis() - lastFront < 200) {
-            lastFront = 0
+    override fun onTaskStackChanged(): Unit = synchronized(topActivityFlow) {
+        val cpn = shizukuContextFlow.value.topCpn() ?: return
+        if (lastFront.first > 0 && lastFront.second == cpn && System.currentTimeMillis() - lastFront.first > 200) {
+            lastFront = defaultFront
             return
         }
-        val cpn = shizukuContextFlow.value.topCpn() ?: return
         updateTopActivity(
             appId = cpn.packageName,
             activityId = cpn.className,
@@ -29,10 +32,13 @@ class FixedTaskStackListener : ITaskStackListener.Stub() {
         )
     }
 
-    private var lastFront = 0L
-    fun onTaskMovedToFrontCompat(cpn: ComponentName? = null) {
-        lastFront = System.currentTimeMillis()
+    private val defaultFront = 0L to ComponentName("", "")
+    private var lastFront = defaultFront
+    private fun onTaskMovedToFrontCompat(
+        cpn: ComponentName? = null
+    ): Unit = synchronized(topActivityFlow) {
         val cpn = cpn ?: shizukuContextFlow.value.topCpn() ?: return
+        lastFront = System.currentTimeMillis() to cpn
         updateTopActivity(
             appId = cpn.packageName,
             activityId = cpn.className,
@@ -41,10 +47,18 @@ class FixedTaskStackListener : ITaskStackListener.Stub() {
     }
 
     override fun onTaskMovedToFront(taskId: Int) {
-        onTaskMovedToFrontCompat()
+        val taskInfo = shizukuContextFlow.value.getTasks().firstOrNull() ?: return
+        @Suppress("DEPRECATION")
+        if (taskInfo.id != taskId) {
+            return
+        }
+        onTaskMovedToFrontCompat(taskInfo.topActivity)
     }
 
     override fun onTaskMovedToFront(taskInfo: ActivityManager.RunningTaskInfo) {
+        if (AndroidTarget.Q && taskInfo.casted.displayId != Display.DEFAULT_DISPLAY) {
+            return
+        }
         onTaskMovedToFrontCompat(taskInfo.topActivity)
     }
 }

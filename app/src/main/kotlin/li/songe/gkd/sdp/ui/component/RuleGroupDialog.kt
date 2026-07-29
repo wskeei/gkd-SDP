@@ -29,20 +29,18 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.unit.dp
-import com.ramcosta.composedestinations.generated.destinations.ImagePreviewPageDestination
-import com.ramcosta.composedestinations.generated.destinations.SubsAppGroupListPageDestination
-import com.ramcosta.composedestinations.generated.destinations.SubsGlobalGroupListPageDestination
-import com.ramcosta.composedestinations.utils.currentDestinationAsState
 import androidx.compose.runtime.rememberCoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import li.songe.gkd.sdp.data.InterceptConfig
 import li.songe.gkd.sdp.data.RawSubscription
 import li.songe.gkd.sdp.db.DbSet
+import li.songe.gkd.sdp.ui.ImagePreviewRoute
+import li.songe.gkd.sdp.ui.SubsAppGroupListRoute
+import li.songe.gkd.sdp.ui.SubsGlobalGroupListRoute
 import li.songe.gkd.sdp.ui.icon.ResetSettings
 import li.songe.gkd.sdp.ui.share.LocalDarkTheme
 import li.songe.gkd.sdp.ui.share.LocalMainViewModel
-import li.songe.gkd.sdp.ui.share.LocalNavController
 import li.songe.gkd.sdp.ui.style.getJson5AnnotatedString
 import li.songe.gkd.sdp.util.copyText
 import li.songe.gkd.sdp.util.throttle
@@ -60,7 +58,6 @@ fun RuleGroupDialog(
     onClickDelete: () -> Unit = {}
 ) {
     val mainVm = LocalMainViewModel.current
-    val navController = LocalNavController.current
     val interceptConfig by remember(subs.id, appId, group.key) {
         DbSet.interceptConfigDao.getFlow(subs.id, appId ?: "", group.key)
     }.collectAsState(initial = null)
@@ -141,34 +138,31 @@ fun RuleGroupDialog(
         },
         confirmButton = {
             Row {
-                val currentDestination by navController.currentDestinationAsState()
-                val (direction, destination) = remember(subs.id, appId, group.key) {
+                val direction = remember(subs.id, appId, group.key) {
                     if (group is RawSubscription.RawGlobalGroup) {
-                        SubsGlobalGroupListPageDestination(
+                        SubsGlobalGroupListRoute(
                             subsItemId = subs.id,
                             focusGroupKey = group.key
-                        ) to SubsGlobalGroupListPageDestination
+                        )
                     } else {
-                        SubsAppGroupListPageDestination(
+                        SubsAppGroupListRoute(
                             subsItemId = subs.id,
                             appId = appId.toString(),
                             focusGroupKey = group.key
-                        ) to SubsAppGroupListPageDestination
+                        )
                     }
                 }
-                if (currentDestination?.baseRoute != destination.baseRoute) {
-                    PerfIconButton(imageVector = PerfIcon.ArrowForward, onClick = throttle {
-                        onDismissRequest()
-                        mainVm.navigatePage(direction)
-                    })
-                }
+                PerfIconButton(imageVector = PerfIcon.ArrowForward, onClick = throttle {
+                    onDismissRequest()
+                    mainVm.navigatePage(direction)
+                })
                 if (group.allExampleUrls.isNotEmpty()) {
                     PerfIconButton(imageVector = PerfIcon.Image, onClick = throttle {
                         onDismissRequest()
                         mainVm.navigatePage(
-                            ImagePreviewPageDestination(
+                            ImagePreviewRoute(
                                 title = group.name,
-                                uris = group.allExampleUrls.toTypedArray()
+                                uris = group.allExampleUrls,
                             )
                         )
                     })

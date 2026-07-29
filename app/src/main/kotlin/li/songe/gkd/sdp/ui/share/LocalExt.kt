@@ -1,23 +1,14 @@
 package li.songe.gkd.sdp.ui.share
 
-import androidx.compose.runtime.compositionLocalOf
-import androidx.navigation.NavHostController
-import kotlinx.coroutines.flow.StateFlow
+import androidx.compose.runtime.staticCompositionLocalOf
 import li.songe.gkd.sdp.MainViewModel
 
-
-val LocalNavController = compositionLocalOf<NavHostController> {
-    error("not found NavHostController")
-}
-
-val LocalMainViewModel = compositionLocalOf<MainViewModel> {
+val LocalMainViewModel = staticCompositionLocalOf<MainViewModel> {
     error("not found MainViewModel")
 }
 
-val LocalDarkTheme = compositionLocalOf<Boolean> {
-    error("not found LocalDarkTheme")
-}
+val LocalDarkTheme = staticCompositionLocalOf { false }
 
-val LocalIsTalkbackEnabled = compositionLocalOf<StateFlow<Boolean>> {
-    error("not found LocalIsTalkbackEnabled")
+val LocalIsTalkbackEnabled = staticCompositionLocalOf {
+    false
 }

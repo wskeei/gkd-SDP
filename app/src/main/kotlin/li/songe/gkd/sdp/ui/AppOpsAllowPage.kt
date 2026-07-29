@@ -29,9 +29,9 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.ramcosta.composedestinations.annotation.Destination
-import com.ramcosta.composedestinations.annotation.RootGraph
+import androidx.navigation3.runtime.NavKey
 import kotlinx.coroutines.Dispatchers
+import kotlinx.serialization.Serializable
 import li.songe.gkd.sdp.MainActivity
 import li.songe.gkd.sdp.permission.PermissionState
 import li.songe.gkd.sdp.permission.appOpsRestrictStateList
@@ -45,7 +45,6 @@ import li.songe.gkd.sdp.ui.component.PerfTopAppBar
 import li.songe.gkd.sdp.ui.component.updateDialogOptions
 import li.songe.gkd.sdp.ui.share.LocalMainViewModel
 import li.songe.gkd.sdp.ui.style.EmptyHeight
-import li.songe.gkd.sdp.ui.style.ProfileTransitions
 import li.songe.gkd.sdp.ui.style.itemHorizontalPadding
 import li.songe.gkd.sdp.util.getShareApkFile
 import li.songe.gkd.sdp.util.launchAsFn
@@ -53,7 +52,9 @@ import li.songe.gkd.sdp.util.launchTry
 import li.songe.gkd.sdp.util.saveFileToDownloads
 import li.songe.gkd.sdp.util.toast
 
-@Destination<RootGraph>(style = ProfileTransitions::class)
+@Serializable
+data object AppOpsAllowRoute : NavKey
+
 @Composable
 fun AppOpsAllowPage() {
     val mainVm = LocalMainViewModel.current
@@ -64,7 +65,7 @@ fun AppOpsAllowPage() {
     Scaffold(modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection), topBar = {
         PerfTopAppBar(scrollBehavior = scrollBehavior, navigationIcon = {
             PerfIconButton(imageVector = PerfIcon.ArrowBack, onClick = {
-                mainVm.popBackStack()
+                mainVm.popPage()
             })
         }, title = {
             Text(text = "解除限制")
@@ -101,7 +102,7 @@ fun AppOpsAllowPage() {
                                 mainVm.guardShizukuContext()
                                 toast("授权成功")
                             },
-                            "外部授权" to {
+                            "命令授权" to {
                                 vm.showCopyDlgFlow.value = true
                             },
                             "卸载重装" to {

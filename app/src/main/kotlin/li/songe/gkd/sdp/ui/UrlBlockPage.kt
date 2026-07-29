@@ -29,8 +29,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.ramcosta.composedestinations.annotation.Destination
-import com.ramcosta.composedestinations.annotation.RootGraph
+import androidx.navigation3.runtime.NavKey
+import kotlinx.serialization.Serializable
 import li.songe.gkd.sdp.data.UrlBlockRule
 import li.songe.gkd.sdp.data.UrlRuleGroup
 import li.songe.gkd.sdp.data.UrlTimeRule
@@ -43,7 +43,9 @@ import li.songe.gkd.sdp.ui.style.scaffoldPadding
 import li.songe.gkd.sdp.ui.style.surfaceCardColors
 
 @OptIn(ExperimentalMaterial3Api::class)
-@Destination<RootGraph>
+@Serializable
+data object UrlBlockRoute : NavKey
+
 @Composable
 fun UrlBlockPage() {
     val mainVm = LocalMainViewModel.current
@@ -70,7 +72,7 @@ fun UrlBlockPage() {
                 navigationIcon = {
                     PerfIconButton(
                         imageVector = PerfIcon.ArrowBack,
-                        onClick = { mainVm.popBackStack() },
+                        onClick = { mainVm.popPage() },
                     )
                 },
                 title = { Text(text = "网址拦截") },

@@ -2,50 +2,88 @@ package li.songe.gkd.sdp.service
 
 import android.accessibilityservice.AccessibilityService
 import android.annotation.SuppressLint
-import android.content.BroadcastReceiver
-import android.content.Context
-import android.content.Intent
-import android.content.IntentFilter
+import android.content.Context.WINDOW_SERVICE
+import android.graphics.Bitmap
+import android.graphics.PixelFormat
+import android.view.Display
+import android.view.Gravity
+import android.view.View
+import android.view.WindowManager
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
-import androidx.core.content.ContextCompat
+import android.view.accessibility.AccessibilityWindowInfo
 import com.google.android.accessibility.selecttospeak.SelectToSpeakService
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.withContext
-import li.songe.gkd.sdp.a11y.A11yContext
+import kotlinx.coroutines.suspendCancellableCoroutine
+import li.songe.gkd.sdp.a11y.A11yCommonImpl
 import li.songe.gkd.sdp.a11y.A11yRuleEngine
-import li.songe.gkd.sdp.a11y.a11yContext
-import li.songe.gkd.sdp.a11y.appChangeTime
-import li.songe.gkd.sdp.a11y.isUseful
-import li.songe.gkd.sdp.a11y.onA11yFeatInit
-import li.songe.gkd.sdp.a11y.setGeneratedTime
-import li.songe.gkd.sdp.a11y.typeInfo
-import li.songe.gkd.sdp.app
-import li.songe.gkd.sdp.data.ActionPerformer
-import li.songe.gkd.sdp.data.ActionResult
-import li.songe.gkd.sdp.data.GkdAction
-import li.songe.gkd.sdp.data.RpcError
+import li.songe.gkd.sdp.a11y.initSdpA11yFeatures
+import li.songe.gkd.sdp.a11y.onSdpA11yEvent
+import li.songe.gkd.sdp.a11y.topActivityFlow
+import li.songe.gkd.sdp.a11y.updateTopActivity
+import li.songe.gkd.sdp.shizuku.shizukuContextFlow
+import li.songe.gkd.sdp.store.updateEnableAutomator
+import li.songe.gkd.sdp.util.AndroidTarget
+import li.songe.gkd.sdp.util.AutomatorModeOption
+import li.songe.gkd.sdp.util.DefaultA11yLifeImpl
 import li.songe.gkd.sdp.util.LogUtils
 import li.songe.gkd.sdp.util.OnA11yLife
 import li.songe.gkd.sdp.util.componentName
-import li.songe.selector.MatchOption
-import li.songe.selector.Selector
+import li.songe.gkd.sdp.util.runMainPost
+import li.songe.gkd.sdp.util.toast
+import kotlin.coroutines.resume
 
 @SuppressLint("AccessibilityPolicy")
-abstract class A11yService : AccessibilityService(), OnA11yLife {
+abstract class A11yService : AccessibilityService(), OnA11yLife by DefaultA11yLifeImpl(),
+    A11yCommonImpl {
+    override val mode get() = AutomatorModeOption.A11yMode
+    override val windowNodeInfo: AccessibilityNodeInfo? get() = rootInActiveWindow
+    override val windowInfos: List<AccessibilityWindowInfo> get() = windows
+    override suspend fun screenshot(): Bitmap? = suspendCancellableCoroutine { cont ->
+        if (AndroidTarget.R) {
+            takeScreenshot(
+                Display.DEFAULT_DISPLAY,
+                application.mainExecutor,
+                object : TakeScreenshotCallback {
+                    override fun onFailure(errorCode: Int) {
+                        if (cont.isActive) {
+                            cont.resume(null)
+                        }
+                    }
+
+                    override fun onSuccess(screenshot: ScreenshotResult) {
+                        try {
+                            if (cont.isActive) {
+                                cont.resume(
+                                    Bitmap.wrapHardwareBuffer(
+                                        screenshot.hardwareBuffer, screenshot.colorSpace
+                                    )
+                                )
+                            }
+                        } finally {
+                            screenshot.hardwareBuffer.close()
+                        }
+                    }
+                }
+            )
+        } else {
+            cont.resume(null)
+        }
+    }
+
+    override val ruleEngine by lazy { A11yRuleEngine(this) }
+
     override fun onCreate() = onCreated()
     override fun onServiceConnected() = onA11yConnected()
     override fun onInterrupt() {}
     override fun onDestroy() = onDestroyed()
-    override val a11yEventCbs = mutableListOf<(AccessibilityEvent) -> Unit>()
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
-        if (!event.isUseful()) return
-        onA11yEvent(event)
+        event?.let(::onSdpA11yEvent)
+        ruleEngine.onA11yEvent(event)
     }
 
     val startTime = System.currentTimeMillis()
-    var justStarted: Boolean = true
+    override var justStarted: Boolean = true
         get() {
             if (field) {
                 field = System.currentTimeMillis() - startTime < 3_000
@@ -53,99 +91,115 @@ abstract class A11yService : AccessibilityService(), OnA11yLife {
             return field
         }
 
-    val safeActiveWindow: AccessibilityNodeInfo?
-        get() = try {
-            // 某些应用耗时 554ms
-            // java.lang.SecurityException: Call from user 0 as user -2 without permission INTERACT_ACROSS_USERS or INTERACT_ACROSS_USERS_FULL not allowed.
-            rootInActiveWindow?.setGeneratedTime()
-        } catch (_: Throwable) {
-            null
-        }.apply {
-            a11yContext.rootCache.value = this
+    private var tempShutdownFlag = false
+
+    override fun shutdown(temp: Boolean) {
+        if (temp) {
+            tempShutdownFlag = true
         }
+        disableSelf()
+    }
 
-    val safeActiveWindowAppId: String?
-        get() = safeActiveWindow?.packageName?.toString()
+    private var destroyed = false
+    private var connected = false
 
-    override val scope = useScope()
-    var isInteractive = true
-        private set
-    var onScreenForcedActive = {}
-    private val screenStateReceiver = object : BroadcastReceiver() {
-        override fun onReceive(
-            context: Context?,
-            intent: Intent?
-        ) {
-            val action = intent?.action ?: return
-            LogUtils.d("screenStateReceiver->${action}")
-            isInteractive = when (action) {
-                Intent.ACTION_SCREEN_ON -> true
-                Intent.ACTION_SCREEN_OFF -> false
-                Intent.ACTION_USER_PRESENT -> true
-                else -> isInteractive
+    val wm by lazy { getSystemService(WINDOW_SERVICE) as WindowManager }
+
+    init {
+        useLogLifecycle()
+        useAliveFlow(isRunning)
+        onA11yConnected { instance = this }
+        onDestroyed { instance = null }
+        onCreated {
+            if (currentAppUseA11y) {
+                updateEnableAutomator(true)
+            } else {
+                toast("当前为自动化模式，无障碍将自动关闭", forced = true)
+                runMainPost(1) { shutdown(true) }
             }
-            if (isInteractive) {
-                val t = System.currentTimeMillis()
-                if (t - appChangeTime > 500) { // 37.872(a11y) -> 38.228(onReceive)
-                    onScreenForcedActive()
+        }
+        onDestroyed {
+            if (tempShutdownFlag) {
+                toast("无障碍局部关闭")
+            } else {
+                toast("无障碍已关闭")
+                updateEnableAutomator(false)
+            }
+        }
+        useAliveOverlayView()
+        initSdpA11yFeatures()
+        onCreated { StatusService.autoStart() }
+        onDestroyed {
+            synchronized(topActivityFlow) {
+                shizukuContextFlow.value.topCpn()?.let { cpn ->
+                    // com.android.systemui
+                    if (!topActivityFlow.value.sameAs(cpn.packageName, cpn.className)) {
+                        updateTopActivity(cpn.packageName, cpn.className)
+                    }
+                }
+            }
+        }
+        onDestroyed { destroyed = true }
+        onA11yConnected {
+            connected = true
+            toast("无障碍已启动")
+            if (currentAppUseA11y) {
+                ruleEngine.onA11yConnected()
+            }
+        }
+        onCreated {
+            runMainPost(3000) {
+                if (!(destroyed || connected)) {
+                    toast("无障碍启动超时，请尝试关闭重启", forced = true)
                 }
             }
         }
     }
 
-    @Volatile
-    var willDestroyByBlock = false
-
-    init {
-        useLogLifecycle()
-        useAliveFlow(isRunning)
-        onCreated { a11yRef = this }
-        onDestroyed { a11yRef = null }
-        onCreated {
-            isInteractive = app.powerManager.isInteractive
-            ContextCompat.registerReceiver(
-                this,
-                screenStateReceiver,
-                IntentFilter().apply {
-                    addAction(Intent.ACTION_SCREEN_ON)
-                    addAction(Intent.ACTION_SCREEN_OFF)
-                    addAction(Intent.ACTION_USER_PRESENT)
-                },
-                ContextCompat.RECEIVER_EXPORTED
-            )
-        }
-        onDestroyed { unregisterReceiver(screenStateReceiver) }
-        A11yRuleEngine(this)
-        onA11yFeatInit()
-    }
-
     companion object {
         val a11yCn by lazy { SelectToSpeakService::class.componentName }
-
         val isRunning = MutableStateFlow(false)
-        private var a11yRef: A11yService? = null
-        val instance: A11yService?
-            get() = a11yRef
 
-        suspend fun execAction(gkdAction: GkdAction): ActionResult {
-            val service = instance ?: throw RpcError("无障碍没有运行")
-            val selector = Selector.parseOrNull(gkdAction.selector) ?: throw RpcError("非法选择器")
-            runCatching { selector.checkType(typeInfo) }.exceptionOrNull()?.let {
-                throw RpcError("选择器类型错误:${it.message}")
-            }
-            val matchOption = MatchOption(fastQuery = gkdAction.fastQuery)
-            val targetNode = service.safeActiveWindow?.let {
-                A11yContext(true).querySelfOrSelector(
-                    it,
-                    selector,
-                    matchOption
-                )
-            } ?: throw RpcError("没有查询到节点")
-            return withContext(Dispatchers.IO) {
-                ActionPerformer
-                    .getAction(gkdAction.action ?: ActionPerformer.None.action)
-                    .perform(targetNode, gkdAction.position)
-            }
+        @Volatile
+        var instance: A11yService? = null
+            private set
+    }
+}
+
+private fun A11yService.useAliveOverlayView() {
+    val context = this
+    var aliveView: View? = null
+    val wm by lazy { getSystemService(WINDOW_SERVICE) as WindowManager }
+    fun removeA11View() {
+        if (aliveView != null) {
+            wm.removeView(aliveView)
+            aliveView = null
         }
     }
+
+    fun addA11View() {
+        removeA11View()
+        val tempView = View(context)
+        val lp = WindowManager.LayoutParams().apply {
+            type = WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY
+            format = PixelFormat.TRANSLUCENT
+            flags =
+                flags or WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE or WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
+            gravity = Gravity.START or Gravity.TOP
+            width = 1
+            height = 1
+            packageName = context.packageName
+        }
+        try {
+            // 某些设备 android.view.WindowManager$BadTokenException
+            wm.addView(tempView, lp)
+            aliveView = tempView
+        } catch (e: Throwable) {
+            aliveView = null
+            LogUtils.d(e)
+            toast("添加无障碍保活失败\n请尝试重启无障碍")
+        }
+    }
+    onA11yConnected { addA11View() }
+    onDestroyed { removeA11View() }
 }

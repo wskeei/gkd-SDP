@@ -6,11 +6,9 @@ import android.app.AppOpsManager
 import android.app.AppOpsManagerHidden
 import android.content.pm.PackageManager
 import android.provider.Settings
-import androidx.core.content.ContextCompat
 import com.hjq.permissions.XXPermissions
 import com.hjq.permissions.permission.PermissionLists
 import com.hjq.permissions.permission.base.IPermission
-import com.ramcosta.composedestinations.generated.destinations.AppOpsAllowPageDestination
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -24,6 +22,7 @@ import li.songe.gkd.sdp.appScope
 import li.songe.gkd.sdp.shizuku.SafeAppOpsService
 import li.songe.gkd.sdp.shizuku.SafePackageManager
 import li.songe.gkd.sdp.shizuku.shizukuContextFlow
+import li.songe.gkd.sdp.ui.AppOpsAllowRoute
 import li.songe.gkd.sdp.util.AndroidTarget
 import li.songe.gkd.sdp.util.toast
 import li.songe.gkd.sdp.util.updateAllAppInfo
@@ -59,13 +58,6 @@ class PermissionState(
     } else {
         true
     }
-}
-
-private fun checkSelfPermission(permission: String): Boolean {
-    return ContextCompat.checkSelfPermission(
-        app,
-        permission
-    ) == PackageManager.PERMISSION_GRANTED
 }
 
 private suspend fun asyncRequestPermission(
@@ -117,7 +109,7 @@ val foregroundServiceSpecialUseState by lazy {
         reason = AuthReason(
             text = { "当前操作权限「特殊用途的前台服务」已被限制, 请先解除限制" },
             confirm = {
-                MainViewModel.instance.navigatePage(AppOpsAllowPageDestination)
+                MainViewModel.instance.navigatePage(AppOpsAllowRoute)
             },
         ),
     )
@@ -156,10 +148,7 @@ val getAppOpsStatsState by lazy {
     PermissionState(
         name = "获取应用权限状态",
         check = {
-            ContextCompat.checkSelfPermission(
-                app,
-                Manifest_permission_GET_APP_OPS_STATS,
-            ) == PackageManager.PERMISSION_GRANTED
+            app.checkGrantedPermission(Manifest_permission_GET_APP_OPS_STATS)
         },
     )
 }
@@ -221,10 +210,16 @@ val notificationState by lazy {
 
 val canQueryPkgState by lazy {
     val permission = PermissionLists.getGetInstalledAppsPermission()
+    val supported by lazy { permission.isSupportRequestPermission(app) }
     PermissionState(
         name = "读取应用列表权限",
         check = {
-            XXPermissions.isGrantedPermission(app, permission)
+            if (supported) {
+                // 此框架内部有两个 printStackTrace 导致每次检测都会打印日志污染控制台
+                XXPermissions.isGrantedPermission(app, permission)
+            } else {
+                true
+            }
         },
         request = {
             asyncRequestPermission(it, permission)
@@ -266,7 +261,7 @@ val canWriteExternalStorage by lazy {
             if (AndroidTarget.Q) {
                 true
             } else {
-                checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                app.checkGrantedPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE)
             }
         },
         request = {
@@ -313,11 +308,12 @@ val ignoreBatteryOptimizationsState by lazy {
 val writeSecureSettingsState by lazy {
     PermissionState(
         name = "写入安全设置权限",
-        check = { checkSelfPermission(Manifest.permission.WRITE_SECURE_SETTINGS) },
+        check = { app.checkGrantedPermission(Manifest.permission.WRITE_SECURE_SETTINGS) },
     )
 }
 
 private fun shizukuCheckGranted(): Boolean {
+    if (Shizuku.getBinder()?.isBinderAlive != true) return false
     val granted = try {
         Shizuku.checkSelfPermission() == PackageManager.PERMISSION_GRANTED
     } catch (_: Throwable) {

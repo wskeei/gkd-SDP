@@ -1,8 +1,13 @@
 package li.songe.gkd.sdp.a11y
 
+import android.accessibilityservice.AccessibilityService
+import android.graphics.Bitmap
 import android.util.Log
+import android.view.Display
+import android.view.KeyEvent
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
+import android.view.accessibility.AccessibilityWindowInfo
 import kotlinx.atomicfu.atomic
 import kotlinx.atomicfu.getAndUpdate
 import kotlinx.coroutines.Dispatchers
@@ -10,58 +15,116 @@ import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runInterruptible
+import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import li.songe.gkd.sdp.META
+import li.songe.gkd.sdp.app
 import li.songe.gkd.sdp.data.ActionPerformer
+import li.songe.gkd.sdp.data.ActionResult
 import li.songe.gkd.sdp.data.AppRule
+import li.songe.gkd.sdp.data.GkdAction
 import li.songe.gkd.sdp.data.ResolvedRule
+import li.songe.gkd.sdp.data.RpcError
 import li.songe.gkd.sdp.data.RuleStatus
+import li.songe.gkd.sdp.db.DbSet
 import li.songe.gkd.sdp.isActivityVisible
 import li.songe.gkd.sdp.service.A11yService
 import li.songe.gkd.sdp.service.EventService
-import li.songe.gkd.sdp.service.a11yPartDisabledFlow
+import li.songe.gkd.sdp.service.InterceptOverlayService
+import li.songe.gkd.sdp.service.topAppIdFlow
 import li.songe.gkd.sdp.shizuku.shizukuContextFlow
+import li.songe.gkd.sdp.shizuku.uiAutomationFlow
+import li.songe.gkd.sdp.store.actualBlockA11yAppList
 import li.songe.gkd.sdp.store.storeFlow
+import li.songe.gkd.sdp.util.AndroidTarget
+import li.songe.gkd.sdp.util.AutomatorModeOption
+import li.songe.gkd.sdp.util.InterceptUtils
 import li.songe.gkd.sdp.util.launchTry
+import li.songe.gkd.sdp.util.runMainPost
 import li.songe.gkd.sdp.util.showActionToast
 import li.songe.gkd.sdp.util.systemUiAppId
+import li.songe.selector.MatchOption
+import li.songe.selector.Selector
 import java.util.concurrent.Executors
 import kotlin.coroutines.Continuation
 import kotlin.coroutines.resume
-import kotlin.coroutines.suspendCoroutine
-import li.songe.gkd.sdp.db.DbSet
-import li.songe.gkd.sdp.service.InterceptOverlayService
-import li.songe.gkd.sdp.util.InterceptUtils
 
 
 private val eventDispatcher = Executors.newSingleThreadExecutor().asCoroutineDispatcher()
 private val queryDispatcher = Executors.newSingleThreadExecutor().asCoroutineDispatcher()
 private val actionDispatcher = Executors.newSingleThreadExecutor().asCoroutineDispatcher()
 
-class A11yRuleEngine(val service: A11yService) {
-    init {
-        // 关闭屏幕 -> Activity::onStop -> 点亮屏幕 -> Activity::onStart -> Activity::onResume
-        service.onScreenForcedActive = {
-            val a = topActivityFlow.value
-            updateTopActivity(a.appId, a.activityId, scene = ActivityScene.ScreenOn)
-            startQueryJob()
-        }
-        service.onA11yConnected {
-            if (storeFlow.value.enableBlockA11yAppList && !a11yPartDisabledFlow.value) {
-                startQueryJob(byForced = true)
-            }
-        }
-        service.onA11yEvent { onNewA11yEvent(it) }
+private val latestServiceMode = atomic(0)
+private val latestServiceTime = atomic(0L)
+
+class A11yRuleEngine(val service: A11yCommonImpl) {
+    private val a11yContext = A11yContext(this)
+    private val effective get() = latestServiceMode.value == service.mode.value
+    private val hasOthersService = when (service.mode) {
+        AutomatorModeOption.A11yMode -> uiAutomationFlow.value != null
+        AutomatorModeOption.AutomationMode -> A11yService.instance != null
     }
 
-    val scope = service.scope
+    fun onA11yConnected() {
+        val serviceTime = System.currentTimeMillis()
+        latestServiceMode.value = service.mode.value
+        latestServiceTime.value = serviceTime
+        if (storeFlow.value.enableBlockA11yAppList && !actualBlockA11yAppList.contains(topAppIdFlow.value)) {
+            startQueryJob(byForced = true)
+        }
+        runMainPost(1000L) {// 共存 1000ms, 等待另一个服务稳定
+            if (latestServiceTime.value == serviceTime) {
+                when (service.mode) {
+                    AutomatorModeOption.A11yMode -> uiAutomationFlow.value?.shutdown(true)
+                    AutomatorModeOption.AutomationMode -> A11yService.instance?.shutdown(true)
+                }
+            }
+        }
+    }
 
-    var lastContentEventTime = 0L
-    var lastEventTime = 0L
-    val eventDeque = ArrayDeque<A11yEvent>()
-    fun onNewA11yEvent(event: AccessibilityEvent) {
+    fun onScreenForcedActive() {
+        // 关闭屏幕 -> Activity::onStop -> 点亮屏幕 -> Activity::onStart -> Activity::onResume
+        val a = topActivityFlow.value
+        synchronized(topActivityFlow) {
+            updateTopActivity(
+                a.appId,
+                a.activityId,
+                scene = ActivityScene.ScreenOn
+            )
+        }
+        startQueryJob()
+    }
+
+    val safeActiveWindow: AccessibilityNodeInfo?
+        get() = try {
+            // 某些应用耗时 554ms
+            // java.lang.SecurityException: Call from user 0 as user -2 without permission INTERACT_ACROSS_USERS or INTERACT_ACROSS_USERS_FULL not allowed.
+            service.windowNodeInfo?.setGeneratedTime()
+        } catch (_: Throwable) {
+            null
+        }.apply {
+            a11yContext.rootCache.value = this
+        }
+
+    val safeActiveWindowAppId: String?
+        get() = safeActiveWindow?.packageName?.toString()
+
+    private val scope get() = service.scope
+
+    @Volatile
+    private var latestStateEvent: A11yEvent? = null
+    private var lastContentEventTime = 0L
+    private var lastEventTime = 0L
+    private val eventDeque = ArrayDeque<A11yEvent>()
+    fun onA11yEvent(event: AccessibilityEvent?) {
+        if (!effective) return
+        if (!event.isUseful()) return
+        // 拒绝副屏无障碍事件
+        if (AndroidTarget.TIRAMISU && event.displayId != Display.DEFAULT_DISPLAY) return
+        onA11yFeatEvent(event)
         if (event.eventType == CONTENT_CHANGED) {
-            if (!service.isInteractive) return // 屏幕关闭后仍然有无障碍事件 type:2048, time:8094, app:com.miui.aod, cls:android.widget.TextView
+            if (!isInteractive) return // 屏幕关闭后仍然有无障碍事件 type:2048, time:8094, app:com.miui.aod, cls:android.widget.TextView
             if (event.packageName == systemUiAppId && event.packageName != topActivityFlow.value.appId) return
         }
         // 过滤部分输入法事件
@@ -69,7 +132,7 @@ class A11yRuleEngine(val service: A11yService) {
             if (event.recordCount == 0 && event.action == 0 && !event.isFullScreen) return
         }
         // 直接丢弃自身事件，自行更新 topActivity
-        if ((event.eventType == CONTENT_CHANGED || !isActivityVisible()) && event.packageName == META.appId) return
+        if ((event.eventType == CONTENT_CHANGED || !isActivityVisible) && event.packageName == META.appId) return
 
         val a11yEvent = event.toA11yEvent() ?: return
         if (a11yEvent.type == CONTENT_CHANGED) {
@@ -92,12 +155,15 @@ class A11yRuleEngine(val service: A11yService) {
             return
         }
         lastEventTime = event.eventTime
+        if (event.eventType == STATE_CHANGED) {
+            latestStateEvent = a11yEvent
+        }
         synchronized(eventDeque) { eventDeque.addLast(a11yEvent) }
         scope.launch(eventDispatcher) { consumeEvent(a11yEvent) }
     }
 
-    val queryEvents = mutableListOf<A11yEvent>()
-    suspend fun consumeEvent(headEvent: A11yEvent) {
+    private val queryEvents = mutableListOf<A11yEvent>()
+    private suspend fun consumeEvent(headEvent: A11yEvent) {
         val consumedEvents = synchronized(eventDeque) {
             if (eventDeque.firstOrNull() !== headEvent) return
             eventDeque.filter { it.sameAs(headEvent) }.apply {
@@ -115,19 +181,23 @@ class A11yRuleEngine(val service: A11yService) {
         }
         if (rightAppId == evAppId) {
             if (latestEvent.type == STATE_CHANGED) {
-                // tv.danmaku.bili, com.miui.home, com.miui.home.launcher.Launcher
-                if (isActivity(evAppId, evActivityId)) {
-                    updateTopActivity(evAppId, evActivityId)
+                synchronized(topActivityFlow) {
+                    // tv.danmaku.bili, com.miui.home, com.miui.home.launcher.Launcher
+                    if (isActivity(evAppId, evActivityId)) {
+                        updateTopActivity(evAppId, evActivityId)
+                    }
                 }
             }
         }
         if (rightAppId != topActivityFlow.value.appId) {
-            // 从 锁屏，下拉通知栏 返回等情况, 应用不会发送事件, 但是系统组件会发送事件
-            val topCpn = shizukuContextFlow.value.topCpn()
-            if (topCpn?.packageName == rightAppId) {
-                updateTopActivity(topCpn.packageName, topCpn.className)
-            } else {
-                updateTopActivity(rightAppId, null)
+            synchronized(topActivityFlow) {
+                // 从 锁屏，下拉通知栏 返回等情况, 应用不会发送事件, 但是系统组件会发送事件
+                val topCpn = shizukuContextFlow.value.topCpn()
+                if (topCpn?.packageName == rightAppId) {
+                    updateTopActivity(topCpn.packageName, topCpn.className)
+                } else {
+                    updateTopActivity(rightAppId, null)
+                }
             }
         }
         val activityRule = activityRuleFlow.value
@@ -139,67 +209,78 @@ class A11yRuleEngine(val service: A11yService) {
         startQueryJob(byEvent = latestEvent)
     }
 
-    var lastGetAppIdTime = 0L
-    var lastAppId: String? = null
-    suspend fun getTimeoutAppId(): String? {
+    private var lastGetAppIdTime = 0L
+    private var lastAppId: String? = null
+    private suspend fun getTimeoutAppId(): String? {
         if (lastAppId != null && System.currentTimeMillis() - lastGetAppIdTime <= 100) return lastAppId
         // 某些应用通过无障碍获取 safeActiveWindow 耗时长，导致多个事件连续堆积堵塞，无法检测到 appId 切换导致状态异常
         // https://github.com/gkd-kit/gkd/issues/622
         lastAppId = withTimeoutOrNull(100) {
-            runInterruptible(Dispatchers.IO) { service.safeActiveWindowAppId }
+            runInterruptible(Dispatchers.IO) { safeActiveWindowAppId }
         } ?: shizukuContextFlow.value.topCpn()?.packageName
         lastGetAppIdTime = System.currentTimeMillis()
         return lastAppId
     }
 
     // 某些场景耗时 5000 ms
-    suspend fun getTimeoutActiveWindow(): AccessibilityNodeInfo? = suspendCoroutine { s ->
-        val temp = atomic<Continuation<AccessibilityNodeInfo?>?>(s)
-        scope.launch(Dispatchers.IO) {
-            delay(500L)
-            temp.getAndUpdate { null }?.resume(null)
-        }
-        scope.launch(Dispatchers.IO) {
-            val a = service.safeActiveWindow
-            temp.getAndUpdate { null }?.resume(a)
+    private suspend fun getTimeoutActiveWindow(): AccessibilityNodeInfo? {
+        return suspendCancellableCoroutine { s ->
+            val temp = atomic<Continuation<AccessibilityNodeInfo?>?>(s)
+            scope.launch(Dispatchers.IO) {
+                delay(500L)
+                if (s.isActive) {
+                    temp.getAndUpdate { null }?.resume(null)
+                }
+            }
+            scope.launch(Dispatchers.IO) {
+                val a = safeActiveWindow
+                if (s.isActive) {
+                    temp.getAndUpdate { null }?.resume(a)
+                }
+            }
         }
     }
 
-
     @Volatile
-    var querying = false
+    private var querying = false
 
     @Synchronized
-    fun startQueryJob(
+    private fun startQueryJob(
         byEvent: A11yEvent? = null,
         byForced: Boolean = false,
         byDelayRule: ResolvedRule? = null,
     ) {
+        if (!effective) return
         if (!storeFlow.value.enableMatch) return
         if (activityRuleFlow.value.currentRules.isEmpty()) return
         if (querying) return
-        // 刚启动时获取 safeActiveWindow 非常耗时
-        if (byEvent == null && service.justStarted) return
+        // 无障碍从零启动时获取 safeActiveWindow 非常耗时
+        if (byEvent == null && service.justStarted && !hasOthersService) return checkFutureStartJob()
         scope.launchTry(queryDispatcher) {
             querying = true
-            val st = System.currentTimeMillis()
+            val st = if (META.debuggable) System.currentTimeMillis() else 0L
             try {
-                Log.d(
-                    "A11yRuleEngine",
-                    "startQueryJob start byEvent=${byEvent != null}, byForced=$byForced, byDelayRule=${byDelayRule != null}"
-                )
+                if (META.debuggable) {
+                    Log.d(
+                        "A11yRuleEngine",
+                        "startQueryJob start byEvent=${byEvent != null}, byForced=$byForced, byDelayRule=${byDelayRule != null}"
+                    )
+                }
                 queryAction(byEvent, byForced, byDelayRule)
             } finally {
-                val et = System.currentTimeMillis() - st
-                Log.d("A11yRuleEngine", "startQueryJob end $et ms")
+                checkFutureStartJob()
+                if (META.debuggable) {
+                    val et = System.currentTimeMillis() - st
+                    Log.d("A11yRuleEngine", "startQueryJob end $et ms")
+                }
                 querying = false
             }
         }
     }
 
-    fun checkFutureStartJob() {
+    private fun checkFutureStartJob() {
         val t = System.currentTimeMillis()
-        if (t - lastTriggerTime < 3000L || t - appChangeTime < 5000L) {
+        if (t - lastTriggerTime < 3000L || t - appChangeTime < 3000L) {
             scope.launch(actionDispatcher) {
                 delay(300)
                 startQueryJob()
@@ -212,13 +293,15 @@ class A11yRuleEngine(val service: A11yService) {
         }
     }
 
-    fun fixAppId(rightAppId: String) {
+    private fun fixAppId(rightAppId: String) {
         if (topActivityFlow.value.appId == rightAppId) return
-        val topCpn = shizukuContextFlow.value.topCpn()
-        if (topCpn?.packageName == rightAppId) {
-            updateTopActivity(topCpn.packageName, topCpn.className)
-        } else {
-            updateTopActivity(rightAppId, null)
+        synchronized(topActivityFlow) {
+            val topCpn = shizukuContextFlow.value.topCpn()
+            if (topCpn?.packageName == rightAppId) {
+                updateTopActivity(topCpn.packageName, topCpn.className)
+            } else {
+                updateTopActivity(rightAppId, null)
+            }
         }
         scope.launch(actionDispatcher) {
             delay(300)
@@ -226,17 +309,18 @@ class A11yRuleEngine(val service: A11yService) {
         }
     }
 
-    suspend fun queryAction(
+    private suspend fun queryAction(
         byEvent: A11yEvent? = null,
         byForced: Boolean = false,
         delayRule: ResolvedRule? = null,
     ) {
+        val tempStateEvent = latestStateEvent
         val newEvents = if (delayRule != null) {// 延迟规则不消耗事件
             null
         } else {
             synchronized(queryEvents) {
                 if (byEvent != null && queryEvents.isEmpty()) {
-                    return checkFutureStartJob()
+                    return
                 }
                 (if (queryEvents.size > 1) {
                     val hasDiffItem = queryEvents.any { e ->
@@ -261,7 +345,7 @@ class A11yRuleEngine(val service: A11yService) {
                 }
             }
         }
-        val activityRule = activityRuleFlow.value
+        val activityRule = synchronized(topActivityFlow) { activityRuleFlow.value }
         activityRule.currentRules.forEach { rule ->
             if (rule.status == RuleStatus.Status3 && rule.matchDelayJob.value == null) {
                 rule.matchDelayJob.value = scope.launch(actionDispatcher) {
@@ -273,7 +357,7 @@ class A11yRuleEngine(val service: A11yService) {
         }
         if (activityRule.skipMatch) {
             // 如果当前应用没有规则/暂停匹配, 则不去调用获取事件节点避免阻塞
-            return checkFutureStartJob()
+            return
         }
         var lastNode = if (newEvents == null || newEvents.size <= 1) {
             newEvents?.firstOrNull()?.safeSource
@@ -295,7 +379,8 @@ class A11yRuleEngine(val service: A11yService) {
             }
         }
         for (rule in activityRule.priorityRules) { // 规则数量有可能过多导致耗时过长
-            if (activityRule !== activityRuleFlow.value) break
+            if (!effective) return
+            if (checkOutDate(activityRule, tempStateEvent)) break
             if (delayRule != null && delayRule !== rule) continue
             if (rule.status != RuleStatus.StatusOk) continue
             if (byForced && !rule.checkForced()) continue
@@ -319,11 +404,10 @@ class A11yRuleEngine(val service: A11yService) {
             val matchApp = rule.matchActivity(rightAppId)
             if (topActivityFlow.value.appId != rightAppId || (!matchApp && rule is AppRule)) {
                 scope.launch(eventDispatcher) { fixAppId(rightAppId) }
-                return checkFutureStartJob()
+                return
             }
             if (!matchApp) continue
             val target = a11yContext.queryRule(rule, nodeVal) ?: continue
-            if (activityRule !== activityRuleFlow.value) break
             if (rule.checkDelay() && rule.actionDelayJob.value == null) {
                 rule.actionDelayJob.value = scope.launch(actionDispatcher) {
                     delay(rule.actionDelay)
@@ -333,22 +417,24 @@ class A11yRuleEngine(val service: A11yService) {
                 continue
             }
             if (rule.status != RuleStatus.StatusOk) break
-
-            val interceptConfig = DbSet.interceptConfigDao.get(rule.subsItem.id, rule.g.appId ?: "", rule.g.group.key)
-            if (interceptConfig != null && interceptConfig.enabled) {
-                if (!InterceptUtils.isAllowed(interceptConfig.subsId, interceptConfig.groupKey)) {
-                    val intent = android.content.Intent(service, InterceptOverlayService::class.java).apply {
-                        putExtra("subsId", interceptConfig.subsId)
-                        putExtra("groupKey", interceptConfig.groupKey)
-                        putExtra("message", interceptConfig.message)
-                        putExtra("cooldown", interceptConfig.cooldownSeconds)
-                        addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
-                    }
-                    service.startService(intent)
-                    return
+            if (checkOutDate(activityRule, tempStateEvent)) break
+            val interceptConfig = DbSet.interceptConfigDao.get(
+                rule.subsItem.id,
+                rule.g.appId ?: "",
+                rule.g.group.key,
+            )
+            if (interceptConfig?.enabled == true &&
+                !InterceptUtils.isAllowed(interceptConfig.subsId, interceptConfig.groupKey)
+            ) {
+                val intent = android.content.Intent(app, InterceptOverlayService::class.java).apply {
+                    putExtra("subsId", interceptConfig.subsId)
+                    putExtra("groupKey", interceptConfig.groupKey)
+                    putExtra("message", interceptConfig.message)
+                    putExtra("cooldown", interceptConfig.cooldownSeconds)
                 }
+                app.startService(intent)
+                return
             }
-
             val actionResult = rule.performAction(target)
             if (actionResult.result) {
                 val topActivity = topActivityFlow.value
@@ -358,11 +444,67 @@ class A11yRuleEngine(val service: A11yService) {
                     startQueryJob()
                 }
                 if (actionResult.action != ActionPerformer.None.action) {
-                    showActionToast()
+                    showActionToast(rule)
                 }
                 addActionLog(rule, topActivity, target, actionResult)
             }
         }
-        checkFutureStartJob()
+    }
+
+    private fun checkOutDate(
+        activityRule: ActivityRule,
+        stateEvent: A11yEvent?
+    ): Boolean {
+        if (stateEvent !== latestStateEvent) return true
+        synchronized(topActivityFlow) {
+            if (activityRule !== activityRuleFlow.value) return true
+        }
+        return false
+    }
+
+    companion object {
+        val service: A11yCommonImpl?
+            get() = uiAutomationFlow.value?.takeIf {
+                it.mode.value == latestServiceMode.value
+            } ?: A11yService.instance
+        val instance: A11yRuleEngine? get() = service?.ruleEngine
+
+        fun compatWindows(): List<AccessibilityWindowInfo> {
+            return try {
+                service?.windowInfos
+            } catch (_: Throwable) {
+                null
+            } ?: emptyList()
+        }
+
+        fun onScreenForcedActive() {
+            instance?.onScreenForcedActive()
+        }
+
+        fun performActionBack(): Boolean {
+            val r1 = shizukuContextFlow.value.inputManager?.key(KeyEvent.KEYCODE_BACK)
+            if (r1 != null) return true
+            return A11yService.instance?.performGlobalAction(AccessibilityService.GLOBAL_ACTION_BACK) == true
+        }
+
+        suspend fun screenshot(): Bitmap? = service?.screenshot()
+
+        suspend fun execAction(gkdAction: GkdAction): ActionResult {
+            val selector = Selector.parseOrNull(gkdAction.selector) ?: throw RpcError("非法选择器")
+            runCatching { selector.checkType(typeInfo) }.exceptionOrNull()?.let {
+                throw RpcError("选择器类型错误:${it.message}")
+            }
+            val s = instance ?: throw RpcError("服务未连接")
+            val a = s.safeActiveWindow ?: throw RpcError("界面没有节点信息")
+            val targetNode = A11yContext(s, interruptable = false).querySelfOrSelector(
+                a, selector, MatchOption(fastQuery = gkdAction.fastQuery)
+            ) ?: throw RpcError("没有查询到节点")
+            return withContext(Dispatchers.IO) {
+                ActionPerformer
+                    .getAction(gkdAction.action ?: ActionPerformer.None.action)
+                    .perform(targetNode, gkdAction)
+            }
+        }
+
     }
 }

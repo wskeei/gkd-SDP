@@ -126,8 +126,8 @@ fun updateSubscription(subscription: RawSubscription) {
             val subsId = subscription.id
             val subsName = subscription.name
             val newMap = subsMapFlow.value.toMutableMap()
-            if (subsId < 0 && newMap[subsId]?.version == subscription.version) {
-                newMap[subsId] = subscription.run {
+            val nextSubsRaw = if (subsId < 0 && newMap[subsId]?.version == subscription.version) {
+                subscription.run {
                     copy(
                         version = version + 1,
                         apps = apps.filterIfNotAll { it.groups.isNotEmpty() }
@@ -135,8 +135,9 @@ fun updateSubscription(subscription: RawSubscription) {
                     )
                 }
             } else {
-                newMap[subsId] = subscription
+                subscription
             }
+            newMap[subsId] = nextSubsRaw
             subsMapFlow.value = newMap
             if (subsLoadErrorsFlow.value.contains(subsId)) {
                 subsLoadErrorsFlow.update {
@@ -146,9 +147,10 @@ fun updateSubscription(subscription: RawSubscription) {
                 }
             }
             withContext(Dispatchers.IO) {
+                cleanupSubsConfig(subsId, nextSubsRaw)
                 DbSet.subsItemDao.updateMtime(subsId, System.currentTimeMillis())
                 subsFolder.resolve("${subsId}.json")
-                    .writeText(json.encodeToString(newMap[subsId]))
+                    .writeText(json.encodeToString(nextSubsRaw))
             }
             LogUtils.d("更新订阅文件:id=${subsId},name=${subsName}")
         }
@@ -227,7 +229,7 @@ data class RuleSummary(
         } else {
             ""
         } + if (appGroupSize > 0) {
-            "${appSize}应用/${appGroupSize}规则组"
+            "${appSize}应用/${appGroupSize}规则"
         } else {
             ""
         }
@@ -308,7 +310,7 @@ val ruleSummaryFlow by lazy {
                 val subAppGroupToRules = mutableMapOf<RawSubscription.RawAppGroup, List<AppRule>>()
                 val groupAndEnables = appRaw.groups.map { group ->
                     val config = appGroupConfigs.find { c -> c.groupKey == group.key }
-                    val category = rawSubs.groupToCategoryMap[group]
+                    val category = rawSubs.getCategory(group.name)
                     val categoryConfig =
                         subCategoryConfigs.find { c -> c.categoryKey == category?.key }
                     val enable = getGroupEnable(
@@ -431,6 +433,29 @@ fun initSubsState() {
             refreshRawSubsList(items)
         }
     }
+}
+
+private suspend fun cleanupSubsConfig(subsId: Long, subsRaw: RawSubscription): Int {
+    val globalGroupKeys = subsRaw.globalGroups.map { it.key }.toHashSet()
+    val appIdToGroupKeys = subsRaw.apps.associate { a ->
+        a.id to a.groups.map { g -> g.key }.toHashSet()
+    }
+    val configs = DbSet.subsConfigDao.querySubsItemConfig(listOf(subsId))
+    val deleteList = configs.filter { c ->
+        when (c.type) {
+            SubsConfig.AppGroupType -> {
+                val groupKeys = appIdToGroupKeys[c.appId]
+                groupKeys == null || !groupKeys.contains(c.groupKey)
+            }
+
+            SubsConfig.GlobalGroupType -> !globalGroupKeys.contains(c.groupKey)
+            else -> false
+        }
+    }
+    if (deleteList.isEmpty()) return 0
+    DbSet.subsConfigDao.delete(*deleteList.toTypedArray())
+    LogUtils.d("清理已移除规则配置", "subsId=$subsId, delete=${deleteList.size}")
+    return deleteList.size
 }
 
 val updateSubsMutex = MutexState()

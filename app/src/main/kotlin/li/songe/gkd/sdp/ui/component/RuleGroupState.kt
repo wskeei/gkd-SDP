@@ -8,8 +8,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.lifecycle.viewModelScope
-import com.ramcosta.composedestinations.generated.destinations.SubsGlobalGroupExcludePageDestination
-import com.ramcosta.composedestinations.generated.destinations.UpsertRuleGroupPageDestination
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -25,6 +23,8 @@ import li.songe.gkd.sdp.data.RawSubscription
 import li.songe.gkd.sdp.data.SubsConfig
 import li.songe.gkd.sdp.db.DbSet
 import li.songe.gkd.sdp.ui.getGlobalGroupChecked
+import li.songe.gkd.sdp.ui.SubsGlobalGroupExcludeRoute
+import li.songe.gkd.sdp.ui.UpsertRuleGroupRoute
 import li.songe.gkd.sdp.ui.style.scaffoldPadding
 import li.songe.gkd.sdp.util.getGroupEnable
 import li.songe.gkd.sdp.util.launchAsFn
@@ -67,8 +67,8 @@ data class ShowGroupState(
         } else {
             subs.globalGroups
         }?.find { it.key == groupKey } ?: error("require group")
-        val category = subs.groupToCategoryMap[group] ?: return null
-        return DbSet.categoryConfigDao.queryCategoryConfig(subsId, category.key)
+        val category = subs.getCategory(group.name) ?: return null
+        return DbSet.categoryConfigDao.queryCategoryConfig(subsId, category.key).first()
     }
 }
 
@@ -123,7 +123,7 @@ suspend fun batchUpdateGroupEnable(
             val oldEnable = getGroupEnable(
                 targetGroup,
                 subsConfig,
-                subscription.groupToCategoryMap[targetGroup],
+                subscription.getCategory(targetGroup.name),
                 categoryConfig
             )
             // app rule
@@ -137,7 +137,7 @@ suspend fun batchUpdateGroupEnable(
             val newEnable = getGroupEnable(
                 targetGroup,
                 newSubsConfig,
-                subscription.groupToCategoryMap[targetGroup],
+                subscription.getCategory(targetGroup.name),
                 categoryConfig
             )
             if (enable == newEnable && oldEnable == newEnable) {
@@ -286,7 +286,7 @@ class RuleGroupState(
                 onClickEdit = {
                     dismissGroupShow()
                     mainVm.navigatePage(
-                        UpsertRuleGroupPageDestination(
+                        UpsertRuleGroupRoute(
                             subsId = showGroupState.subsId,
                             groupKey = showGroupState.groupKey,
                             appId = showGroupState.appId,
@@ -297,7 +297,7 @@ class RuleGroupState(
                     dismissGroupShow()
                     if (showGroupState.appId == null) {
                         mainVm.navigatePage(
-                            SubsGlobalGroupExcludePageDestination(
+                            SubsGlobalGroupExcludeRoute(
                                 showGroupState.subsId,
                                 showGroupState.groupKey
                             )

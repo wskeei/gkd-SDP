@@ -56,8 +56,8 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.ramcosta.composedestinations.annotation.Destination
-import com.ramcosta.composedestinations.annotation.RootGraph
+import androidx.navigation3.runtime.NavKey
+import kotlinx.serialization.Serializable
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -89,7 +89,9 @@ private data class UsageGuardAppAction(val appId: String, val scope: UsageGuardA
 // UI in this page must follow .impeccable.md:
 // stronger grouping, less vertical bloat, deliberate feedback, and a more ritualized feel.
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class, ExperimentalFoundationApi::class)
-@Destination<RootGraph>
+@Serializable
+data object UsageGuardRoute : NavKey
+
 @Composable
 fun UsageGuardPage() {
     val mainVm = LocalMainViewModel.current
@@ -142,7 +144,7 @@ fun UsageGuardPage() {
                 navigationIcon = {
                     PerfIconButton(
                         imageVector = PerfIcon.ArrowBack,
-                        onClick = { mainVm.popBackStack() },
+                        onClick = { mainVm.popPage() },
                     )
                 },
                 title = { Text("使用申请") },

@@ -27,10 +27,13 @@ import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -42,15 +45,16 @@ import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.ramcosta.composedestinations.generated.destinations.AppConfigPageDestination
-import com.ramcosta.composedestinations.generated.destinations.EditBlockAppListPageDestination
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 import li.songe.gkd.sdp.MainActivity
 import li.songe.gkd.sdp.R
-import li.songe.gkd.sdp.app
 import li.songe.gkd.sdp.data.AppInfo
 import li.songe.gkd.sdp.permission.canQueryPkgState
 import li.songe.gkd.sdp.store.blockMatchAppListFlow
+import li.songe.gkd.sdp.ui.AppConfigRoute
+import li.songe.gkd.sdp.ui.EditBlockAppListRoute
 import li.songe.gkd.sdp.ui.component.AnimatedIconButton
 import li.songe.gkd.sdp.ui.component.AnimationFloatingActionButton
 import li.songe.gkd.sdp.ui.component.AppBarTextField
@@ -99,12 +103,29 @@ fun useAppListPage(): ScaffoldExt {
     } else {
         null
     }
-    val appListKey by mainVm.appListKeyFlow.collectAsState()
     val showSearchBar by vm.showSearchBarFlow.collectAsState()
-    val (scrollBehavior, listState) = useListScrollState(appListKey)
     val refreshing by updateAppMutex.state.collectAsState()
     val pullToRefreshState = rememberPullToRefreshState()
     val editWhiteListMode by vm.editWhiteListModeFlow.collectAsState()
+    val scrollKey = rememberSaveable { mutableIntStateOf(0) }
+    val (scrollBehavior, listState) = useListScrollState(scrollKey)
+    LaunchedEffect(null) {
+        listOf(
+            canQueryPkgState.stateFlow,
+            vm.appInfosFlow,
+        ).forEach {
+            launch {
+                it.drop(1).collect {
+                    scrollKey.intValue++
+                }
+            }
+        }
+        mainVm.resetPageScrollEvent.collect {
+            if (it == BottomNavItem.AppList) {
+                scrollKey.intValue++
+            }
+        }
+    }
     return ScaffoldExt(
         navItem = BottomNavItem.AppList,
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
@@ -135,7 +156,7 @@ fun useAppListPage(): ScaffoldExt {
                     val titleModifier = Modifier
                         .noRippleClickable(
                             onClick = throttle {
-                                mainVm.appListKeyFlow.update { it + 1 }
+                                scrollKey.intValue++
                             }
                         )
                     if (editWhiteListMode) {
@@ -169,7 +190,7 @@ fun useAppListPage(): ScaffoldExt {
                             onClick = throttle {
                                 mainVm.dialogFlow.updateDialogOptions(
                                     title = "权限异常",
-                                    text = "检测到已授予「${canQueryPkgState.name}」但实际获取用户应用数量稀少\n\n在应用列表下拉刷新可重新获取，若无法解决可尝试关闭权限后重新授予或重启设备"
+                                    text = "检测到已授予「${canQueryPkgState.name}」但实际获取应用数量稀少，已使用其它方式获取但可能不全，在应用列表下拉刷新可重新获取，若无法解决可尝试关闭权限后重新授予或重启设备"
                                 )
                             },
                         )
@@ -259,7 +280,7 @@ fun useAppListPage(): ScaffoldExt {
                 visible = editWhiteListMode,
                 contentDescription = "编辑白名单",
                 onClick = {
-                    mainVm.navigatePage(EditBlockAppListPageDestination)
+                    mainVm.navigatePage(EditBlockAppListRoute)
                 },
                 imageVector = PerfIcon.Edit,
             )
@@ -341,7 +362,7 @@ private fun AppItemCard(
                         blockMatchAppListFlow.update { it.switchItem(appInfo.id) }
                     } else {
                         context.justHideSoftInput()
-                        mainVm.navigatePage(AppConfigPageDestination(appInfo.id))
+                        mainVm.navigatePage(AppConfigRoute(appInfo.id))
                     }
                 })
             .clearAndSetSemantics {

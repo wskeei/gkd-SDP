@@ -45,12 +45,15 @@ import li.songe.gkd.sdp.ui.icon.DragPan
 import li.songe.gkd.sdp.ui.style.AppTheme
 import li.songe.gkd.sdp.ui.style.iconTextSize
 import li.songe.gkd.sdp.util.BarUtils
+import li.songe.gkd.sdp.util.DefaultSimpleLifeImpl
 import li.songe.gkd.sdp.util.OnSimpleLife
 import li.songe.gkd.sdp.util.ScreenUtils
 import li.songe.gkd.sdp.util.mapState
 import li.songe.gkd.sdp.util.px
+import li.songe.gkd.sdp.util.runMainPost
 import li.songe.gkd.sdp.util.throttle
 import li.songe.gkd.sdp.util.toast
+import kotlin.math.abs
 
 private var tempShareContext: ShareContext? = null
 private fun OverlayWindowService.useShareContext(): ShareContext {
@@ -100,7 +103,13 @@ private class ShareContext {
 
 abstract class OverlayWindowService(
     val positionKey: String,
-) : LifecycleService(), SavedStateRegistryOwner, OnSimpleLife {
+) : LifecycleService(), SavedStateRegistryOwner, OnSimpleLife by DefaultSimpleLifeImpl() {
+    companion object {
+        private var aliveSize = 0
+        val isAnyAlive: Boolean
+            get() = aliveSize > 0
+    }
+
     override fun onCreate() {
         super.onCreate()
         onCreated()
@@ -151,6 +160,8 @@ abstract class OverlayWindowService(
 
     open fun onClickView() {}
 
+    open fun onLongClickView() {}
+
     val view by lazy {
         ComposeView(this).apply {
             setViewTreeSavedStateRegistryOwner(this@OverlayWindowService)
@@ -179,6 +190,10 @@ abstract class OverlayWindowService(
     )
 
     init {
+        aliveSize++
+        onDestroyed {
+            runMainPost(1000) { aliveSize-- }
+        }
         lifecycleScope.launch {
             positionFlow.drop(1).debounce(300).collect { pos ->
                 shareContext.positionMapFlow.update {
@@ -188,9 +203,6 @@ abstract class OverlayWindowService(
                 }
             }
         }
-    }
-
-    init {
         onCreated {
             val marginX = minMargin
             val marginY = minMargin
@@ -224,8 +236,6 @@ abstract class OverlayWindowService(
                     positionFlow.value = listOf(x, y)
                     val startX = layoutParams.x
                     val startY = layoutParams.y
-                    val newX = x
-                    val newY = y
                     fixMoveFlag++
                     val tempFlag = fixMoveFlag
                     ValueAnimator.ofFloat(0f, 1f).apply {
@@ -233,8 +243,8 @@ abstract class OverlayWindowService(
                         addUpdateListener { animator ->
                             if (tempFlag == fixMoveFlag) {
                                 val fraction = animator.animatedValue as Float
-                                layoutParams.x = (startX + (newX - startX) * fraction).toInt()
-                                layoutParams.y = (startY + (newY - startY) * fraction).toInt()
+                                layoutParams.x = (startX + (x - startX) * fraction).toInt()
+                                layoutParams.y = (startY + (y - startY) * fraction).toInt()
                                 windowManager.updateViewLayout(view, layoutParams)
                             } else {
                                 pause()
@@ -253,6 +263,7 @@ abstract class OverlayWindowService(
                 resizeFlow.debounce(100).collect { fixLimitXy() }
             }
             var downXy: Pair<Float, Float>? = null
+            var longClickJob: kotlinx.coroutines.Job? = null
             @SuppressLint("ClickableViewAccessibility")
             view.setOnTouchListener { _, event ->
                 if (fixMoveFlag > 0) return@setOnTouchListener true
@@ -262,13 +273,23 @@ abstract class OverlayWindowService(
                         screenWidth = ScreenUtils.getScreenWidth()
                         screenHeight = ScreenUtils.getScreenHeight()
                         paramsXy = layoutParams.x to layoutParams.y
+                        longClickJob = null
+                        longClickJob = scope.launch {
+                            delay(500)
+                            longClickJob = null
+                            if (downXy != null) {
+                                onLongClickView()
+                            }
+                        }
                         true
                     }
 
                     MotionEvent.ACTION_MOVE -> {
                         downXy?.let { downEvent ->
-                            val x = (event.rawX - downEvent.first).toInt() + paramsXy.first
-                            val y = (event.rawY - downEvent.second).toInt() + paramsXy.second
+                            val dx = (event.rawX - downEvent.first).toInt()
+                            val dy = (event.rawY - downEvent.second).toInt()
+                            val x = dx + paramsXy.first
+                            val y = dy + paramsXy.second
                             layoutParams.x = x.coerceIn(marginX, screenWidth - view.width - marginX)
                             layoutParams.y = y.coerceIn(
                                 marginY,
@@ -276,6 +297,13 @@ abstract class OverlayWindowService(
                             )
                             positionFlow.value = listOf(layoutParams.x, layoutParams.y)
                             windowManager.updateViewLayout(view, layoutParams)
+                            longClickJob?.let {
+                                val maxBreakLongOffset = 10
+                                if (abs(dx) > maxBreakLongOffset || abs(dy) > maxBreakLongOffset) {
+                                    longClickJob?.cancel()
+                                    longClickJob = null
+                                }
+                            }
                         }
                         true
                     }
@@ -286,6 +314,7 @@ abstract class OverlayWindowService(
                             onClickView()
                         }
                         downXy = null
+                        longClickJob = null
                         true
                     }
 

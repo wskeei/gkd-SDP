@@ -45,6 +45,10 @@ val snapshotFolder: File
     get() = filesDir.resolve("snapshot").autoMk()
 val logFolder: File
     get() = filesDir.resolve("log").autoMk()
+val crashFolder: File
+    get() = filesDir.resolve("crash").autoMk()
+val crashTempFolder: File
+    get() = filesDir.resolve("crash/temp").autoMk()
 
 val privateStoreFolder: File
     get() = app.filesDir.resolve("private-store").autoMk()
@@ -57,7 +61,7 @@ val sharedDir: File
 private val tempDir: File
     get() = cacheDir.resolve("temp").autoMk()
 
-fun createTempDir(): File {
+fun createGkdTempDir(): File {
     return tempDir
         .resolve(System.currentTimeMillis().toString())
         .apply { mkdirs() }
@@ -90,14 +94,8 @@ private data class AppJsonData(
 
 @WorkerThread
 fun buildLogFile(): File {
-    val tempDir = createTempDir()
-    val files = listOf(dbFolder, storeFolder, subsFolder, logFolder).filter {
-        it.list()?.isNotEmpty() == true
-    }.toMutableList()
-    tempDir.resolve("meta.json").also {
-        it.writeText(toJson5String(META))
-        files.add(it)
-    }
+    val tempDir = createGkdTempDir()
+    val files = mutableListOf(dbFolder, storeFolder, subsFolder, logFolder, crashFolder)
     tempDir.resolve("apps.json").also {
         it.writeText(json.encodeToString(AppJsonData()))
         files.add(it)

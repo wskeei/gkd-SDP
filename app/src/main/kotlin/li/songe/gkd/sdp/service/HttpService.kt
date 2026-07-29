@@ -34,6 +34,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.serialization.Serializable
+import li.songe.gkd.sdp.a11y.A11yRuleEngine
 import li.songe.gkd.sdp.appScope
 import li.songe.gkd.sdp.data.AppInfo
 import li.songe.gkd.sdp.data.DeviceInfo
@@ -46,6 +47,7 @@ import li.songe.gkd.sdp.db.DbSet
 import li.songe.gkd.sdp.notif.StopServiceReceiver
 import li.songe.gkd.sdp.notif.httpNotif
 import li.songe.gkd.sdp.store.storeFlow
+import li.songe.gkd.sdp.util.DefaultSimpleLifeImpl
 import li.songe.gkd.sdp.util.LOCAL_HTTP_SUBS_ID
 import li.songe.gkd.sdp.util.LogUtils
 import li.songe.gkd.sdp.util.OnSimpleLife
@@ -65,20 +67,10 @@ import li.songe.gkd.sdp.util.toast
 import li.songe.gkd.sdp.util.updateSubscription
 
 
-class HttpService : Service(), OnSimpleLife {
+class HttpService : Service(), OnSimpleLife by DefaultSimpleLifeImpl() {
     override fun onBind(intent: Intent?) = null
-
-    override fun onCreate() {
-        super.onCreate()
-        onCreated()
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-        onDestroyed()
-    }
-
-    override val scope = useScope()
+    override fun onCreate() = onCreated()
+    override fun onDestroy() = onDestroyed()
 
     val httpServerPortFlow = storeFlow.mapState(scope) { s -> s.httpServerPort }
 
@@ -213,6 +205,18 @@ private fun CoroutineScope.createServer(port: Int) = embeddedServer(CIO, port) {
                 }
                 call.respond(list)
             }
+            post("/deleteSnapshot") {
+                val data = call.receive<ReqId>()
+                val allSnapshots = DbSet.snapshotDao.query().first()
+                val snapshot = allSnapshots.find { it.id == data.id }
+                if (snapshot != null) {
+                    SnapshotExt.removeSnapshot(data.id)
+                    DbSet.snapshotDao.delete(snapshot)
+                    call.respond(RpcOk("快照删除成功"))
+                } else {
+                    throw RpcError("快照不存在或已被删除")
+                }
+            }
             post("/updateSubscription") {
                 val subscription =
                     RawSubscription.parse(call.receiveText(), json5 = false)
@@ -228,11 +232,8 @@ private fun CoroutineScope.createServer(port: Int) = embeddedServer(CIO, port) {
                 call.respond(RpcOk())
             }
             post("/execSelector") {
-                if (!A11yService.isRunning.value) {
-                    throw RpcError("无障碍没有运行")
-                }
                 val gkdAction = call.receive<GkdAction>()
-                call.respond(A11yService.execAction(gkdAction))
+                call.respond(A11yRuleEngine.execAction(gkdAction))
             }
         }
     }

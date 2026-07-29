@@ -59,7 +59,6 @@ fun RuleGroupCard(
     appId: String?,
     group: RawSubscription.RawGroupProps,
     subsConfig: SubsConfig?,
-    category: RawSubscription.RawCategory?,
     categoryConfig: CategoryConfig?,
     focusGroupFlow: MutableStateFlow<Triple<Long, String?, Int>?>? = null,
     isSelectedMode: Boolean = false,
@@ -68,6 +67,7 @@ fun RuleGroupCard(
     onSelectedChange: () -> Unit = {},
 ) {
     val mainVm = LocalMainViewModel.current
+    val category = subs.getCategory(group.name)
 
     val inGlobalAppPage = appId != null && group is RawSubscription.RawGlobalGroup
 
@@ -295,6 +295,32 @@ fun RuleGroupCard(
             }
         }
     }
+}
+
+fun getActualGroupChecked(
+    subs: RawSubscription,
+    group: RawSubscription.RawGroupProps,
+    appId: String?,
+    subsConfig: SubsConfig?,
+    categoryConfig: CategoryConfig?,
+): Boolean {
+    if (!group.valid) return false
+    val inGlobalAppPage = appId != null && group is RawSubscription.RawGlobalGroup
+    return if (inGlobalAppPage) {
+        getGlobalGroupChecked(
+            subs,
+            ExcludeData.parse(subsConfig?.exclude),
+            group,
+            appId,
+        )
+    } else {
+        getGroupEnable(
+            group,
+            subsConfig,
+            subs.getCategory(group.name),
+            categoryConfig,
+        )
+    } ?: false
 }
 
 

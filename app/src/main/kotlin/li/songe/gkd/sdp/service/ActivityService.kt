@@ -35,7 +35,6 @@ import li.songe.gkd.sdp.a11y.updateTopActivity
 import li.songe.gkd.sdp.notif.StopServiceReceiver
 import li.songe.gkd.sdp.notif.recordNotif
 import li.songe.gkd.sdp.permission.canDrawOverlaysState
-import li.songe.gkd.sdp.shizuku.SafeTaskListener
 import li.songe.gkd.sdp.shizuku.shizukuContextFlow
 import li.songe.gkd.sdp.ui.component.PerfIcon
 import li.songe.gkd.sdp.ui.style.iconTextSize
@@ -49,7 +48,7 @@ class ActivityService : OverlayWindowService(
 ) {
     val activityOkFlow by lazy {
         combine(A11yService.isRunning, shizukuContextFlow) { a, b ->
-            a || SafeTaskListener.isAvailable
+            a || b.ok
         }.stateIn(scope = lifecycleScope, started = SharingStarted.Eagerly, initialValue = false)
     }
 
@@ -111,12 +110,14 @@ class ActivityService : OverlayWindowService(
                 }
             }
             if (!A11yService.isRunning.value) {
-                shizukuContextFlow.value.topCpn()?.let { cpn ->
-                    updateTopActivity(
-                        appId = cpn.packageName,
-                        activityId = cpn.className,
-                        scene = ActivityScene.TaskStack,
-                    )
+                synchronized(topActivityFlow) {
+                    shizukuContextFlow.value.topCpn()?.let { cpn ->
+                        updateTopActivity(
+                            appId = cpn.packageName,
+                            activityId = cpn.className,
+                            scene = ActivityScene.TaskStack,
+                        )
+                    }
                 }
             }
         }

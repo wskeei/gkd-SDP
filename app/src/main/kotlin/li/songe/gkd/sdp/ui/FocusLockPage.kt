@@ -51,14 +51,8 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.material3.AlertDialog
 import androidx.compose.ui.platform.LocalContext
-import com.ramcosta.composedestinations.annotation.Destination
-import com.ramcosta.composedestinations.annotation.RootGraph
-import com.ramcosta.composedestinations.generated.destinations.AppBlockerPageDestination
-import com.ramcosta.composedestinations.generated.destinations.FocusModePageDestination
-import com.ramcosta.composedestinations.generated.destinations.AppInstallMonitorPageDestination
-import com.ramcosta.composedestinations.generated.destinations.UrlBlockPageDestination
-import com.ramcosta.composedestinations.generated.destinations.UsageGuardPageDestination
-import com.ramcosta.composedestinations.navigation.DestinationsNavigator
+import androidx.navigation3.runtime.NavKey
+import kotlinx.serialization.Serializable
 import kotlinx.coroutines.launch
 import li.songe.gkd.sdp.a11y.FocusModeEngine
 import li.songe.gkd.sdp.a11y.UrlBlockerEngine
@@ -77,7 +71,9 @@ import li.songe.gkd.sdp.util.format
 import kotlin.math.roundToInt
 
 @OptIn(ExperimentalMaterial3Api::class)
-@Destination<RootGraph>
+@Serializable
+data object FocusLockRoute : NavKey
+
 @Composable
 fun FocusLockPage() {
     val mainVm = LocalMainViewModel.current
@@ -107,7 +103,7 @@ fun FocusLockPage() {
                 navigationIcon = {
                     PerfIconButton(
                         imageVector = PerfIcon.ArrowBack,
-                        onClick = { mainVm.popBackStack() },
+                        onClick = { mainVm.popPage() },
                     )
                 },
                 title = { Text(text = "数字自律") }
@@ -122,7 +118,7 @@ fun FocusLockPage() {
             item(key = "focus_mode") {
                 FocusModeCard(
                     isActive = focusModeActive,
-                    onClick = { mainVm.navigatePage(FocusModePageDestination) }
+                    onClick = { mainVm.navigatePage(FocusModeRoute) }
                 )
                 Spacer(modifier = Modifier.height(12.dp))
             }
@@ -131,7 +127,7 @@ fun FocusLockPage() {
             item(key = "url_blocker") {
                 UrlBlockerCard(
                     enabled = urlBlockerEnabled,
-                    onClick = { mainVm.navigatePage(UrlBlockPageDestination) }
+                    onClick = { mainVm.navigatePage(UrlBlockRoute) }
                 )
                 Spacer(modifier = Modifier.height(12.dp))
             }
@@ -139,7 +135,7 @@ fun FocusLockPage() {
             // 应用拦截卡片
             item(key = "app_blocker") {
                 AppBlockerCard(
-                    onClick = { mainVm.navigatePage(AppBlockerPageDestination) }
+                    onClick = { mainVm.navigatePage(AppBlockerRoute) }
                 )
                 Spacer(modifier = Modifier.height(12.dp))
             }
@@ -148,7 +144,7 @@ fun FocusLockPage() {
                 UsageGuardCard(
                     enabled = settings.usageGuardEnabled,
                     scopeMode = settings.usageGuardScopeMode,
-                    onClick = { mainVm.navigatePage(UsageGuardPageDestination) }
+                    onClick = { mainVm.navigatePage(UsageGuardRoute) }
                 )
                 Spacer(modifier = Modifier.height(12.dp))
             }
@@ -156,7 +152,7 @@ fun FocusLockPage() {
             // 软件安装监测卡片
             item(key = "app_install_monitor") {
                 AppInstallMonitorCard(
-                    onClick = { mainVm.navigatePage(AppInstallMonitorPageDestination) }
+                    onClick = { mainVm.navigatePage(AppInstallMonitorRoute) }
                 )
                 Spacer(modifier = Modifier.height(12.dp))
             }
