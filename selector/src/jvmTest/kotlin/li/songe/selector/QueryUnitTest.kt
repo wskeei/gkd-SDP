@@ -53,7 +53,7 @@ class QueryUnitTest {
             "${it.target.id} ${it.formatConnectOffset} ${it.source.id}"
         }.toString()
         println(pathText)
-        assert(pathText == "[163 < 161, 161 -> 163, 160 + 161]")
+        assert(pathText == "[163 <2 161, 161 -> 163, 160 + 161]")
     }
 
     @Test
