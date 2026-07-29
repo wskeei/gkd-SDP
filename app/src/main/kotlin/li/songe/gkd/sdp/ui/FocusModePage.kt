@@ -49,8 +49,8 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.ramcosta.composedestinations.annotation.Destination
-import com.ramcosta.composedestinations.annotation.RootGraph
+import androidx.navigation3.runtime.NavKey
+import kotlinx.serialization.Serializable
 import kotlinx.coroutines.launch
 import li.songe.gkd.sdp.app
 import li.songe.gkd.sdp.data.FocusRule
@@ -66,7 +66,9 @@ import li.songe.gkd.sdp.ui.style.surfaceCardColors
 import li.songe.gkd.sdp.util.appInfoMapFlow
 
 @OptIn(ExperimentalMaterial3Api::class)
-@Destination<RootGraph>
+@Serializable
+data object FocusModeRoute : NavKey
+
 @Composable
 fun FocusModePage() {
     val mainVm = LocalMainViewModel.current
@@ -1199,4 +1201,3 @@ private fun LockRuleSheet(
         }
     }
 }
-

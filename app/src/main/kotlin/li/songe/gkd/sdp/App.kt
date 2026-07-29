@@ -9,17 +9,27 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ApplicationInfo
+import android.content.pm.LauncherApps
 import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
 import android.database.ContentObserver
+import android.hardware.display.DisplayManager
+import android.hardware.input.InputManager
 import android.net.Uri
 import android.os.PowerManager
 import android.provider.Settings
+import android.util.Log
+import android.view.Display
 import android.view.WindowManager
 import android.view.accessibility.AccessibilityManager
 import android.view.inputmethod.InputMethodManager
+import androidx.core.content.ContextCompat
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.delay
 import kotlinx.serialization.Serializable
+import li.songe.gkd.sdp.a11y.initA11yFeat
+import li.songe.gkd.sdp.data.CrashData
 import li.songe.gkd.sdp.data.selfAppInfo
 import li.songe.gkd.sdp.notif.initChannel
 import li.songe.gkd.sdp.service.AutoReenableEnforcer
@@ -30,12 +40,14 @@ import li.songe.gkd.sdp.store.initStore
 import li.songe.gkd.sdp.util.AndroidTarget
 import li.songe.gkd.sdp.util.LogUtils
 import li.songe.gkd.sdp.util.PKG_FLAGS
+import li.songe.gkd.sdp.util.deviceInfoDesc
 import li.songe.gkd.sdp.util.initAppState
 import li.songe.gkd.sdp.util.initSubsState
 import li.songe.gkd.sdp.util.initToast
+import li.songe.gkd.sdp.util.launchTry
 import li.songe.gkd.sdp.util.toast
 import org.lsposed.hiddenapibypass.HiddenApiBypass
-import li.songe.gkd.sdp.R
+import kotlin.system.exitProcess
 
 
 val appScope by lazy { MainScope() }
@@ -153,6 +165,21 @@ class App : Application() {
         return resolveAppId(intent)
     }
 
+    fun startLaunchActivity() {
+        val intent = packageManager.getLaunchIntentForPackage(META.appId)!!
+        intent.addFlags(
+            Intent.FLAG_ACTIVITY_NEW_TASK
+                    or Intent.FLAG_ACTIVITY_CLEAR_TOP
+                    or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        )
+        startActivity(intent)
+    }
+
+    fun checkGrantedPermission(permission: String) = ContextCompat.checkSelfPermission(
+        this,
+        permission,
+    ) == PackageManager.PERMISSION_GRANTED
+
     val startTime = System.currentTimeMillis()
     var justStarted: Boolean = true
         get() {
@@ -165,11 +192,22 @@ class App : Application() {
     val activityManager by lazy { app.getSystemService(ACTIVITY_SERVICE) as ActivityManager }
     val appOpsManager by lazy { app.getSystemService(APP_OPS_SERVICE) as AppOpsManager }
     val inputMethodManager by lazy { app.getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager }
+    val inputManager by lazy { app.getSystemService(INPUT_SERVICE) as InputManager }
     val windowManager by lazy { app.getSystemService(WINDOW_SERVICE) as WindowManager }
+    val displayManager by lazy { app.getSystemService(DISPLAY_SERVICE) as DisplayManager }
     val keyguardManager by lazy { app.getSystemService(KEYGUARD_SERVICE) as KeyguardManager }
     val clipboardManager by lazy { app.getSystemService(CLIPBOARD_SERVICE) as ClipboardManager }
     val powerManager by lazy { getSystemService(POWER_SERVICE) as PowerManager }
     val a11yManager by lazy { getSystemService(ACCESSIBILITY_SERVICE) as AccessibilityManager }
+    val launcherApps by lazy { getSystemService(LAUNCHER_APPS_SERVICE) as LauncherApps }
+
+    val compatDisplay: Display
+        get() = if (AndroidTarget.R) {
+            displayManager.getDisplay(Display.DEFAULT_DISPLAY)
+        } else {
+            @Suppress("DEPRECATION")
+            windowManager.defaultDisplay
+        }
 
     override fun onCreate() {
         super.onCreate()
@@ -177,16 +215,39 @@ class App : Application() {
         Thread.setDefaultUncaughtExceptionHandler { t, e ->
             toast(e.message ?: e.toString())
             LogUtils.d("UncaughtExceptionHandler", t, e)
+            val mtime = System.currentTimeMillis()
+            appScope.launchTry(Dispatchers.IO) {
+                CrashData(
+                    id = mtime,
+                    mtime = mtime,
+                    device = deviceInfoDesc,
+                    androidVersionCode = android.os.Build.VERSION.SDK_INT,
+                    androidVersionName = android.os.Build.VERSION.RELEASE,
+                    versionCode = META.versionCode,
+                    versionName = META.versionName,
+                    name = e::class.java.name,
+                    message = e.message,
+                    thread = t.name,
+                    stackTrace = Log.getStackTraceString(e),
+                ).save()
+                delay(1500)
+                if (isActivityVisible) {
+                    startLaunchActivity()
+                }
+                android.os.Process.killProcess(android.os.Process.myPid())
+                exitProcess(0)
+            }
         }
         initToast()
         initStore()
         initChannel()
         initAppState()
+        initA11yFeat()
         initShizuku()
         initSubsState()
-        AutoReenableEnforcer.start()
         initA11yWhiteAppList()
         clearHttpSubs()
         syncFixState()
+        AutoReenableEnforcer.start()
     }
 }

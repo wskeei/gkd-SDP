@@ -24,10 +24,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.ramcosta.composedestinations.annotation.Destination
-import com.ramcosta.composedestinations.annotation.RootGraph
-import com.ramcosta.composedestinations.generated.destinations.SubsAppGroupListPageDestination
-import com.ramcosta.composedestinations.generated.destinations.UpsertRuleGroupPageDestination
+import androidx.navigation3.runtime.NavKey
+import kotlinx.serialization.Serializable
 import li.songe.gkd.sdp.MainActivity
 import li.songe.gkd.sdp.R
 import li.songe.gkd.sdp.data.AppConfig
@@ -52,7 +50,6 @@ import li.songe.gkd.sdp.ui.share.LocalMainViewModel
 import li.songe.gkd.sdp.ui.share.asMutableState
 import li.songe.gkd.sdp.ui.share.noRippleClickable
 import li.songe.gkd.sdp.ui.style.EmptyHeight
-import li.songe.gkd.sdp.ui.style.ProfileTransitions
 import li.songe.gkd.sdp.ui.style.scaffoldPadding
 import li.songe.gkd.sdp.util.AppGroupOption
 import li.songe.gkd.sdp.util.AppSortOption
@@ -61,14 +58,15 @@ import li.songe.gkd.sdp.util.launchAsFn
 import li.songe.gkd.sdp.util.throttle
 
 
-@Destination<RootGraph>(style = ProfileTransitions::class)
+@Serializable
+data class SubsAppListRoute(val subsItemId: Long) : NavKey
+
 @Composable
-fun SubsAppListPage(
-    subsItemId: Long,
-) {
+fun SubsAppListPage(route: SubsAppListRoute) {
+    val subsItemId = route.subsItemId
     val mainVm = LocalMainViewModel.current
     val context = LocalActivity.current as MainActivity
-    val vm = viewModel<SubsAppListVm>()
+    val vm = viewModel { SubsAppListVm(route) }
 
     val appTripleList by vm.appItemListFlow.collectAsState()
     val searchStr by vm.searchStrFlow.collectAsState()
@@ -181,7 +179,7 @@ fun SubsAppListPage(
             if (LOCAL_SUBS_IDS.contains(subsItemId)) {
                 FloatingActionButton(onClick = throttle {
                     mainVm.navigatePage(
-                        UpsertRuleGroupPageDestination(
+                        UpsertRuleGroupRoute(
                             subsId = subsItemId,
                             groupKey = null,
                             appId = "",
@@ -209,7 +207,7 @@ fun SubsAppListPage(
                     isLocked = isLocked,
                     onClick = throttle {
                         context.justHideSoftInput()
-                        mainVm.navigatePage(SubsAppGroupListPageDestination(subsItemId, a.id))
+                        mainVm.navigatePage(SubsAppGroupListRoute(subsItemId, a.id))
                     },
                     onValueChange = vm.viewModelScope.launchAsFn { enable ->
                         val newItem = a.appConfig?.copy(

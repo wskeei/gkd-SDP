@@ -1,22 +1,16 @@
 package li.songe.gkd.sdp
 
-import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Intent
 import android.net.Uri
 import android.webkit.URLUtil
 import androidx.lifecycle.viewModelScope
-import androidx.navigation.NavHostController
-import androidx.navigation.NavOptionsBuilder
-import com.ramcosta.composedestinations.generated.destinations.AdvancedPageDestination
-import com.ramcosta.composedestinations.generated.destinations.AppOpsAllowPageDestination
-import com.ramcosta.composedestinations.generated.destinations.SnapshotPageDestination
-import com.ramcosta.composedestinations.generated.destinations.WebViewPageDestination
-import com.ramcosta.composedestinations.spec.Direction
+import androidx.navigation3.runtime.NavBackStack
+import androidx.navigation3.runtime.NavKey
 import io.ktor.client.request.get
 import io.ktor.client.statement.bodyAsText
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.map
@@ -25,24 +19,33 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import li.songe.gkd.sdp.a11y.useA11yServiceEnabledFlow
 import li.songe.gkd.sdp.a11y.useEnabledA11yServicesFlow
+import li.songe.gkd.sdp.data.CrashData
 import li.songe.gkd.sdp.data.RawSubscription
 import li.songe.gkd.sdp.data.SubsItem
-import li.songe.gkd.sdp.data.importData
 import li.songe.gkd.sdp.db.DbSet
 import li.songe.gkd.sdp.permission.AuthReason
-import li.songe.gkd.sdp.permission.canQueryPkgState
 import li.songe.gkd.sdp.permission.shizukuGrantedState
 import li.songe.gkd.sdp.service.A11yService
 import li.songe.gkd.sdp.shizuku.shizukuContextFlow
+import li.songe.gkd.sdp.shizuku.uiAutomationFlow
 import li.songe.gkd.sdp.shizuku.updateBinderMutex
 import li.songe.gkd.sdp.store.createTextFlow
 import li.songe.gkd.sdp.store.storeFlow
+import li.songe.gkd.sdp.ui.AdvancedPageRoute
+import li.songe.gkd.sdp.ui.AppOpsAllowRoute
+import li.songe.gkd.sdp.ui.CrashReportRoute
+import li.songe.gkd.sdp.ui.SnapshotPageRoute
+import li.songe.gkd.sdp.ui.WebViewRoute
 import li.songe.gkd.sdp.ui.component.AlertDialogOptions
 import li.songe.gkd.sdp.ui.component.InputSubsLinkOption
 import li.songe.gkd.sdp.ui.component.RuleGroupState
 import li.songe.gkd.sdp.ui.component.UploadOptions
 import li.songe.gkd.sdp.ui.home.BottomNavItem
+import li.songe.gkd.sdp.ui.home.HomeRoute
 import li.songe.gkd.sdp.ui.share.BaseViewModel
+import li.songe.gkd.sdp.util.AutomatorModeOption
+import li.songe.gkd.sdp.util.BackupUtils
+import li.songe.gkd.sdp.util.DefaultSimpleLifeImpl
 import li.songe.gkd.sdp.util.LOCAL_SUBS_ID
 import li.songe.gkd.sdp.util.LogUtils
 import li.songe.gkd.sdp.util.OnSimpleLife
@@ -51,6 +54,10 @@ import li.songe.gkd.sdp.util.UpdateStatus
 import li.songe.gkd.sdp.util.appIconMapFlow
 import li.songe.gkd.sdp.util.clearCache
 import li.songe.gkd.sdp.util.client
+import li.songe.gkd.sdp.util.crashFolder
+import li.songe.gkd.sdp.util.crashTempFolder
+import li.songe.gkd.sdp.util.findOption
+import li.songe.gkd.sdp.util.json
 import li.songe.gkd.sdp.util.launchTry
 import li.songe.gkd.sdp.util.openUri
 import li.songe.gkd.sdp.util.openWeChatScaner
@@ -61,60 +68,62 @@ import li.songe.gkd.sdp.util.subsItemsFlow
 import li.songe.gkd.sdp.util.toast
 import li.songe.gkd.sdp.util.updateSubsMutex
 import li.songe.gkd.sdp.util.updateSubscription
+import li.songe.loc.Loc
 import rikka.shizuku.Shizuku
+import java.nio.file.Files
 import kotlin.reflect.jvm.jvmName
+import kotlin.time.Duration.Companion.days
 
-private var tempTermsAccepted = false
-
-class MainViewModel : BaseViewModel(), OnSimpleLife {
+class MainViewModel : BaseViewModel(), OnSimpleLife by DefaultSimpleLifeImpl() {
     companion object {
         private var _instance: MainViewModel? = null
         val instance get() = _instance!!
+        private var tempTermsAccepted = false
     }
 
     init {
+        LogUtils.d("MainViewModel:init")
         _instance = this
         addCloseable {
+            LogUtils.d("MainViewModel:close")
             if (_instance == this) { // 可能同时存在 2 个 MainViewModel 实例
                 _instance = null
             }
         }
     }
 
-    override val scope: CoroutineScope
-        get() = viewModelScope
+    override val scope get() = viewModelScope
 
-    private lateinit var navController: NavHostController
-    fun updateNavController(navController: NavHostController) {
-        this.navController = navController
-    }
+    val backStack: NavBackStack<NavKey> = NavBackStack(HomeRoute)
+    val topRoute get() = backStack.last()
 
     private val backThrottleTimer = ThrottleTimer()
-    fun popBackStack() {
-        if (!backThrottleTimer.expired()) return
-        @SuppressLint("RestrictedApi")
-        if (navController.currentBackStack.value.size == 1) return
-        runMainPost {
-            navController.popBackStack()
+
+    fun popPage(@Loc loc: String = "") = runMainPost {
+        if (backThrottleTimer.expired() && backStack.size > 1) {
+            val old = backStack.last()
+            backStack.removeAt(backStack.lastIndex)
+            LogUtils.d("popPage", "$old -> ${backStack.last()}", loc = loc)
         }
     }
 
-    fun navigatePage(direction: Direction, builder: (NavOptionsBuilder.() -> Unit)? = null) {
-        if (direction.route == navController.currentDestination?.route) {
-            return
-        }
-        runMainPost {
-            if (builder != null) {
-                navController.navigate(direction.route, builder)
+    fun navigatePage(
+        navKey: NavKey,
+        replaced: Boolean = false,
+        @Loc loc: String = "",
+    ) = runMainPost {
+        if (navKey != backStack.last()) {
+            val old = backStack.last()
+            if (replaced) {
+                backStack[backStack.lastIndex] = navKey
             } else {
-                navController.navigate(direction.route)
+                backStack.add(navKey)
             }
+            LogUtils.d("navigatePage", "$old -> ${backStack.last()}", loc = loc)
         }
     }
 
-    fun navigateWebPage(url: String) {
-        navigatePage(WebViewPageDestination(url))
-    }
+    fun navigateWebPage(url: String) = navigatePage(WebViewRoute(url))
 
     val dialogFlow = MutableStateFlow<AlertDialogOptions?>(null)
     val authReasonFlow = MutableStateFlow<AuthReason?>(null)
@@ -130,8 +139,6 @@ class MainViewModel : BaseViewModel(), OnSimpleLife {
     val inputSubsLinkOption = InputSubsLinkOption()
 
     val sheetSubsIdFlow = MutableStateFlow<Long?>(null)
-
-    val showShareDataIdsFlow = MutableStateFlow<Set<Long>?>(null)
 
     val appOrderListFlow = DbSet.actionLogDao.queryLatestUniqueAppIds().stateInit(emptyList())
     val appVisitOrderMapFlow = DbSet.appVisitLogDao.query().map {
@@ -203,18 +210,17 @@ class MainViewModel : BaseViewModel(), OnSimpleLife {
         }
     }
 
-    val appListKeyFlow = MutableStateFlow(0)
     val tabFlow = MutableStateFlow(BottomNavItem.Control.key)
+    val resetPageScrollEvent = MutableSharedFlow<BottomNavItem>()
     private var lastClickTabTime = 0L
-    fun updateTab(navItem: BottomNavItem) {
-        if (navItem == BottomNavItem.AppList && navItem.key == tabFlow.value) {
-            // double click
-            if (System.currentTimeMillis() - lastClickTabTime < 500) {
-                appListKeyFlow.update { it + 1 }
-            }
+    fun handleClickTab(navItem: BottomNavItem) {
+        val t = System.currentTimeMillis()
+        // double click
+        if (navItem.key == tabFlow.value && t - lastClickTabTime < 500) {
+            viewModelScope.launch { resetPageScrollEvent.emit(navItem) }
         }
         tabFlow.value = navItem.key
-        lastClickTabTime = System.currentTimeMillis()
+        lastClickTabTime = t
     }
 
     fun handleGkdUri(uri: Uri) {
@@ -228,9 +234,9 @@ class MainViewModel : BaseViewModel(), OnSimpleLife {
                     }
                 }
 
-                "/1" -> navigatePage(AdvancedPageDestination)
-                "/2" -> navigatePage(SnapshotPageDestination)
-                "/3" -> navigatePage(AppOpsAllowPageDestination)
+                "/1" -> navigatePage(AdvancedPageRoute)
+                "/2" -> navigatePage(SnapshotPageRoute)
+                "/3" -> navigatePage(AppOpsAllowRoute)
                 else -> notFoundToast()
             }
 
@@ -250,9 +256,7 @@ class MainViewModel : BaseViewModel(), OnSimpleLife {
         if (uri?.scheme == "gkd") {
             handleGkdUri(uri)
         } else if (source == OpenFileActivity::class.jvmName && uri != null) {
-            toast("加载导入中...")
-            tabFlow.value = BottomNavItem.SubsManage.key
-            withContext(Dispatchers.IO) { importData(uri) }
+            withContext(Dispatchers.IO) { BackupUtils.importBackUpData(uri) }
         }
     }
 
@@ -320,9 +324,21 @@ class MainViewModel : BaseViewModel(), OnSimpleLife {
 
     private val a11yServicesFlow = useEnabledA11yServicesFlow()
     val a11yServiceEnabledFlow = useA11yServiceEnabledFlow(a11yServicesFlow)
-    val hasOtherA11yFlow = a11yServicesFlow.mapNew { list ->
-        list.any { it != A11yService.a11yCn }
+
+    val automatorModeFlow = storeFlow.mapNew {
+        AutomatorModeOption.objects.findOption(it.automatorMode)
     }
+
+    fun updateAutomatorMode(option: AutomatorModeOption) {
+        if (automatorModeFlow.value == option) return
+        storeFlow.update { it.copy(automatorMode = option.value, enableAutomator = false) }
+        A11yService.instance?.shutdown()
+        uiAutomationFlow.value?.shutdown()
+    }
+
+    val showShareLogDlgFlow = MutableStateFlow(false)
+
+    var tempCrashDataList = emptyList<CrashData>()
 
     init {
         // preload
@@ -361,9 +377,30 @@ class MainViewModel : BaseViewModel(), OnSimpleLife {
             // preload
             githubCookieFlow.value
         }
-
-        canQueryPkgState.stateFlow.launchOnChange {
-            appListKeyFlow.update { it + 1 }
+        viewModelScope.launchTry(Dispatchers.IO) {
+            val list = (crashTempFolder.listFiles() ?: emptyArray()).mapNotNull {
+                try {
+                    json.decodeFromString<CrashData>(it.readText())
+                } catch (e: Exception) {
+                    LogUtils.d("解析崩溃日志失败: ${it.name}", e)
+                    null
+                }
+            }.sortedBy { -it.mtime }
+            crashTempFolder.deleteRecursively()
+            val t = System.currentTimeMillis()
+            crashFolder.listFiles()?.filter {
+                val name = it.name
+                !list.any { f -> name == f.filename }
+            }?.forEach {
+                val mtime = Files.getLastModifiedTime(it.toPath()).toMillis()
+                if (t - mtime > 30.days.inWholeMilliseconds) {
+                    it.delete()
+                }
+            }
+            tempCrashDataList = list
+            if (list.isNotEmpty()) {
+                navigatePage(CrashReportRoute)
+            }
         }
 
         // for OnSimpleLife

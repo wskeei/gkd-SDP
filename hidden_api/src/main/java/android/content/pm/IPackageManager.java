@@ -9,6 +9,8 @@ import android.os.IInterface;
 import androidx.annotation.DeprecatedSinceApi;
 import androidx.annotation.RequiresApi;
 
+import li.songe.remap.RemapMethod;
+
 /**
  * @noinspection unused
  */
@@ -21,13 +23,18 @@ public interface IPackageManager extends IInterface {
 
     boolean isSafeMode();
 
-    @DeprecatedSinceApi(api = Build.VERSION_CODES.TIRAMISU, message = "NoSuchMethodError")
+    @DeprecatedSinceApi(api = Build.VERSION_CODES.TIRAMISU)
     ParceledListSlice<PackageInfo> getInstalledPackages(int flags, int userId);
 
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     ParceledListSlice<PackageInfo> getInstalledPackages(long flags, int userId);
 
-    @DeprecatedSinceApi(api = Build.VERSION_CODES.TIRAMISU, message = "NoSuchMethodError")
+    // android17+
+    @RemapMethod("getInstalledPackages")
+    @RequiresApi(Build.VERSION_CODES.CINNAMON_BUN)
+    PackageInfoList getInstalledPackagesV17(long flags, int userId);
+
+    @DeprecatedSinceApi(api = Build.VERSION_CODES.TIRAMISU)
     PackageInfo getPackageInfo(String packageName, int flags, int userId);
 
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
@@ -35,8 +42,9 @@ public interface IPackageManager extends IInterface {
 
     ParceledListSlice<IntentFilter> getAllIntentFilters(String packageName);
 
+    int checkPermission(String permName, String pkgName, int userId);
+
     void grantRuntimePermission(String packageName, String permissionName, int userId);
 
     int getApplicationEnabledSetting(String packageName, int userId);
-
 }

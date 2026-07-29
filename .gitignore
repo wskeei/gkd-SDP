@@ -22,7 +22,7 @@ local.properties
 *.base64
 /GKD-DEP
 
-/_assets
+/.cache
 /.kotlin
 
 /gradle/libs.versions.updates.toml

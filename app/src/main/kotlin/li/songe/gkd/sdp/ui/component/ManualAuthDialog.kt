@@ -19,7 +19,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
-import com.ramcosta.composedestinations.generated.destinations.WebViewPageDestination
+import li.songe.gkd.sdp.ui.WebViewRoute
 import li.songe.gkd.sdp.ui.share.LocalMainViewModel
 import li.songe.gkd.sdp.util.ShortUrlSet
 import li.songe.gkd.sdp.util.copyText
@@ -35,7 +35,7 @@ fun ManualAuthDialog(
         val mainVm = LocalMainViewModel.current
         AlertDialog(
             onDismissRequest = { onUpdateShow(false) },
-            title = { Text(text = "外部授权") },
+            title = { Text(text = "命令授权") },
             text = {
                 Column(modifier = Modifier.fillMaxWidth()) {
                     Text(text = "1. 有一台安装了 adb 的电脑\n\n2.手机开启调试模式后连接电脑授权调试\n\n3. 在电脑 cmd/pwsh 中运行如下命令")
@@ -74,7 +74,7 @@ fun ManualAuthDialog(
                         modifier = Modifier
                             .clickable(onClick = throttle {
                                 onUpdateShow(false)
-                                mainVm.navigatePage(WebViewPageDestination(initUrl = ShortUrlSet.URL3))
+                                mainVm.navigatePage(WebViewRoute(initUrl = ShortUrlSet.URL3))
                             }),
                         text = "运行后授权失败?",
                         style = MaterialTheme.typography.bodySmall,

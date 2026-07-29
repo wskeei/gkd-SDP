@@ -17,6 +17,7 @@ import kotlinx.serialization.json.long
 import li.songe.gkd.sdp.a11y.typeInfo
 import li.songe.gkd.sdp.util.LOCAL_SUBS_IDS
 import li.songe.gkd.sdp.util.LogUtils
+import li.songe.gkd.sdp.util.ScreenUtils
 import li.songe.gkd.sdp.util.appInfoMapFlow
 import li.songe.gkd.sdp.util.distinctByIfAny
 import li.songe.gkd.sdp.util.filterIfNotAll
@@ -60,38 +61,50 @@ data class RawSubscription(
 
     val hasRule get() = globalGroups.isNotEmpty() || apps.any { it.groups.isNotEmpty() }
 
-    val usedApps by lazy {
-        apps.run {
-            if (any { it.groups.isEmpty() }) {
-                filterNot { it.groups.isEmpty() }
-            } else {
-                this
-            }
-        }
+    fun getSafeCategory(key: Int): RawCategory {
+        return categories.find { it.key == key } ?: RawCategory(
+            key = key,
+            name = key.toString(),
+            enable = false,
+            desc = null
+        )
     }
 
-    val categoryToGroupsMap by lazy {
-        val allAppGroups = apps.flatMap { a -> a.groups.map { g -> g to a } }
-        allAppGroups.groupBy { g ->
-            categories.find { c -> g.first.name.startsWith(c.name) }
-        }
-    }
-
-    val categoryToAppMap by lazy {
-        val map = mutableMapOf<RawCategory, MutableList<RawApp>>()
+    private val categoryAppsMap: Map<Int, List<RawApp>> by lazy {
+        val map = mutableMapOf<Int, MutableList<RawApp>>()
+        val usedGroups = mutableListOf<RawAppGroup>()
         categories.forEach { c ->
             apps.forEach { a ->
-                if (a.groups.any { g -> g.name.startsWith(c.name) }) {
-                    val list = map[c]
+                val subGroups = a.groups.filter { g ->
+                    g.name.startsWith(c.name) && !usedGroups.any { g2 -> g2 === g }
+                }
+                if (subGroups.isNotEmpty()) {
+                    usedGroups.addAll(subGroups)
+                    val list = map[c.key]
+                    val b = a.copy(groups = subGroups)
                     if (list == null) {
-                        map[c] = mutableListOf(a)
+                        map[c.key] = mutableListOf(b)
                     } else {
-                        list.add(a)
+                        list.add(b)
                     }
                 }
             }
         }
         map
+    }
+
+    private val categoryGroupsMap: Map<Int, List<RawAppGroup>> by lazy {
+        categoryAppsMap.mapValues { (key, apps) ->
+            apps.flatMap { it.groups }
+        }
+    }
+
+    fun getCategoryApps(categoryKey: Int): List<RawApp> {
+        return categoryAppsMap[categoryKey] ?: emptyList()
+    }
+
+    fun getCategory(groupName: String): RawCategory? {
+        return categories.find { c -> groupName.startsWith(c.name) }
     }
 
     fun getAppGroups(appId: String): List<RawAppGroup> {
@@ -106,16 +119,18 @@ data class RawSubscription(
         )
     }
 
-    val groupToCategoryMap by lazy {
-        val map = mutableMapOf<RawAppGroup, RawCategory>()
-        categoryToGroupsMap.forEach { (key, value) ->
-            value.forEach { (g) ->
-                if (key != null) {
-                    map[g] = key
-                }
-            }
-        }
-        map
+    fun getAppByGroup(group: RawAppGroup): RawApp {
+        return apps.find { a -> a.groups.any { g -> g === group } }
+            ?: throw IllegalStateException("App not found for group ${group.name}")
+    }
+
+    fun getCategoryCompatDesc(categoryKey: Int): String? {
+        val c = getSafeCategory(categoryKey)
+        if (!c.desc.isNullOrBlank()) return c.desc
+        val groupSize = categoryGroupsMap[categoryKey]?.size ?: 0
+        val appSize = categoryAppsMap[categoryKey]?.size ?: 0
+        if (groupSize > 0) return "${appSize}应用/${groupSize}规则"
+        return null
     }
 
     val appGroups by lazy {
@@ -168,7 +183,7 @@ data class RawSubscription(
             } else {
                 ""
             } + if (appGroupsSize > 0) {
-                "${appsSize}应用/${appGroupsSize}规则组"
+                "${appsSize}应用/${appGroupsSize}规则"
             } else {
                 ""
             }
@@ -224,20 +239,35 @@ data class RawSubscription(
 
 
     @Serializable
-    data class RawCategory(val key: Int, val name: String, val enable: Boolean?)
+    data class RawCategory(
+        val key: Int,
+        val name: String,
+        val enable: Boolean?,
+        val desc: String?,
+    )
 
 
     @Serializable
     data class Position(
-        val left: String?, val top: String?, val right: String?, val bottom: String?
+        val left: String?,
+        val top: String?,
+        val right: String?,
+        val bottom: String?,
+        val x: String?,
+        val y: String?,
     ) {
         private val leftExp by lazy { getExpression(left) }
         private val topExp by lazy { getExpression(top) }
         private val rightExp by lazy { getExpression(right) }
         private val bottomExp by lazy { getExpression(bottom) }
+        private val xExp by lazy { getExpression(x) }
+        private val yExp by lazy { getExpression(y) }
+
+        private val xArr by lazy { arrayOf(leftExp, rightExp, xExp) }
+        private val yArr by lazy { arrayOf(topExp, bottomExp, yExp) }
 
         val isValid by lazy {
-            ((leftExp != null && (topExp != null || bottomExp != null)) || (rightExp != null && (topExp != null || bottomExp != null)))
+            xArr.any { it != null } && yArr.any { it != null }
         }
 
         /**
@@ -245,37 +275,30 @@ data class RawSubscription(
          */
         fun calc(rect: Rect): Pair<Float, Float>? {
             if (!isValid) return null
-            arrayOf(
-                leftExp, topExp, rightExp, bottomExp
-            ).forEach { exp ->
-                if (exp != null) {
-                    setVariables(exp, rect)
-                }
-            }
+            xArr.forEach { setVariables(it, rect) }
+            yArr.forEach { setVariables(it, rect) }
             try {
-                if (leftExp != null) {
-                    if (topExp != null) {
-                        return (rect.left + leftExp!!.evaluate()
-                            .toFloat()) to (rect.top + topExp!!.evaluate().toFloat())
-                    }
-                    if (bottomExp != null) {
-                        return (rect.left + leftExp!!.evaluate()
-                            .toFloat()) to (rect.bottom - bottomExp!!.evaluate().toFloat())
-                    }
-                } else if (rightExp != null) {
-                    if (topExp != null) {
-                        return (rect.right - rightExp!!.evaluate()
-                            .toFloat()) to (rect.top + topExp!!.evaluate().toFloat())
-                    }
-                    if (bottomExp != null) {
-                        return (rect.right - rightExp!!.evaluate()
-                            .toFloat()) to (rect.bottom - bottomExp!!.evaluate().toFloat())
-                    }
+                val x0 = xArr.find { it != null }!!.evaluate().toFloat()
+                val y0 = yArr.find { it != null }!!.evaluate().toFloat()
+                val x = when {
+                    leftExp != null -> rect.left + x0
+                    rightExp != null -> rect.right - x0
+                    xExp != null -> x0
+                    else -> null
+                }
+                val y = when {
+                    topExp != null -> rect.top + y0
+                    bottomExp != null -> rect.bottom - y0
+                    yExp != null -> y0
+                    else -> null
+                }
+                if (x != null && y != null) {
+                    return x to y
                 }
             } catch (e: Exception) {
                 // 可能存在 1/0 导致错误
                 e.printStackTrace()
-                LogUtils.d(e)
+                LogUtils.d("Position.calc", e)
                 toast(e.message ?: e.stackTraceToString())
             }
             return null
@@ -303,12 +326,26 @@ data class RawSubscription(
         val priorityActionMaximum: Int?
     }
 
-    sealed interface RawRuleProps : RawCommonProps {
+    @Serializable
+    data class SwipeArg(
+        val start: Position,
+        val end: Position?,
+        val duration: Long,
+    )
+
+    interface LocationProps {
+        // click
+        val position: Position?
+
+        // swipe
+        val swipeArg: SwipeArg?
+    }
+
+    sealed interface RawRuleProps : RawCommonProps, LocationProps {
         val name: String?
         val key: Int?
         val preKeys: List<Int>?
         val action: String?
-        val position: Position?
         val matches: List<String>?
         val anyMatches: List<String>?
         val excludeMatches: List<String>?
@@ -468,6 +505,7 @@ data class RawSubscription(
         override val preKeys: List<Int>?,
         override val action: String?,
         override val position: Position?,
+        override val swipeArg: SwipeArg?,
         override val matches: List<String>?,
         override val excludeMatches: List<String>?,
         override val excludeAllMatches: List<String>?,
@@ -528,6 +566,7 @@ data class RawSubscription(
         override val preKeys: List<Int>?,
         override val action: String?,
         override val position: Position?,
+        override val swipeArg: SwipeArg?,
         override val matches: List<String>?,
         override val excludeMatches: List<String>?,
         override val excludeAllMatches: List<String>?,
@@ -561,9 +600,9 @@ data class RawSubscription(
     companion object {
 
         private fun RawGroupProps.getErrorDesc(): String? {
-            val allSelectorStrings = rules.map { r ->
+            val allSelectorStrings = rules.flatMap { r ->
                 r.getAllSelectorStrings()
-            }.flatten()
+            }
             allSelectorStrings.forEach { source ->
                 try {
                     val selector = Selector.parse(source)
@@ -582,17 +621,20 @@ data class RawSubscription(
             return null
         }
 
-        private val expVars = arrayOf(
+        private val preFillExpVars = arrayOf(
             "left",
             "top",
             "right",
             "bottom",
             "width",
             "height",
-            "random"
+            "random",
+            "screenWidth",
+            "screenHeight",
         )
 
-        private fun setVariables(exp: Expression, rect: Rect) {
+        private fun setVariables(exp: Expression?, rect: Rect) {
+            if (exp == null) return
             exp.setVariable("left", rect.left.toDouble())
             exp.setVariable("top", rect.top.toDouble())
             exp.setVariable("right", rect.right.toDouble())
@@ -600,13 +642,15 @@ data class RawSubscription(
             exp.setVariable("width", rect.width().toDouble())
             exp.setVariable("height", rect.height().toDouble())
             exp.setVariable("random", Math.random())
+            exp.setVariable("screenWidth", ScreenUtils.getScreenWidth().toDouble())
+            exp.setVariable("screenHeight", ScreenUtils.getScreenHeight().toDouble())
         }
 
         private fun getExpression(value: String?): Expression? {
             return if (value != null) {
                 try {
-                    ExpressionBuilder(value).variables(*expVars).build().apply {
-                        expVars.forEach { v ->
+                    ExpressionBuilder(value).variables(*preFillExpVars).build().apply {
+                        preFillExpVars.forEach { v ->
                             // 预填充作 validate
                             setVariable(v, 0.0)
                         }
@@ -626,20 +670,35 @@ data class RawSubscription(
             }
         }
 
-        private fun getPosition(jsonObject: JsonObject?): Position? {
-            return when (val element = jsonObject?.get("position")) {
-                JsonNull, null -> null
-                is JsonObject -> {
-                    Position(
-                        left = element["left"]?.jsonPrimitive?.content,
-                        bottom = element["bottom"]?.jsonPrimitive?.content,
-                        top = element["top"]?.jsonPrimitive?.content,
-                        right = element["right"]?.jsonPrimitive?.content,
-                    )
-                }
+        private fun getPosition(jsonObject: JsonObject?, useSelf: Boolean = false): Position? {
+            return when (val element = if (useSelf) jsonObject else jsonObject?.get("position")) {
+                is JsonObject -> Position(
+                    left = element["left"]?.jsonPrimitive?.content,
+                    bottom = element["bottom"]?.jsonPrimitive?.content,
+                    top = element["top"]?.jsonPrimitive?.content,
+                    right = element["right"]?.jsonPrimitive?.content,
+                    x = element["x"]?.jsonPrimitive?.content,
+                    y = element["y"]?.jsonPrimitive?.content,
+                )
 
                 else -> null
             }
+        }
+
+        private fun getSwipeArg(
+            jsonObject: JsonObject?
+        ): SwipeArg? = when (val element = jsonObject?.get("swipeArg")) {
+            is JsonObject -> {
+                SwipeArg(
+                    start = getPosition(element["start"]?.jsonObject, true)
+                        ?: error("swipe start position is required"),
+                    end = getPosition(element["end"]?.jsonObject, true),
+                    duration = element["duration"]?.jsonPrimitive?.long
+                        ?: error("swipe duration is required"),
+                )
+            }
+
+            else -> null
         }
 
         private fun getStringIArray(jsonObject: JsonObject?, name: String): List<String>? {
@@ -810,6 +869,7 @@ data class RawSubscription(
                 versionCode = getCompatVersionCode(jsonObject),
                 versionName = getCompatVersionName(jsonObject),
                 position = getPosition(jsonObject),
+                swipeArg = getSwipeArg(jsonObject),
                 forcedTime = getLong(jsonObject, "forcedTime"),
                 priorityTime = getLong(jsonObject, "priorityTime"),
                 priorityActionMaximum = getInt(jsonObject, "priorityActionMaximum"),
@@ -927,6 +987,7 @@ data class RawSubscription(
                 order = getInt(jsonObject, "order"),
                 forcedTime = getLong(jsonObject, "forcedTime"),
                 position = getPosition(jsonObject),
+                swipeArg = getSwipeArg(jsonObject),
                 priorityTime = getLong(jsonObject, "priorityTime"),
                 priorityActionMaximum = getInt(jsonObject, "priorityActionMaximum"),
             )
@@ -994,6 +1055,7 @@ data class RawSubscription(
                         name = getString(jsonElement.jsonObject, "name")
                             ?: error("miss categories[$index].name"),
                         enable = getBoolean(jsonElement.jsonObject, "enable"),
+                        desc = getString(jsonElement.jsonObject, "desc")
                     )
                 } ?: emptyList()).filterIfNotAll { it.name.isNotEmpty() }
                     .distinctByIfAny { it.key },

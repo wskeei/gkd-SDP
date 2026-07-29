@@ -39,11 +39,11 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation3.runtime.NavKey
 import androidx.paging.LoadState
 import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.paging.compose.itemKey
-import com.ramcosta.composedestinations.annotation.Destination
-import com.ramcosta.composedestinations.annotation.RootGraph
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
@@ -64,7 +64,6 @@ import li.songe.gkd.sdp.ui.share.ListPlaceholder
 import li.songe.gkd.sdp.ui.share.LocalDarkTheme
 import li.songe.gkd.sdp.ui.share.noRippleClickable
 import li.songe.gkd.sdp.ui.style.EmptyHeight
-import li.songe.gkd.sdp.ui.style.ProfileTransitions
 import li.songe.gkd.sdp.ui.style.getJson5AnnotatedString
 import li.songe.gkd.sdp.ui.style.iconTextSize
 import li.songe.gkd.sdp.ui.style.scaffoldPadding
@@ -75,7 +74,9 @@ import li.songe.gkd.sdp.util.throttle
 import li.songe.gkd.sdp.util.toJson5String
 import li.songe.gkd.sdp.util.toast
 
-@Destination<RootGraph>(style = ProfileTransitions::class)
+@Serializable
+data object A11yEventLogRoute : NavKey
+
 @Composable
 fun A11yEventLogPage() {
     val context = LocalActivity.current as MainActivity
@@ -91,7 +92,7 @@ fun A11yEventLogPage() {
             scrollBehavior = scrollBehavior,
             navigationIcon = {
                 PerfIconButton(imageVector = PerfIcon.ArrowBack, onClick = {
-                    mainVm.popBackStack()
+                    mainVm.popPage()
                 })
             },
             title = {

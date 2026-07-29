@@ -22,6 +22,7 @@ import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -35,13 +36,13 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.ramcosta.composedestinations.generated.destinations.ActionLogPageDestination
-import com.ramcosta.composedestinations.generated.destinations.SubsAppListPageDestination
-import com.ramcosta.composedestinations.generated.destinations.SubsCategoryPageDestination
-import com.ramcosta.composedestinations.generated.destinations.SubsGlobalGroupListPageDestination
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import li.songe.gkd.sdp.META
+import li.songe.gkd.sdp.ui.ActionLogRoute
+import li.songe.gkd.sdp.ui.SubsAppListRoute
+import li.songe.gkd.sdp.ui.SubsCategoryRoute
+import li.songe.gkd.sdp.ui.SubsGlobalGroupListRoute
 import li.songe.gkd.sdp.ui.share.LocalMainViewModel
 import li.songe.gkd.sdp.ui.style.EmptyHeight
 import li.songe.gkd.sdp.ui.style.itemHorizontalPadding
@@ -94,8 +95,14 @@ fun SubsSheet(
             }
         }
         val scrollState = rememberScrollState()
-        LaunchedEffect(scrollState.value) {
-            swipeEnabled = scrollState.value == 0
+        remember {
+            derivedStateOf {
+                scrollState.value == 0
+            }
+        }.let { a ->
+            LaunchedEffect(a.value) {
+                swipeEnabled = a.value
+            }
         }
         ModalBottomSheet(
             onDismissRequest = {
@@ -186,10 +193,10 @@ fun SubsSheet(
                     if (subscription.globalGroups.isNotEmpty() || subsItem.isLocal) {
                         Row(
                             modifier = Modifier
-                                .clickable(onClickLabel = "查看全局规则组列表", onClick = throttle {
+                                .clickable(onClickLabel = "查看全局规则列表", onClick = throttle {
                                     setSubsId(null)
                                     sheetSubsIdFlow.value = null
-                                    mainVm.navigatePage(SubsGlobalGroupListPageDestination(subsItem.id))
+                                    mainVm.navigatePage(SubsGlobalGroupListRoute(subsItem.id))
                                 })
                                 .then(childModifier),
                             horizontalArrangement = Arrangement.SpaceBetween,
@@ -203,7 +210,7 @@ fun SubsSheet(
                                     style = MaterialTheme.typography.labelLarge,
                                 )
                                 Text(
-                                    text = if (subscription.globalGroups.isNotEmpty()) "共 ${subscription.globalGroups.size} 全局规则组" else "暂无",
+                                    text = if (subscription.globalGroups.isNotEmpty()) "共 ${subscription.globalGroups.size} 全局规则" else "暂无",
                                     style = MaterialTheme.typography.labelMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant.let {
                                         if (subscription.globalGroups.isEmpty()) {
@@ -222,10 +229,10 @@ fun SubsSheet(
                     if (subscription.appGroups.isNotEmpty() || subsItem.isLocal) {
                         Row(
                             modifier = Modifier
-                                .clickable(onClickLabel = "查看应用规则组列表", onClick = throttle {
+                                .clickable(onClickLabel = "查看应用规则列表", onClick = throttle {
                                     setSubsId(null)
                                     sheetSubsIdFlow.value = null
-                                    mainVm.navigatePage(SubsAppListPageDestination(subsItem.id))
+                                    mainVm.navigatePage(SubsAppListRoute(subsItem.id))
                                 })
                                 .then(childModifier),
                             horizontalArrangement = Arrangement.SpaceBetween,
@@ -239,7 +246,7 @@ fun SubsSheet(
                                     style = MaterialTheme.typography.labelLarge,
                                 )
                                 Text(
-                                    text = if (subscription.appGroups.isNotEmpty()) "共 ${subscription.apps.size} 应用 ${subscription.appGroups.size} 规则组" else "暂无",
+                                    text = if (subscription.appGroups.isNotEmpty()) "共 ${subscription.apps.size} 应用 ${subscription.appGroups.size} 规则" else "暂无",
                                     style = MaterialTheme.typography.labelMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant.let {
                                         if (subscription.appGroups.isEmpty()) {
@@ -262,7 +269,7 @@ fun SubsSheet(
                                 .clickable(onClickLabel = "查看规则类别列表", onClick = throttle {
                                     setSubsId(null)
                                     sheetSubsIdFlow.value = null
-                                    mainVm.navigatePage(SubsCategoryPageDestination(subsItem.id))
+                                    mainVm.navigatePage(SubsCategoryRoute(subsItem.id))
                                 })
                                 .then(childModifier),
                             horizontalArrangement = Arrangement.SpaceBetween,
@@ -375,13 +382,8 @@ fun SubsSheet(
                     PerfIconButton(imageVector = PerfIcon.History, onClick = throttle {
                         setSubsId(null)
                         sheetSubsIdFlow.value = null
-                        mainVm.navigatePage(ActionLogPageDestination(subsId = subsItem.id))
+                        mainVm.navigatePage(ActionLogRoute(subsId = subsItem.id))
                     })
-                    if (subscription != null || !subsItem.isLocal) {
-                        PerfIconButton(imageVector = PerfIcon.Share, onClick = throttle {
-                            mainVm.showShareDataIdsFlow.value = setOf(subsItem.id)
-                        })
-                    }
                     if (subsItem.id != LOCAL_SUBS_ID) {
                         PerfIconButton(
                             imageVector = PerfIcon.Delete,

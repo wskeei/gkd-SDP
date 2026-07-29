@@ -26,16 +26,18 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.ramcosta.composedestinations.annotation.Destination
-import com.ramcosta.composedestinations.annotation.RootGraph
-import li.songe.gkd.sdp.ui.share.LocalNavController
+import androidx.navigation3.runtime.NavKey
+import kotlinx.serialization.Serializable
+import li.songe.gkd.sdp.ui.share.LocalMainViewModel
 import java.text.SimpleDateFormat
 import java.util.*
 
-@Destination<RootGraph>
+@Serializable
+data object AppInstallMonitorRoute : NavKey
+
 @Composable
 fun AppInstallMonitorPage() {
-    val navController = LocalNavController.current
+    val mainVm = LocalMainViewModel.current
     val vm: AppInstallMonitorVm = viewModel()
     
     val monitoredApps by vm.monitoredAppsFlow.collectAsState()
@@ -51,7 +53,7 @@ fun AppInstallMonitorPage() {
             TopAppBar(
                 title = { Text("软件安装监测") },
                 navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
+                    IconButton(onClick = { mainVm.popPage() }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回")
                     }
                 },

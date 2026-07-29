@@ -2,12 +2,12 @@ package li.songe.gkd.sdp.a11y
 
 import android.content.ComponentName
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.provider.Settings
 import android.util.LruCache
 import android.view.accessibility.AccessibilityNodeInfo
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.updateAndGet
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import li.songe.gkd.sdp.META
@@ -22,11 +22,10 @@ import li.songe.gkd.sdp.data.ResolvedRule
 import li.songe.gkd.sdp.data.RuleStatus
 import li.songe.gkd.sdp.data.isSystem
 import li.songe.gkd.sdp.db.DbSet
-import li.songe.gkd.sdp.service.updateTopAppId
-import li.songe.gkd.sdp.shizuku.safeInvokeMethod
+import li.songe.gkd.sdp.service.updateTopTaskAppId
+import li.songe.gkd.sdp.shizuku.safeInvokeShizuku
 import li.songe.gkd.sdp.store.actionCountFlow
 import li.songe.gkd.sdp.store.checkAppBlockMatch
-import li.songe.gkd.sdp.store.storeFlow
 import li.songe.gkd.sdp.util.AndroidTarget
 import li.songe.gkd.sdp.util.LogUtils
 import li.songe.gkd.sdp.util.PKG_FLAGS
@@ -84,7 +83,7 @@ private object ActivityCache : LruCache<Pair<String, String>, Boolean>(256) {
             PKG_FLAGS
         )
         true
-    } catch (_: Exception) {
+    } catch (_: PackageManager.NameNotFoundException) {
         false
     }
 }
@@ -135,14 +134,13 @@ val activityRuleFlow = MutableStateFlow(ActivityRule())
 
 private var lastAppId = ""
 
-sealed class ActivityScene() {
+sealed class ActivityScene {
     data object ScreenOn : ActivityScene()
     data object A11y : ActivityScene()
     data object TaskStack : ActivityScene()
 }
 
-@Loc
-@Synchronized
+// 外部必须使用 synchronized(topActivityFlow) 来保证更新的原子性
 fun updateTopActivity(
     appId: String,
     activityId: String?,
@@ -150,16 +148,18 @@ fun updateTopActivity(
     @Loc loc: String = "",
 ) {
     val t = System.currentTimeMillis()
-    if (scene == ActivityScene.TaskStack && storeFlow.value.enableBlockA11yAppList) {
-        updateTopAppId(appId)
+    if (scene == ActivityScene.TaskStack) {
+        updateTopTaskAppId(appId)
     }
     val oldActivity = topActivityFlow.value
+    val oldActivityRule = activityRuleFlow.value
+    val idChanged = (scene == ActivityScene.ScreenOn || appId != oldActivityRule.topActivity.appId)
     val isSame = scene != ActivityScene.ScreenOn && oldActivity.sameAs(appId, activityId)
     if (scene == ActivityScene.TaskStack) {
         lastActivityForceUpdateTime = t
     } else if (scene == ActivityScene.A11y) {
-        if (lastActivityForceUpdateTime > 0) {
-            // ITaskStackListener 的变速快于无障碍
+        if (idChanged && lastActivityForceUpdateTime > 0) {
+            // ITaskStackListener 大部分场景快于无障碍
             if (t - lastActivityForceUpdateTime < 1000) return
             if (activityId != null && t - lastActivityForceUpdateTime < 3000) return
         }
@@ -195,10 +195,7 @@ fun updateTopActivity(
         appScope.launchTry { DbSet.activityLogDao.deleteKeepLatest() }
     }
     val topActivity = topActivityFlow.value
-    val oldActivityRule = activityRuleFlow.value
     val ruleSummary = ruleSummaryFlow.value
-    val idChanged = (scene == ActivityScene.ScreenOn ||
-            topActivity.appId != oldActivityRule.topActivity.appId)
     val topChanged = idChanged || oldActivityRule.topActivity != topActivity
     val ruleChanged = oldActivityRule.ruleSummary !== ruleSummary
     if (topChanged || ruleChanged) {
@@ -266,7 +263,7 @@ fun updateSystemDefaultAppId() {
     if (app.getPkgInfo(launcherAppId)?.applicationInfo?.isSystem == true) {
         systemRecentCn = launcherCn
     } else {
-        safeInvokeMethod {
+        safeInvokeShizuku {
             if (AndroidTarget.P) {
                 systemRecentCn = ComponentName.unflattenFromString(
                     app.getString(com.android.internal.R.string.config_recentsComponentName)
@@ -292,7 +289,6 @@ fun addActionLog(
 ) = appScope.launchTry(Dispatchers.IO) {
     val ctime = System.currentTimeMillis()
     actionLogMutex.withLock {
-        val actionCount = actionCountFlow.updateAndGet { it + 1 }
         val actionLog = ActionLog(
             appId = topActivity.appId,
             activityId = topActivity.activityId,
@@ -305,7 +301,7 @@ fun addActionLog(
             ctime = ctime,
         )
         DbSet.actionLogDao.insert(actionLog)
-        if (actionCount % 100 == 0L) {
+        if (actionCountFlow.value % 100 == 0L) {
             DbSet.actionLogDao.deleteKeepLatest()
         }
     }

@@ -1,7 +1,6 @@
 package li.songe.gkd.sdp.service
 
 import android.view.accessibility.AccessibilityEvent
-import androidx.annotation.MainThread
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -27,7 +26,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.remember
@@ -51,6 +49,7 @@ import li.songe.gkd.sdp.db.DbSet
 import li.songe.gkd.sdp.notif.StopServiceReceiver
 import li.songe.gkd.sdp.notif.eventNotif
 import li.songe.gkd.sdp.permission.canDrawOverlaysState
+import li.songe.gkd.sdp.shizuku.uiAutomationFlow
 import li.songe.gkd.sdp.ui.EventLogCard
 import li.songe.gkd.sdp.ui.component.LocalNumberCharWidth
 import li.songe.gkd.sdp.ui.component.PerfIcon
@@ -74,7 +73,8 @@ class EventService : OverlayWindowService(positionKey = "event") {
         CompositionLocalProvider(
             LocalContentColor provides contentColorFor(bgColor),
         ) {
-            val listState = key(eventLogs.isEmpty()) { rememberLazyListState() }
+            val listState = rememberLazyListState()
+            LaunchedEffect(eventLogs.isEmpty()) { listState.scrollToItem(0) }
             val isAtBottom by listState.isAtBottom()
             val subScope = rememberCoroutineScope()
             SideEffect {
@@ -94,7 +94,7 @@ class EventService : OverlayWindowService(positionKey = "event") {
                     .padding(4.dp)
             ) {
                 ClosableTitle(
-                    title = if (A11yService.isRunning.collectAsState().value) "事件服务" else "事件服务(无权限)"
+                    title = if (A11yService.isRunning.collectAsState().value || uiAutomationFlow.collectAsState().value != null) "事件服务" else "事件服务(无权限)"
                 )
                 val textStyle = MaterialTheme.typography.labelSmall
                 val numCharWidth = measureNumberTextWidth(textStyle)
@@ -190,21 +190,21 @@ class EventService : OverlayWindowService(positionKey = "event") {
         private var instance: EventService? = null
         private var logAutoId = 0
 
-        @MainThread
-        fun logEvent(event: AccessibilityEvent) = instance?.apply {
+        fun logEvent(event: AccessibilityEvent) {
+            val service = instance ?: return
             if (event.packageName == META.appId) return
             if (logAutoId == 0) return
             logAutoId++
             val eventLog = event.toA11yEventLog(logAutoId)
-            eventLogs.add(eventLog)
-            tempEventListFlow.update { it + eventLog }
-            if (eventLogs.size >= 256) {
-                eventLogs.removeRange(0, 64)
+            service.eventLogs.add(eventLog)
+            service.tempEventListFlow.update { it + eventLog }
+            if (service.eventLogs.size >= 256) {
+                service.eventLogs.removeRange(0, 64)
             }
             if (eventLog.id % 100 == 0) {
                 appScope.launchTry { DbSet.a11yEventLogDao.deleteKeepLatest() }
             }
-        }.let { }
+        }
 
         val isRunning = MutableStateFlow(false)
         fun start() {

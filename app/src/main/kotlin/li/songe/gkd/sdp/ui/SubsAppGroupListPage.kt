@@ -30,10 +30,9 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.ramcosta.composedestinations.annotation.Destination
-import com.ramcosta.composedestinations.annotation.RootGraph
-import com.ramcosta.composedestinations.generated.destinations.UpsertRuleGroupPageDestination
+import androidx.navigation3.runtime.NavKey
 import kotlinx.coroutines.Dispatchers
+import kotlinx.serialization.Serializable
 import li.songe.gkd.sdp.db.DbSet
 import li.songe.gkd.sdp.ui.component.AnimationFloatingActionButton
 import li.songe.gkd.sdp.ui.component.BatchActionButtonGroup
@@ -52,7 +51,6 @@ import li.songe.gkd.sdp.ui.share.ListPlaceholder
 import li.songe.gkd.sdp.ui.share.LocalMainViewModel
 import li.songe.gkd.sdp.ui.share.noRippleClickable
 import li.songe.gkd.sdp.ui.style.EmptyHeight
-import li.songe.gkd.sdp.ui.style.ProfileTransitions
 import li.songe.gkd.sdp.ui.style.scaffoldPadding
 import li.songe.gkd.sdp.util.copyText
 import li.songe.gkd.sdp.util.getUpDownTransform
@@ -63,21 +61,25 @@ import li.songe.gkd.sdp.util.toJson5String
 import li.songe.gkd.sdp.util.toast
 import li.songe.gkd.sdp.util.updateSubscription
 
-@Destination<RootGraph>(style = ProfileTransitions::class)
+@Serializable
+data class SubsAppGroupListRoute(
+    val subsItemId: Long,
+    val appId: String,
+    val focusGroupKey: Int? = null, // 背景/边框高亮一下
+) : NavKey
+
 @Composable
-fun SubsAppGroupListPage(
-    subsItemId: Long,
-    appId: String,
-    @Suppress("unused") focusGroupKey: Int? = null, // 背景/边框高亮一下
-) {
+fun SubsAppGroupListPage(route: SubsAppGroupListRoute) {
+    val subsItemId = route.subsItemId
+    val appId = route.appId
+    val focusGroupKey = route.focusGroupKey
+
     val mainVm = LocalMainViewModel.current
-    val vm = viewModel<SubsAppGroupListVm>()
+    val vm = viewModel { SubsAppGroupListVm(route) }
     val subs = vm.subsFlow.collectAsState().value
     val subsConfigs by vm.subsConfigsFlow.collectAsState()
     val categoryConfigs by vm.categoryConfigsFlow.collectAsState()
     val app by vm.subsAppFlow.collectAsState()
-
-    val groupToCategoryMap = subs.groupToCategoryMap
 
     val editable = subsItemId < 0
     val isSelectedMode = vm.isSelectedModeFlow.collectAsState().value
@@ -113,7 +115,7 @@ fun SubsAppGroupListPage(
                 if (isSelectedMode) {
                     vm.isSelectedModeFlow.value = false
                 } else {
-                    mainVm.popBackStack()
+                    mainVm.popPage()
                 }
             }) {
                 BackCloseIcon(backOrClose = !isSelectedMode)
@@ -131,6 +133,7 @@ fun SubsAppGroupListPage(
                     title = subs.name,
                     subtitle = appId,
                     showApp = true,
+                    appFallbackName = app.name,
                 )
             }
         }, actions = {
@@ -158,8 +161,8 @@ fun SubsAppGroupListPage(
                                 imageVector = PerfIcon.Delete,
                                 onClick = throttle(vm.viewModelScope.launchAsFn {
                                     mainVm.dialogFlow.waitResult(
-                                        title = "删除规则组",
-                                        text = "删除当前所选规则组?",
+                                        title = "删除规则",
+                                        text = "删除当前所选规则?",
                                         error = true,
                                     )
                                     val keys = selectedDataSet.mapNotNull { g -> g.groupKey }
@@ -250,7 +253,7 @@ fun SubsAppGroupListPage(
                 visible = !isSelectedMode,
                 onClick = {
                     mainVm.navigatePage(
-                        UpsertRuleGroupPageDestination(
+                        UpsertRuleGroupRoute(
                             subsId = subsItemId,
                             groupKey = null,
                             appId = appId
@@ -268,7 +271,7 @@ fun SubsAppGroupListPage(
             verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
             items(app.groups, { it.key }) { group ->
-                val category = groupToCategoryMap[group]
+                val category = subs.getCategory(group.name)
                 val subsConfig = subsConfigs.find { it.groupKey == group.key }
                 val categoryConfig = categoryConfigs.find {
                     it.categoryKey == category?.key
@@ -278,7 +281,6 @@ fun SubsAppGroupListPage(
                     subs = subs,
                     appId = appId,
                     group = group,
-                    category = category,
                     subsConfig = subsConfig,
                     categoryConfig = categoryConfig,
                     focusGroupFlow = vm.focusGroupFlow,

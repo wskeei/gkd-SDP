@@ -1,15 +1,12 @@
 package li.songe.gkd.sdp.ui.home
 
-import android.content.Intent
 import androidx.activity.compose.BackHandler
-import androidx.activity.compose.LocalActivity
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -20,9 +17,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -30,8 +24,6 @@ import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
@@ -39,46 +31,43 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.semantics.onClick
-import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.style.TextDecoration
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.dylanc.activityresult.launcher.launchForResult
-import com.ramcosta.composedestinations.generated.destinations.SlowGroupPageDestination
-import com.ramcosta.composedestinations.generated.destinations.UpsertRuleGroupPageDestination
-import com.ramcosta.composedestinations.generated.destinations.WebViewPageDestination
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.update
-import li.songe.gkd.sdp.MainActivity
 import li.songe.gkd.sdp.R
 import li.songe.gkd.sdp.data.Value
-import li.songe.gkd.sdp.data.importData
 import li.songe.gkd.sdp.db.DbSet
 import li.songe.gkd.sdp.store.storeFlow
 import li.songe.gkd.sdp.store.switchStoreEnableMatch
+import li.songe.gkd.sdp.ui.SlowGroupRoute
+import li.songe.gkd.sdp.ui.UpsertRuleGroupRoute
+import li.songe.gkd.sdp.ui.WebViewRoute
 import li.songe.gkd.sdp.ui.component.AnimationFloatingActionButton
 import li.songe.gkd.sdp.ui.component.PerfIcon
 import li.songe.gkd.sdp.ui.component.PerfIconButton
 import li.songe.gkd.sdp.ui.component.PerfTopAppBar
+import li.songe.gkd.sdp.ui.component.ScaffoldDialog
 import li.songe.gkd.sdp.ui.component.SubsItemCard
 import li.songe.gkd.sdp.ui.component.TextMenu
+import li.songe.gkd.sdp.ui.component.TextSwitch
+import li.songe.gkd.sdp.ui.component.usePinnedScrollBehaviorState
 import li.songe.gkd.sdp.ui.component.waitResult
 import li.songe.gkd.sdp.ui.share.ListPlaceholder
 import li.songe.gkd.sdp.ui.share.LocalMainViewModel
 import li.songe.gkd.sdp.ui.style.EmptyHeight
-import li.songe.gkd.sdp.ui.style.itemVerticalPadding
 import li.songe.gkd.sdp.util.LOCAL_SUBS_ID
 import li.songe.gkd.sdp.util.AutoReenableDisableGuard
+import li.songe.gkd.sdp.util.FocusLockUtils
 import li.songe.gkd.sdp.util.ShortUrlSet
 import li.songe.gkd.sdp.util.UpdateTimeOption
 import li.songe.gkd.sdp.util.checkSubsUpdate
@@ -100,13 +89,12 @@ import sh.calvin.reorderable.rememberReorderableLazyListState
 
 @Composable
 fun useSubsManagePage(): ScaffoldExt {
-    val context = LocalActivity.current as MainActivity
     val mainVm = LocalMainViewModel.current
 
     val vm = viewModel<HomeVm>()
     val subItems by subsItemsFlow.collectAsState()
     val subsIdToRaw by subsMapFlow.collectAsState()
-    val constraints by li.songe.gkd.sdp.util.FocusLockUtils.allConstraintsFlow.collectAsState()
+    val constraints by FocusLockUtils.allConstraintsFlow.collectAsState()
 
     var orderSubItems by remember {
         mutableStateOf(subItems)
@@ -136,65 +124,38 @@ fun useSubsManagePage(): ScaffoldExt {
 
     var showSettingsDlg by remember { mutableStateOf(false) }
     if (showSettingsDlg) {
-        AlertDialog(
-            onDismissRequest = { showSettingsDlg = false },
-            title = { Text("订阅设置") },
-            text = {
+        ScaffoldDialog(
+            onClose = { showSettingsDlg = false },
+            title = "订阅设置",
+            content = {
                 val store by storeFlow.collectAsState()
-                Column {
-                    TextMenu(
-                        modifier = Modifier.padding(0.dp, itemVerticalPadding),
-                        title = "更新订阅",
-                        option = UpdateTimeOption.objects.findOption(store.updateSubsInterval)
-                    ) {
-                        storeFlow.update { s -> s.copy(updateSubsInterval = it.value) }
-                    }
-                    val updateValue = throttle {
-                        storeFlow.update { it.copy(subsPowerWarn = !it.subsPowerWarn) }
-                    }
-                    Row(
-                        modifier = Modifier
-                            .padding(0.dp, itemVerticalPadding)
-                            .clickable(
-                                onClickLabel = if (store.subsPowerWarn) "关闭警告" else "开启警告",
-                                onClick = updateValue
-                            )
-                            .semantics(mergeDescendants = true) {
-                                stateDescription = if (store.subsPowerWarn) "已开启" else "已关闭"
-                            },
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Column(
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Text(
-                                text = "耗电警告",
-                                style = MaterialTheme.typography.bodyLarge,
-                            )
-                            Text(
-                                text = "启用多条订阅时弹窗确认",
-                                style = MaterialTheme.typography.bodySmall,
-                            )
-                        }
-                        Checkbox(
-                            checked = store.subsPowerWarn,
-                            onCheckedChange = null,
-                        )
-                    }
+                TextMenu(
+                    title = "更新订阅",
+                    option = UpdateTimeOption.objects.findOption(store.updateSubsInterval)
+                ) {
+                    storeFlow.update { s -> s.copy(updateSubsInterval = it.value) }
                 }
-            },
-            confirmButton = {
-                TextButton(onClick = { showSettingsDlg = false }, modifier = Modifier.semantics {
-                    onClick(label = "关闭弹窗", action = null)
-                }) {
-                    Text("关闭")
-                }
+                TextSwitch(
+                    title = "耗电警告",
+                    subtitle = "启用多条订阅时弹窗确认",
+                    checked = store.subsPowerWarn,
+                    onCheckedChange = throttle<Boolean> {
+                        storeFlow.update { s -> s.copy(subsPowerWarn = it) }
+                    }
+                )
             }
         )
     }
 
-    val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
+    val scrollKey = rememberSaveable { mutableIntStateOf(0) }
+    val (scrollBehavior, lazyListState) = usePinnedScrollBehaviorState(scrollKey)
+    LaunchedEffect(null) {
+        mainVm.resetPageScrollEvent.collect {
+            if (it == BottomNavItem.SubsManage) {
+                scrollKey.intValue++
+            }
+        }
+    }
     return ScaffoldExt(
         navItem = BottomNavItem.SubsManage,
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
@@ -226,12 +187,6 @@ fun useSubsManagePage(): ScaffoldExt {
                 ) {
                     Row {
                         if (it) {
-                            PerfIconButton(
-                                imageVector = PerfIcon.Share,
-                                contentDescription = "分享选中订阅",
-                                onClick = {
-                                    mainVm.showShareDataIdsFlow.value = selectedIds
-                                })
                             val canDeleteIds = if (selectedIds.contains(LOCAL_SUBS_ID)) {
                                 selectedIds - LOCAL_SUBS_ID
                             } else {
@@ -270,7 +225,7 @@ fun useSubsManagePage(): ScaffoldExt {
                                     contentDescription = "缓慢查询规则列表",
                                     onClickLabel = "查看列表",
                                     onClick = throttle {
-                                        mainVm.navigatePage(SlowGroupPageDestination)
+                                        mainVm.navigatePage(SlowGroupRoute)
                                     })
                             }
                             val scope = rememberCoroutineScope()
@@ -344,30 +299,11 @@ fun useSubsManagePage(): ScaffoldExt {
                                 )
                             } else {
                                 DropdownMenuItem(
-                                    text = {
-                                        Text(text = "导入本地数据")
-                                    },
-                                    onClick = vm.viewModelScope.launchAsFn(Dispatchers.IO) {
-                                        expanded = false
-                                        val result =
-                                            context.launcher.launchForResult(Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
-                                                addCategory(Intent.CATEGORY_OPENABLE)
-                                                type = "application/zip"
-                                            })
-                                        val uri = result.data?.data
-                                        if (uri == null) {
-                                            toast("未选择文件")
-                                            return@launchAsFn
-                                        }
-                                        importData(uri)
-                                    },
-                                )
-                                DropdownMenuItem(
                                     text = { Text(text = "添加应用规则") },
                                     onClick = throttle {
                                         expanded = false
                                         mainVm.navigatePage(
-                                            UpsertRuleGroupPageDestination(
+                                            UpsertRuleGroupRoute(
                                                 subsId = LOCAL_SUBS_ID,
                                                 groupKey = null,
                                                 appId = "",
@@ -381,7 +317,7 @@ fun useSubsManagePage(): ScaffoldExt {
                                     onClick = throttle {
                                         expanded = false
                                         mainVm.navigatePage(
-                                            UpsertRuleGroupPageDestination(
+                                            UpsertRuleGroupRoute(
                                                 subsId = LOCAL_SUBS_ID,
                                                 groupKey = null,
                                                 appId = null,
@@ -415,7 +351,6 @@ fun useSubsManagePage(): ScaffoldExt {
             )
         },
     ) { contentPadding ->
-        val lazyListState = rememberLazyListState()
         val reorderableLazyColumnState =
             rememberReorderableLazyListState(lazyListState) { from, to ->
                 orderSubItems = orderSubItems.toMutableList().apply {
@@ -441,7 +376,7 @@ fun useSubsManagePage(): ScaffoldExt {
                 itemsIndexed(orderSubItems, { _, subItem -> subItem.id }) { index, subItem ->
                     val canDrag = !refreshing && orderSubItems.size > 1
                     val isLocked = remember(subItem.id, constraints) {
-                        li.songe.gkd.sdp.util.FocusLockUtils.isSubscriptionLocked(subItem.id)
+                        FocusLockUtils.isSubscriptionLocked(subItem.id)
                     }
                     ReorderableItem(
                         state = reorderableLazyColumnState,
@@ -494,7 +429,7 @@ fun useSubsManagePage(): ScaffoldExt {
                                                     modifier = Modifier.clickable(onClick = throttle {
                                                         mainVm.dialogFlow.value = null
                                                         mainVm.navigatePage(
-                                                            WebViewPageDestination(
+                                                            WebViewRoute(
                                                                 initUrl = ShortUrlSet.URL6
                                                             )
                                                         )

@@ -5,18 +5,11 @@ import android.hardware.input.IInputManager
 import android.view.InputEvent
 import androidx.annotation.WorkerThread
 import li.songe.gkd.sdp.util.AndroidTarget
-import li.songe.gkd.sdp.util.checkExistClass
 
 
 class SafeInputManager(private val value: IInputManager) {
     companion object {
-        val isAvailable: Boolean
-            get() = checkExistClass("android.hardware.input.IInputManager")
-
-        fun newBinder() = getStubService(
-            Context.INPUT_SERVICE,
-            isAvailable,
-        )?.let {
+        fun newBinder() = getShizukuService(Context.INPUT_SERVICE)?.let {
             SafeInputManager(IInputManager.Stub.asInterface(it))
         }
     }
@@ -26,7 +19,7 @@ class SafeInputManager(private val value: IInputManager) {
     fun compatInjectInputEvent(
         ev: InputEvent,
         mode: Int,
-    ) = safeInvokeMethod {
+    ) = safeInvokeShizuku {
         if (AndroidTarget.TIRAMISU) {
             // https://github.com/android-cs/16/blob/main/core/java/android/hardware/input/InputManagerGlobal.java#L1707
             value.injectInputEventToTarget(ev, mode, android.os.Process.INVALID_UID)
@@ -42,6 +35,11 @@ class SafeInputManager(private val value: IInputManager) {
         } else {
             command.runTap(x, y)
         }
+    }
+
+    @WorkerThread
+    fun swipe(x1: Float, y1: Float, x2: Float, y2: Float, duration: Long) {
+        command.runSwipe(x1, y1, x2, y2, duration)
     }
 
     fun key(keyCode: Int) = command.runKeyEvent(keyCode)

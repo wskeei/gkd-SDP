@@ -4,6 +4,7 @@ import kotlinx.serialization.Serializable
 import li.songe.gkd.sdp.META
 import li.songe.gkd.sdp.util.AppGroupOption
 import li.songe.gkd.sdp.util.AppSortOption
+import li.songe.gkd.sdp.util.AutomatorModeOption
 import li.songe.gkd.sdp.util.RuleSortOption
 import li.songe.gkd.sdp.util.UpdateChannelOption
 import li.songe.gkd.sdp.util.UpdateTimeOption
@@ -12,7 +13,9 @@ import li.songe.gkd.sdp.util.UsageGuardUiStatePolicy
 
 @Serializable
 data class SettingsStore(
-    val enableService: Boolean = true,
+    val enableAutomator: Boolean = false,
+    val automatorMode: Int = AutomatorModeOption.A11yMode.value,
+    val enableShizuku: Boolean = false,
     val enableMatch: Boolean = true,
     val enableStatusService: Boolean = false,
     val excludeFromRecents: Boolean = false,
@@ -24,7 +27,7 @@ data class SettingsStore(
     val captureVolumeChange: Boolean = false,
     val toastWhenClick: Boolean = true,
     val actionToast: String = META.appName,
-    val autoClearMemorySubs: Boolean = true,
+    val autoClearMemorySubs: Boolean = false,
     val hideSnapshotStatusBar: Boolean = false,
     val enableDarkTheme: Boolean? = null,
     val enableDynamicColor: Boolean = true,
@@ -32,26 +35,31 @@ data class SettingsStore(
     val useSystemToast: Boolean = false,
     val useCustomNotifText: Boolean = false,
     val customNotifTitle: String = META.appName,
-    val customNotifText: String = $$"${i}全局/${k}应用/${u}规则组/${n}触发",
+    val customNotifText: String = $$"${i}全局/${k}应用/${u}规则/${n}触发",
     val updateChannel: Int = if (META.isBeta) UpdateChannelOption.Beta.value else UpdateChannelOption.Stable.value,
     val appSort: Int = AppSortOption.ByUsedTime.value,
     val showBlockApp: Boolean = true,
     val appRuleSort: Int = RuleSortOption.ByDefault.value,
     val subsAppSort: Int = AppSortOption.ByUsedTime.value,
+    val subsCategorySort: Int = AppSortOption.ByUsedTime.value,
     val subsAppShowUninstall: Boolean = false,
     val subsAppGroupType: Int = AppGroupOption.UserGroup.value or AppGroupOption.SystemGroup.value,
+    val subsCategoryGroupType: Int = AppGroupOption.UserGroup.value or AppGroupOption.SystemGroup.value,
     val subsAppShowBlock: Boolean = false,
+    val subsCategoryShowBlock: Boolean = false,
     val subsExcludeSort: Int = AppSortOption.ByUsedTime.value,
     val subsExcludeShowBlockApp: Boolean = true,
     val subsExcludeShowInnerDisabledApp: Boolean = true,
     val subsPowerWarn: Boolean = true,
-    val enableShizuku: Boolean = false,
     val enableBlockA11yAppList: Boolean = false,
     val blockA11yAppListFollowMatch: Boolean = true,
     val a11yAppSort: Int = AppSortOption.ByUsedTime.value,
+    val a11yScopeAppSort: Int = AppSortOption.ByUsedTime.value,
     val appGroupType: Int = (1 shl AppGroupOption.normalObjects.size) - 1,
     val a11yAppGroupType: Int = appGroupType,
+    val a11yScopeAppGroupType: Int = appGroupType,
     val subsExcludeAppGroupType: Int = appGroupType,
+    val showDisabledRule: Boolean = true,
     val autoReenableIntervalMinutes: Int = 0,
     val autoReenableIntervalChangedAt: Long = 0L,
     val autoReenableNextEnforceAt: Long = 0L,
@@ -63,4 +71,7 @@ data class SettingsStore(
     val usageGuardDefaultGrantMode: Int = UsageGuardPolicy.GRANT_MODE_RESUMABLE,
     val usageGuardMinReasonLength: Int = 8,
     val usageGuardDurationOptionsMinutes: List<Int> = UsageGuardUiStatePolicy.defaultDurationOptions,
-)
+) {
+    val useA11y get() = automatorMode == AutomatorModeOption.A11yMode.value
+    val useAutomation get() = automatorMode == AutomatorModeOption.AutomationMode.value
+}

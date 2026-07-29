@@ -25,8 +25,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.ramcosta.composedestinations.annotation.Destination
-import com.ramcosta.composedestinations.annotation.RootGraph
+import androidx.navigation3.runtime.NavKey
+import kotlinx.serialization.Serializable
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
@@ -72,7 +72,9 @@ class UsageGuardReviewVm : BaseViewModel() {
 }
 
 @OptIn(ExperimentalLayoutApi::class)
-@Destination<RootGraph>
+@Serializable
+data object UsageGuardReviewRoute : NavKey
+
 @Composable
 fun UsageGuardReviewPage() {
     val mainVm = LocalMainViewModel.current

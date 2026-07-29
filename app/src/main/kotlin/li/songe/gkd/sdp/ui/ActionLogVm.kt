@@ -1,13 +1,11 @@
 package li.songe.gkd.sdp.ui
 
-import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.paging.Pager
 import androidx.paging.PagingConfig
 import androidx.paging.cachedIn
 import androidx.paging.map
-import com.ramcosta.composedestinations.generated.destinations.ActionLogPageDestination
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -26,7 +24,7 @@ import li.songe.gkd.sdp.util.ActionLogStatsPolicy
 import java.time.ZoneId
 import li.songe.gkd.sdp.util.subsMapFlow
 
-class ActionLogVm(stateHandle: SavedStateHandle) : ViewModel() {
+class ActionLogVm(val route: ActionLogRoute) : ViewModel() {
     data class StatsUiState(
         val stats: List<DailyStat> = emptyList(),
         val hasAnyStats: Boolean = false,
@@ -62,7 +60,6 @@ class ActionLogVm(stateHandle: SavedStateHandle) : ViewModel() {
         }
     }
 
-    private val args = ActionLogPageDestination.argsFrom(stateHandle)
     private val statsNowFlow = MutableStateFlow(System.currentTimeMillis())
 
     val selectedTabIndex = MutableStateFlow(0)
@@ -91,8 +88,8 @@ class ActionLogVm(stateHandle: SavedStateHandle) : ViewModel() {
                     now = statsNow,
                     days = CHART_DAYS,
                 ),
-                subsId = args.subsId,
-                appId = args.appId,
+                subsId = route.subsId,
+                appId = route.appId,
             )
                 .map { rawStats ->
                     evaluateStatsUiState(
@@ -105,10 +102,10 @@ class ActionLogVm(stateHandle: SavedStateHandle) : ViewModel() {
         .stateIn(viewModelScope, SharingStarted.Eagerly, StatsUiState())
 
     val pagingDataFlow = Pager(PagingConfig(pageSize = 100)) {
-        if (args.subsId != null) {
-            DbSet.actionLogDao.pagingSubsSource(subsId = args.subsId)
-        } else if (args.appId != null) {
-            DbSet.actionLogDao.pagingAppSource(appId = args.appId)
+        if (route.subsId != null) {
+            DbSet.actionLogDao.pagingSubsSource(subsId = route.subsId)
+        } else if (route.appId != null) {
+            DbSet.actionLogDao.pagingAppSource(appId = route.appId)
         } else {
             DbSet.actionLogDao.pagingSource()
         }

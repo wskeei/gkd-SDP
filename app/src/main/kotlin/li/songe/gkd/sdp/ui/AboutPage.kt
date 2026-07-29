@@ -15,10 +15,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
@@ -48,15 +46,14 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.withLink
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.ramcosta.composedestinations.annotation.Destination
-import com.ramcosta.composedestinations.annotation.RootGraph
+import androidx.navigation3.runtime.NavKey
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
+import kotlinx.serialization.Serializable
 import li.songe.gkd.sdp.META
 import li.songe.gkd.sdp.MainActivity
 import li.songe.gkd.sdp.R
@@ -66,13 +63,13 @@ import li.songe.gkd.sdp.ui.component.PerfIconButton
 import li.songe.gkd.sdp.ui.component.PerfTopAppBar
 import li.songe.gkd.sdp.ui.component.RotatingLoadingIcon
 import li.songe.gkd.sdp.ui.component.SettingItem
+import li.songe.gkd.sdp.ui.component.TextListDialog
 import li.songe.gkd.sdp.ui.component.TextMenu
 import li.songe.gkd.sdp.ui.component.waitResult
 import li.songe.gkd.sdp.ui.share.LocalDarkTheme
 import li.songe.gkd.sdp.ui.share.LocalMainViewModel
 import li.songe.gkd.sdp.ui.share.asMutableState
 import li.songe.gkd.sdp.ui.style.EmptyHeight
-import li.songe.gkd.sdp.ui.style.ProfileTransitions
 import li.songe.gkd.sdp.ui.style.itemPadding
 import li.songe.gkd.sdp.ui.style.titleItemPadding
 import li.songe.gkd.sdp.util.ISSUES_URL
@@ -80,7 +77,6 @@ import li.songe.gkd.sdp.util.PLAY_STORE_URL
 import li.songe.gkd.sdp.util.REPOSITORY_URL
 import li.songe.gkd.sdp.util.ShortUrlSet
 import li.songe.gkd.sdp.util.UpdateChannelOption
-import li.songe.gkd.sdp.util.buildLogFile
 import li.songe.gkd.sdp.util.findOption
 import li.songe.gkd.sdp.util.format
 import li.songe.gkd.sdp.util.getShareApkFile
@@ -92,7 +88,9 @@ import li.songe.gkd.sdp.util.shareFile
 import li.songe.gkd.sdp.util.throttle
 import li.songe.gkd.sdp.util.toast
 
-@Destination<RootGraph>(style = ProfileTransitions::class)
+@Serializable
+data object AboutRoute : NavKey
+
 @Composable
 fun AboutPage() {
     val context = LocalActivity.current as MainActivity
@@ -145,7 +143,6 @@ fun AboutPage() {
             },
         )
     }
-    var showShareLogDlg by vm.showShareLogDlgFlow.asMutableState()
     var showShareAppDlg by vm.showShareAppDlgFlow.asMutableState()
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
     Scaffold(
@@ -157,7 +154,7 @@ fun AboutPage() {
                     PerfIconButton(
                         imageVector = PerfIcon.ArrowBack,
                         onClick = {
-                            mainVm.popBackStack()
+                            mainVm.popPage()
                         },
                     )
                 },
@@ -286,7 +283,7 @@ fun AboutPage() {
                 title = "导出日志",
                 imageVector = PerfIcon.Share,
                 onClick = {
-                    showShareLogDlg = true
+                    mainVm.showShareLogDlgFlow.value = true
                 }
             )
             if (mainVm.updateStatus != null) {
@@ -336,109 +333,35 @@ fun AboutPage() {
         }
     }
 
-    if (showShareLogDlg) {
-        Dialog(onDismissRequest = { showShareLogDlg = false }) {
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                shape = RoundedCornerShape(16.dp),
-            ) {
-                val modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp)
-                Text(
-                    text = "分享到其他应用", modifier = Modifier
-                        .clickable(onClick = throttle {
-                            showShareLogDlg = false
-                            mainVm.viewModelScope.launchTry(Dispatchers.IO) {
-                                val logZipFile = buildLogFile()
-                                context.shareFile(logZipFile, "分享日志文件")
-                            }
-                        })
-                        .then(modifier)
-                )
-                Text(
-                    text = "保存到下载", modifier = Modifier
-                        .clickable(onClick = throttle {
-                            showShareLogDlg = false
-                            mainVm.viewModelScope.launchTry(Dispatchers.IO) {
-                                val logZipFile = buildLogFile()
-                                context.saveFileToDownloads(logZipFile)
-                            }
-                        })
-                        .then(modifier)
-                )
-                Text(
-                    text = "生成链接(需科学上网)",
-                    modifier = Modifier
-                        .clickable(onClick = throttle {
-                            showShareLogDlg = false
-                            mainVm.uploadOptions.startTask(
-                                getFile = { buildLogFile() }
-                            )
-                        })
-                        .then(modifier)
-                )
-            }
-        }
-    }
-
     if (showShareAppDlg) {
-        Dialog(onDismissRequest = { showShareAppDlg = false }) {
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                shape = RoundedCornerShape(16.dp),
-            ) {
-                val modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp)
-                Text(
-                    text = "分享到其他应用", modifier = Modifier
-                        .clickable(onClick = throttle {
-                            showShareAppDlg = false
-                            mainVm.viewModelScope.launchTry(Dispatchers.IO) {
-                                if (!META.isGkdChannel) {
-                                    mainVm.dialogFlow.waitResult(
-                                        title = "分享提示",
-                                        textContent = { Text(text = exportPlayTipTemplate()) },
-                                        confirmText = "继续",
-                                    )
-                                }
-                                context.shareFile(getShareApkFile(), "分享安装文件")
-                            }
-                        })
-                        .then(modifier)
-                )
-                Text(
-                    text = "保存到下载", modifier = Modifier
-                        .clickable(onClick = throttle {
-                            showShareAppDlg = false
-                            mainVm.viewModelScope.launchTry(Dispatchers.IO) {
-                                if (!META.isGkdChannel) {
-                                    mainVm.dialogFlow.waitResult(
-                                        title = "保存提示",
-                                        textContent = { Text(text = exportPlayTipTemplate()) },
-                                        confirmText = "继续",
-                                    )
-                                }
-                                context.saveFileToDownloads(getShareApkFile())
-                            }
-                        })
-                        .then(modifier)
-                )
-                Text(
-                    text = "Google Play", modifier = Modifier
-                        .clickable(onClick = throttle {
-                            showShareAppDlg = false
-                            mainVm.openUrl(PLAY_STORE_URL)
-                        })
-                        .then(modifier)
-                )
-            }
-        }
+        TextListDialog(
+            onDismiss = { showShareAppDlg = false },
+            textList = listOf(
+                "分享到其他应用" to mainVm.viewModelScope.launchAsFn(Dispatchers.IO) {
+                    if (!META.isGkdChannel) {
+                        mainVm.dialogFlow.waitResult(
+                            title = "分享提示",
+                            textContent = { Text(text = exportPlayTipTemplate()) },
+                            confirmText = "继续",
+                        )
+                    }
+                    context.shareFile(getShareApkFile(), "分享安装文件")
+                },
+                "保存到下载" to mainVm.viewModelScope.launchAsFn(Dispatchers.IO) {
+                    if (!META.isGkdChannel) {
+                        mainVm.dialogFlow.waitResult(
+                            title = "保存提示",
+                            textContent = { Text(text = exportPlayTipTemplate()) },
+                            confirmText = "继续",
+                        )
+                    }
+                    context.saveFileToDownloads(getShareApkFile())
+                },
+                "Google Play" to {
+                    mainVm.openUrl(PLAY_STORE_URL)
+                },
+            )
+        )
     }
 }
 

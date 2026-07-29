@@ -8,30 +8,30 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
-import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import li.songe.gkd.sdp.MainActivity
-import li.songe.gkd.sdp.data.exportData
+import li.songe.gkd.sdp.ui.share.LocalMainViewModel
+import li.songe.gkd.sdp.ui.share.asMutableState
+import li.songe.gkd.sdp.util.buildLogFile
 import li.songe.gkd.sdp.util.launchTry
 import li.songe.gkd.sdp.util.saveFileToDownloads
 import li.songe.gkd.sdp.util.shareFile
 import li.songe.gkd.sdp.util.throttle
 
 @Composable
-fun ShareDataDialog(
-    vm: ViewModel,
-    showShareDataIdsFlow: MutableStateFlow<Set<Long>?>,
-) {
-    val showShareDataIds = showShareDataIdsFlow.collectAsState().value
-    if (showShareDataIds != null) {
+fun ShareLogDlg(showShareLogDlgFlow: MutableStateFlow<Boolean>) {
+    var visible by showShareLogDlgFlow.asMutableState()
+    if (visible) {
+        val mainVm = LocalMainViewModel.current
         val context = LocalActivity.current as MainActivity
-        Dialog(onDismissRequest = { showShareDataIdsFlow.value = null }) {
+        Dialog(onDismissRequest = { visible = false }) {
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -44,23 +44,33 @@ fun ShareDataDialog(
                 Text(
                     text = "分享到其他应用", modifier = Modifier
                         .clickable(onClick = throttle {
-                            showShareDataIdsFlow.value = null
-                            vm.viewModelScope.launchTry(Dispatchers.IO) {
-                                val file = exportData(showShareDataIds)
-                                context.shareFile(file, "分享数据文件")
+                            visible = false
+                            mainVm.viewModelScope.launchTry(Dispatchers.IO) {
+                                val logZipFile = buildLogFile()
+                                context.shareFile(logZipFile, "分享日志文件")
                             }
                         })
                         .then(modifier)
                 )
                 Text(
-                    text = "保存到下载",
+                    text = "保存到下载", modifier = Modifier
+                        .clickable(onClick = throttle {
+                            visible = false
+                            mainVm.viewModelScope.launchTry(Dispatchers.IO) {
+                                val logZipFile = buildLogFile()
+                                context.saveFileToDownloads(logZipFile)
+                            }
+                        })
+                        .then(modifier)
+                )
+                Text(
+                    text = "生成链接(需科学上网)",
                     modifier = Modifier
                         .clickable(onClick = throttle {
-                            showShareDataIdsFlow.value = null
-                            vm.viewModelScope.launchTry(Dispatchers.IO) {
-                                val file = exportData(showShareDataIds)
-                                context.saveFileToDownloads(file)
-                            }
+                            visible = false
+                            mainVm.uploadOptions.startTask(
+                                getFile = { buildLogFile() }
+                            )
                         })
                         .then(modifier)
                 )

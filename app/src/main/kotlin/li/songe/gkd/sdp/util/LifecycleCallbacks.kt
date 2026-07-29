@@ -1,33 +1,31 @@
 package li.songe.gkd.sdp.util
 
 
-import android.view.accessibility.AccessibilityEvent
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
-import li.songe.gkd.sdp.isActivityVisible
+import kotlinx.coroutines.launch
 import li.songe.loc.Loc
-import java.util.WeakHashMap
-
-private val cbMap = WeakHashMap<Any, HashMap<Int, MutableList<Any>>>()
 
 typealias CbFn = () -> Unit
 
 @Suppress("UNCHECKED_CAST")
-private fun <T> OnSimpleLife.cbs(method: Int): MutableList<T> = synchronized(cbMap) {
-    return cbMap.getOrPut(this) { hashMapOf() }
-        .getOrPut(method) { mutableListOf() } as MutableList<T>
+private fun <T> OnSimpleLife.cbs(method: Int): MutableList<T> = synchronized(this) {
+    return cbMap.getOrPut(method) { mutableListOf() } as MutableList<T>
 }
 
 interface OnSimpleLife {
+    val cbMap: HashMap<Int, MutableList<Any>>
+
     fun onCreated(f: CbFn) = cbs<CbFn>(1).add(f)
     fun onCreated() = cbs<CbFn>(1).forEach { it() }
 
     fun onDestroyed(f: CbFn) = cbs<CbFn>(2).add(f)
     fun onDestroyed() = cbs<CbFn>(2).forEach { it() }
 
-    @Loc
     fun useLogLifecycle(@Loc loc: String = "") {
         onCreated { LogUtils.d("onCreated -> " + this::class.simpleName, loc = loc) }
         onDestroyed { LogUtils.d("onDestroyed -> " + this::class.simpleName, loc = loc) }
@@ -45,41 +43,48 @@ interface OnSimpleLife {
     }
 
     val scope: CoroutineScope
-    fun useScope(): CoroutineScope = MainScope().apply { onDestroyed { cancel() } }
 
     fun useAliveFlow(stateFlow: MutableStateFlow<Boolean>) {
         onCreated { stateFlow.value = true }
         onDestroyed { stateFlow.value = false }
     }
 
-    @Loc
     fun useAliveToast(
         name: String,
-        onlyWhenVisible: Boolean = false,
         delayMillis: Long = 0L,
         @Loc loc: String = "",
     ) {
         onCreated {
-            if (isActivityVisible() || !onlyWhenVisible) {
-                runMainPost(delayMillis) { toast("${name}已启动", loc = loc) }
-            }
+            toast("${name}已启动", loc = loc, delayMillis = delayMillis)
         }
         onDestroyed {
-            if (isActivityVisible() || !onlyWhenVisible) {
-                toast("${name}已关闭", loc = loc)
-            }
+            toast("${name}已关闭", loc = loc)
         }
     }
+
+    fun runScopePost(delayMillis: Long, r: Runnable) {
+        if (delayMillis == 0L && isMainThread) {
+            r.run()
+            return
+        }
+        scope.launch(Dispatchers.Main) {
+            delay(delayMillis)
+            r.run()
+        }
+    }
+}
+
+open class DefaultSimpleLifeImpl : OnSimpleLife {
+    override val cbMap: HashMap<Int, MutableList<Any>> = hashMapOf()
+    override val scope: CoroutineScope by lazy { MainScope().apply { onDestroyed { cancel() } } }
 }
 
 interface OnA11yLife : OnSimpleLife {
     fun onA11yConnected(f: CbFn) = cbs<CbFn>(3).add(f)
     fun onA11yConnected() = cbs<CbFn>(3).forEach { it() }
-
-    val a11yEventCbs: MutableList<(AccessibilityEvent) -> Unit>
-    fun onA11yEvent(f: (AccessibilityEvent) -> Unit) = a11yEventCbs.add(f)
-    fun onA11yEvent(event: AccessibilityEvent) = a11yEventCbs.forEach { it(event) }
 }
+
+class DefaultTileLifeImpl : DefaultSimpleLifeImpl(), OnTileLife
 
 interface OnTileLife : OnSimpleLife {
     fun onStartListened(f: CbFn) = cbs<CbFn>(4).add(f)
@@ -91,3 +96,5 @@ interface OnTileLife : OnSimpleLife {
     fun onTileClicked(f: CbFn) = cbs<CbFn>(6).add(f)
     fun onTileClicked() = cbs<CbFn>(6).forEach { it() }
 }
+
+class DefaultA11yLifeImpl : DefaultSimpleLifeImpl(), OnA11yLife

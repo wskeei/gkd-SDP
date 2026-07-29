@@ -8,8 +8,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.lifecycle.viewModelScope
-import com.ramcosta.composedestinations.generated.destinations.SubsGlobalGroupExcludePageDestination
-import com.ramcosta.composedestinations.generated.destinations.UpsertRuleGroupPageDestination
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -25,6 +23,8 @@ import li.songe.gkd.sdp.data.RawSubscription
 import li.songe.gkd.sdp.data.SubsConfig
 import li.songe.gkd.sdp.db.DbSet
 import li.songe.gkd.sdp.ui.getGlobalGroupChecked
+import li.songe.gkd.sdp.ui.SubsGlobalGroupExcludeRoute
+import li.songe.gkd.sdp.ui.UpsertRuleGroupRoute
 import li.songe.gkd.sdp.ui.style.scaffoldPadding
 import li.songe.gkd.sdp.util.getGroupEnable
 import li.songe.gkd.sdp.util.launchAsFn
@@ -286,7 +286,7 @@ class RuleGroupState(
                 onClickEdit = {
                     dismissGroupShow()
                     mainVm.navigatePage(
-                        UpsertRuleGroupPageDestination(
+                        UpsertRuleGroupRoute(
                             subsId = showGroupState.subsId,
                             groupKey = showGroupState.groupKey,
                             appId = showGroupState.appId,
@@ -297,7 +297,7 @@ class RuleGroupState(
                     dismissGroupShow()
                     if (showGroupState.appId == null) {
                         mainVm.navigatePage(
-                            SubsGlobalGroupExcludePageDestination(
+                            SubsGlobalGroupExcludeRoute(
                                 showGroupState.subsId,
                                 showGroupState.groupKey
                             )

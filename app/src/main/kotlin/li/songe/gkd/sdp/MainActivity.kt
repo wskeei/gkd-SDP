@@ -1,15 +1,16 @@
 package li.songe.gkd.sdp
 
 import android.app.Activity
-import android.app.ActivityManager
-import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
-import androidx.compose.animation.core.AnimationConstants
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -47,13 +48,13 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsAnimationCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.lifecycleScope
-import androidx.navigation.compose.rememberNavController
+import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
+import androidx.navigation3.runtime.entryProvider
+import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
+import androidx.navigation3.ui.NavDisplay
 import com.dylanc.activityresult.launcher.PickContentLauncher
 import com.dylanc.activityresult.launcher.StartActivityLauncher
-import com.ramcosta.composedestinations.DestinationsNavHost
-import com.ramcosta.composedestinations.generated.NavGraphs
-import com.ramcosta.composedestinations.generated.destinations.AuthA11YPageDestination
-import com.ramcosta.composedestinations.utils.currentDestinationAsState
+import com.dylanc.activityresult.launcher.launchForResult
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.drop
@@ -69,23 +70,82 @@ import li.songe.gkd.sdp.a11y.updateTopActivity
 import li.songe.gkd.sdp.permission.AuthDialog
 import li.songe.gkd.sdp.permission.updatePermissionState
 import li.songe.gkd.sdp.service.A11yService
-import li.songe.gkd.sdp.service.ButtonService
-import li.songe.gkd.sdp.service.HttpService
-import li.songe.gkd.sdp.service.ScreenshotService
 import li.songe.gkd.sdp.service.StatusService
-import li.songe.gkd.sdp.service.fixRestartService
-import li.songe.gkd.sdp.service.updateTopAppId
+import li.songe.gkd.sdp.service.fixRestartAutomatorService
+import li.songe.gkd.sdp.service.updateTopTaskAppId
+import li.songe.gkd.sdp.shizuku.automationRegisteredExceptionFlow
 import li.songe.gkd.sdp.shizuku.shizukuContextFlow
 import li.songe.gkd.sdp.store.storeFlow
+import li.songe.gkd.sdp.ui.A11YScopeAppListRoute
+import li.songe.gkd.sdp.ui.A11yEventLogPage
+import li.songe.gkd.sdp.ui.A11yEventLogRoute
+import li.songe.gkd.sdp.ui.A11yScopeAppListPage
+import li.songe.gkd.sdp.ui.AboutPage
+import li.songe.gkd.sdp.ui.AboutRoute
+import li.songe.gkd.sdp.ui.ActionLogPage
+import li.songe.gkd.sdp.ui.ActionLogRoute
+import li.songe.gkd.sdp.ui.ActivityLogPage
+import li.songe.gkd.sdp.ui.ActivityLogRoute
+import li.songe.gkd.sdp.ui.AdvancedPage
+import li.songe.gkd.sdp.ui.AdvancedPageRoute
+import li.songe.gkd.sdp.ui.AppConfigPage
+import li.songe.gkd.sdp.ui.AppConfigRoute
+import li.songe.gkd.sdp.ui.AppBlockerPage
+import li.songe.gkd.sdp.ui.AppBlockerRoute
+import li.songe.gkd.sdp.ui.AppInstallMonitorPage
+import li.songe.gkd.sdp.ui.AppInstallMonitorRoute
+import li.songe.gkd.sdp.ui.AppOpsAllowPage
+import li.songe.gkd.sdp.ui.AppOpsAllowRoute
+import li.songe.gkd.sdp.ui.AuthA11yPage
+import li.songe.gkd.sdp.ui.AuthA11yRoute
+import li.songe.gkd.sdp.ui.BlockA11yAppListPage
+import li.songe.gkd.sdp.ui.BlockA11yAppListRoute
+import li.songe.gkd.sdp.ui.CrashReportPage
+import li.songe.gkd.sdp.ui.CrashReportRoute
+import li.songe.gkd.sdp.ui.EditBlockAppListPage
+import li.songe.gkd.sdp.ui.EditBlockAppListRoute
+import li.songe.gkd.sdp.ui.FocusLockPage
+import li.songe.gkd.sdp.ui.FocusLockRoute
+import li.songe.gkd.sdp.ui.FocusModePage
+import li.songe.gkd.sdp.ui.FocusModeRoute
+import li.songe.gkd.sdp.ui.ImagePreviewPage
+import li.songe.gkd.sdp.ui.ImagePreviewRoute
+import li.songe.gkd.sdp.ui.SlowGroupPage
+import li.songe.gkd.sdp.ui.SlowGroupRoute
+import li.songe.gkd.sdp.ui.SnapshotPage
+import li.songe.gkd.sdp.ui.SnapshotPageRoute
+import li.songe.gkd.sdp.ui.SubsAppGroupListPage
+import li.songe.gkd.sdp.ui.SubsAppGroupListRoute
+import li.songe.gkd.sdp.ui.SubsAppListPage
+import li.songe.gkd.sdp.ui.SubsAppListRoute
+import li.songe.gkd.sdp.ui.SubsCategoryGroupPage
+import li.songe.gkd.sdp.ui.SubsCategoryGroupRoute
+import li.songe.gkd.sdp.ui.SubsCategoryPage
+import li.songe.gkd.sdp.ui.SubsCategoryRoute
+import li.songe.gkd.sdp.ui.SubsGlobalGroupExcludePage
+import li.songe.gkd.sdp.ui.SubsGlobalGroupExcludeRoute
+import li.songe.gkd.sdp.ui.SubsGlobalGroupListPage
+import li.songe.gkd.sdp.ui.SubsGlobalGroupListRoute
+import li.songe.gkd.sdp.ui.UpsertRuleGroupPage
+import li.songe.gkd.sdp.ui.UpsertRuleGroupRoute
+import li.songe.gkd.sdp.ui.UrlBlockPage
+import li.songe.gkd.sdp.ui.UrlBlockRoute
+import li.songe.gkd.sdp.ui.UsageGuardPage
+import li.songe.gkd.sdp.ui.UsageGuardRoute
+import li.songe.gkd.sdp.ui.UsageGuardReviewPage
+import li.songe.gkd.sdp.ui.UsageGuardReviewRoute
+import li.songe.gkd.sdp.ui.WebViewPage
+import li.songe.gkd.sdp.ui.WebViewRoute
 import li.songe.gkd.sdp.ui.component.BuildDialog
 import li.songe.gkd.sdp.ui.component.PerfIcon
-import li.songe.gkd.sdp.ui.component.ShareDataDialog
+import li.songe.gkd.sdp.ui.component.ShareLogDlg
 import li.songe.gkd.sdp.ui.component.SubsSheet
 import li.songe.gkd.sdp.ui.component.TermsAcceptDialog
 import li.songe.gkd.sdp.ui.component.TextDialog
+import li.songe.gkd.sdp.ui.home.HomePage
+import li.songe.gkd.sdp.ui.home.HomeRoute
 import li.songe.gkd.sdp.ui.share.FixedWindowInsets
 import li.songe.gkd.sdp.ui.share.LocalMainViewModel
-import li.songe.gkd.sdp.ui.share.LocalNavController
 import li.songe.gkd.sdp.ui.style.AppTheme
 import li.songe.gkd.sdp.util.AndroidTarget
 import li.songe.gkd.sdp.util.BarUtils
@@ -105,7 +165,6 @@ import li.songe.gkd.sdp.util.shizukuAppId
 import li.songe.gkd.sdp.util.throttle
 import li.songe.gkd.sdp.util.toast
 import kotlin.concurrent.Volatile
-import kotlin.reflect.KClass
 import kotlin.reflect.jvm.jvmName
 
 class MainActivity : ComponentActivity() {
@@ -118,8 +177,8 @@ class MainActivity : ComponentActivity() {
     val imePlayingFlow = MutableStateFlow(false)
 
     private val imeVisible: Boolean
-        get() = ViewCompat.getRootWindowInsets(window.decorView)!!
-            .isVisible(WindowInsetsCompat.Type.ime())
+        get() = ViewCompat.getRootWindowInsets(window.decorView)
+            ?.isVisible(WindowInsetsCompat.Type.ime()) == true  // fix #1315
 
     var topBarWindowInsets by mutableStateOf(WindowInsets(top = BarUtils.getStatusBarHeight()))
 
@@ -174,6 +233,17 @@ class MainActivity : ComponentActivity() {
         return false
     }
 
+    suspend fun pickFile(contentType: String): Uri? {
+        val u = launcher.launchForResult(Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+            addCategory(Intent.CATEGORY_OPENABLE)
+            type = contentType
+        }).data?.data
+        if (u == null) {
+            toast("未选择文件")
+        }
+        return u
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
         enableEdgeToEdge()
@@ -197,7 +267,7 @@ class MainActivity : ComponentActivity() {
         watchKeyboardVisible()
         StatusService.autoStart()
         if (storeFlow.value.enableBlockA11yAppList) {
-            updateTopAppId(META.appId)
+            updateTopTaskAppId(META.appId)
         }
         setContent {
             val latestInsets = TopAppBarDefaults.windowInsets
@@ -205,20 +275,67 @@ class MainActivity : ComponentActivity() {
             if (latestInsets.getTop(density) > topBarWindowInsets.getTop(density)) {
                 topBarWindowInsets = FixedWindowInsets(latestInsets)
             }
-            val navController = rememberNavController()
-            mainVm.updateNavController(navController)
             CompositionLocalProvider(
-                LocalNavController provides navController,
                 LocalMainViewModel provides mainVm
             ) {
                 AppTheme {
-                    DestinationsNavHost(
-                        navController = navController,
-                        navGraph = NavGraphs.root
+                    NavDisplay(
+                        entryDecorators = listOf(
+                            rememberSaveableStateHolderNavEntryDecorator(),
+                            rememberViewModelStoreNavEntryDecorator(),
+                        ),
+                        backStack = mainVm.backStack,
+                        onBack = mainVm::popPage,
+                        entryProvider = entryProvider {
+                            entry<HomeRoute> { HomePage() }
+                            entry<AuthA11yRoute> { AuthA11yPage() }
+                            entry<AboutRoute> { AboutPage() }
+                            entry<BlockA11yAppListRoute> { BlockA11yAppListPage() }
+                            entry<AdvancedPageRoute> { AdvancedPage() }
+                            entry<SnapshotPageRoute> { SnapshotPage() }
+                            entry<AppOpsAllowRoute> { AppOpsAllowPage() }
+                            entry<A11YScopeAppListRoute> { A11yScopeAppListPage() }
+                            entry<ActivityLogRoute> { ActivityLogPage() }
+                            entry<A11yEventLogRoute> { A11yEventLogPage() }
+                            entry<EditBlockAppListRoute> { EditBlockAppListPage() }
+                            entry<SlowGroupRoute> { SlowGroupPage() }
+                            entry<SubsAppListRoute> { SubsAppListPage(it) }
+                            entry<WebViewRoute> { WebViewPage(it) }
+                            entry<SubsCategoryRoute> { SubsCategoryPage(it) }
+                            entry<SubsGlobalGroupListRoute> { SubsGlobalGroupListPage(it) }
+                            entry<SubsGlobalGroupExcludeRoute> { SubsGlobalGroupExcludePage(it) }
+                            entry<ActionLogRoute> { ActionLogPage(it) }
+                            entry<ImagePreviewRoute> { ImagePreviewPage(it) }
+                            entry<UpsertRuleGroupRoute> { UpsertRuleGroupPage(it) }
+                            entry<SubsAppGroupListRoute> { SubsAppGroupListPage(it) }
+                            entry<AppConfigRoute> { AppConfigPage(it) }
+                            entry<CrashReportRoute> { CrashReportPage() }
+                            entry<SubsCategoryGroupRoute> { SubsCategoryGroupPage(it) }
+                            entry<FocusLockRoute> { FocusLockPage() }
+                            entry<FocusModeRoute> { FocusModePage() }
+                            entry<UrlBlockRoute> { UrlBlockPage() }
+                            entry<AppBlockerRoute> { AppBlockerPage() }
+                            entry<UsageGuardRoute> { UsageGuardPage() }
+                            entry<UsageGuardReviewRoute> { UsageGuardReviewPage() }
+                            entry<AppInstallMonitorRoute> { AppInstallMonitorPage() }
+                        },
+                        transitionSpec = {
+                            slideInHorizontally(initialOffsetX = { it }) togetherWith
+                                    slideOutHorizontally(targetOffsetX = { -it })
+                        },
+                        popTransitionSpec = {
+                            slideInHorizontally(initialOffsetX = { -it }) togetherWith
+                                    slideOutHorizontally(targetOffsetX = { it })
+                        },
+                        predictivePopTransitionSpec = {
+                            slideInHorizontally(initialOffsetX = { -it }) togetherWith
+                                    slideOutHorizontally(targetOffsetX = { it })
+                        },
                     )
                     if (!mainVm.termsAcceptedFlow.collectAsState().value) {
                         TermsAcceptDialog()
                     } else {
+                        UiAutomationAlreadyRegisteredDlg()
                         AccessRestrictedSettingsDlg()
                         ShizukuErrorDialog(mainVm.shizukuErrorFlow)
                         AuthDialog(mainVm.authReasonFlow)
@@ -227,10 +344,10 @@ class MainActivity : ComponentActivity() {
                         EditGithubCookieDlg()
                         mainVm.updateStatus?.UpgradeDialog()
                         SubsSheet(mainVm, mainVm.sheetSubsIdFlow)
-                        ShareDataDialog(mainVm, mainVm.showShareDataIdsFlow)
                         mainVm.inputSubsLinkOption.ContentDialog()
                         mainVm.ruleGroupState.Render()
                         TextDialog(mainVm.textFlow)
+                        ShareLogDlg(mainVm.showShareLogDlgFlow)
                     }
                 }
             }
@@ -248,7 +365,12 @@ class MainActivity : ComponentActivity() {
         LogUtils.d()
         activityVisibleState++
         if (topActivityFlow.value.appId != META.appId) {
-            updateTopActivity(META.appId, MainActivity::class.jvmName)
+            synchronized(topActivityFlow) {
+                updateTopActivity(
+                    META.appId,
+                    MainActivity::class.jvmName
+                )
+            }
         }
     }
 
@@ -273,24 +395,11 @@ class MainActivity : ComponentActivity() {
         super.onDestroy()
         LogUtils.d()
     }
-
-    private var lastBackPressedTime = 0L
-
-    @Suppress("OVERRIDE_DEPRECATION", "GestureBackNavigation")
-    override fun onBackPressed() {
-        // onBackPressedDispatcher.addCallback is not work, it will be covered by compose navigation
-        val t = System.currentTimeMillis()
-        if (t - lastBackPressedTime > AnimationConstants.DefaultDurationMillis) {
-            lastBackPressedTime = t
-            @Suppress("DEPRECATION")
-            super.onBackPressed()
-        }
-    }
 }
 
 @Volatile
 private var activityVisibleState = 0
-fun isActivityVisible() = activityVisibleState > 0
+val isActivityVisible get() = activityVisibleState > 0
 
 val activityNavSourceName by lazy { META.appId + ".activity.nav.source" }
 
@@ -305,25 +414,6 @@ fun Activity.navToMainActivity() {
     finish()
 }
 
-@Suppress("DEPRECATION")
-private fun updateServiceRunning() {
-    A11yService.isRunning.value = A11yService.instance != null
-    val list = try {
-        val manager = app.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
-        manager.getRunningServices(Int.MAX_VALUE) ?: emptyList()
-    } catch (_: Exception) {
-        emptyList()
-    }
-
-    fun checkRunning(cls: KClass<*>): Boolean {
-        return list.any { it.service.className == cls.jvmName }
-    }
-    StatusService.isRunning.value = checkRunning(StatusService::class)
-    ButtonService.isRunning.value = checkRunning(ButtonService::class)
-    ScreenshotService.isRunning.value = checkRunning(ScreenshotService::class)
-    HttpService.isRunning.value = checkRunning(HttpService::class)
-}
-
 private val syncStateMutex = Mutex()
 fun syncFixState() {
     appScope.launchTry(Dispatchers.IO) {
@@ -332,10 +422,9 @@ fun syncFixState() {
         }
         syncStateMutex.withLock {
             updateSystemDefaultAppId()
-            updateServiceRunning()
             shizukuContextFlow.value.grantSelf()
             updatePermissionState()
-            fixRestartService()
+            fixRestartAutomatorService()
         }
     }
 }
@@ -432,9 +521,7 @@ fun AccessRestrictedSettingsDlg() {
     }
     val accessRestrictedSettingsShow by accessRestrictedSettingsShowFlow.collectAsState()
     val mainVm = LocalMainViewModel.current
-    val navController = LocalNavController.current
-    val currentDestination by navController.currentDestinationAsState()
-    val isA11yPage = currentDestination?.route == AuthA11YPageDestination.route
+    val isA11yPage = mainVm.topRoute is AuthA11yRoute
     LaunchedEffect(isA11yPage, accessRestrictedSettingsShow) {
         if (isA11yPage && accessRestrictedSettingsShow && !a11yRunning) {
             toast("请重新授权以解除限制")
@@ -455,7 +542,7 @@ fun AccessRestrictedSettingsDlg() {
             confirmButton = {
                 TextButton({
                     accessRestrictedSettingsShowFlow.value = false
-                    mainVm.navigatePage(AuthA11YPageDestination)
+                    mainVm.navigateWebPage(ShortUrlSet.URL2)
                 }) {
                     Text(text = "解除")
                 }
@@ -467,6 +554,28 @@ fun AccessRestrictedSettingsDlg() {
                     Text(text = "关闭")
                 }
             },
+        )
+    }
+}
+
+@Composable
+fun UiAutomationAlreadyRegisteredDlg() {
+    if (automationRegisteredExceptionFlow.collectAsState().value != null) {
+        AlertDialog(
+            onDismissRequest = {
+                automationRegisteredExceptionFlow.value = null
+            },
+            title = { Text(text = "启动失败") },
+            text = {
+                Text(text = "自动化服务启动失败，检测到自动化服务已被其他应用占用，请先关闭已有服务后重试\n\n注：自动化服务只能同时运行一个，请确保没有其他应用或测试框架占用后再启动")
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    automationRegisteredExceptionFlow.value = null
+                }) {
+                    Text(text = "我知道了")
+                }
+            }
         )
     }
 }

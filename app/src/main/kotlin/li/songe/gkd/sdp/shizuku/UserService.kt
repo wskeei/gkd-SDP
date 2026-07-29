@@ -3,39 +3,38 @@ package li.songe.gkd.sdp.shizuku
 import android.content.ComponentName
 import android.content.Context
 import android.content.ServiceConnection
+import android.graphics.Bitmap
+import android.graphics.Rect
 import android.os.IBinder
 import android.util.Log
+import android.view.SurfaceControlHidden
 import androidx.annotation.Keep
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withTimeoutOrNull
-import kotlinx.serialization.Serializable
 import li.songe.gkd.sdp.META
 import li.songe.gkd.sdp.permission.shizukuGrantedState
 import li.songe.gkd.sdp.util.LogUtils
 import li.songe.gkd.sdp.util.componentName
-import li.songe.gkd.sdp.util.json
 import rikka.shizuku.Shizuku
 import java.io.DataOutputStream
+import java.io.File
 import kotlin.coroutines.resume
 import kotlin.system.exitProcess
 
 
-@Suppress("unused")
-class UserService : IUserService.Stub {
-    /**
-     * Constructor is required.
-     */
-    constructor() {
-        Log.i("UserService", "constructor")
-    }
+// https://github.com/RikkaApps/Shizuku/issues/1171#issuecomment-2952442340
+@Keep
+class UserService(val context: Context) : IUserService.Stub() {
 
-    @Keep
-    constructor(context: Context) {
-        Log.i("UserService", "constructor with Context: context=$context")
+    init {
+        Log.d(
+            "UserService",
+            "constructor(context=${context.packageName},pid=${android.os.Process.myPid()},uid=${android.os.Process.myUid()})"
+        )
     }
 
     override fun destroy() {
-        Log.i("UserService", "destroy")
+        Log.d("UserService", "destroy")
         exitProcess(0)
     }
 
@@ -43,7 +42,8 @@ class UserService : IUserService.Stub {
         destroy()
     }
 
-    override fun execCommand(command: String): String {
+    override fun execCommand(command: String): CommandResult {
+        Log.d("UserService", "execCommand(command=$command)")
         val process = Runtime.getRuntime().exec("sh")
         val outputStream = DataOutputStream(process.outputStream)
         val commandResult = try {
@@ -82,9 +82,49 @@ class UserService : IUserService.Stub {
             process.outputStream.close()
             process.destroy()
         }
-        return json.encodeToString(commandResult)
+        return commandResult
+    }
+
+    override fun takeScreenshot1(width: Int, height: Int): Bitmap? {
+        return SurfaceControlHidden.screenshot(width, height)
+    }
+
+    override fun takeScreenshot2(
+        crop: Rect,
+        rotation: Int
+    ): Bitmap? {
+        val width = crop.width()
+        val height = crop.height()
+        return SurfaceControlHidden.screenshot(crop, width, height, rotation)
+    }
+
+    override fun takeScreenshot3(crop: Rect): Bitmap? {
+        val width = crop.width()
+        val height = crop.height()
+        val displayToken = SurfaceControlHidden.getInternalDisplayToken()
+        val captureArgs = SurfaceControlHidden.DisplayCaptureArgs.Builder(displayToken)
+            .setSourceCrop(crop)
+            .setSize(width, height)
+            .build()
+        val screenshotBuffer = SurfaceControlHidden.captureDisplay(captureArgs)
+        return screenshotBuffer?.asBitmap()
+    }
+
+    override fun killLegacyService(): Int {
+        val pid = android.os.Process.myPid()
+        val idReg = "\\d+".toRegex()
+        val legacyPids = execCommand("ps | grep '${context.packageName}:$shizukuPsSuffix'")
+            .result.lineSequence()
+            .mapNotNull { idReg.find(it)?.value?.toInt() }
+            .filter { it != pid }.toList()
+        if (legacyPids.isNotEmpty()) {
+            execCommand(legacyPids.joinToString(";") { "kill $it" })
+        }
+        return legacyPids.size
     }
 }
+
+private const val shizukuPsSuffix = "shizuku-user-service"
 
 private fun unbindUserService(
     serviceArgs: Shizuku.UserServiceArgs,
@@ -92,7 +132,7 @@ private fun unbindUserService(
     reason: String? = null,
 ) {
     if (!shizukuGrantedState.stateFlow.value) return
-    LogUtils.d("unbindUserService", serviceArgs, reason)
+    LogUtils.d(serviceArgs, reason)
     // https://github.com/RikkaApps/Shizuku-API/blob/master/server-shared/src/main/java/rikka/shizuku/server/UserServiceManager.java#L62
     try {
         Shizuku.unbindUserService(serviceArgs, connection, false)
@@ -100,16 +140,6 @@ private fun unbindUserService(
     } catch (e: Exception) {
         e.printStackTrace()
     }
-}
-
-@Serializable
-data class CommandResult(
-    val code: Int?,
-    val result: String,
-    val error: String?
-) {
-    val ok: Boolean
-        get() = code == 0
 }
 
 data class UserServiceWrapper(
@@ -120,9 +150,7 @@ data class UserServiceWrapper(
     fun destroy() = unbindUserService(serviceArgs, connection)
 
     fun execCommandForResult(command: String): CommandResult = try {
-        val resultStr = userService.execCommand(command)
-        val result = json.decodeFromString<CommandResult>(resultStr)
-        result
+        userService.execCommand(command)
     } catch (e: Throwable) {
         e.printStackTrace()
         CommandResult(code = null, result = "", error = e.message)
@@ -136,13 +164,29 @@ data class UserServiceWrapper(
         }
         return execCommandForResult(command).ok
     }
+
+    fun swipe(x1: Float, y1: Float, x2: Float, y2: Float, duration: Long): Boolean {
+        val command = "input swipe $x1 $y1 $x2 $y2 $duration"
+        return execCommandForResult(command).ok
+    }
+
+    fun screencapFile(filePath: String): Boolean {
+        val tempPath = "/data/local/tmp/screencap_${System.currentTimeMillis()}.png"
+        val command = "screencap -p $tempPath"
+        val r = execCommandForResult(command)
+        if (r.ok) {
+            File(tempPath).copyTo(File(filePath), overwrite = true)
+            execCommandForResult("rm $tempPath")
+        }
+        return r.ok
+    }
 }
 
 suspend fun buildServiceWrapper(): UserServiceWrapper? {
     val serviceArgs = Shizuku
         .UserServiceArgs(UserService::class.componentName)
         .daemon(false)
-        .processNameSuffix("shizuku-user-service")
+        .processNameSuffix(shizukuPsSuffix)
         .debuggable(META.debuggable)
         .version(META.versionCode)
         .tag("default")

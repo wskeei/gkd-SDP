@@ -22,6 +22,7 @@ import li.songe.gkd.sdp.service.ButtonService
 import li.songe.gkd.sdp.service.EventService
 import li.songe.gkd.sdp.service.HttpService
 import li.songe.gkd.sdp.service.ScreenshotService
+import li.songe.gkd.sdp.service.TrackService
 import li.songe.gkd.sdp.util.AndroidTarget
 import li.songe.gkd.sdp.util.componentName
 import kotlin.reflect.KClass
@@ -152,11 +153,9 @@ val eventNotif = Notif(
     stopService = EventService::class,
 )
 
-val focusEndNotif = Notif(
-    channel = NotifChannel.FocusMode,
+val trackNotif = Notif(
     id = 108,
-    title = "专注结束",
-    text = "专注时间已结束，做得很好！",
-    ongoing = false,
-    autoCancel = true,
+    title = "轨迹服务正在运行",
+    uri = "gkd://page?tab=3",
+    stopService = TrackService::class,
 )
