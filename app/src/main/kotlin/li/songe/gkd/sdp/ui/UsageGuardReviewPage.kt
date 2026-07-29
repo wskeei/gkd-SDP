@@ -89,7 +89,7 @@ fun UsageGuardReviewPage() {
                 navigationIcon = {
                     PerfIconButton(
                         imageVector = PerfIcon.ArrowBack,
-                        onClick = { mainVm.popBackStack() },
+                        onClick = { mainVm.popPage() },
                     )
                 },
                 title = { Text("数字自律复盘") },

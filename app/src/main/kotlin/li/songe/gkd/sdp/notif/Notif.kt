@@ -159,3 +159,12 @@ val trackNotif = Notif(
     uri = "gkd://page?tab=3",
     stopService = TrackService::class,
 )
+
+val focusEndNotif = Notif(
+    channel = NotifChannel.FocusMode,
+    id = 109,
+    title = "专注结束",
+    text = "专注时间已结束，做得很好！",
+    ongoing = false,
+    autoCancel = true,
+)

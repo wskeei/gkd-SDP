@@ -164,7 +164,7 @@ object UrlBlockerEngine {
      */
     private fun tryReadUrl(service: A11yService, browserConfig: BrowserConfig): String? {
         return try {
-            val rootNode = service.safeActiveWindow ?: return null
+            val rootNode = service.ruleEngine.safeActiveWindow ?: return null
             findUrlBarText(rootNode, browserConfig.urlBarId)
         } catch (e: Exception) {
             if (META.debuggable) {

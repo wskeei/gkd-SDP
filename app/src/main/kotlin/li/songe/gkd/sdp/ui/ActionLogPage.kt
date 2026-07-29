@@ -124,7 +124,7 @@ fun ActionLogPage(route: ActionLogRoute) {
                 PerfIconButton(
                     imageVector = PerfIcon.ArrowBack,
                     onClick = {
-                        mainVm.popBackStack()
+                        mainVm.popPage()
                     },
                 )
             },

@@ -72,7 +72,7 @@ fun UrlBlockPage() {
                 navigationIcon = {
                     PerfIconButton(
                         imageVector = PerfIcon.ArrowBack,
-                        onClick = { mainVm.popBackStack() },
+                        onClick = { mainVm.popPage() },
                     )
                 },
                 title = { Text(text = "网址拦截") },

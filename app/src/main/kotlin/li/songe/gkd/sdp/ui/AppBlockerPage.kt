@@ -96,7 +96,7 @@ fun AppBlockerPage() {
                 navigationIcon = {
                     PerfIconButton(
                         imageVector = PerfIcon.ArrowBack,
-                        onClick = { mainVm.popBackStack() },
+                        onClick = { mainVm.popPage() },
                     )
                 },
                 title = { Text(text = "应用拦截") },

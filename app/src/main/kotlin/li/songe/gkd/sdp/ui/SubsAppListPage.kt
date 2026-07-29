@@ -91,7 +91,7 @@ fun SubsAppListPage(route: SubsAppListRoute) {
                     imageVector = PerfIcon.ArrowBack,
                     onClick = throttle(vm.viewModelScope.launchAsFn {
                         context.hideSoftInput()
-                        mainVm.popBackStack()
+                        mainVm.popPage()
                     }),
                 )
             }, title = {

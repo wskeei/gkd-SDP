@@ -144,7 +144,7 @@ fun UsageGuardPage() {
                 navigationIcon = {
                     PerfIconButton(
                         imageVector = PerfIcon.ArrowBack,
-                        onClick = { mainVm.popBackStack() },
+                        onClick = { mainVm.popPage() },
                     )
                 },
                 title = { Text("使用申请") },

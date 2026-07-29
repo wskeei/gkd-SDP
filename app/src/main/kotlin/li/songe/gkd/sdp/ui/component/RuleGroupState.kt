@@ -67,8 +67,8 @@ data class ShowGroupState(
         } else {
             subs.globalGroups
         }?.find { it.key == groupKey } ?: error("require group")
-        val category = subs.groupToCategoryMap[group] ?: return null
-        return DbSet.categoryConfigDao.queryCategoryConfig(subsId, category.key)
+        val category = subs.getCategory(group.name) ?: return null
+        return DbSet.categoryConfigDao.queryCategoryConfig(subsId, category.key).first()
     }
 }
 
@@ -123,7 +123,7 @@ suspend fun batchUpdateGroupEnable(
             val oldEnable = getGroupEnable(
                 targetGroup,
                 subsConfig,
-                subscription.groupToCategoryMap[targetGroup],
+                subscription.getCategory(targetGroup.name),
                 categoryConfig
             )
             // app rule
@@ -137,7 +137,7 @@ suspend fun batchUpdateGroupEnable(
             val newEnable = getGroupEnable(
                 targetGroup,
                 newSubsConfig,
-                subscription.groupToCategoryMap[targetGroup],
+                subscription.getCategory(targetGroup.name),
                 categoryConfig
             )
             if (enable == newEnable && oldEnable == newEnable) {
