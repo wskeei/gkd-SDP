@@ -27,6 +27,15 @@ internal fun resetAccessibilityGuardSession(
     return AccessibilityGuardSession(generation = session.generation + 1L)
 }
 
+/** Pure marker transition kept separate so its state-preserving behavior is testable. */
+internal fun markTemporaryShutdownSession(
+    session: AccessibilityGuardSession,
+): AccessibilityGuardSession = session.copy(temporaryShutdownExpected = true)
+
+private fun clearTemporaryShutdownSession(
+    session: AccessibilityGuardSession,
+): AccessibilityGuardSession = session.copy(temporaryShutdownExpected = false)
+
 /**
  * Process-local entrance for events that affect the accessibility guard.
  *
@@ -46,16 +55,14 @@ object AccessibilityGuardRuntime {
     val wakeups: SharedFlow<Unit> = _wakeups.asSharedFlow()
 
     fun markTemporaryShutdownExpected() {
-        accessibilityGuardSessionFlow.update { session ->
-            session.copy(temporaryShutdownExpected = true)
-        }
-        wake()
+        // Do not wake before disableSelf(): the coordinator would still see
+        // accessibility enabled, reset this marker, and treat the subsequent
+        // component removal as a manual shutdown.
+        accessibilityGuardSessionFlow.update(::markTemporaryShutdownSession)
     }
 
     fun clearTemporaryShutdownExpected() {
-        accessibilityGuardSessionFlow.update { session ->
-            session.copy(temporaryShutdownExpected = false)
-        }
+        accessibilityGuardSessionFlow.update(::clearTemporaryShutdownSession)
         wake()
     }
 

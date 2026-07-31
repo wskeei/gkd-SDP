@@ -97,6 +97,8 @@ abstract class A11yService : AccessibilityService(), OnA11yLife by DefaultA11yLi
         if (temp) {
             tempShutdownFlag = true
             AccessibilityGuardRuntime.markTemporaryShutdownExpected()
+        } else {
+            AccessibilityGuardRuntime.clearTemporaryShutdownExpected()
         }
         disableSelf()
     }
