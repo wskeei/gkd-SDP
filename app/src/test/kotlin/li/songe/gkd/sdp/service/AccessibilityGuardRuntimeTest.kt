@@ -1,6 +1,7 @@
 package li.songe.gkd.sdp.service
 
 import li.songe.gkd.sdp.store.AccessibilityGuardSession
+import li.songe.gkd.sdp.util.AccessibilityGuardPolicy
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
@@ -36,5 +37,68 @@ class AccessibilityGuardRuntimeTest {
 
         assertEquals(AccessibilityGuardSession(generation = 5L), reset)
         assertEquals(reset, resetAccessibilityGuardSession(reset))
+    }
+
+    @Test
+    fun trackTransitionClearsAStaleTemporaryMarkerAndStartsANewSession() {
+        val before = AccessibilityGuardSession(
+            generation = 4L,
+            temporaryShutdownExpected = true,
+        )
+
+        assertEquals(
+            AccessibilityGuardSession(
+                generation = 5L,
+                disabledAtEpochMs = 9_000L,
+            ),
+            transitionAccessibilityGuardSession(
+                session = before,
+                mode = AccessibilityGuardPolicy.SessionMode.TRACK,
+                currentAppBlocked = false,
+                nowEpochMs = 9_000L,
+            ),
+        )
+    }
+
+    @Test
+    fun suppressedTemporaryTransitionRetainsTheMarkerAndExistingSession() {
+        val before = AccessibilityGuardSession(
+            generation = 4L,
+            disabledAtEpochMs = 1_000L,
+            lastReminderIndex = 2,
+            enforcementStarted = true,
+            temporaryShutdownExpected = true,
+        )
+
+        assertEquals(
+            before,
+            transitionAccessibilityGuardSession(
+                session = before,
+                mode = AccessibilityGuardPolicy.SessionMode.SUPPRESSED_TEMPORARY,
+                currentAppBlocked = true,
+                nowEpochMs = 9_000L,
+            ),
+        )
+    }
+
+    @Test
+    fun trackTransitionClearsOnlyTheMarkerWhenAnExistingSessionIsActive() {
+        val before = AccessibilityGuardSession(
+            generation = 4L,
+            disabledAtEpochMs = 1_000L,
+            lastReminderIndex = 2,
+            enforcementStarted = true,
+            temporaryShutdownExpected = true,
+        )
+
+        assertEquals(
+            before.copy(temporaryShutdownExpected = false),
+            transitionAccessibilityGuardSession(
+                session = before,
+                mode = AccessibilityGuardPolicy.SessionMode.TRACK,
+                currentAppBlocked = false,
+                nowEpochMs = 9_000L,
+            ),
+        )
     }
 }

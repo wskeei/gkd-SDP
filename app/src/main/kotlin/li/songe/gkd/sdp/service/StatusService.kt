@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import li.songe.gkd.sdp.META
 import li.songe.gkd.sdp.MainActivity
+import li.songe.gkd.sdp.activityVisibleCountFlow
 import li.songe.gkd.sdp.a11y.useA11yServiceEnabledFlow
 import li.songe.gkd.sdp.app
 import li.songe.gkd.sdp.notif.abNotif
@@ -34,9 +35,22 @@ import li.songe.gkd.sdp.util.startForegroundServiceByClass
 import li.songe.gkd.sdp.util.stopServiceByClass
 
 class StatusService : Service(), OnSimpleLife by DefaultSimpleLifeImpl() {
+    private var accessibilityGuardCoordinator: AccessibilityGuardCoordinator? = null
+
     override fun onBind(intent: Intent?) = null
-    override fun onCreate() = onCreated()
-    override fun onDestroy() = onDestroyed()
+    override fun onCreate() {
+        super.onCreate()
+        onCreated()
+    }
+
+    override fun onDestroy() {
+        onDestroyed()
+        super.onDestroy()
+    }
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        super.onStartCommand(intent, flags, startId)
+        return START_STICKY
+    }
 
     val shizukuWarnFlow = combine(
         shizukuGrantedState.stateFlow,
@@ -46,6 +60,17 @@ class StatusService : Service(), OnSimpleLife by DefaultSimpleLifeImpl() {
     }.stateIn(scope, SharingStarted.Eagerly, false)
 
     val a11yServiceEnabledFlow = useA11yServiceEnabledFlow()
+
+    private val guardCurrentAppBlockedFlow = combine(
+        a11yPartDisabledFlow,
+        storeFlow.map { it.enableBlockA11yAppList },
+    ) { appBlocked, blockListEnabled ->
+        appBlocked && blockListEnabled
+    }.stateIn(
+        scope,
+        SharingStarted.Eagerly,
+        storeFlow.value.enableBlockA11yAppList && a11yPartDisabledFlow.value,
+    )
 
     fun statusTriple(): Triple<String, String, String?> {
         val abRunning = A11yService.isRunning.value
@@ -111,6 +136,15 @@ class StatusService : Service(), OnSimpleLife by DefaultSimpleLifeImpl() {
         )
         onCreated {
             abNotif.notifyService()
+            accessibilityGuardCoordinator = AccessibilityGuardCoordinator(
+                context = this@StatusService,
+                scope = scope,
+                a11yServiceEnabledFlow = a11yServiceEnabledFlow,
+                currentAppBlockedFlow = guardCurrentAppBlockedFlow,
+                activityVisibleCountFlow = activityVisibleCountFlow,
+            ).also { coordinator ->
+                coordinator.start()
+            }
             scope.launch {
                 combine(
                     A11yService.isRunning,
@@ -140,12 +174,16 @@ class StatusService : Service(), OnSimpleLife by DefaultSimpleLifeImpl() {
                     }
             }
         }
+        onDestroyed {
+            accessibilityGuardCoordinator?.close()
+            accessibilityGuardCoordinator = null
+        }
     }
 
     companion object {
         val isRunning = MutableStateFlow(false)
         val needRestart
-            get() = storeFlow.value.enableStatusService
+            get() = (storeFlow.value.enableStatusService || storeFlow.value.accessibilityGuardEnabled)
                     && !isRunning.value
                     && notificationState.updateAndGet()
                     && foregroundServiceSpecialUseState.updateAndGet()

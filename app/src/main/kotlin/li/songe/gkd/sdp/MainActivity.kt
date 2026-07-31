@@ -70,6 +70,7 @@ import li.songe.gkd.sdp.a11y.updateTopActivity
 import li.songe.gkd.sdp.permission.AuthDialog
 import li.songe.gkd.sdp.permission.updatePermissionState
 import li.songe.gkd.sdp.service.A11yService
+import li.songe.gkd.sdp.service.AccessibilityGuardRuntime
 import li.songe.gkd.sdp.service.StatusService
 import li.songe.gkd.sdp.service.fixRestartAutomatorService
 import li.songe.gkd.sdp.service.updateTopTaskAppId
@@ -363,7 +364,8 @@ class MainActivity : ComponentActivity() {
     override fun onStart() {
         super.onStart()
         LogUtils.d()
-        activityVisibleState++
+        activityVisibleCountFlow.update { it + 1 }
+        AccessibilityGuardRuntime.onAppVisible()
         if (topActivityFlow.value.appId != META.appId) {
             synchronized(topActivityFlow) {
                 updateTopActivity(
@@ -388,7 +390,7 @@ class MainActivity : ComponentActivity() {
     override fun onStop() {
         super.onStop()
         LogUtils.d()
-        activityVisibleState--
+        activityVisibleCountFlow.update { (it - 1).coerceAtLeast(0) }
     }
 
     override fun onDestroy() {
@@ -397,9 +399,8 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-@Volatile
-private var activityVisibleState = 0
-val isActivityVisible get() = activityVisibleState > 0
+val activityVisibleCountFlow = MutableStateFlow(0)
+val isActivityVisible get() = activityVisibleCountFlow.value > 0
 
 val activityNavSourceName by lazy { META.appId + ".activity.nav.source" }
 

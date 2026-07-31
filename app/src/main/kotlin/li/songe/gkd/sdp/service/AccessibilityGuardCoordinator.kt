@@ -1,12 +1,38 @@
 package li.songe.gkd.sdp.service
 
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
+import androidx.core.content.ContextCompat
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.BufferOverflow
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.merge
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import li.songe.gkd.sdp.META
+import li.songe.gkd.sdp.app
+import li.songe.gkd.sdp.permission.canDrawOverlaysState
+import li.songe.gkd.sdp.notif.cancelAccessibilityGuardNotifications
+import li.songe.gkd.sdp.notif.postAccessibilityGuardNotification
 import li.songe.gkd.sdp.store.AccessibilityGuardSession
 import li.songe.gkd.sdp.store.accessibilityGuardSessionFlow
+import li.songe.gkd.sdp.store.MutableStoreStateFlow
+import li.songe.gkd.sdp.store.SettingsStore
+import li.songe.gkd.sdp.store.storeFlow
+import li.songe.gkd.sdp.util.AccessibilityGuardPolicy
 
 /**
  * Pure reset transition used by the runtime and JVM tests.
@@ -35,6 +61,41 @@ internal fun markTemporaryShutdownSession(
 private fun clearTemporaryShutdownSession(
     session: AccessibilityGuardSession,
 ): AccessibilityGuardSession = session.copy(temporaryShutdownExpected = false)
+
+/**
+ * Applies the pure session part of one coordinator reconciliation.
+ *
+ * Keeping this transition separate from Android side effects makes the two
+ * race-sensitive rules explicit: a temporary marker is retained only while
+ * the blocked app is still current, and a newly tracked disable gets a fresh
+ * generation/timestamp instead of inheriting stale reminder state.
+ */
+internal fun transitionAccessibilityGuardSession(
+    session: AccessibilityGuardSession,
+    mode: AccessibilityGuardPolicy.SessionMode,
+    currentAppBlocked: Boolean,
+    nowEpochMs: Long,
+): AccessibilityGuardSession {
+    return when (mode) {
+        AccessibilityGuardPolicy.SessionMode.RESET -> resetAccessibilityGuardSession(session)
+        AccessibilityGuardPolicy.SessionMode.SUPPRESSED_TEMPORARY -> session
+        AccessibilityGuardPolicy.SessionMode.TRACK -> {
+            val markerCleared = if (session.temporaryShutdownExpected && !currentAppBlocked) {
+                clearTemporaryShutdownSession(session)
+            } else {
+                session
+            }
+            if (markerCleared.disabledAtEpochMs == 0L) {
+                AccessibilityGuardSession(
+                    generation = markerCleared.generation + 1L,
+                    disabledAtEpochMs = nowEpochMs,
+                )
+            } else {
+                markerCleared
+            }
+        }
+    }
+}
 
 /**
  * Process-local entrance for events that affect the accessibility guard.
@@ -93,5 +154,312 @@ object AccessibilityGuardRuntime {
 
     private fun wake() {
         _wakeups.tryEmit(Unit)
+    }
+}
+
+/**
+ * Owns the process-local accessibility guard lifecycle while StatusService is
+ * alive. Every input only wakes the single reconcile loop; all state changes
+ * and Android side effects therefore pass through one mutex-protected path.
+ */
+class AccessibilityGuardCoordinator(
+    private val context: Context,
+    private val scope: CoroutineScope,
+    private val storeStateFlow: StateFlow<SettingsStore> = storeFlow,
+    private val sessionStateFlow: MutableStoreStateFlow<AccessibilityGuardSession> =
+        accessibilityGuardSessionFlow,
+    private val a11yServiceEnabledFlow: StateFlow<Boolean>,
+    private val currentAppBlockedFlow: StateFlow<Boolean>,
+    private val activityVisibleCountFlow: StateFlow<Int>,
+    private val runtimeWakeups: SharedFlow<Unit> = AccessibilityGuardRuntime.wakeups,
+    private val overlayRunningFlow: StateFlow<Boolean> = AccessibilityGuardOverlayService.isRunning,
+) {
+    companion object {
+        private const val APP_EXIT_DEBOUNCE_MS = 750L
+    }
+
+    private val reconcileMutex = Mutex()
+    private val wakeChannel = Channel<Unit>(Channel.CONFLATED)
+    private var coordinatorJob: Job? = null
+    private var timerJob: Job? = null
+    private var timerTargetEpochMs: Long? = null
+    private var screenReceiverRegistered = false
+
+    /** The last visibility value seen by the coordinator, or null before its first pass. */
+    private var previousAppVisible: Boolean? = null
+
+    /** Absolute timestamp after which a hidden app may show the enforcement overlay. */
+    private var overlayDeferredUntilEpochMs = 0L
+
+    private val screenReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            when (intent?.action) {
+                Intent.ACTION_SCREEN_ON,
+                Intent.ACTION_SCREEN_OFF,
+                Intent.ACTION_USER_PRESENT -> wake()
+            }
+        }
+    }
+
+    fun start() {
+        if (coordinatorJob != null) return
+        registerScreenReceiver()
+        coordinatorJob = scope.launch {
+            // All source collectors feed one conflated channel. A noisy source
+            // can therefore not create concurrent or unbounded reconciles.
+            launch {
+                merge(
+                    storeStateFlow.map { Unit },
+                    sessionStateFlow.map { Unit },
+                    a11yServiceEnabledFlow.map { Unit },
+                    currentAppBlockedFlow.map { Unit },
+                    activityVisibleCountFlow.map { Unit },
+                    overlayRunningFlow.map { Unit },
+                ).collect { wake() }
+            }
+            launch { runtimeWakeups.collect { wake() } }
+            while (isActive) {
+                wakeChannel.receive()
+                reconcileMutex.withLock {
+                    reconcile(System.currentTimeMillis())
+                }
+            }
+        }
+        wake()
+    }
+
+    fun close() {
+        timerJob?.cancel()
+        timerJob = null
+        timerTargetEpochMs = null
+        coordinatorJob?.cancel()
+        coordinatorJob = null
+        if (screenReceiverRegistered) {
+            runCatching { context.unregisterReceiver(screenReceiver) }
+            screenReceiverRegistered = false
+        }
+        wakeChannel.close()
+    }
+
+    private fun registerScreenReceiver() {
+        if (screenReceiverRegistered) return
+        ContextCompat.registerReceiver(
+            context,
+            screenReceiver,
+            IntentFilter().apply {
+                addAction(Intent.ACTION_SCREEN_ON)
+                addAction(Intent.ACTION_SCREEN_OFF)
+                addAction(Intent.ACTION_USER_PRESENT)
+            },
+            ContextCompat.RECEIVER_EXPORTED,
+        )
+        screenReceiverRegistered = true
+    }
+
+    private fun wake() {
+        wakeChannel.trySend(Unit)
+    }
+
+    private fun reconcile(nowEpochMs: Long) {
+        val store = storeStateFlow.value
+        val sessionBefore = sessionStateFlow.value
+        val currentAppBlocked = currentAppBlockedFlow.value
+        val a11yEnabled = a11yServiceEnabledFlow.value
+        val appVisible = activityVisibleCountFlow.value > 0
+        updateVisibilityDebounce(appVisible, nowEpochMs)
+
+        val mode = AccessibilityGuardPolicy.sessionMode(
+            featureEnabled = store.accessibilityGuardEnabled,
+            strictChannelAvailable = META.isGkdChannel,
+            useA11yMode = store.useA11y,
+            a11yEnabled = a11yEnabled,
+            temporaryShutdownExpected = sessionBefore.temporaryShutdownExpected,
+            currentAppBlocked = currentAppBlocked,
+        )
+
+        when (mode) {
+            AccessibilityGuardPolicy.SessionMode.RESET -> {
+                resetAndStop(sessionBefore)
+                return
+            }
+
+            AccessibilityGuardPolicy.SessionMode.SUPPRESSED_TEMPORARY -> {
+                // Keep the pending marker and session intact while the blocked
+                // app owns the foreground. No reminder timer or enforcement
+                // overlay may survive this temporary shutdown.
+                scheduleTimerAt(null)
+                stopOverlayIfRunning()
+                return
+            }
+
+            AccessibilityGuardPolicy.SessionMode.TRACK -> Unit
+        }
+
+        val session = transitionAccessibilityGuardSession(
+            session = sessionBefore,
+            mode = mode,
+            currentAppBlocked = currentAppBlocked,
+            nowEpochMs = nowEpochMs,
+        )
+        if (session != sessionBefore) {
+            sessionStateFlow.value = session
+        }
+
+        val evaluation = AccessibilityGuardPolicy.evaluate(
+            disabledAtEpochMs = session.disabledAtEpochMs,
+            lastReminderIndex = session.lastReminderIndex,
+            enforcementStarted = session.enforcementStarted,
+            nowEpochMs = nowEpochMs,
+        )
+
+        val finalCheckpoint = evaluation.startEnforcement
+        val dueReminderIndex = evaluation.dueReminderIndex
+            ?: if (finalCheckpoint) AccessibilityGuardPolicy.REMINDER_OFFSETS_MS.lastIndex else null
+
+        if (dueReminderIndex != null) {
+            // The flow can be stale while Settings.Secure changes. Read it
+            // immediately before posting and never notify a recovered user.
+            if (secureA11yServiceEnabled()) {
+                resetAndStop(sessionStateFlow.value)
+                return
+            }
+            postAccessibilityGuardNotification(dueReminderIndex)
+
+            if (finalCheckpoint) {
+                // Final notice is posted first. Re-read before persisting the
+                // enforcement fence and starting any overlay service.
+                if (secureA11yServiceEnabled()) {
+                    resetAndStop(sessionStateFlow.value)
+                    return
+                }
+                sessionStateFlow.update { current ->
+                    if (current.generation == session.generation) {
+                        current.copy(
+                            lastReminderIndex = dueReminderIndex,
+                            enforcementStarted = true,
+                        )
+                    } else {
+                        current
+                    }
+                }
+            } else {
+                sessionStateFlow.update { current ->
+                    if (current.generation == session.generation &&
+                        dueReminderIndex > current.lastReminderIndex
+                    ) {
+                        current.copy(lastReminderIndex = dueReminderIndex)
+                    } else {
+                        current
+                    }
+                }
+            }
+        }
+
+        val currentSession = sessionStateFlow.value
+        reconcileOverlay(
+            session = currentSession,
+            a11yEnabled = a11yServiceEnabledFlow.value,
+            appVisible = appVisible,
+            nowEpochMs = nowEpochMs,
+        )
+
+        val nextWakeAt = listOfNotNull(
+            evaluation.nextWakeAtEpochMs,
+            currentSession.grantFlowUntilEpochMs.takeIf { it > nowEpochMs },
+            overlayDeferredUntilEpochMs.takeIf {
+                it > nowEpochMs && !appVisible && currentSession.enforcementStarted
+            },
+        ).minOrNull()
+        scheduleTimerAt(nextWakeAt)
+    }
+
+    private fun updateVisibilityDebounce(appVisible: Boolean, nowEpochMs: Long) {
+        val previous = previousAppVisible
+        previousAppVisible = appVisible
+        when {
+            appVisible -> overlayDeferredUntilEpochMs = 0L
+            previous == null || previous -> {
+                // App-exit debounce: give the activity 750 ms to settle before
+                // displaying a full-screen enforcement surface.
+                overlayDeferredUntilEpochMs = nowEpochMs + APP_EXIT_DEBOUNCE_MS
+            }
+            overlayDeferredUntilEpochMs <= nowEpochMs -> overlayDeferredUntilEpochMs = 0L
+        }
+    }
+
+    private fun secureA11yServiceEnabled(): Boolean {
+        return app.getSecureA11yServices().contains(A11yService.a11yCn)
+    }
+
+    private fun resetAndStop(session: AccessibilityGuardSession) {
+        val reset = resetAccessibilityGuardSession(session)
+        if (reset != session) {
+            sessionStateFlow.value = reset
+        }
+        cancelAccessibilityGuardNotifications()
+        stopOverlayIfRunning()
+        overlayDeferredUntilEpochMs = 0L
+        scheduleTimerAt(null)
+    }
+
+    private fun stopOverlayIfRunning() {
+        if (overlayRunningFlow.value) {
+            AccessibilityGuardOverlayService.stop(context)
+        }
+    }
+
+    private fun reconcileOverlay(
+        session: AccessibilityGuardSession,
+        a11yEnabled: Boolean,
+        appVisible: Boolean,
+        nowEpochMs: Long,
+    ) {
+        val shouldShow = AccessibilityGuardPolicy.shouldShowOverlay(
+            AccessibilityGuardPolicy.OverlayInput(
+                enforcementStarted = session.enforcementStarted,
+                a11yEnabled = a11yEnabled,
+                appVisible = appVisible,
+                grantFlowUntilEpochMs = session.grantFlowUntilEpochMs,
+                nowEpochMs = nowEpochMs,
+                canDrawOverlays = canDrawOverlaysState.updateAndGet(),
+                screenInteractive = app.powerManager.isInteractive,
+                keyguardLocked = app.keyguardManager.isKeyguardLocked,
+            )
+        ) && nowEpochMs >= overlayDeferredUntilEpochMs
+
+        if (appVisible || !shouldShow) {
+            stopOverlayIfRunning()
+            return
+        }
+        if (overlayRunningFlow.value) return
+
+        // Check Settings.Secure again immediately before the enforcement
+        // side effect. A recovered component always wins over a stale flow.
+        if (secureA11yServiceEnabled()) {
+            resetAndStop(sessionStateFlow.value)
+            return
+        }
+        AccessibilityGuardOverlayService.start(context)
+    }
+
+    private fun scheduleTimerAt(targetEpochMs: Long?) {
+        if (targetEpochMs == null) {
+            timerJob?.cancel()
+            timerJob = null
+            timerTargetEpochMs = null
+            return
+        }
+        if (timerTargetEpochMs == targetEpochMs && timerJob?.isActive == true) return
+
+        timerJob?.cancel()
+        timerTargetEpochMs = targetEpochMs
+        timerJob = scope.launch {
+            delay((targetEpochMs - System.currentTimeMillis()).coerceAtLeast(0L))
+            if (timerTargetEpochMs == targetEpochMs) {
+                timerTargetEpochMs = null
+                timerJob = null
+                wake()
+            }
+        }
     }
 }
