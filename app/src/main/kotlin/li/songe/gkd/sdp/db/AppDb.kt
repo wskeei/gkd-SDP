@@ -107,6 +107,7 @@ import li.songe.gkd.sdp.util.json
 )
 @TypeConverters(DbConverters::class)
 abstract class AppDb : RoomDatabase() {
+    abstract fun digitalSelfDisciplineLockDao(): DigitalSelfDisciplineLockDao
     abstract fun subsItemDao(): SubsItem.SubsItemDao
     abstract fun snapshotDao(): Snapshot.SnapshotDao
     abstract fun subsConfigDao(): SubsConfig.SubsConfigDao
@@ -190,6 +191,7 @@ object DbSet {
         ).fallbackToDestructiveMigration(false).build()
     }
     val subsItemDao get() = db.subsItemDao()
+    val digitalSelfDisciplineLockDao get() = db.digitalSelfDisciplineLockDao()
     val subsConfigDao get() = db.subsConfigDao()
     val snapshotDao get() = db.snapshotDao()
     val actionLogDao get() = db.actionLogDao()
