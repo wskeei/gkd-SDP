@@ -41,6 +41,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.update
 import li.songe.gkd.sdp.META
@@ -98,6 +99,7 @@ import java.util.concurrent.atomic.AtomicLong
 
 private val accessibilityGuardRequestSequence = AtomicLong(0L)
 private val accessibilityGuardDesired = AtomicBoolean(false)
+private val accessibilityGuardStartedStatus = AtomicBoolean(false)
 
 @Composable
 fun useControlPage(): ScaffoldExt {
@@ -348,6 +350,10 @@ private fun disableAccessibilityGuard() {
         accessibilityGuardDesired.set(false)
         storeFlow.update { it.copy(accessibilityGuardEnabled = false) }
     }
+    if (accessibilityGuardStartedStatus.compareAndSet(true, false)) {
+        StatusService.stop()
+        storeFlow.update { it.copy(enableStatusService = false) }
+    }
     AccessibilityGuardRuntime.disableAndReset()
     AccessibilityGuardOverlayService.stop()
 }
@@ -363,27 +369,41 @@ private suspend fun enableAccessibilityGuard(
         return
     }
     if (!storeFlow.value.useA11y) {
-        accessibilityGuardDesired.set(false)
+        cleanupAccessibilityGuardActivation(requestId)
         toast("请先切换到无障碍模式")
         mainVm.navigatePage(AuthA11yRoute)
         return
     }
     if (!mainVm.a11yServiceEnabledFlow.value || !secureA11yServiceEnabled()) {
-        accessibilityGuardDesired.set(false)
+        cleanupAccessibilityGuardActivation(requestId)
         toast("请先开启无障碍权限")
         mainVm.navigatePage(AuthA11yRoute)
         return
     }
 
-    val statusWasEnabled = storeFlow.value.enableStatusService
-    requiredPermission(context, notificationState)
-    requiredPermission(context, foregroundServiceSpecialUseState)
-    requiredPermission(context, canDrawOverlaysState)
+    try {
+        requiredPermission(context, notificationState)
+        requiredPermission(context, foregroundServiceSpecialUseState)
+        requiredPermission(context, canDrawOverlaysState)
+    } catch (e: CancellationException) {
+        cleanupAccessibilityGuardActivation(requestId)
+        throw e
+    }
     if (requestId != accessibilityGuardRequestSequence.get()) return
-    if (!StatusService.requestStart(context)) {
-        if (requestId == accessibilityGuardRequestSequence.get()) {
-            accessibilityGuardDesired.set(false)
+    val statusWasEnabled = storeFlow.value.enableStatusService
+    if (!statusWasEnabled) accessibilityGuardStartedStatus.set(true)
+    try {
+        if (!StatusService.requestStart(context)) {
+            cleanupAccessibilityGuardActivation(requestId)
+            return
         }
+    } catch (e: CancellationException) {
+        cleanupAccessibilityGuardActivation(requestId)
+        throw e
+    }
+
+    if (requestId != accessibilityGuardRequestSequence.get()) {
+        cleanupAccessibilityGuardActivation(requestId)
         return
     }
 
@@ -400,18 +420,27 @@ private suspend fun enableAccessibilityGuard(
         !foregroundServiceSpecialUseState.updateAndGet() ||
         !canDrawOverlaysState.updateAndGet()
     ) {
-        accessibilityGuardDesired.set(false)
-        if (!statusWasEnabled) {
-            StatusService.stop()
-            storeFlow.update { it.copy(enableStatusService = false) }
-        }
+        cleanupAccessibilityGuardActivation(requestId)
         return
     }
     synchronized(accessibilityGuardRequestSequence) {
         if (requestId != accessibilityGuardRequestSequence.get()) return
         storeFlow.update { it.copy(accessibilityGuardEnabled = true) }
+        accessibilityGuardStartedStatus.set(false)
     }
     AccessibilityGuardRuntime.requestReconcile()
+}
+
+private fun cleanupAccessibilityGuardActivation(requestId: Long) {
+    if (requestId == accessibilityGuardRequestSequence.get()) {
+        accessibilityGuardDesired.set(false)
+    }
+    if (!accessibilityGuardDesired.get() &&
+        accessibilityGuardStartedStatus.compareAndSet(true, false)
+    ) {
+        StatusService.stop()
+        storeFlow.update { it.copy(enableStatusService = false) }
+    }
 }
 
 private fun secureA11yServiceEnabled(): Boolean {
