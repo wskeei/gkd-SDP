@@ -49,6 +49,16 @@ data class UsageGuardRecord(
         @Query("SELECT * FROM usage_guard_record WHERE app_id = :appId AND ended_at = 0 ORDER BY id DESC LIMIT 1")
         suspend fun getActiveRecord(appId: String): UsageGuardRecord?
 
+        @Query(
+            """
+            SELECT * FROM usage_guard_record
+            WHERE app_id = :appId
+            ORDER BY requested_at DESC, id DESC
+            LIMIT 1
+            """
+        )
+        suspend fun getLatestRecord(appId: String): UsageGuardRecord?
+
         @Query("SELECT * FROM usage_guard_record ORDER BY id DESC LIMIT :limit")
         fun queryLatest(limit: Int = 100): Flow<List<UsageGuardRecord>>
 
