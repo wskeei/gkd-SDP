@@ -68,6 +68,7 @@ import li.songe.gkd.sdp.a11y.topActivityFlow
 import li.songe.gkd.sdp.a11y.updateSystemDefaultAppId
 import li.songe.gkd.sdp.a11y.updateTopActivity
 import li.songe.gkd.sdp.permission.AuthDialog
+import li.songe.gkd.sdp.permission.canDrawOverlaysState
 import li.songe.gkd.sdp.permission.updatePermissionState
 import li.songe.gkd.sdp.service.A11yService
 import li.songe.gkd.sdp.service.AccessibilityGuardRuntime
@@ -366,6 +367,11 @@ class MainActivity : ComponentActivity() {
         LogUtils.d()
         activityVisibleCountFlow.update { it + 1 }
         AccessibilityGuardRuntime.onAppVisible()
+        if (META.isGkdChannel && storeFlow.value.accessibilityGuardEnabled &&
+            !canDrawOverlaysState.updateAndGet()
+        ) {
+            toast("无障碍权限守护需要悬浮窗权限，请重新授权")
+        }
         if (topActivityFlow.value.appId != META.appId) {
             synchronized(topActivityFlow) {
                 updateTopActivity(
