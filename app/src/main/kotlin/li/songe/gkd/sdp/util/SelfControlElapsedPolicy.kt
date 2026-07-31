@@ -44,7 +44,7 @@ object SelfControlElapsedPolicy {
         val minutes = (totalSeconds / 60) % 60
         val seconds = totalSeconds % 60
         val clock = "%02d:%02d:%02d".format(Locale.ROOT, hours, minutes, seconds)
-        return if (days > 0L) "$days天 $clock" else clock
+        return if (days > 0L) "${days}天 $clock" else clock
     }
 
     fun formatAbsolute(epochMs: Long, zoneId: ZoneId = ZoneId.systemDefault()): String {
