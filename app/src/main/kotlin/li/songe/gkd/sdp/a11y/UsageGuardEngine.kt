@@ -355,6 +355,10 @@ object UsageGuardEngine {
             putExtra("appId", record.appId)
             putExtra("recordId", record.id)
             putExtra("expiresAt", record.expiresAt)
+            putExtra(
+                UsageGuardCountdownOverlayService.EXTRA_REASON_TEXT,
+                record.reasonText,
+            )
         })
     }
 

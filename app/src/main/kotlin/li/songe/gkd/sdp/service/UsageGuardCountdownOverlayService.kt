@@ -48,6 +48,10 @@ import li.songe.gkd.sdp.util.px
 import kotlin.math.roundToInt
 
 class UsageGuardCountdownOverlayService : LifecycleService(), SavedStateRegistryOwner {
+    companion object {
+        const val EXTRA_REASON_TEXT = "reasonText"
+    }
+
     private val windowManager by lazy { getSystemService(WINDOW_SERVICE) as WindowManager }
     private var view: ComposeView? = null
     private var layoutParams: WindowManager.LayoutParams? = null
@@ -59,6 +63,9 @@ class UsageGuardCountdownOverlayService : LifecycleService(), SavedStateRegistry
     private var recordId: Long = 0L
     private var expiresAt: Long = 0L
     private var expiresAtState by mutableStateOf(0L)
+    private var reasonTextState by mutableStateOf(
+        UsageGuardCountdownOverlayPolicy.MISSING_REASON_TEXT,
+    )
     private var showTerminateConfirm by mutableStateOf(false)
 
     override fun onCreate() {
@@ -72,6 +79,9 @@ class UsageGuardCountdownOverlayService : LifecycleService(), SavedStateRegistry
         val incomingAppId = intent?.getStringExtra("appId").orEmpty()
         val incomingRecordId = intent?.getLongExtra("recordId", 0L) ?: 0L
         val incomingExpiresAt = intent?.getLongExtra("expiresAt", 0L) ?: 0L
+        val incomingReasonText = UsageGuardCountdownOverlayPolicy.displayReasonText(
+            intent?.getStringExtra(EXTRA_REASON_TEXT).orEmpty(),
+        )
         val now = System.currentTimeMillis()
         if (incomingAppId.isBlank() || incomingRecordId <= 0L || incomingExpiresAt <= now) {
             stopSelf()
@@ -88,6 +98,7 @@ class UsageGuardCountdownOverlayService : LifecycleService(), SavedStateRegistry
         recordId = incomingRecordId
         expiresAt = incomingExpiresAt
         expiresAtState = incomingExpiresAt
+        reasonTextState = incomingReasonText
         if (view == null) {
             showOverlay()
         } else if (shouldResetPosition) {
@@ -230,6 +241,7 @@ class UsageGuardCountdownOverlayService : LifecycleService(), SavedStateRegistry
         recordId = 0L
         expiresAt = 0L
         expiresAtState = 0L
+        reasonTextState = UsageGuardCountdownOverlayPolicy.MISSING_REASON_TEXT
         showTerminateConfirm = false
     }
 }
