@@ -4,6 +4,12 @@ import li.songe.gkd.sdp.data.UsageGuardRecord
 import java.util.Locale
 
 object UsageGuardCountdownOverlayPolicy {
+    const val MISSING_REASON_TEXT = "未填写申请理由"
+
+    fun displayReasonText(reasonText: String): String {
+        return reasonText.trim().ifEmpty { MISSING_REASON_TEXT }
+    }
+
     fun formatRemainingText(
         expiresAt: Long,
         now: Long = System.currentTimeMillis(),
