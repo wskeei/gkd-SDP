@@ -25,14 +25,18 @@ import kotlinx.coroutines.sync.withLock
 import li.songe.gkd.sdp.META
 import li.songe.gkd.sdp.app
 import li.songe.gkd.sdp.permission.canDrawOverlaysState
+import li.songe.gkd.sdp.permission.notificationState
 import li.songe.gkd.sdp.notif.cancelAccessibilityGuardNotifications
+import li.songe.gkd.sdp.notif.cancelAccessibilityGuardStatusNotification
 import li.songe.gkd.sdp.notif.postAccessibilityGuardNotification
+import li.songe.gkd.sdp.notif.postAccessibilityGuardStatusNotification
 import li.songe.gkd.sdp.store.AccessibilityGuardSession
 import li.songe.gkd.sdp.store.accessibilityGuardSessionFlow
 import li.songe.gkd.sdp.store.MutableStoreStateFlow
 import li.songe.gkd.sdp.store.SettingsStore
 import li.songe.gkd.sdp.store.storeFlow
 import li.songe.gkd.sdp.util.AccessibilityGuardPolicy
+import li.songe.gkd.sdp.util.AccessibilityGuardNotificationPolicy
 import li.songe.gkd.sdp.util.LogUtils
 
 /**
@@ -207,11 +211,19 @@ class AccessibilityGuardCoordinator(
         val targetEpochMs: Long,
     )
 
+    private data class StatusNotificationToken(
+        val generation: Long,
+        val nextReminderIndex: Int?,
+        val targetEpochMs: Long?,
+        val enforcementStarted: Boolean,
+    )
+
     private val reconcileMutex = Mutex()
     private val wakeChannel = Channel<Unit>(Channel.CONFLATED)
     private var coordinatorJob: Job? = null
     private var timerJob: Job? = null
     private var timerToken: TimerToken? = null
+    private var statusNotificationToken: StatusNotificationToken? = null
     private var nextTimerTokenId = 0L
     private var screenReceiverRegistered = false
     private var previousMode: AccessibilityGuardPolicy.SessionMode? = null
@@ -247,6 +259,7 @@ class AccessibilityGuardCoordinator(
                     activityVisibleCountFlow.map { Unit },
                     overlayRunningFlow.map { Unit },
                     canDrawOverlaysState.stateFlow.map { Unit },
+                    notificationState.stateFlow.map { Unit },
                 ).collect { wake() }
             }
             launch { runtimeWakeups.collect { wake() } }
@@ -264,6 +277,7 @@ class AccessibilityGuardCoordinator(
         timerJob?.cancel()
         timerJob = null
         timerToken = null
+        statusNotificationToken = null
         // Cancel unconditionally: isRunning may still be false while a
         // startService request is queued. The overlay service's request token
         // then fences that in-flight start during StatusService teardown.
@@ -333,6 +347,8 @@ class AccessibilityGuardCoordinator(
                 // app owns the foreground. No reminder timer or enforcement
                 // overlay may survive this temporary shutdown.
                 scheduleTimerAt(null)
+                statusNotificationToken = null
+                cancelAccessibilityGuardStatusNotification()
                 stopOverlayIfRunning()
                 return
             }
@@ -421,6 +437,8 @@ class AccessibilityGuardCoordinator(
             }
         }
 
+        reconcileStatusNotification(sessionStateFlow.value)
+
         val currentSession = sessionStateFlow.value
         reconcileOverlay(
             session = currentSession,
@@ -505,9 +523,41 @@ class AccessibilityGuardCoordinator(
             logSessionTransition(session, reset, "reset")
         }
         cancelAccessibilityGuardNotifications()
+        statusNotificationToken = null
         stopOverlayIfRunning()
         overlayDeferredUntilEpochMs = 0L
         scheduleTimerAt(null)
+    }
+
+    /** Posts the stable T+0/next-checkpoint notification exactly once per token. */
+    private fun reconcileStatusNotification(session: AccessibilityGuardSession) {
+        val status = AccessibilityGuardNotificationPolicy.status(
+            disabledAtEpochMs = session.disabledAtEpochMs,
+            lastReminderIndex = session.lastReminderIndex,
+            enforcementStarted = session.enforcementStarted,
+        ) ?: run {
+            statusNotificationToken = null
+            cancelAccessibilityGuardStatusNotification()
+            return
+        }
+        val token = StatusNotificationToken(
+            generation = session.generation,
+            nextReminderIndex = status.nextReminderIndex,
+            targetEpochMs = status.targetEpochMs,
+            enforcementStarted = session.enforcementStarted,
+        )
+        if (statusNotificationToken == token) return
+        if (!sideEffectFenceOpen(session.generation)) return
+        if (secureA11yServiceEnabled()) {
+            resetAndStop(sessionStateFlow.value)
+            return
+        }
+        if (!sideEffectFenceOpen(session.generation)) return
+        // A denied notification permission is a system-level boundary. Leave
+        // the token unset so a later permission-state wakeup can retry.
+        if (!notificationState.updateAndGet()) return
+        postAccessibilityGuardStatusNotification(status)
+        statusNotificationToken = token
     }
 
     private fun stopOverlayIfRunning() {

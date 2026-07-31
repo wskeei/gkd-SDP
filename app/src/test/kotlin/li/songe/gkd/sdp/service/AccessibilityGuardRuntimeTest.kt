@@ -139,4 +139,17 @@ class AccessibilityGuardRuntimeTest {
             )
         )
     }
+
+    @Test
+    fun accessibilityGuardRequestFenceRejectsSupersededOrCancelledRequests() {
+        assertTrue(isAccessibilityGuardRequestCurrent(4L, 4L, desired = true))
+        assertFalse(isAccessibilityGuardRequestCurrent(4L, 5L, desired = true))
+        assertFalse(isAccessibilityGuardRequestCurrent(4L, 4L, desired = false))
+    }
+
+    @Test
+    fun pendingActivationMustBeInvalidatedBeforeAUserDisableCanReturn() {
+        assertTrue(shouldInvalidateAccessibilityGuardActivation(activationInFlight = true))
+        assertFalse(shouldInvalidateAccessibilityGuardActivation(activationInFlight = false))
+    }
 }

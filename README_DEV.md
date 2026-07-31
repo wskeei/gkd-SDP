@@ -132,14 +132,37 @@ tests only validate the configured flag contract.
 
 ### Accessibility Guard
 
-The accessibility guard is a `gkd`-channel feature. The `play` flavor keeps the shared code compiling, but strict guard behavior is disabled there. It depends on all of the following runtime capabilities:
+The accessibility guard is a `gkd`-channel feature exposed under the Digital
+Self-Discipline page. The `play` flavor keeps the shared code compiling, but
+strict guard behavior is disabled there. Enabling the guard does **not** require
+the app's accessibility component to be running; it requires the A11y mode plus
+the following runtime capabilities:
 
 - notification permission and an enabled notification channel for the reminder banners
 - the `StatusService` special-use foreground service staying available
 - the Android “draw over other apps” permission for the final blocking overlay
-- the app's accessibility service permission
+- the app's accessibility service state is read at runtime to decide whether a
+  tracking session is needed (the guard may be enabled while that state is off)
 
-The guard's production schedule is fixed at cumulative offsets of `[15, 25, 30, 33, 35, 36]` minutes after accessibility is disabled. It uses local notifications and the existing foreground service; it does not use FCM, WorkManager, exact alarms, or a full-screen notification intent. The `StatusService` is therefore part of the guard's runtime contract and should remain enabled while the feature is in use.
+The guard's production schedule is fixed at cumulative offsets of
+`[15, 25, 30, 33, 35, 36]` minutes after accessibility is disabled. At `T+0`
+the coordinator posts one ongoing status notification with a SystemUI
+chronometer to the next checkpoint; the six high-priority stage notifications
+remain separate. The notification opens `gkd://page/4`, which routes to the
+Digital Self-Discipline page. It uses local notifications and the existing
+foreground service; it does not use FCM, WorkManager, exact alarms, or a
+full-screen notification intent. The `StatusService` is therefore part of the
+guard's runtime contract and should remain enabled while the feature is in use.
+
+Only an explicit successful enable arms the persisted enrollment marker for
+automatic recovery. A later user disable leaves that marker armed, so
+`AutoReenableEnforcer` may restore the guard at its next legal check. Guard
+disable is serialized and checks the read-only
+`DigitalSelfDisciplineLockDao` plus the shared daily disable quota; any active
+digital self-discipline lock blocks the action. The home-page “服务状态” A11y
+switch is intentionally one-way: an on gesture starts/repairs the service, an
+off gesture only explains the system-settings path and never calls
+`AccessibilityService.disableSelf()`.
 
 These platform limits are expected and should be reflected in tests and support guidance:
 

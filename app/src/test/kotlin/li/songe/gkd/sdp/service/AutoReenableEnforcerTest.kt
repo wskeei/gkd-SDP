@@ -32,4 +32,11 @@ class AutoReenableEnforcerTest {
     fun defaultOperationsIncludeUsageGuardSwitchRecovery() {
         assertTrue(AutoReenableEnforcer.defaultOperationNames().contains("usage_guard_switch"))
     }
+
+    @Test
+    fun defaultOperationsIncludeAccessibilityGuardRecovery() {
+        assertTrue(
+            AutoReenableEnforcer.defaultOperationNames().contains("accessibility_guard_switch")
+        )
+    }
 }

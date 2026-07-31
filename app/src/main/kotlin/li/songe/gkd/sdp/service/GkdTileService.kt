@@ -53,32 +53,36 @@ private fun modifyA11yRun(block: suspend () -> Unit) {
     }
 }
 
+private suspend fun enableOrRepairA11yService() {
+    if (A11yService.isRunning.value) return
+    if (!writeSecureSettingsState.updateAndGet()) {
+        if (!writeSecureSettingsState.value) {
+            toast("请先授予「写入安全设置权限」")
+            return
+        }
+    }
+    val names = app.getSecureA11yServices()
+    app.putSecureInt(Settings.Secure.ACCESSIBILITY_ENABLED, 1)
+    if (names.contains(A11yService.a11yCn)) { // 当前无障碍异常, 重启服务
+        names.remove(A11yService.a11yCn)
+        app.putSecureA11yServices(names)
+        delay(A11Y_AWAIT_FIX_TIME)
+    }
+    names.add(A11yService.a11yCn)
+    app.putSecureA11yServices(names)
+    delay(A11Y_AWAIT_START_TIME)
+    // https://github.com/orgs/gkd-kit/discussions/799
+    if (!A11yService.isRunning.value) {
+        toast("开启无障碍失败")
+        accessRestrictedSettingsShowFlow.value = true
+    }
+}
+
 private suspend fun switchA11yService() {
     if (A11yService.isRunning.value) {
         A11yService.instance?.disableSelf()
     } else {
-        if (!writeSecureSettingsState.updateAndGet()) {
-            if (!writeSecureSettingsState.value) {
-                toast("请先授予「写入安全设置权限」")
-                return
-            }
-        }
-        val names = app.getSecureA11yServices()
-        app.putSecureInt(Settings.Secure.ACCESSIBILITY_ENABLED, 1)
-        if (names.contains(A11yService.a11yCn)) { // 当前无障碍异常, 重启服务
-            names.remove(A11yService.a11yCn)
-            app.putSecureA11yServices(names)
-            delay(A11Y_AWAIT_FIX_TIME)
-        }
-        names.add(A11yService.a11yCn)
-        app.putSecureA11yServices(names)
-        delay(A11Y_AWAIT_START_TIME)
-        // https://github.com/orgs/gkd-kit/discussions/799
-        if (!A11yService.isRunning.value) {
-            toast("开启无障碍失败")
-            accessRestrictedSettingsShowFlow.value = true
-            return
-        }
+        enableOrRepairA11yService()
     }
 }
 
@@ -93,6 +97,15 @@ private fun switchAutomationService() {
 fun switchAutomatorService() = modifyA11yRun {
     if (currentAppUseA11y) {
         switchA11yService()
+    } else {
+        switchAutomationService()
+    }
+}
+
+/** Explicit one-way command used by the home service status switch. */
+fun requestStartOrRepairAutomatorService() = modifyA11yRun {
+    if (currentAppUseA11y) {
+        enableOrRepairA11yService()
     } else {
         switchAutomationService()
     }
