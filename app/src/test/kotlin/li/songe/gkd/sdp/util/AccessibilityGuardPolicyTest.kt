@@ -27,11 +27,11 @@ class AccessibilityGuardPolicyTest {
             nowEpochMs = disabledAt + 15L * AccessibilityGuardPolicy.MINUTE_MS - 1L,
         )
 
-        assertNull(evaluation.reminderIndex)
-        assertFalse(evaluation.enforce)
+        assertNull(evaluation.dueReminderIndex)
+        assertFalse(evaluation.startEnforcement)
         assertEquals(
             disabledAt + 15L * AccessibilityGuardPolicy.MINUTE_MS,
-            evaluation.nextWakeAt,
+            evaluation.nextWakeAtEpochMs,
         )
     }
 
@@ -45,8 +45,8 @@ class AccessibilityGuardPolicyTest {
                 nowEpochMs = disabledAt + offset,
             )
 
-            assertEquals(index, evaluation.reminderIndex)
-            assertEquals(index == AccessibilityGuardPolicy.REMINDER_OFFSETS_MS.lastIndex, evaluation.enforce)
+            assertEquals(index, evaluation.dueReminderIndex)
+            assertEquals(index == AccessibilityGuardPolicy.REMINDER_OFFSETS_MS.lastIndex, evaluation.startEnforcement)
         }
     }
 
@@ -59,11 +59,11 @@ class AccessibilityGuardPolicyTest {
             nowEpochMs = disabledAt + 34L * AccessibilityGuardPolicy.MINUTE_MS,
         )
 
-        assertEquals(3, evaluation.reminderIndex)
-        assertFalse(evaluation.enforce)
+        assertEquals(3, evaluation.dueReminderIndex)
+        assertFalse(evaluation.startEnforcement)
         assertEquals(
             disabledAt + 35L * AccessibilityGuardPolicy.MINUTE_MS,
-            evaluation.nextWakeAt,
+            evaluation.nextWakeAtEpochMs,
         )
     }
 
@@ -76,9 +76,9 @@ class AccessibilityGuardPolicyTest {
             nowEpochMs = disabledAt + 36L * AccessibilityGuardPolicy.MINUTE_MS,
         )
 
-        assertEquals(5, evaluation.reminderIndex)
-        assertTrue(evaluation.enforce)
-        assertNull(evaluation.nextWakeAt)
+        assertEquals(5, evaluation.dueReminderIndex)
+        assertTrue(evaluation.startEnforcement)
+        assertNull(evaluation.nextWakeAtEpochMs)
     }
 
     @Test
@@ -90,46 +90,75 @@ class AccessibilityGuardPolicyTest {
             nowEpochMs = disabledAt + 90L * AccessibilityGuardPolicy.MINUTE_MS,
         )
 
-        assertNull(evaluation.reminderIndex)
-        assertFalse(evaluation.enforce)
-        assertNull(evaluation.nextWakeAt)
+        assertNull(evaluation.dueReminderIndex)
+        assertFalse(evaluation.startEnforcement)
+        assertNull(evaluation.nextWakeAtEpochMs)
     }
 
     @Test
     fun temporaryBlockedShutdownIsIgnoredButManualDisableIsGuarded() {
         assertEquals(
-            AccessibilityGuardPolicy.SessionMode.TEMPORARY_SHUTDOWN,
+            AccessibilityGuardPolicy.SessionMode.SUPPRESSED_TEMPORARY,
             AccessibilityGuardPolicy.sessionMode(
                 featureEnabled = true,
+                strictChannelAvailable = true,
                 useA11yMode = true,
-                temporaryShutdown = true,
+                a11yEnabled = false,
+                temporaryShutdownExpected = true,
                 currentAppBlocked = true,
             ),
         )
         assertEquals(
-            AccessibilityGuardPolicy.SessionMode.MANUAL_DISABLED,
+            AccessibilityGuardPolicy.SessionMode.TRACK,
             AccessibilityGuardPolicy.sessionMode(
                 featureEnabled = true,
+                strictChannelAvailable = true,
                 useA11yMode = true,
-                temporaryShutdown = false,
+                a11yEnabled = false,
+                temporaryShutdownExpected = false,
                 currentAppBlocked = true,
             ),
         )
-        assertEquals(
-            AccessibilityGuardPolicy.SessionMode.DISABLED,
-            AccessibilityGuardPolicy.sessionMode(
-                featureEnabled = false,
+        assertTrue(
+            AccessibilityGuardPolicy.shouldGuard(
+                featureEnabled = true,
+                strictChannelAvailable = true,
                 useA11yMode = true,
-                temporaryShutdown = false,
+                a11yEnabled = false,
+                temporaryShutdownExpected = false,
+                currentAppBlocked = true,
+            )
+        )
+        assertEquals(
+            AccessibilityGuardPolicy.SessionMode.TRACK,
+            AccessibilityGuardPolicy.sessionMode(
+                featureEnabled = true,
+                strictChannelAvailable = true,
+                useA11yMode = true,
+                a11yEnabled = false,
+                temporaryShutdownExpected = true,
                 currentAppBlocked = false,
             ),
         )
         assertEquals(
-            AccessibilityGuardPolicy.SessionMode.DISABLED,
+            AccessibilityGuardPolicy.SessionMode.RESET,
+            AccessibilityGuardPolicy.sessionMode(
+                featureEnabled = false,
+                strictChannelAvailable = true,
+                useA11yMode = true,
+                a11yEnabled = false,
+                temporaryShutdownExpected = false,
+                currentAppBlocked = false,
+            ),
+        )
+        assertEquals(
+            AccessibilityGuardPolicy.SessionMode.RESET,
             AccessibilityGuardPolicy.sessionMode(
                 featureEnabled = true,
+                strictChannelAvailable = true,
                 useA11yMode = false,
-                temporaryShutdown = false,
+                a11yEnabled = false,
+                temporaryShutdownExpected = false,
                 currentAppBlocked = false,
             ),
         )
@@ -138,24 +167,24 @@ class AccessibilityGuardPolicyTest {
     @Test
     fun strictChannelUnavailableDisablesTheGuard() {
         assertEquals(
-            AccessibilityGuardPolicy.SessionMode.DISABLED,
+            AccessibilityGuardPolicy.SessionMode.RESET,
             AccessibilityGuardPolicy.sessionMode(
                 featureEnabled = true,
-                useA11yMode = true,
-                temporaryShutdown = false,
-                currentAppBlocked = false,
                 strictChannelAvailable = false,
+                useA11yMode = true,
                 a11yEnabled = false,
+                temporaryShutdownExpected = false,
+                currentAppBlocked = false,
             ),
         )
         assertFalse(
             AccessibilityGuardPolicy.shouldGuard(
                 featureEnabled = true,
-                useA11yMode = true,
-                temporaryShutdown = false,
-                currentAppBlocked = false,
                 strictChannelAvailable = false,
+                useA11yMode = true,
                 a11yEnabled = false,
+                temporaryShutdownExpected = false,
+                currentAppBlocked = false,
             )
         )
     }
@@ -163,24 +192,24 @@ class AccessibilityGuardPolicyTest {
     @Test
     fun recoveredAccessibilityPermissionResetsTheGuardSession() {
         assertEquals(
-            AccessibilityGuardPolicy.SessionMode.DISABLED,
+            AccessibilityGuardPolicy.SessionMode.RESET,
             AccessibilityGuardPolicy.sessionMode(
                 featureEnabled = true,
-                useA11yMode = true,
-                temporaryShutdown = false,
-                currentAppBlocked = false,
                 strictChannelAvailable = true,
+                useA11yMode = true,
                 a11yEnabled = true,
+                temporaryShutdownExpected = false,
+                currentAppBlocked = false,
             ),
         )
         assertFalse(
             AccessibilityGuardPolicy.shouldGuard(
                 featureEnabled = true,
-                useA11yMode = true,
-                temporaryShutdown = false,
-                currentAppBlocked = false,
                 strictChannelAvailable = true,
+                useA11yMode = true,
                 a11yEnabled = true,
+                temporaryShutdownExpected = false,
+                currentAppBlocked = false,
             )
         )
     }
@@ -188,35 +217,33 @@ class AccessibilityGuardPolicyTest {
     @Test
     fun overlayRequiresEnforcementAndHidesForGrantFlowOrVisibleApp() {
         val base = AccessibilityGuardPolicy.OverlayInput(
-            sessionMode = AccessibilityGuardPolicy.SessionMode.MANUAL_DISABLED,
             enforcementStarted = true,
-            accessibilityEnabled = false,
+            a11yEnabled = false,
             appVisible = false,
-            grantFlowActive = false,
-            overlayPermissionGranted = true,
-            screenInteractive = true,
+            grantFlowUntilEpochMs = disabledAt,
             nowEpochMs = disabledAt,
+            canDrawOverlays = true,
+            screenInteractive = true,
+            keyguardLocked = false,
         )
 
         assertTrue(AccessibilityGuardPolicy.shouldShowOverlay(base))
         assertFalse(AccessibilityGuardPolicy.shouldShowOverlay(base.copy(enforcementStarted = false)))
-        assertFalse(AccessibilityGuardPolicy.shouldShowOverlay(base.copy(accessibilityEnabled = true)))
+        assertFalse(AccessibilityGuardPolicy.shouldShowOverlay(base.copy(a11yEnabled = true)))
         assertFalse(AccessibilityGuardPolicy.shouldShowOverlay(base.copy(appVisible = true)))
-        assertFalse(AccessibilityGuardPolicy.shouldShowOverlay(base.copy(grantFlowActive = true)))
     }
 
     @Test
-    fun overlayRequiresPermissionAndInteractiveScreenAndHonorsSuppression() {
+    fun overlayRequiresPermissionAndInteractiveScreenAndHonorsGrantTimestamp() {
         val base = AccessibilityGuardPolicy.OverlayInput(
-            sessionMode = AccessibilityGuardPolicy.SessionMode.MANUAL_DISABLED,
             enforcementStarted = true,
-            accessibilityEnabled = false,
+            a11yEnabled = false,
             appVisible = false,
-            grantFlowActive = false,
-            overlayPermissionGranted = true,
-            screenInteractive = true,
-            suppressedUntilEpochMs = disabledAt + 1_000L,
+            grantFlowUntilEpochMs = disabledAt + 1_000L,
             nowEpochMs = disabledAt,
+            canDrawOverlays = true,
+            screenInteractive = true,
+            keyguardLocked = false,
         )
 
         assertFalse(AccessibilityGuardPolicy.shouldShowOverlay(base))
@@ -225,13 +252,9 @@ class AccessibilityGuardPolicyTest {
                 base.copy(nowEpochMs = disabledAt + 1_000L)
             )
         )
-        assertFalse(AccessibilityGuardPolicy.shouldShowOverlay(base.copy(overlayPermissionGranted = false)))
+        assertFalse(AccessibilityGuardPolicy.shouldShowOverlay(base.copy(canDrawOverlays = false)))
         assertFalse(AccessibilityGuardPolicy.shouldShowOverlay(base.copy(screenInteractive = false)))
-        assertFalse(
-            AccessibilityGuardPolicy.shouldShowOverlay(
-                base.copy(sessionMode = AccessibilityGuardPolicy.SessionMode.TEMPORARY_SHUTDOWN)
-            )
-        )
+        assertFalse(AccessibilityGuardPolicy.shouldShowOverlay(base.copy(keyguardLocked = true)))
     }
 
     @Test
@@ -243,8 +266,8 @@ class AccessibilityGuardPolicyTest {
             nowEpochMs = disabledAt + 90L * AccessibilityGuardPolicy.MINUTE_MS,
         )
 
-        assertNull(evaluation.reminderIndex)
-        assertFalse(evaluation.enforce)
-        assertNull(evaluation.nextWakeAt)
+        assertNull(evaluation.dueReminderIndex)
+        assertFalse(evaluation.startEnforcement)
+        assertNull(evaluation.nextWakeAtEpochMs)
     }
 }

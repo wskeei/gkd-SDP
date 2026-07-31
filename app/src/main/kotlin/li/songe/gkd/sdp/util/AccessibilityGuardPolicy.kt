@@ -20,27 +20,30 @@ object AccessibilityGuardPolicy {
         .toLongArray()
 
     enum class SessionMode {
-        /** The feature is disabled or the app is not operating in A11y mode. */
-        DISABLED,
+        /** No tracking session is needed or the permission has recovered. */
+        RESET,
 
         /** A local/temporary shutdown while a blocked app is in the foreground. */
-        TEMPORARY_SHUTDOWN,
+        SUPPRESSED_TEMPORARY,
 
         /** A user/manual permission loss that should start the guard session. */
-        MANUAL_DISABLED,
+        TRACK,
     }
 
     data class Evaluation(
         /** The highest newly due reminder index, or null when no reminder is due. */
-        val reminderIndex: Int?,
+        val dueReminderIndex: Int?,
         /** Whether the final checkpoint should begin enforcement now. */
-        val enforce: Boolean,
+        val startEnforcement: Boolean,
         /** Absolute time at which the next reminder becomes due, if any. */
-        val nextWakeAt: Long?,
+        val nextWakeAtEpochMs: Long?,
     ) {
-        // Descriptive aliases keep callers readable without duplicating policy state.
-        val shouldEnforce: Boolean get() = enforce
-        val nextReminderAt: Long? get() = nextWakeAt
+        // Backward-compatible aliases for callers that adopted the initial draft API.
+        val reminderIndex: Int? get() = dueReminderIndex
+        val enforce: Boolean get() = startEnforcement
+        val nextWakeAt: Long? get() = nextWakeAtEpochMs
+        val shouldEnforce: Boolean get() = startEnforcement
+        val nextReminderAt: Long? get() = nextWakeAtEpochMs
     }
 
     /**
@@ -49,19 +52,19 @@ object AccessibilityGuardPolicy {
      */
     fun sessionMode(
         featureEnabled: Boolean,
+        strictChannelAvailable: Boolean,
         useA11yMode: Boolean,
-        temporaryShutdown: Boolean,
+        a11yEnabled: Boolean,
+        temporaryShutdownExpected: Boolean,
         currentAppBlocked: Boolean,
-        strictChannelAvailable: Boolean = true,
-        a11yEnabled: Boolean = false,
     ): SessionMode {
         // A recovered permission ends the current guard session. The normal
         // guard trigger is therefore represented by a11yEnabled == false.
         if (!featureEnabled || !useA11yMode || !strictChannelAvailable || a11yEnabled) {
-            return SessionMode.DISABLED
+            return SessionMode.RESET
         }
-        if (temporaryShutdown && currentAppBlocked) return SessionMode.TEMPORARY_SHUTDOWN
-        return SessionMode.MANUAL_DISABLED
+        if (temporaryShutdownExpected && currentAppBlocked) return SessionMode.SUPPRESSED_TEMPORARY
+        return SessionMode.TRACK
     }
 
     /**
@@ -76,23 +79,23 @@ object AccessibilityGuardPolicy {
         disabledAtEpochMs: Long,
         lastReminderIndex: Int,
         enforcementStarted: Boolean,
-        nowEpochMs: Long = System.currentTimeMillis(),
+        nowEpochMs: Long,
     ): Evaluation {
         if (disabledAtEpochMs <= 0L) {
             return Evaluation(
-                reminderIndex = null,
-                enforce = false,
-                nextWakeAt = null,
+                dueReminderIndex = null,
+                startEnforcement = false,
+                nextWakeAtEpochMs = null,
             )
         }
 
         val elapsedMs = (nowEpochMs - disabledAtEpochMs).coerceAtLeast(0L)
         val highestDueIndex = REMINDER_OFFSETS_MS.indexOfLast { elapsedMs >= it }
-        val reminderIndex = highestDueIndex
+        val dueReminderIndex = highestDueIndex
             .takeIf { it >= 0 && it > lastReminderIndex }
-        val enforce = !enforcementStarted &&
+        val startEnforcement = !enforcementStarted &&
             highestDueIndex == REMINDER_OFFSETS_MS.lastIndex
-        val nextWakeAt = if (enforcementStarted) {
+        val nextWakeAtEpochMs = if (enforcementStarted) {
             null
         } else {
             REMINDER_OFFSETS_MS
@@ -101,57 +104,59 @@ object AccessibilityGuardPolicy {
         }
 
         return Evaluation(
-            reminderIndex = reminderIndex,
-            enforce = enforce,
-            nextWakeAt = nextWakeAt,
+            dueReminderIndex = dueReminderIndex,
+            startEnforcement = startEnforcement,
+            nextWakeAtEpochMs = nextWakeAtEpochMs,
         )
     }
 
     /** Convenience predicate used by the coordinator when beginning a session. */
     fun shouldGuard(
         featureEnabled: Boolean,
+        strictChannelAvailable: Boolean,
         useA11yMode: Boolean,
-        temporaryShutdown: Boolean,
+        a11yEnabled: Boolean,
+        temporaryShutdownExpected: Boolean,
         currentAppBlocked: Boolean,
-        strictChannelAvailable: Boolean = true,
-        a11yEnabled: Boolean = false,
     ): Boolean {
         return sessionMode(
             featureEnabled = featureEnabled,
-            useA11yMode = useA11yMode,
-            temporaryShutdown = temporaryShutdown,
-            currentAppBlocked = currentAppBlocked,
             strictChannelAvailable = strictChannelAvailable,
+            useA11yMode = useA11yMode,
             a11yEnabled = a11yEnabled,
-        ) == SessionMode.MANUAL_DISABLED
+            temporaryShutdownExpected = temporaryShutdownExpected,
+            currentAppBlocked = currentAppBlocked,
+        ) == SessionMode.TRACK
     }
 
     data class OverlayInput(
-        val sessionMode: SessionMode = SessionMode.DISABLED,
-        val enforcementStarted: Boolean = false,
-        val accessibilityEnabled: Boolean = false,
-        val appVisible: Boolean = false,
-        val grantFlowActive: Boolean = false,
-        val overlayPermissionGranted: Boolean = false,
-        val screenInteractive: Boolean = true,
-        /** A short debounce/suppression window after the CTA opens the app. */
-        val suppressedUntilEpochMs: Long = 0L,
-        val nowEpochMs: Long = System.currentTimeMillis(),
+        val enforcementStarted: Boolean,
+        val a11yEnabled: Boolean,
+        val appVisible: Boolean,
+        /** Grant/settings flow suppression ends at this absolute timestamp. */
+        val grantFlowUntilEpochMs: Long,
+        val nowEpochMs: Long,
+        val canDrawOverlays: Boolean,
+        val screenInteractive: Boolean,
+        val keyguardLocked: Boolean,
     ) {
-        val a11yEnabled: Boolean get() = accessibilityEnabled
+        // Aliases for callers that adopted the initial draft API.
+        val accessibilityEnabled: Boolean get() = a11yEnabled
+        val grantFlowActive: Boolean get() = nowEpochMs < grantFlowUntilEpochMs
+        val overlayPermissionGranted: Boolean get() = canDrawOverlays
+        val suppressedUntilEpochMs: Long get() = grantFlowUntilEpochMs
     }
 
     /**
      * Determines whether the full-screen overlay may be displayed right now.
      * The system settings grant flow, visible app UI, non-interactive screen,
-     * missing overlay permission and temporary shutdowns all suppress it.
+     * missing overlay permission and a locked keyguard all suppress it.
      */
     fun shouldShowOverlay(input: OverlayInput): Boolean {
-        if (input.sessionMode != SessionMode.MANUAL_DISABLED) return false
-        if (!input.enforcementStarted || input.accessibilityEnabled) return false
-        if (input.appVisible || input.grantFlowActive) return false
-        if (!input.overlayPermissionGranted || !input.screenInteractive) return false
-        if (input.nowEpochMs < input.suppressedUntilEpochMs) return false
+        if (!input.enforcementStarted || input.a11yEnabled) return false
+        if (input.appVisible) return false
+        if (input.nowEpochMs < input.grantFlowUntilEpochMs) return false
+        if (!input.canDrawOverlays || !input.screenInteractive || input.keyguardLocked) return false
         return true
     }
 }
