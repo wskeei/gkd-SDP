@@ -96,6 +96,7 @@ abstract class A11yService : AccessibilityService(), OnA11yLife by DefaultA11yLi
     override fun shutdown(temp: Boolean) {
         if (temp) {
             tempShutdownFlag = true
+            AccessibilityGuardRuntime.markTemporaryShutdownExpected()
         }
         disableSelf()
     }
@@ -112,6 +113,7 @@ abstract class A11yService : AccessibilityService(), OnA11yLife by DefaultA11yLi
         onDestroyed { instance = null }
         onCreated {
             if (currentAppUseA11y) {
+                AccessibilityGuardRuntime.clearTemporaryShutdownExpected()
                 updateEnableAutomator(true)
             } else {
                 toast("当前为自动化模式，无障碍将自动关闭", forced = true)
@@ -144,6 +146,7 @@ abstract class A11yService : AccessibilityService(), OnA11yLife by DefaultA11yLi
             connected = true
             toast("无障碍已启动")
             if (currentAppUseA11y) {
+                AccessibilityGuardRuntime.clearTemporaryShutdownExpected()
                 ruleEngine.onA11yConnected()
             }
         }
