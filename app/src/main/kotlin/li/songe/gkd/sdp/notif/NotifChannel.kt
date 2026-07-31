@@ -10,6 +10,7 @@ sealed class NotifChannel(
     val id: String,
     val name: String? = null,
     val desc: String? = null,
+    val importance: Int = NotificationManager.IMPORTANCE_LOW,
 ) {
     data object Default : NotifChannel(
         id = "0",
@@ -25,10 +26,22 @@ sealed class NotifChannel(
         name = "专注模式通知",
         desc = "专注会话开始和结束通知",
     )
+
+    data object AccessibilityGuard : NotifChannel(
+        id = "3",
+        name = "无障碍权限守护",
+        desc = "无障碍权限关闭后的分阶段提醒",
+        importance = NotificationManager.IMPORTANCE_HIGH,
+    )
 }
 
 fun initChannel() {
-    val channels = arrayOf(NotifChannel.Default, NotifChannel.Snapshot, NotifChannel.FocusMode)
+    val channels = arrayOf(
+        NotifChannel.Default,
+        NotifChannel.Snapshot,
+        NotifChannel.FocusMode,
+        NotifChannel.AccessibilityGuard,
+    )
     val manager = NotificationManagerCompat.from(app)
     // delete old channels
     manager.notificationChannels.filter { channels.none { c -> c.id == it.id } }.forEach {
@@ -39,7 +52,7 @@ fun initChannel() {
         val channel = NotificationChannel(
             it.id,
             it.name ?: META.appName,
-            NotificationManager.IMPORTANCE_LOW
+            it.importance,
         ).apply {
             description = it.desc
         }
