@@ -407,13 +407,6 @@ private suspend fun enableAccessibilityGuard(
         return
     }
 
-    if (requestId != accessibilityGuardRequestSequence.get()) {
-        if (!accessibilityGuardDesired.get() && !statusWasEnabled) {
-            StatusService.stop()
-            storeFlow.update { it.copy(enableStatusService = false) }
-        }
-        return
-    }
     if (!storeFlow.value.useA11y || !mainVm.a11yServiceEnabledFlow.value ||
         !secureA11yServiceEnabled() ||
         !notificationState.updateAndGet() ||
