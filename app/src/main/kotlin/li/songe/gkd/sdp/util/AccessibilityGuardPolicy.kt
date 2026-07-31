@@ -58,12 +58,16 @@ object AccessibilityGuardPolicy {
         temporaryShutdownExpected: Boolean,
         currentAppBlocked: Boolean,
     ): SessionMode {
-        // A recovered permission ends the current guard session. The normal
-        // guard trigger is therefore represented by a11yEnabled == false.
-        if (!featureEnabled || !useA11yMode || !strictChannelAvailable || a11yEnabled) {
+        if (!featureEnabled || !useA11yMode || !strictChannelAvailable) {
             return SessionMode.RESET
         }
+        // The marker is persisted immediately before disableSelf(). During
+        // that short transition the component can still report enabled; keep
+        // the pending temporary shutdown suppressed until the removal lands.
         if (temporaryShutdownExpected && currentAppBlocked) return SessionMode.SUPPRESSED_TEMPORARY
+        // A recovered permission ends the current guard session. The normal
+        // guard trigger is therefore represented by a11yEnabled == false.
+        if (a11yEnabled) return SessionMode.RESET
         return SessionMode.TRACK
     }
 

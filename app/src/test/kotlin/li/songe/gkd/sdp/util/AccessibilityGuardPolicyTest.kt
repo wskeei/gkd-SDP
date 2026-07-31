@@ -165,6 +165,21 @@ class AccessibilityGuardPolicyTest {
     }
 
     @Test
+    fun pendingTemporaryShutdownWinsWhileAccessibilityIsStillEnabled() {
+        assertEquals(
+            AccessibilityGuardPolicy.SessionMode.SUPPRESSED_TEMPORARY,
+            AccessibilityGuardPolicy.sessionMode(
+                featureEnabled = true,
+                strictChannelAvailable = true,
+                useA11yMode = true,
+                a11yEnabled = true,
+                temporaryShutdownExpected = true,
+                currentAppBlocked = true,
+            ),
+        )
+    }
+
+    @Test
     fun strictChannelUnavailableDisablesTheGuard() {
         assertEquals(
             AccessibilityGuardPolicy.SessionMode.RESET,
