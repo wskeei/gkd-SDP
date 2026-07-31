@@ -67,7 +67,13 @@ class AccessibilityGuardOverlayService : LifecycleService(), SavedStateRegistryO
             ?: Long.MIN_VALUE
         // A stop request can race an already queued startService call. Ignore
         // stale commands rather than allowing a removed overlay to reappear.
-        if (!isStartAllowed(token)) return START_NOT_STICKY
+        if (!isStartAllowed(token)) {
+            // Do not leave an empty service instance around after an old start
+            // command arrives. If a newer request already attached a view,
+            // leave that active instance untouched.
+            if (view == null) stopSelf(startId)
+            return START_NOT_STICKY
+        }
         activeRequestToken = token
         if (view == null) showOverlay(token)
         return START_NOT_STICKY
