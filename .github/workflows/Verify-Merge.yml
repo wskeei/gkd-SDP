@@ -52,6 +52,7 @@ jobs:
             app/build/reports/
             app/build/test-results/
             app/build/outputs/apk/
+            app/schemas/
             selector/build/reports/
             selector/build/test-results/
           if-no-files-found: ignore
