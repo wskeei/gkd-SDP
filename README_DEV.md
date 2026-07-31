@@ -30,7 +30,7 @@ Current Android/build settings:
 
 - `applicationId`: `li.songe.gkd.sdp`
 - `minSdk`: 26
-- `compileSdk` / `targetSdk`: 36
+- `compileSdk` / `targetSdk`: 37
 - Kotlin target: JVM 11
 - Product flavors: `gkd` and `play`
 
@@ -113,6 +113,27 @@ Common examples:
 - [`AutoReenableEnforcer`](app/src/main/kotlin/li/songe/gkd/sdp/service/AutoReenableEnforcer.kt)
 
 The app manifest is large because many behaviors are service-driven. See [`app/src/main/AndroidManifest.xml`](app/src/main/AndroidManifest.xml) before changing permissions or background behavior.
+
+### Accessibility Guard
+
+The accessibility guard is a `gkd`-channel feature. The `play` flavor keeps the shared code compiling, but strict guard behavior is disabled there. It depends on all of the following runtime capabilities:
+
+- notification permission and an enabled notification channel for the reminder banners
+- the `StatusService` special-use foreground service staying available
+- the Android “draw over other apps” permission for the final blocking overlay
+- the app's accessibility service permission
+
+The guard's production schedule is fixed at cumulative offsets of `[15, 25, 30, 33, 35, 36]` minutes after accessibility is disabled. It uses local notifications and the existing foreground service; it does not use FCM, WorkManager, exact alarms, or a full-screen notification intent. The `StatusService` is therefore part of the guard's runtime contract and should remain enabled while the feature is in use.
+
+These platform limits are expected and should be reflected in tests and support guidance:
+
+- A user-disabled notification channel or Do Not Disturb mode can prevent a top-of-screen reminder banner from appearing.
+- Doze and OEM background scheduling can delay a check past its nominal checkpoint. On recovery, the coordinator emits only the latest reminder that is due; it does not replay every missed banner.
+- Android places a package in the stopped state after “Force stop”; the app cannot restart itself until the user launches it again.
+- Android 13+ exposes a foreground-service task-manager “Stop” action that ends the whole app process. Ordinary Back, Home, app switching, and dismissing the app from Recents are separate lifecycle paths and must be tested separately; do not label all of them “force stop”.
+- System windows always sit above application overlays. The guard's “full-screen” prompt is therefore full-screen within the region Android permits an application overlay to occupy.
+
+For manual testing, keep the production constants in minutes. Inject a test clock/schedule into the coordinator, or use a debug-only development configuration with `[15s, 25s, 30s, 33s, 35s, 36s]`. Release builds must continue to assert the minute-based schedule, and the debug switch must not be persisted as a production user setting.
 
 ## Persistence Model
 
