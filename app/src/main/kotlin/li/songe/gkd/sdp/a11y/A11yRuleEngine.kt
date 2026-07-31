@@ -27,6 +27,7 @@ import li.songe.gkd.sdp.data.GkdAction
 import li.songe.gkd.sdp.data.ResolvedRule
 import li.songe.gkd.sdp.data.RpcError
 import li.songe.gkd.sdp.data.RuleStatus
+import li.songe.gkd.sdp.data.SelfControlAttempt
 import li.songe.gkd.sdp.db.DbSet
 import li.songe.gkd.sdp.isActivityVisible
 import li.songe.gkd.sdp.service.A11yService
@@ -40,6 +41,7 @@ import li.songe.gkd.sdp.store.storeFlow
 import li.songe.gkd.sdp.util.AndroidTarget
 import li.songe.gkd.sdp.util.AutomatorModeOption
 import li.songe.gkd.sdp.util.InterceptUtils
+import li.songe.gkd.sdp.util.SelfControlElapsedPolicy
 import li.songe.gkd.sdp.util.launchTry
 import li.songe.gkd.sdp.util.runMainPost
 import li.songe.gkd.sdp.util.showActionToast
@@ -427,10 +429,22 @@ class A11yRuleEngine(val service: A11yCommonImpl) {
                 !InterceptUtils.isAllowed(interceptConfig.subsId, interceptConfig.groupKey)
             ) {
                 val intent = android.content.Intent(app, InterceptOverlayService::class.java).apply {
-                    putExtra("subsId", interceptConfig.subsId)
-                    putExtra("groupKey", interceptConfig.groupKey)
-                    putExtra("message", interceptConfig.message)
-                    putExtra("cooldown", interceptConfig.cooldownSeconds)
+                    putExtra(InterceptOverlayService.EXTRA_SUBS_ID, interceptConfig.subsId)
+                    putExtra(InterceptOverlayService.EXTRA_GROUP_KEY, interceptConfig.groupKey)
+                    putExtra(InterceptOverlayService.EXTRA_MESSAGE, interceptConfig.message)
+                    putExtra(InterceptOverlayService.EXTRA_COOLDOWN, interceptConfig.cooldownSeconds)
+                    putExtra(
+                        InterceptOverlayService.EXTRA_EVENT_KEY,
+                        SelfControlElapsedPolicy.selectorInterceptEventKey(
+                            subsId = interceptConfig.subsId,
+                            appId = rightAppId,
+                            groupKey = interceptConfig.groupKey,
+                        ),
+                    )
+                    putExtra(
+                        InterceptOverlayService.EXTRA_EVENT_KIND,
+                        SelfControlAttempt.KIND_SELECTOR_INTERCEPT,
+                    )
                 }
                 app.startService(intent)
                 return

@@ -10,6 +10,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -18,6 +20,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -26,18 +29,38 @@ import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.LifecycleService
+import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.setViewTreeLifecycleOwner
 import androidx.savedstate.SavedStateRegistryController
 import androidx.savedstate.SavedStateRegistryOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import li.songe.gkd.sdp.data.SelfControlAttempt
+import li.songe.gkd.sdp.db.DbSet
+import li.songe.gkd.sdp.ui.component.SelfControlElapsedCard
 import li.songe.gkd.sdp.ui.style.AppTheme
 import li.songe.gkd.sdp.util.InterceptUtils
+import li.songe.gkd.sdp.util.SelfControlElapsedPolicy
 
 class InterceptOverlayService : LifecycleService(), SavedStateRegistryOwner {
 
+    companion object {
+        const val EXTRA_SUBS_ID = "subsId"
+        const val EXTRA_GROUP_KEY = "groupKey"
+        const val EXTRA_MESSAGE = "message"
+        const val EXTRA_COOLDOWN = "cooldown"
+        const val EXTRA_EVENT_KEY = "eventKey"
+        const val EXTRA_EVENT_KIND = "eventKind"
+    }
+
     private val windowManager by lazy { getSystemService(WINDOW_SERVICE) as WindowManager }
     private var view: ComposeView? = null
+    private var elapsedState by mutableStateOf<SelfControlElapsedPolicy.ElapsedState>(
+        SelfControlElapsedPolicy.ElapsedState.Loading,
+    )
     
     private val savedStateRegistryController = SavedStateRegistryController.create(this)
     override val savedStateRegistry = savedStateRegistryController.savedStateRegistry
@@ -50,17 +73,50 @@ class InterceptOverlayService : LifecycleService(), SavedStateRegistryOwner {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         super.onStartCommand(intent, flags, startId)
-        val subsId = intent?.getLongExtra("subsId", -1) ?: -1
-        val groupKey = intent?.getIntExtra("groupKey", -1) ?: -1
-        val message = intent?.getStringExtra("message") ?: "这真的重要吗？"
-        val cooldown = intent?.getIntExtra("cooldown", 5) ?: 5
+        if (view != null) return START_NOT_STICKY
+
+        val subsId = intent?.getLongExtra(EXTRA_SUBS_ID, -1) ?: -1
+        val groupKey = intent?.getIntExtra(EXTRA_GROUP_KEY, -1) ?: -1
+        val message = intent?.getStringExtra(EXTRA_MESSAGE) ?: "这真的重要吗？"
+        val cooldown = intent?.getIntExtra(EXTRA_COOLDOWN, 5) ?: 5
+        val eventKey = intent?.getStringExtra(EXTRA_EVENT_KEY).orEmpty()
+        val eventKind = intent?.getIntExtra(EXTRA_EVENT_KIND, 0) ?: 0
 
         if (subsId != -1L && groupKey != -1) {
+            elapsedState = SelfControlElapsedPolicy.ElapsedState.Loading
             showOverlay(subsId, groupKey, message, cooldown)
+            recordElapsedAttempt(eventKey, eventKind, System.currentTimeMillis())
         } else {
             stopSelf()
         }
         return START_NOT_STICKY
+    }
+
+    private fun recordElapsedAttempt(eventKey: String, eventKind: Int, occurredAt: Long) {
+        if (eventKey.isBlank() || eventKind !in setOf(
+                SelfControlAttempt.KIND_SELECTOR_INTERCEPT,
+                SelfControlAttempt.KIND_URL_INTERCEPT,
+            )
+        ) {
+            elapsedState = SelfControlElapsedPolicy.ElapsedState.Unavailable
+            return
+        }
+        lifecycleScope.launch {
+            elapsedState = runCatching {
+                val previousOccurredAt = withContext(Dispatchers.IO) {
+                    DbSet.selfControlAttemptDao.recordAndGetPrevious(
+                        SelfControlAttempt(
+                            eventKey = eventKey,
+                            eventKind = eventKind,
+                            lastOccurredAt = occurredAt,
+                        ),
+                    )
+                }
+                SelfControlElapsedPolicy.stateForAttempt(previousOccurredAt, occurredAt)
+            }.getOrElse {
+                SelfControlElapsedPolicy.ElapsedState.Unavailable
+            }
+        }
     }
 
     private fun showOverlay(subsId: Long, groupKey: Int, message: String, cooldown: Int) {
@@ -74,6 +130,7 @@ class InterceptOverlayService : LifecycleService(), SavedStateRegistryOwner {
                     InterceptScreen(
                         message = message,
                         cooldown = cooldown,
+                        elapsedState = elapsedState,
                         onContinue = {
                             InterceptUtils.setAllowed(subsId, groupKey, cooldown)
                             stopSelf()
@@ -111,7 +168,9 @@ fun InterceptScreen(
     message: String,
     cooldown: Int, // Kept for API compatibility but we use 10s for auto-exit
     onContinue: () -> Unit, // Kept for API compatibility but unused
-    onExit: () -> Unit
+    onExit: () -> Unit,
+    elapsedState: SelfControlElapsedPolicy.ElapsedState =
+        SelfControlElapsedPolicy.ElapsedState.Unavailable,
 ) {
     var timeLeft by remember { mutableIntStateOf(10) }
     
@@ -130,6 +189,7 @@ fun InterceptScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .verticalScroll(rememberScrollState())
                 .padding(32.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
@@ -139,6 +199,12 @@ fun InterceptScreen(
                 style = MaterialTheme.typography.headlineMedium,
                 textAlign = TextAlign.Center,
                 color = MaterialTheme.colorScheme.onBackground
+            )
+
+            SelfControlElapsedCard(
+                context = SelfControlElapsedPolicy.Context.RULE_TRIGGER,
+                state = elapsedState,
+                modifier = Modifier.padding(top = 24.dp),
             )
             Spacer(modifier = Modifier.height(48.dp))
             
