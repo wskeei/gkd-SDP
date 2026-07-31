@@ -93,9 +93,11 @@ import li.songe.gkd.sdp.util.latestRecordFlow
 import li.songe.gkd.sdp.util.launchAsFn
 import li.songe.gkd.sdp.util.throttle
 import li.songe.gkd.sdp.util.toast
+import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicLong
 
 private val accessibilityGuardRequestSequence = AtomicLong(0L)
+private val accessibilityGuardDesired = AtomicBoolean(false)
 
 @Composable
 fun useControlPage(): ScaffoldExt {
@@ -343,6 +345,7 @@ fun useControlPage(): ScaffoldExt {
 private fun disableAccessibilityGuard() {
     synchronized(accessibilityGuardRequestSequence) {
         accessibilityGuardRequestSequence.incrementAndGet()
+        accessibilityGuardDesired.set(false)
         storeFlow.update { it.copy(accessibilityGuardEnabled = false) }
     }
     AccessibilityGuardRuntime.disableAndReset()
@@ -354,13 +357,19 @@ private suspend fun enableAccessibilityGuard(
     mainVm: MainViewModel,
 ) {
     val requestId = accessibilityGuardRequestSequence.incrementAndGet()
-    if (!META.isGkdChannel) return
+    accessibilityGuardDesired.set(true)
+    if (!META.isGkdChannel) {
+        accessibilityGuardDesired.set(false)
+        return
+    }
     if (!storeFlow.value.useA11y) {
+        accessibilityGuardDesired.set(false)
         toast("请先切换到无障碍模式")
         mainVm.navigatePage(AuthA11yRoute)
         return
     }
     if (!mainVm.a11yServiceEnabledFlow.value || !secureA11yServiceEnabled()) {
+        accessibilityGuardDesired.set(false)
         toast("请先开启无障碍权限")
         mainVm.navigatePage(AuthA11yRoute)
         return
@@ -370,15 +379,28 @@ private suspend fun enableAccessibilityGuard(
     requiredPermission(context, notificationState)
     requiredPermission(context, foregroundServiceSpecialUseState)
     requiredPermission(context, canDrawOverlaysState)
-    if (!StatusService.requestStart(context)) return
-
     if (requestId != accessibilityGuardRequestSequence.get()) return
+    if (!StatusService.requestStart(context)) {
+        if (requestId == accessibilityGuardRequestSequence.get()) {
+            accessibilityGuardDesired.set(false)
+        }
+        return
+    }
+
+    if (requestId != accessibilityGuardRequestSequence.get()) {
+        if (!accessibilityGuardDesired.get() && !statusWasEnabled) {
+            StatusService.stop()
+            storeFlow.update { it.copy(enableStatusService = false) }
+        }
+        return
+    }
     if (!storeFlow.value.useA11y || !mainVm.a11yServiceEnabledFlow.value ||
         !secureA11yServiceEnabled() ||
         !notificationState.updateAndGet() ||
         !foregroundServiceSpecialUseState.updateAndGet() ||
         !canDrawOverlaysState.updateAndGet()
     ) {
+        accessibilityGuardDesired.set(false)
         if (!statusWasEnabled) {
             StatusService.stop()
             storeFlow.update { it.copy(enableStatusService = false) }
