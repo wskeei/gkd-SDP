@@ -25,4 +25,13 @@ object UsageGuardCountdownOverlayLayoutPolicy {
     ): Boolean {
         return previousAppId != nextAppId || previousRecordId != nextRecordId
     }
+
+    fun maxPillWidthPx(
+        screenWidthPx: Int,
+        horizontalMarginPx: Int,
+    ): Int {
+        val safeScreenWidth = screenWidthPx.coerceAtLeast(0)
+        val safeMargin = horizontalMarginPx.coerceAtLeast(0)
+        return (safeScreenWidth - safeMargin * 2).coerceAtLeast(0)
+    }
 }
