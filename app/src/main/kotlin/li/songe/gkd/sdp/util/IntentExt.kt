@@ -141,16 +141,18 @@ fun <T : Service> stopServiceByClass(clazz: KClass<T>) {
     app.stopService(intent)
 }
 
-fun <T : Service> startForegroundServiceByClass(clazz: KClass<T>) {
-    if (!notificationState.checkOrToast()) return
-    if (!foregroundServiceSpecialUseState.checkOrToast()) return
+fun <T : Service> startForegroundServiceByClass(clazz: KClass<T>): Boolean {
+    if (!notificationState.checkOrToast()) return false
+    if (!foregroundServiceSpecialUseState.checkOrToast()) return false
     val intent = Intent(app, clazz.java)
     try {
         app.startForegroundService(intent)
+        return true
     } catch (e: Throwable) {
         LogUtils.d(e)
         val prefix = if (isActivityVisible) "" else "${META.appName}: "
         toast("${prefix}启动服务失败: ${e.message}", forced = true)
+        return false
     }
 }
 

@@ -47,6 +47,7 @@ import li.songe.gkd.sdp.META
 import li.songe.gkd.sdp.MainActivity
 import li.songe.gkd.sdp.MainViewModel
 import li.songe.gkd.sdp.R
+import li.songe.gkd.sdp.app
 import li.songe.gkd.sdp.data.SubsConfig
 import li.songe.gkd.sdp.permission.appOpsRestrictedFlow
 import li.songe.gkd.sdp.permission.canDrawOverlaysState
@@ -352,26 +353,36 @@ private suspend fun enableAccessibilityGuard(
         mainVm.navigatePage(AuthA11yRoute)
         return
     }
-    if (!mainVm.a11yServiceEnabledFlow.value) {
+    if (!mainVm.a11yServiceEnabledFlow.value || !secureA11yServiceEnabled()) {
         toast("请先开启无障碍权限")
         mainVm.navigatePage(AuthA11yRoute)
         return
     }
 
+    val statusWasEnabled = storeFlow.value.enableStatusService
     requiredPermission(context, notificationState)
     requiredPermission(context, foregroundServiceSpecialUseState)
     requiredPermission(context, canDrawOverlaysState)
-    StatusService.requestStart(context)
+    if (!StatusService.requestStart(context)) return
 
     if (!storeFlow.value.useA11y || !mainVm.a11yServiceEnabledFlow.value ||
+        !secureA11yServiceEnabled() ||
         !notificationState.updateAndGet() ||
         !foregroundServiceSpecialUseState.updateAndGet() ||
         !canDrawOverlaysState.updateAndGet()
     ) {
+        if (!statusWasEnabled) {
+            StatusService.stop()
+            storeFlow.update { it.copy(enableStatusService = false) }
+        }
         return
     }
     storeFlow.update { it.copy(accessibilityGuardEnabled = true) }
     AccessibilityGuardRuntime.requestReconcile()
+}
+
+private fun secureA11yServiceEnabled(): Boolean {
+    return app.getSecureA11yServices().contains(A11yService.a11yCn)
 }
 
 

@@ -6,10 +6,13 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 import li.songe.gkd.sdp.META
 import li.songe.gkd.sdp.MainActivity
 import li.songe.gkd.sdp.activityVisibleCountFlow
@@ -197,11 +200,27 @@ class StatusService : Service(), OnSimpleLife by DefaultSimpleLifeImpl() {
             }
             stopServiceByClass(StatusService::class)
         }
-        suspend fun requestStart(context: MainActivity) {
+        suspend fun requestStart(context: MainActivity): Boolean {
             requiredPermission(context, foregroundServiceSpecialUseState)
             requiredPermission(context, notificationState)
-            start()
+            if (!notificationState.updateAndGet() ||
+                !foregroundServiceSpecialUseState.updateAndGet()
+            ) {
+                return false
+            }
+            if (!isRunning.value) {
+                if (!start()) return false
+                val started = withTimeoutOrNull(2_000L) {
+                    isRunning.filter { it }.first()
+                    true
+                } ?: false
+                if (!started) {
+                    stopServiceByClass(StatusService::class)
+                    return false
+                }
+            }
             storeFlow.update { it.copy(enableStatusService = true) }
+            return true
         }
 
         private var lastAutoStart = 0L
