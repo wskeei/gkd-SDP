@@ -151,6 +151,14 @@ object AccessibilityGuardRuntime {
         wake()
     }
 
+    fun cancelGrantFlow() {
+        accessibilityGuardSessionFlow.update { session ->
+            if (session.grantFlowUntilEpochMs == 0L) session
+            else session.copy(grantFlowUntilEpochMs = 0L)
+        }
+        wake()
+    }
+
     fun onAppVisible() {
         accessibilityGuardSessionFlow.update { session ->
             session.copy(grantFlowUntilEpochMs = 0L)
@@ -256,9 +264,10 @@ class AccessibilityGuardCoordinator(
         timerJob?.cancel()
         timerJob = null
         timerToken = null
-        if (overlayRunningFlow.value) {
-            AccessibilityGuardOverlayService.stop(context)
-        }
+        // Cancel unconditionally: isRunning may still be false while a
+        // startService request is queued. The overlay service's request token
+        // then fences that in-flight start during StatusService teardown.
+        AccessibilityGuardOverlayService.stop(context)
         coordinatorJob?.cancel()
         coordinatorJob = null
         if (screenReceiverRegistered) {
@@ -502,9 +511,10 @@ class AccessibilityGuardCoordinator(
     }
 
     private fun stopOverlayIfRunning() {
-        if (overlayRunningFlow.value) {
-            AccessibilityGuardOverlayService.stop(context)
-        }
+        // Do not gate this on isRunning. A start request may be in flight while
+        // the StateFlow is still false; an unconditional stop invalidates that
+        // request and keeps reset/visibility transitions idempotent.
+        AccessibilityGuardOverlayService.stop(context)
     }
 
     private fun reconcileOverlay(
