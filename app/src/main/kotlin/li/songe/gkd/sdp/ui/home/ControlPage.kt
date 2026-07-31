@@ -86,6 +86,7 @@ import li.songe.gkd.sdp.util.launchAsFn
 import li.songe.gkd.sdp.util.openA11ySettings
 import li.songe.gkd.sdp.util.throttle
 import li.songe.gkd.sdp.util.toast
+
 @Composable
 fun useControlPage(): ScaffoldExt {
     val context = LocalActivity.current as MainActivity
