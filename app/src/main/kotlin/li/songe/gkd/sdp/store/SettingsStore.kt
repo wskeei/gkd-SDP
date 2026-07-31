@@ -71,6 +71,7 @@ data class SettingsStore(
     val usageGuardDefaultGrantMode: Int = UsageGuardPolicy.GRANT_MODE_RESUMABLE,
     val usageGuardMinReasonLength: Int = 8,
     val usageGuardDurationOptionsMinutes: List<Int> = UsageGuardUiStatePolicy.defaultDurationOptions,
+    val accessibilityGuardEnabled: Boolean = false,
 ) {
     val useA11y get() = automatorMode == AutomatorModeOption.A11yMode.value
     val useAutomation get() = automatorMode == AutomatorModeOption.AutomationMode.value
