@@ -10,6 +10,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -18,6 +20,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -26,17 +29,35 @@ import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.LifecycleService
+import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.setViewTreeLifecycleOwner
 import androidx.savedstate.SavedStateRegistryController
 import androidx.savedstate.SavedStateRegistryOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import li.songe.gkd.sdp.data.SelfControlAttempt
+import li.songe.gkd.sdp.db.DbSet
+import li.songe.gkd.sdp.ui.component.SelfControlElapsedCard
 import li.songe.gkd.sdp.ui.style.AppTheme
+import li.songe.gkd.sdp.util.SelfControlElapsedPolicy
 
 class AppBlockerOverlayService : LifecycleService(), SavedStateRegistryOwner {
 
+    companion object {
+        const val EXTRA_MESSAGE = "message"
+        const val EXTRA_BLOCKED_APP = "blockedApp"
+        const val EXTRA_EVENT_KEY = "eventKey"
+        const val EXTRA_EVENT_KIND = "eventKind"
+    }
+
     private val windowManager by lazy { getSystemService(WINDOW_SERVICE) as WindowManager }
     private var view: ComposeView? = null
+    private var elapsedState by mutableStateOf<SelfControlElapsedPolicy.ElapsedState>(
+        SelfControlElapsedPolicy.ElapsedState.Loading,
+    )
 
     private val savedStateRegistryController = SavedStateRegistryController.create(this)
     override val savedStateRegistry = savedStateRegistryController.savedStateRegistry
@@ -49,11 +70,40 @@ class AppBlockerOverlayService : LifecycleService(), SavedStateRegistryOwner {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         super.onStartCommand(intent, flags, startId)
-        val message = intent?.getStringExtra("message") ?: "这真的重要吗？"
-        val blockedApp = intent?.getStringExtra("blockedApp") ?: ""
+        if (view != null) return START_NOT_STICKY
 
+        val message = intent?.getStringExtra(EXTRA_MESSAGE) ?: "这真的重要吗？"
+        val blockedApp = intent?.getStringExtra(EXTRA_BLOCKED_APP).orEmpty()
+        val eventKey = intent?.getStringExtra(EXTRA_EVENT_KEY).orEmpty()
+        val occurredAt = System.currentTimeMillis()
+
+        elapsedState = SelfControlElapsedPolicy.ElapsedState.Loading
         showOverlay(message, blockedApp)
+        recordElapsedAttempt(eventKey, occurredAt)
         return START_NOT_STICKY
+    }
+
+    private fun recordElapsedAttempt(eventKey: String, occurredAt: Long) {
+        if (eventKey.isBlank()) {
+            elapsedState = SelfControlElapsedPolicy.ElapsedState.Unavailable
+            return
+        }
+        lifecycleScope.launch {
+            elapsedState = runCatching {
+                val previousOccurredAt = withContext(Dispatchers.IO) {
+                    DbSet.selfControlAttemptDao.recordAndGetPrevious(
+                        SelfControlAttempt(
+                            eventKey = eventKey,
+                            eventKind = SelfControlAttempt.KIND_APP_BLOCKER,
+                            lastOccurredAt = occurredAt,
+                        ),
+                    )
+                }
+                SelfControlElapsedPolicy.stateForAttempt(previousOccurredAt, occurredAt)
+            }.getOrElse {
+                SelfControlElapsedPolicy.ElapsedState.Unavailable
+            }
+        }
     }
 
     private fun showOverlay(message: String, blockedApp: String) {
@@ -66,6 +116,7 @@ class AppBlockerOverlayService : LifecycleService(), SavedStateRegistryOwner {
                 AppTheme {
                     AppBlockerInterceptScreen(
                         message = message,
+                        elapsedState = elapsedState,
                         onExit = {
                             A11yService.instance?.performGlobalAction(
                                 android.accessibilityservice.AccessibilityService.GLOBAL_ACTION_HOME
@@ -99,6 +150,7 @@ class AppBlockerOverlayService : LifecycleService(), SavedStateRegistryOwner {
 @Composable
 fun AppBlockerInterceptScreen(
     message: String,
+    elapsedState: SelfControlElapsedPolicy.ElapsedState,
     onExit: () -> Unit
 ) {
     var timeLeft by remember { mutableIntStateOf(10) }
@@ -118,6 +170,7 @@ fun AppBlockerInterceptScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .verticalScroll(rememberScrollState())
                 .padding(32.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
@@ -127,6 +180,12 @@ fun AppBlockerInterceptScreen(
                 style = MaterialTheme.typography.headlineMedium,
                 textAlign = TextAlign.Center,
                 color = MaterialTheme.colorScheme.onBackground
+            )
+
+            SelfControlElapsedCard(
+                context = SelfControlElapsedPolicy.Context.APP_OPEN_ATTEMPT,
+                state = elapsedState,
+                modifier = Modifier.padding(top = 24.dp),
             )
 
             Spacer(modifier = Modifier.height(48.dp))
