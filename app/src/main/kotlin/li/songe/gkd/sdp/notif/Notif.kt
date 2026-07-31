@@ -42,6 +42,10 @@ data class Notif(
     val priority: Int = NotificationCompat.PRIORITY_DEFAULT,
     val category: String? = null,
     val uri: String? = null,
+    val whenEpochMs: Long? = null,
+    val usesChronometer: Boolean = false,
+    val chronometerCountDown: Boolean = false,
+    val onlyAlertOnce: Boolean = false,
     val stopService: KClass<out Service>? = null,
 ) {
     private fun toNotification(): Notification {
@@ -63,8 +67,16 @@ data class Notif(
             .setOngoing(ongoing)
             .setAutoCancel(autoCancel)
             .setPriority(priority)
+            .setOnlyAlertOnce(onlyAlertOnce)
             .apply {
                 if (category != null) setCategory(category)
+                if (whenEpochMs != null) {
+                    setWhen(whenEpochMs)
+                }
+                if (usesChronometer) {
+                    setUsesChronometer(true)
+                    setChronometerCountDown(chronometerCountDown)
+                }
             }
         if (stopService != null) {
             val deleteIntent = PendingIntent.getBroadcast(
@@ -177,6 +189,7 @@ val focusEndNotif = Notif(
 
 const val ACCESSIBILITY_GUARD_NOTIF_ID_START = 110
 const val ACCESSIBILITY_GUARD_NOTIF_COUNT = 6
+const val ACCESSIBILITY_GUARD_STATUS_NOTIF_ID = 116
 
 fun accessibilityGuardNotif(index: Int): Notif {
     require(index in 0 until ACCESSIBILITY_GUARD_NOTIF_COUNT)
@@ -193,14 +206,50 @@ fun accessibilityGuardNotif(index: Int): Notif {
     )
 }
 
-fun cancelAccessibilityGuardNotifications() {
+private fun accessibilityGuardStatusNotif(
+    status: AccessibilityGuardNotificationPolicy.GuardStatusNotification,
+): Notif {
+    val hasCountdown = status.targetEpochMs != null
+    return Notif(
+        channel = NotifChannel.AccessibilityGuard,
+        id = ACCESSIBILITY_GUARD_STATUS_NOTIF_ID,
+        title = AccessibilityGuardNotificationPolicy.TITLE,
+        text = status.text,
+        ongoing = true,
+        autoCancel = false,
+        priority = NotificationCompat.PRIORITY_HIGH,
+        category = NotificationCompat.CATEGORY_ERROR,
+        uri = "gkd://page/4",
+        whenEpochMs = status.targetEpochMs,
+        usesChronometer = hasCountdown,
+        chronometerCountDown = hasCountdown,
+        onlyAlertOnce = true,
+    )
+}
+
+fun cancelAccessibilityGuardReminderNotifications() {
     val manager = NotificationManagerCompat.from(app)
     repeat(ACCESSIBILITY_GUARD_NOTIF_COUNT) { index ->
         manager.cancel(ACCESSIBILITY_GUARD_NOTIF_ID_START + index)
     }
 }
 
+fun cancelAccessibilityGuardStatusNotification() {
+    NotificationManagerCompat.from(app).cancel(ACCESSIBILITY_GUARD_STATUS_NOTIF_ID)
+}
+
+fun cancelAccessibilityGuardNotifications() {
+    cancelAccessibilityGuardReminderNotifications()
+    cancelAccessibilityGuardStatusNotification()
+}
+
 fun postAccessibilityGuardNotification(index: Int) {
-    cancelAccessibilityGuardNotifications()
+    cancelAccessibilityGuardReminderNotifications()
     accessibilityGuardNotif(index).notifySelf()
+}
+
+fun postAccessibilityGuardStatusNotification(
+    status: AccessibilityGuardNotificationPolicy.GuardStatusNotification,
+) {
+    accessibilityGuardStatusNotif(status).notifySelf()
 }

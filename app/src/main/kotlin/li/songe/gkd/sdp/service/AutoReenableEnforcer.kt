@@ -74,6 +74,9 @@ object AutoReenableEnforcer {
                     1
                 }
             },
+            "accessibility_guard_switch" to {
+                AccessibilityGuardController.autoReenableIfEligible()
+            },
         )
     }
 

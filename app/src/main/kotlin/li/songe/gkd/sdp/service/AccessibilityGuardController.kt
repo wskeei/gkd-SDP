@@ -2,6 +2,8 @@ package li.songe.gkd.sdp.service
 
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import li.songe.gkd.sdp.META
 import li.songe.gkd.sdp.MainActivity
 import li.songe.gkd.sdp.db.DbSet
@@ -20,6 +22,10 @@ internal fun isAccessibilityGuardRequestCurrent(
     currentRequestId: Long,
     desired: Boolean,
 ): Boolean = expectedRequestId == currentRequestId && desired
+
+internal fun shouldInvalidateAccessibilityGuardActivation(
+    activationInFlight: Boolean,
+): Boolean = activationInFlight
 
 /**
  * Owns all user-facing accessibility guard activation/deactivation writes.
@@ -45,8 +51,10 @@ object AccessibilityGuardController {
     }
 
     private val requestLock = Any()
+    private val disableMutex = Mutex()
     private var requestSequence = 0L
     private var desired = false
+    private var activationInFlight = false
     private var startedStatusForActivation = false
 
     suspend fun enable(context: MainActivity): EnableResult {
@@ -140,63 +148,77 @@ object AccessibilityGuardController {
             // activation-only ownership bit is no longer needed after a
             // successful commit.
             startedStatusForActivation = false
+            activationInFlight = false
         }
         AccessibilityGuardRuntime.requestReconcile()
         return EnableResult.Enabled
     }
 
-    suspend fun disable(nowEpochMs: Long = System.currentTimeMillis()): DisableResult {
-        val currentSettings = storeFlow.value
-        if (!currentSettings.accessibilityGuardEnabled) {
-            return DisableResult.NoChange
-        }
-        val initialDecision = AccessibilityGuardControlPolicy.disableDecision(
-            currentlyEnabled = currentSettings.accessibilityGuardEnabled,
-            anyActiveLock = hasAnyActiveLock(nowEpochMs),
-            quotaAllowed = true,
-        )
-        when (initialDecision) {
-            AccessibilityGuardControlPolicy.DisableDecision.NO_CHANGE ->
-                return DisableResult.NoChange
-
-            AccessibilityGuardControlPolicy.DisableDecision.BLOCKED_BY_LOCK ->
-                return DisableResult.BlockedByLock
-
-            AccessibilityGuardControlPolicy.DisableDecision.ALLOW,
-            AccessibilityGuardControlPolicy.DisableDecision.BLOCKED_BY_QUOTA -> Unit
-        }
-
-        val quota = AutoReenableDisableGuard.tryConsumeForDisable(nowEpochMs)
-        val decision = AccessibilityGuardControlPolicy.disableDecision(
-            currentlyEnabled = storeFlow.value.accessibilityGuardEnabled,
-            anyActiveLock = false,
-            quotaAllowed = quota.allowed,
-        )
-        if (decision == AccessibilityGuardControlPolicy.DisableDecision.BLOCKED_BY_QUOTA) {
-            return DisableResult.BlockedByQuota(quota.limit)
-        }
-        if (decision != AccessibilityGuardControlPolicy.DisableDecision.ALLOW) {
-            return DisableResult.NoChange
-        }
-
-        synchronized(requestLock) {
-            requestSequence++
-            desired = false
-            storeFlow.update {
-                it.copy(
-                    accessibilityGuardEnabled = false,
-                    // Enrollment deliberately survives a temporary disable;
-                    // AutoReenableEnforcer will restore the feature later.
-                    accessibilityGuardAutoReenableArmed = true,
-                )
+    suspend fun disable(nowEpochMs: Long = System.currentTimeMillis()): DisableResult =
+        disableMutex.withLock {
+            // A permission launcher may still be suspended in enable(). Treat a
+            // user disable as a cancellation of that request even though the
+            // setting has not committed to true yet.
+            if (invalidatePendingActivation()) {
+                AccessibilityGuardRuntime.disableAndReset()
+                cancelAccessibilityGuardNotifications()
+                AccessibilityGuardOverlayService.stop()
+                stopActivationOwnedStatusIfNeeded()
+                return@withLock DisableResult.NoChange
             }
+
+            val currentSettings = storeFlow.value
+            if (!currentSettings.accessibilityGuardEnabled) {
+                return@withLock DisableResult.NoChange
+            }
+            val decision = AccessibilityGuardControlPolicy.disableDecision(
+                currentlyEnabled = currentSettings.accessibilityGuardEnabled,
+                anyActiveLock = hasAnyActiveLock(nowEpochMs),
+                quotaAllowed = true,
+            )
+            when (decision) {
+                AccessibilityGuardControlPolicy.DisableDecision.NO_CHANGE ->
+                    return@withLock DisableResult.NoChange
+
+                AccessibilityGuardControlPolicy.DisableDecision.BLOCKED_BY_LOCK ->
+                    return@withLock DisableResult.BlockedByLock
+
+                AccessibilityGuardControlPolicy.DisableDecision.ALLOW,
+                AccessibilityGuardControlPolicy.DisableDecision.BLOCKED_BY_QUOTA -> Unit
+            }
+
+            val quota = AutoReenableDisableGuard.tryConsumeForDisable(nowEpochMs)
+            val finalDecision = AccessibilityGuardControlPolicy.disableDecision(
+                currentlyEnabled = storeFlow.value.accessibilityGuardEnabled,
+                anyActiveLock = false,
+                quotaAllowed = quota.allowed,
+            )
+            if (finalDecision == AccessibilityGuardControlPolicy.DisableDecision.BLOCKED_BY_QUOTA) {
+                return@withLock DisableResult.BlockedByQuota(quota.limit)
+            }
+            if (finalDecision != AccessibilityGuardControlPolicy.DisableDecision.ALLOW) {
+                return@withLock DisableResult.NoChange
+            }
+
+            synchronized(requestLock) {
+                requestSequence++
+                desired = false
+                activationInFlight = false
+                storeFlow.update {
+                    it.copy(
+                        accessibilityGuardEnabled = false,
+                        // Enrollment deliberately survives a temporary disable;
+                        // AutoReenableEnforcer will restore the feature later.
+                        accessibilityGuardAutoReenableArmed = true,
+                    )
+                }
+            }
+            AccessibilityGuardRuntime.disableAndReset()
+            cancelAccessibilityGuardNotifications()
+            AccessibilityGuardOverlayService.stop()
+            stopActivationOwnedStatusIfNeeded()
+            DisableResult.Disabled
         }
-        AccessibilityGuardRuntime.disableAndReset()
-        cancelAccessibilityGuardNotifications()
-        AccessibilityGuardOverlayService.stop()
-        stopActivationOwnedStatusIfNeeded()
-        return DisableResult.Disabled
-    }
 
     /** Called by AutoReenableEnforcer without a user permission dialog. */
     fun autoReenableIfEligible(): Int {
@@ -230,6 +252,7 @@ object AccessibilityGuardController {
     private fun beginEnableRequest(): Long = synchronized(requestLock) {
         requestSequence++
         desired = true
+        activationInFlight = true
         requestSequence
     }
 
@@ -239,7 +262,10 @@ object AccessibilityGuardController {
 
     private fun cleanupActivation(requestId: Long) {
         val shouldStop = synchronized(requestLock) {
-            if (requestId == requestSequence) desired = false
+            if (requestId == requestSequence) {
+                desired = false
+                activationInFlight = false
+            }
             if (!desired && startedStatusForActivation) {
                 startedStatusForActivation = false
                 true
@@ -251,6 +277,35 @@ object AccessibilityGuardController {
             StatusService.stop()
             storeFlow.update { it.copy(enableStatusService = false) }
         }
+    }
+
+    /**
+     * Invalidates an enable request that is waiting on user permission or
+     * service startup. The request fence is advanced before any suspend work
+     * so a late callback can only observe a superseded request.
+     */
+    private fun invalidatePendingActivation(): Boolean {
+        var invalidated = false
+        val shouldStop = synchronized(requestLock) {
+            if (!shouldInvalidateAccessibilityGuardActivation(activationInFlight)) {
+                return@synchronized false
+            }
+            invalidated = true
+            requestSequence++
+            desired = false
+            activationInFlight = false
+            if (startedStatusForActivation) {
+                startedStatusForActivation = false
+                true
+            } else {
+                false
+            }
+        }
+        if (shouldStop) {
+            StatusService.stop()
+            storeFlow.update { it.copy(enableStatusService = false) }
+        }
+        return invalidated
     }
 
     private fun stopActivationOwnedStatusIfNeeded() {

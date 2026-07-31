@@ -34,6 +34,7 @@ import li.songe.gkd.sdp.store.storeFlow
 import li.songe.gkd.sdp.ui.AdvancedPageRoute
 import li.songe.gkd.sdp.ui.AppOpsAllowRoute
 import li.songe.gkd.sdp.ui.CrashReportRoute
+import li.songe.gkd.sdp.ui.FocusLockRoute
 import li.songe.gkd.sdp.ui.SnapshotPageRoute
 import li.songe.gkd.sdp.ui.WebViewRoute
 import li.songe.gkd.sdp.ui.component.AlertDialogOptions
@@ -237,6 +238,7 @@ class MainViewModel : BaseViewModel(), OnSimpleLife by DefaultSimpleLifeImpl() {
                 "/1" -> navigatePage(AdvancedPageRoute)
                 "/2" -> navigatePage(SnapshotPageRoute)
                 "/3" -> navigatePage(AppOpsAllowRoute)
+                "/4" -> navigatePage(FocusLockRoute)
                 else -> notFoundToast()
             }
 

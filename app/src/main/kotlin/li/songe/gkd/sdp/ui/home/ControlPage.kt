@@ -42,7 +42,6 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.Dispatchers
-import li.songe.gkd.sdp.META
 import li.songe.gkd.sdp.MainActivity
 import li.songe.gkd.sdp.R
 import li.songe.gkd.sdp.data.SubsConfig
@@ -50,9 +49,9 @@ import li.songe.gkd.sdp.permission.appOpsRestrictedFlow
 import li.songe.gkd.sdp.permission.writeSecureSettingsState
 import li.songe.gkd.sdp.service.A11yService
 import li.songe.gkd.sdp.service.ActivityService
-import li.songe.gkd.sdp.service.AccessibilityGuardController
 import li.songe.gkd.sdp.service.StatusService
 import li.songe.gkd.sdp.service.a11yPartDisabledFlow
+import li.songe.gkd.sdp.service.requestStartOrRepairAutomatorService
 import li.songe.gkd.sdp.service.switchAutomatorService
 import li.songe.gkd.sdp.service.topAppIdFlow
 import li.songe.gkd.sdp.shizuku.shizukuContextFlow
@@ -78,11 +77,13 @@ import li.songe.gkd.sdp.ui.style.itemHorizontalPadding
 import li.songe.gkd.sdp.ui.style.itemVerticalPadding
 import li.songe.gkd.sdp.ui.style.surfaceCardColors
 import li.songe.gkd.sdp.util.HOME_PAGE_URL
+import li.songe.gkd.sdp.util.HomeA11yServiceTogglePolicy
 import li.songe.gkd.sdp.util.ShortUrlSet
 import li.songe.gkd.sdp.util.UsageGuardReviewPolicy
 import li.songe.gkd.sdp.util.latestRecordDescFlow
 import li.songe.gkd.sdp.util.latestRecordFlow
 import li.songe.gkd.sdp.util.launchAsFn
+import li.songe.gkd.sdp.util.openA11ySettings
 import li.songe.gkd.sdp.util.throttle
 import li.songe.gkd.sdp.util.toast
 @Composable
@@ -90,33 +91,8 @@ fun useControlPage(): ScaffoldExt {
     val context = LocalActivity.current as MainActivity
     val mainVm = LocalMainViewModel.current
     val vm = viewModel<HomeVm>()
+    var showA11yDisableInfoDialog by rememberSaveable { mutableStateOf(false) }
     val scrollKey = rememberSaveable { mutableIntStateOf(0) }
-    var showAccessibilityGuardDialog by rememberSaveable { mutableStateOf(false) }
-    val enableGuard = vm.viewModelScope.launchAsFn {
-        when (AccessibilityGuardController.enable(context)) {
-            AccessibilityGuardController.EnableResult.RequiresA11yMode -> {
-                toast("请先切换到无障碍模式")
-                mainVm.navigatePage(AuthA11yRoute)
-            }
-
-            AccessibilityGuardController.EnableResult.UnavailableChannel -> Unit
-            AccessibilityGuardController.EnableResult.Enabled,
-            AccessibilityGuardController.EnableResult.AlreadyEnabled,
-            AccessibilityGuardController.EnableResult.Superseded -> Unit
-        }
-    }
-    val disableGuard = vm.viewModelScope.launchAsFn {
-        when (val result = AccessibilityGuardController.disable()) {
-            AccessibilityGuardController.DisableResult.BlockedByLock ->
-                toast("数字自律锁定生效中，无法关闭无障碍权限守护")
-
-            is AccessibilityGuardController.DisableResult.BlockedByQuota ->
-                toast("今日关闭次数已用完（${result.limit} 次），将于明日 00:00 重置")
-
-            AccessibilityGuardController.DisableResult.Disabled,
-            AccessibilityGuardController.DisableResult.NoChange -> Unit
-        }
-    }
     val (scrollBehavior, scrollState) = useScrollBehaviorState(scrollKey)
     LaunchedEffect(null) {
         mainVm.resetPageScrollEvent.collect {
@@ -124,37 +100,6 @@ fun useControlPage(): ScaffoldExt {
                 scrollKey.intValue++
             }
         }
-    }
-    if (showAccessibilityGuardDialog) {
-        AlertDialog(
-            onDismissRequest = { showAccessibilityGuardDialog = false },
-            title = { Text("开启无障碍权限守护") },
-            text = {
-                Text(
-                    "即使当前无障碍已经关闭，也可以先开启守护。检测到关闭后会立即显示倒计时，" +
-                        "并在 15、25、30、33、35、36 分钟" +
-                        "分别提醒一次（间隔为 15/10/5/3/2/1 分钟）。" +
-                        "第 36 分钟最后一次提醒后仍未恢复，会显示全屏悬浮窗。" +
-                        "点击“前往”可回到应用首页；权限未恢复时离开应用，悬浮窗会再次出现。" +
-                        "守护关闭会受数字自律锁定、每日关闭限额和自动重开保护约束。",
-                )
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        showAccessibilityGuardDialog = false
-                        enableGuard()
-                    },
-                ) {
-                    Text("同意并开启")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showAccessibilityGuardDialog = false }) {
-                    Text("取消")
-                }
-            },
-        )
     }
     return ScaffoldExt(
         navItem = BottomNavItem.Control,
@@ -237,10 +182,18 @@ fun useControlPage(): ScaffoldExt {
                     },
                     checked = a11yRunning,
                     onCheckedChange = { newEnabled ->
-                        if (newEnabled && !writeSecureSettingsState.value) {
-                            mainVm.navigatePage(AuthA11yRoute)
-                        } else {
-                            switchAutomatorService()
+                        when (HomeA11yServiceTogglePolicy.action(newEnabled, writeSecureSettings)) {
+                            HomeA11yServiceTogglePolicy.Action.OPEN_AUTHORIZATION -> {
+                                mainVm.navigatePage(AuthA11yRoute)
+                            }
+
+                            HomeA11yServiceTogglePolicy.Action.START_OR_REPAIR -> {
+                                requestStartOrRepairAutomatorService()
+                            }
+
+                            HomeA11yServiceTogglePolicy.Action.EXPLAIN_SYSTEM_SETTINGS -> {
+                                showA11yDisableInfoDialog = true
+                            }
                         }
                     },
                 )
@@ -288,22 +241,6 @@ fun useControlPage(): ScaffoldExt {
                 },
             )
 
-            if (META.isGkdChannel) {
-                PageSwitchItemCard(
-                    imageVector = PerfIcon.VerifiedUser,
-                    title = "无障碍权限守护",
-                    subtitle = "关闭后按 15/10/5/3/2/1 分钟提醒，最后进入全屏提示",
-                    checked = store.accessibilityGuardEnabled,
-                    onCheckedChange = { enabled ->
-                        if (enabled) {
-                            showAccessibilityGuardDialog = true
-                        } else {
-                            disableGuard()
-                        }
-                    },
-                )
-            }
-
             ServerStatusCard()
 
             val usageGuardSummary by vm.usageGuardReviewSummaryFlow.collectAsState()
@@ -347,6 +284,31 @@ fun useControlPage(): ScaffoldExt {
                     mainVm.navigatePage(WebViewRoute(initUrl = HOME_PAGE_URL))
                 })
             Spacer(modifier = Modifier.height(EmptyHeight))
+        }
+
+        if (showA11yDisableInfoDialog) {
+            AlertDialog(
+                onDismissRequest = { showA11yDisableInfoDialog = false },
+                title = { Text("不能在应用内关闭无障碍") },
+                text = {
+                    Text("为防止误触，应用内不支持在此关闭无障碍。若确需关闭，请前往 Android 系统无障碍设置。")
+                },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            showA11yDisableInfoDialog = false
+                            openA11ySettings()
+                        },
+                    ) {
+                        Text("前往设置")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showA11yDisableInfoDialog = false }) {
+                        Text("取消")
+                    }
+                },
+            )
         }
     }
 }

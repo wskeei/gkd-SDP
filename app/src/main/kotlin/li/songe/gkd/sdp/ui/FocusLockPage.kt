@@ -1,5 +1,6 @@
 package li.songe.gkd.sdp.ui
 
+import androidx.activity.compose.LocalActivity
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
@@ -49,15 +50,16 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.compose.material3.AlertDialog
-import androidx.compose.ui.platform.LocalContext
 import androidx.navigation3.runtime.NavKey
 import kotlinx.serialization.Serializable
 import kotlinx.coroutines.launch
+import li.songe.gkd.sdp.META
+import li.songe.gkd.sdp.MainActivity
 import li.songe.gkd.sdp.a11y.FocusModeEngine
 import li.songe.gkd.sdp.a11y.UrlBlockerEngine
 import li.songe.gkd.sdp.data.ConstraintConfig
 import li.songe.gkd.sdp.data.InterceptConfig
+import li.songe.gkd.sdp.service.AccessibilityGuardController
 import li.songe.gkd.sdp.ui.component.PerfIcon
 import li.songe.gkd.sdp.ui.component.PerfIconButton
 import li.songe.gkd.sdp.ui.component.PerfTopAppBar
@@ -68,6 +70,7 @@ import li.songe.gkd.sdp.ui.style.scaffoldPadding
 import li.songe.gkd.sdp.ui.style.surfaceCardColors
 import li.songe.gkd.sdp.util.AutoReenablePolicy
 import li.songe.gkd.sdp.util.format
+import li.songe.gkd.sdp.util.toast
 import kotlin.math.roundToInt
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -82,6 +85,7 @@ fun FocusLockPage() {
     val expandedSubs by vm.expandedSubs.collectAsState()
     val expandedApps by vm.expandedApps.collectAsState()
     val context = LocalContext.current
+    val activity = LocalActivity.current as MainActivity
     val settings by storeFlow.collectAsState()
 
     val lockSheetState = rememberModalBottomSheetState()
@@ -90,6 +94,8 @@ fun FocusLockPage() {
     var showLockSheet by remember { mutableStateOf(false) }
     var showPauseSheet by remember { mutableStateOf(false) }
     var showPermissionDialog by remember { mutableStateOf(false) }
+    var showAccessibilityGuardDialog by remember { mutableStateOf(false) }
+    var showAccessibilityGuardDisableDialog by remember { mutableStateOf(false) }
     var showAutoReenableDialog by remember { mutableStateOf(false) }
     
     var currentLockTarget by remember { mutableStateOf<LockTarget?>(null) }
@@ -147,6 +153,23 @@ fun FocusLockPage() {
                     onClick = { mainVm.navigatePage(UsageGuardRoute) }
                 )
                 Spacer(modifier = Modifier.height(12.dp))
+            }
+
+            if (META.isGkdChannel) {
+                item(key = "accessibility_guard") {
+                    AccessibilityGuardCard(
+                        enabled = settings.accessibilityGuardEnabled,
+                        armed = settings.accessibilityGuardAutoReenableArmed,
+                        onCheckedChange = { requestedEnabled ->
+                            if (requestedEnabled) {
+                                showAccessibilityGuardDialog = true
+                            } else {
+                                showAccessibilityGuardDisableDialog = true
+                            }
+                        },
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                }
             }
 
             // 软件安装监测卡片
@@ -294,6 +317,87 @@ fun FocusLockPage() {
             )
         }
 
+        if (showAccessibilityGuardDialog) {
+            AlertDialog(
+                onDismissRequest = { showAccessibilityGuardDialog = false },
+                title = { Text("开启无障碍权限守护") },
+                text = {
+                    Text(
+                        "即使当前无障碍已经关闭，也可以先开启守护。检测到关闭后会立即显示倒计时，" +
+                            "并在 15、25、30、33、35、36 分钟分别提醒一次（间隔为 15/10/5/3/2/1 分钟）。" +
+                            "第 36 分钟最后一次提醒后仍未恢复，会显示全屏悬浮窗。" +
+                            "关闭守护会受数字自律锁定、每日关闭限额和自动重开保护约束。",
+                    )
+                },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            showAccessibilityGuardDialog = false
+                            scope.launch {
+                                when (AccessibilityGuardController.enable(activity)) {
+                                    AccessibilityGuardController.EnableResult.RequiresA11yMode -> {
+                                        toast("请先切换到无障碍模式")
+                                        mainVm.navigatePage(AuthA11yRoute)
+                                    }
+
+                                    AccessibilityGuardController.EnableResult.UnavailableChannel,
+                                    AccessibilityGuardController.EnableResult.Enabled,
+                                    AccessibilityGuardController.EnableResult.AlreadyEnabled,
+                                    AccessibilityGuardController.EnableResult.Superseded -> Unit
+                                }
+                            }
+                        },
+                    ) {
+                        Text("同意并开启")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showAccessibilityGuardDialog = false }) {
+                        Text("取消")
+                    }
+                },
+            )
+        }
+
+        if (showAccessibilityGuardDisableDialog) {
+            AlertDialog(
+                onDismissRequest = { showAccessibilityGuardDisableDialog = false },
+                title = { Text("关闭无障碍权限守护") },
+                text = {
+                    Text(
+                        "关闭后将停止无障碍权限提醒、倒计时和全屏提示。" +
+                            "如果已加入自动重开保护，守护会在下一次检查时恢复。",
+                    )
+                },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            showAccessibilityGuardDisableDialog = false
+                            scope.launch {
+                                when (val result = AccessibilityGuardController.disable()) {
+                                    AccessibilityGuardController.DisableResult.BlockedByLock ->
+                                        toast("数字自律锁定生效中，无法关闭无障碍权限守护")
+
+                                    is AccessibilityGuardController.DisableResult.BlockedByQuota ->
+                                        toast("今日关闭次数已用完（${result.limit} 次），将于明日 00:00 重置")
+
+                                    AccessibilityGuardController.DisableResult.Disabled,
+                                    AccessibilityGuardController.DisableResult.NoChange -> Unit
+                                }
+                            }
+                        },
+                    ) {
+                        Text("关闭守护")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showAccessibilityGuardDisableDialog = false }) {
+                        Text("取消")
+                    }
+                },
+            )
+        }
+
         if (showAutoReenableDialog) {
             var inputText by remember { mutableStateOf(settings.autoReenableIntervalMinutes.toString()) }
             var dailyLimitText by remember { mutableStateOf(settings.autoReenableDailyDisableLimit.toString()) }
@@ -329,7 +433,7 @@ fun FocusLockPage() {
                 title = { Text("自动重开间隔") },
                 text = {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text("自动重开始终启用，无法关闭。会恢复已关闭的规则与使用申请开关。")
+                        Text("自动重开始终启用，无法关闭。会恢复已关闭的规则、使用申请开关与已加入保护的无障碍权限守护。")
                         Text("下一次自动重开：$nextEnforceText")
                         Text("今日已用/总额：${autoReenableUiState.dailyDisableUsed}/${autoReenableUiState.dailyDisableLimit}")
                         Text("剩余次数：${autoReenableUiState.dailyDisableRemaining}")
@@ -909,6 +1013,61 @@ private fun formatRemainingTime(millis: Long): String {
 }
 
 @Composable
+fun AccessibilityGuardCard(
+    enabled: Boolean,
+    armed: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+) {
+    ElevatedCard(
+        colors = surfaceCardColors,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp),
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            PerfIcon(
+                imageVector = PerfIcon.VerifiedUser,
+                tint = if (enabled) {
+                    MaterialTheme.colorScheme.primary
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                },
+            )
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "无障碍权限守护",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                )
+                Text(
+                    text = when {
+                        enabled -> "关闭后立即倒计时，并按 15/10/5/3/2/1 分钟分阶段提醒"
+                        armed -> "已暂时关闭，将由自动重开保护恢复"
+                        else -> "检测到无障碍关闭后立即提醒，最后显示全屏提示"
+                    },
+                    style = MaterialTheme.typography.bodySmall,
+                    color = if (enabled) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    },
+                )
+            }
+            Switch(
+                checked = enabled,
+                onCheckedChange = onCheckedChange,
+            )
+        }
+    }
+}
+
+@Composable
 fun AutoReenableGuardCard(
     intervalMinutes: Int,
     changedAt: Long,
@@ -950,7 +1109,7 @@ fun AutoReenableGuardCard(
                 fontWeight = FontWeight.SemiBold
             )
             Text(
-                text = "自动重开始终启用，无法关闭；会恢复规则与使用申请开关",
+                text = "自动重开始终启用，无法关闭；会恢复规则、使用申请开关与无障碍权限守护",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.primary
             )
