@@ -52,6 +52,12 @@ import li.songe.gkd.sdp.util.UsageGuardCountdownOverlayPolicy
 import li.songe.gkd.sdp.util.px
 import kotlin.math.roundToInt
 
+internal val USAGE_GUARD_COUNTDOWN_OVERLAY_FLAGS =
+    WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
+        WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or
+        WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or
+        WindowManager.LayoutParams.FLAG_SECURE
+
 class UsageGuardCountdownOverlayService : LifecycleService(), SavedStateRegistryOwner {
     companion object {
         const val EXTRA_REASON_TEXT = "reasonText"
@@ -149,9 +155,7 @@ class UsageGuardCountdownOverlayService : LifecycleService(), SavedStateRegistry
             WindowManager.LayoutParams.WRAP_CONTENT,
             WindowManager.LayoutParams.WRAP_CONTENT,
             WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
-            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
-                WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or
-                WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
+            USAGE_GUARD_COUNTDOWN_OVERLAY_FLAGS,
             PixelFormat.TRANSLUCENT
         ).apply {
             gravity = Gravity.START or Gravity.TOP
