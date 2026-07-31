@@ -41,25 +41,16 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.update
 import li.songe.gkd.sdp.META
 import li.songe.gkd.sdp.MainActivity
-import li.songe.gkd.sdp.MainViewModel
 import li.songe.gkd.sdp.R
-import li.songe.gkd.sdp.app
 import li.songe.gkd.sdp.data.SubsConfig
 import li.songe.gkd.sdp.permission.appOpsRestrictedFlow
-import li.songe.gkd.sdp.permission.canDrawOverlaysState
-import li.songe.gkd.sdp.permission.foregroundServiceSpecialUseState
-import li.songe.gkd.sdp.permission.notificationState
-import li.songe.gkd.sdp.permission.requiredPermission
 import li.songe.gkd.sdp.permission.writeSecureSettingsState
 import li.songe.gkd.sdp.service.A11yService
 import li.songe.gkd.sdp.service.ActivityService
-import li.songe.gkd.sdp.service.AccessibilityGuardRuntime
-import li.songe.gkd.sdp.service.AccessibilityGuardOverlayService
+import li.songe.gkd.sdp.service.AccessibilityGuardController
 import li.songe.gkd.sdp.service.StatusService
 import li.songe.gkd.sdp.service.a11yPartDisabledFlow
 import li.songe.gkd.sdp.service.switchAutomatorService
@@ -94,13 +85,6 @@ import li.songe.gkd.sdp.util.latestRecordFlow
 import li.songe.gkd.sdp.util.launchAsFn
 import li.songe.gkd.sdp.util.throttle
 import li.songe.gkd.sdp.util.toast
-import java.util.concurrent.atomic.AtomicBoolean
-import java.util.concurrent.atomic.AtomicLong
-
-private val accessibilityGuardRequestSequence = AtomicLong(0L)
-private val accessibilityGuardDesired = AtomicBoolean(false)
-private val accessibilityGuardStartedStatus = AtomicBoolean(false)
-
 @Composable
 fun useControlPage(): ScaffoldExt {
     val context = LocalActivity.current as MainActivity
@@ -109,7 +93,29 @@ fun useControlPage(): ScaffoldExt {
     val scrollKey = rememberSaveable { mutableIntStateOf(0) }
     var showAccessibilityGuardDialog by rememberSaveable { mutableStateOf(false) }
     val enableGuard = vm.viewModelScope.launchAsFn {
-        enableAccessibilityGuard(context, mainVm)
+        when (AccessibilityGuardController.enable(context)) {
+            AccessibilityGuardController.EnableResult.RequiresA11yMode -> {
+                toast("请先切换到无障碍模式")
+                mainVm.navigatePage(AuthA11yRoute)
+            }
+
+            AccessibilityGuardController.EnableResult.UnavailableChannel -> Unit
+            AccessibilityGuardController.EnableResult.Enabled,
+            AccessibilityGuardController.EnableResult.AlreadyEnabled,
+            AccessibilityGuardController.EnableResult.Superseded -> Unit
+        }
+    }
+    val disableGuard = vm.viewModelScope.launchAsFn {
+        when (val result = AccessibilityGuardController.disable()) {
+            AccessibilityGuardController.DisableResult.BlockedByLock ->
+                toast("数字自律锁定生效中，无法关闭无障碍权限守护")
+
+            is AccessibilityGuardController.DisableResult.BlockedByQuota ->
+                toast("今日关闭次数已用完（${result.limit} 次），将于明日 00:00 重置")
+
+            AccessibilityGuardController.DisableResult.Disabled,
+            AccessibilityGuardController.DisableResult.NoChange -> Unit
+        }
     }
     val (scrollBehavior, scrollState) = useScrollBehaviorState(scrollKey)
     LaunchedEffect(null) {
@@ -125,11 +131,12 @@ fun useControlPage(): ScaffoldExt {
             title = { Text("开启无障碍权限守护") },
             text = {
                 Text(
-                    "开启后，无障碍权限关闭时将在 15、25、30、33、35、36 分钟" +
+                    "即使当前无障碍已经关闭，也可以先开启守护。检测到关闭后会立即显示倒计时，" +
+                        "并在 15、25、30、33、35、36 分钟" +
                         "分别提醒一次（间隔为 15/10/5/3/2/1 分钟）。" +
                         "第 36 分钟最后一次提醒后仍未恢复，会显示全屏悬浮窗。" +
                         "点击“前往”可回到应用首页；权限未恢复时离开应用，悬浮窗会再次出现。" +
-                        "你可以随时在本页关闭守护。",
+                        "守护关闭会受数字自律锁定、每日关闭限额和自动重开保护约束。",
                 )
             },
             confirmButton = {
@@ -291,7 +298,7 @@ fun useControlPage(): ScaffoldExt {
                         if (enabled) {
                             showAccessibilityGuardDialog = true
                         } else {
-                            disableAccessibilityGuard()
+                            disableGuard()
                         }
                     },
                 )
@@ -342,102 +349,6 @@ fun useControlPage(): ScaffoldExt {
             Spacer(modifier = Modifier.height(EmptyHeight))
         }
     }
-}
-
-private fun disableAccessibilityGuard() {
-    synchronized(accessibilityGuardRequestSequence) {
-        accessibilityGuardRequestSequence.incrementAndGet()
-        accessibilityGuardDesired.set(false)
-        storeFlow.update { it.copy(accessibilityGuardEnabled = false) }
-    }
-    if (accessibilityGuardStartedStatus.compareAndSet(true, false)) {
-        StatusService.stop()
-        storeFlow.update { it.copy(enableStatusService = false) }
-    }
-    AccessibilityGuardRuntime.disableAndReset()
-    AccessibilityGuardOverlayService.stop()
-}
-
-private suspend fun enableAccessibilityGuard(
-    context: MainActivity,
-    mainVm: MainViewModel,
-) {
-    val requestId = accessibilityGuardRequestSequence.incrementAndGet()
-    accessibilityGuardDesired.set(true)
-    if (!META.isGkdChannel) {
-        accessibilityGuardDesired.set(false)
-        return
-    }
-    if (!storeFlow.value.useA11y) {
-        cleanupAccessibilityGuardActivation(requestId)
-        toast("请先切换到无障碍模式")
-        mainVm.navigatePage(AuthA11yRoute)
-        return
-    }
-    if (!mainVm.a11yServiceEnabledFlow.value || !secureA11yServiceEnabled()) {
-        cleanupAccessibilityGuardActivation(requestId)
-        toast("请先开启无障碍权限")
-        mainVm.navigatePage(AuthA11yRoute)
-        return
-    }
-
-    try {
-        requiredPermission(context, notificationState)
-        requiredPermission(context, foregroundServiceSpecialUseState)
-        requiredPermission(context, canDrawOverlaysState)
-    } catch (e: CancellationException) {
-        cleanupAccessibilityGuardActivation(requestId)
-        throw e
-    }
-    if (requestId != accessibilityGuardRequestSequence.get()) return
-    val statusWasEnabled = storeFlow.value.enableStatusService
-    if (!statusWasEnabled) accessibilityGuardStartedStatus.set(true)
-    try {
-        if (!StatusService.requestStart(context)) {
-            cleanupAccessibilityGuardActivation(requestId)
-            return
-        }
-    } catch (e: CancellationException) {
-        cleanupAccessibilityGuardActivation(requestId)
-        throw e
-    }
-
-    if (requestId != accessibilityGuardRequestSequence.get()) {
-        cleanupAccessibilityGuardActivation(requestId)
-        return
-    }
-
-    if (!storeFlow.value.useA11y || !mainVm.a11yServiceEnabledFlow.value ||
-        !secureA11yServiceEnabled() ||
-        !notificationState.updateAndGet() ||
-        !foregroundServiceSpecialUseState.updateAndGet() ||
-        !canDrawOverlaysState.updateAndGet()
-    ) {
-        cleanupAccessibilityGuardActivation(requestId)
-        return
-    }
-    synchronized(accessibilityGuardRequestSequence) {
-        if (requestId != accessibilityGuardRequestSequence.get()) return
-        storeFlow.update { it.copy(accessibilityGuardEnabled = true) }
-        accessibilityGuardStartedStatus.set(false)
-    }
-    AccessibilityGuardRuntime.requestReconcile()
-}
-
-private fun cleanupAccessibilityGuardActivation(requestId: Long) {
-    if (requestId == accessibilityGuardRequestSequence.get()) {
-        accessibilityGuardDesired.set(false)
-    }
-    if (!accessibilityGuardDesired.get() &&
-        accessibilityGuardStartedStatus.compareAndSet(true, false)
-    ) {
-        StatusService.stop()
-        storeFlow.update { it.copy(enableStatusService = false) }
-    }
-}
-
-private fun secureA11yServiceEnabled(): Boolean {
-    return app.getSecureA11yServices().contains(A11yService.a11yCn)
 }
 
 
