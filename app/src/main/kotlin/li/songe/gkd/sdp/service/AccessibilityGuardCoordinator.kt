@@ -42,10 +42,8 @@ private fun clearTemporaryShutdownSession(
  * The coordinator will consume [wakeups] in a later task. Keeping these
  * methods limited to session state and a conflated wake-up prevents Android
  * notification/overlay side effects from racing with state reconciliation.
- * The pre-disable temporary marker is intentionally persisted without an
- * immediate wake; the policy keeps it suppressed while the component still
- * reports enabled, and the post-disable service-state change triggers the
- * next reconciliation.
+ * The policy keeps a pre-disable temporary marker suppressed while the
+ * component still reports enabled.
  */
 object AccessibilityGuardRuntime {
     const val GRANT_FLOW_TIMEOUT_MS = 5 * 60_000L
@@ -59,10 +57,10 @@ object AccessibilityGuardRuntime {
     val wakeups: SharedFlow<Unit> = _wakeups.asSharedFlow()
 
     fun markTemporaryShutdownExpected() {
-        // Do not wake before disableSelf(): the coordinator would still see
-        // accessibility enabled, reset this marker, and treat the subsequent
-        // component removal as a manual shutdown.
         accessibilityGuardSessionFlow.update(::markTemporaryShutdownSession)
+        // The policy preserves this marker while the component still reports
+        // enabled, so wake coordinator-only consumers immediately.
+        wake()
     }
 
     fun clearTemporaryShutdownExpected() {
