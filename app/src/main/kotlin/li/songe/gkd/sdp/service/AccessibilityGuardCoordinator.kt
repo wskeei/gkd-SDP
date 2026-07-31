@@ -194,6 +194,7 @@ class AccessibilityGuardCoordinator(
     }
 
     private data class TimerToken(
+        val id: Long,
         val generation: Long,
         val targetEpochMs: Long,
     )
@@ -203,6 +204,7 @@ class AccessibilityGuardCoordinator(
     private var coordinatorJob: Job? = null
     private var timerJob: Job? = null
     private var timerToken: TimerToken? = null
+    private var nextTimerTokenId = 0L
     private var screenReceiverRegistered = false
     private var previousMode: AccessibilityGuardPolicy.SessionMode? = null
 
@@ -365,6 +367,7 @@ class AccessibilityGuardCoordinator(
                 resetAndStop(sessionStateFlow.value)
                 return
             }
+            if (!sideEffectFenceOpen(session.generation)) return
             postAccessibilityGuardNotification(dueReminderIndex)
 
             if (finalCheckpoint) {
@@ -538,6 +541,7 @@ class AccessibilityGuardCoordinator(
             resetAndStop(sessionStateFlow.value)
             return
         }
+        if (!sideEffectFenceOpen(expectedGeneration)) return
         AccessibilityGuardOverlayService.start(context)
     }
 
@@ -551,8 +555,16 @@ class AccessibilityGuardCoordinator(
             timerToken = null
             return
         }
-        val token = TimerToken(generation = generation, targetEpochMs = targetEpochMs)
-        if (timerToken == token && timerJob?.isActive == true) return
+        if (timerToken?.generation == generation &&
+            timerToken?.targetEpochMs == targetEpochMs &&
+            timerJob?.isActive == true
+        ) return
+
+        val token = TimerToken(
+            id = ++nextTimerTokenId,
+            generation = generation,
+            targetEpochMs = targetEpochMs,
+        )
 
         timerJob?.cancel()
         timerToken = token
