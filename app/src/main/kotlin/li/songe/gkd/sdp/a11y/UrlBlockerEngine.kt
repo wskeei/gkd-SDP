@@ -12,6 +12,7 @@ import kotlinx.coroutines.launch
 import li.songe.gkd.sdp.META
 import li.songe.gkd.sdp.appScope
 import li.songe.gkd.sdp.data.BrowserConfig
+import li.songe.gkd.sdp.data.SelfControlAttempt
 import li.songe.gkd.sdp.data.UrlBlockRule
 import li.songe.gkd.sdp.data.UrlRuleGroup
 import li.songe.gkd.sdp.data.UrlTimeRule
@@ -19,6 +20,7 @@ import li.songe.gkd.sdp.db.DbSet
 import li.songe.gkd.sdp.service.A11yService
 import li.songe.gkd.sdp.service.InterceptOverlayService
 import li.songe.gkd.sdp.util.LogUtils
+import li.songe.gkd.sdp.util.SelfControlElapsedPolicy
 import java.util.concurrent.ConcurrentHashMap
 
 
@@ -262,10 +264,18 @@ object UrlBlockerEngine {
     private fun showInterceptOverlay(service: A11yService, rule: UrlBlockRule) {
         try {
             val intent = Intent(service, InterceptOverlayService::class.java).apply {
-                putExtra("subsId", -2L)  // URL 拦截使用特殊 ID (-2 区别于默认的 -1)
-                putExtra("groupKey", rule.id.toInt())
-                putExtra("message", rule.interceptMessage)
-                putExtra("cooldown", 10)
+                putExtra(InterceptOverlayService.EXTRA_SUBS_ID, -2L)  // URL 拦截使用特殊 ID (-2 区别于默认的 -1)
+                putExtra(InterceptOverlayService.EXTRA_GROUP_KEY, rule.id.toInt())
+                putExtra(InterceptOverlayService.EXTRA_MESSAGE, rule.interceptMessage)
+                putExtra(InterceptOverlayService.EXTRA_COOLDOWN, 10)
+                putExtra(
+                    InterceptOverlayService.EXTRA_EVENT_KEY,
+                    SelfControlElapsedPolicy.urlInterceptEventKey(rule.id),
+                )
+                putExtra(
+                    InterceptOverlayService.EXTRA_EVENT_KIND,
+                    SelfControlAttempt.KIND_URL_INTERCEPT,
+                )
             }
             service.startService(intent)
         } catch (e: Exception) {

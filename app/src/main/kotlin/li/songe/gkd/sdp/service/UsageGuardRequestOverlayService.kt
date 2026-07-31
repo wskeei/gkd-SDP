@@ -41,12 +41,15 @@ import androidx.savedstate.SavedStateRegistryOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import li.songe.gkd.sdp.a11y.UsageGuardEngine
 import li.songe.gkd.sdp.data.UsageGuardRecord
 import li.songe.gkd.sdp.data.UsageGuardTag
 import li.songe.gkd.sdp.db.DbSet
 import li.songe.gkd.sdp.store.storeFlow
+import li.songe.gkd.sdp.ui.component.SelfControlElapsedCard
 import li.songe.gkd.sdp.ui.style.AppTheme
+import li.songe.gkd.sdp.util.SelfControlElapsedPolicy
 import li.songe.gkd.sdp.util.UsageGuardPolicy
 import li.songe.gkd.sdp.util.UsageGuardUiStatePolicy
 import li.songe.gkd.sdp.widget.UsageGuardReviewWidget
@@ -62,6 +65,9 @@ class UsageGuardRequestOverlayService : LifecycleService(), SavedStateRegistryOw
     private var appName: String = ""
     private var grantMode: Int = UsageGuardPolicy.GRANT_MODE_RESUMABLE
     private var minReasonLength: Int = 8
+    private var elapsedState by mutableStateOf<SelfControlElapsedPolicy.ElapsedState>(
+        SelfControlElapsedPolicy.ElapsedState.Loading,
+    )
 
     override fun onCreate() {
         super.onCreate()
@@ -77,8 +83,25 @@ class UsageGuardRequestOverlayService : LifecycleService(), SavedStateRegistryOw
         grantMode = intent?.getIntExtra("grantMode", UsageGuardPolicy.GRANT_MODE_RESUMABLE)
             ?: UsageGuardPolicy.GRANT_MODE_RESUMABLE
         minReasonLength = intent?.getIntExtra("minReasonLength", 8) ?: 8
+        elapsedState = SelfControlElapsedPolicy.ElapsedState.Loading
         showOverlay()
+        loadElapsedState()
         return START_NOT_STICKY
+    }
+
+    private fun loadElapsedState() {
+        lifecycleScope.launch {
+            elapsedState = runCatching {
+                val previousRecord = withContext(Dispatchers.IO) {
+                    DbSet.usageGuardRecordDao.getLatestRecord(appId)
+                }
+                SelfControlElapsedPolicy.stateForUsageRequest(
+                    previousRequestedAt = previousRecord?.requestedAt,
+                )
+            }.getOrElse {
+                SelfControlElapsedPolicy.ElapsedState.Unavailable
+            }
+        }
     }
 
     private fun showOverlay() {
@@ -96,6 +119,7 @@ class UsageGuardRequestOverlayService : LifecycleService(), SavedStateRegistryOw
                         tags = tags,
                         grantMode = grantMode,
                         minReasonLength = settings.usageGuardMinReasonLength,
+                        elapsedState = elapsedState,
                         durationOptions = UsageGuardUiStatePolicy.normalizeDurationOptions(
                             settings.usageGuardDurationOptionsMinutes,
                         ),
@@ -179,6 +203,7 @@ private fun UsageGuardRequestContent(
     tags: List<UsageGuardTag>,
     grantMode: Int,
     minReasonLength: Int,
+    elapsedState: SelfControlElapsedPolicy.ElapsedState,
     durationOptions: List<Int>,
     onAddTag: (String, List<UsageGuardTag>) -> Unit,
     onSubmit: (List<String>, String, Int) -> Unit,
@@ -223,6 +248,11 @@ private fun UsageGuardRequestContent(
                 },
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.primary,
+            )
+
+            SelfControlElapsedCard(
+                context = SelfControlElapsedPolicy.Context.USAGE_REQUEST,
+                state = elapsedState,
             )
 
             Text("选择标签", style = MaterialTheme.typography.titleSmall)

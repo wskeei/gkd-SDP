@@ -31,6 +31,7 @@ import li.songe.gkd.sdp.data.InterceptConfig
 import li.songe.gkd.sdp.data.Snapshot
 import li.songe.gkd.sdp.data.SubsConfig
 import li.songe.gkd.sdp.data.SubsItem
+import li.songe.gkd.sdp.data.SelfControlAttempt
 import li.songe.gkd.sdp.data.UrlBlockRule
 import li.songe.gkd.sdp.data.WechatContact
 import li.songe.gkd.sdp.data.AppInstallLog
@@ -42,7 +43,7 @@ import li.songe.gkd.sdp.util.dbFolder
 import li.songe.gkd.sdp.util.json
 
 @Database(
-    version = 30,
+    version = 31,
     entities = [
         SubsItem::class,
         Snapshot::class,
@@ -72,6 +73,7 @@ import li.songe.gkd.sdp.util.json
         UsageGuardAppProfile::class,
         UsageGuardTag::class,
         UsageGuardRecord::class,
+        SelfControlAttempt::class,
     ],
     autoMigrations = [
         AutoMigration(from = 1, to = 2),
@@ -103,6 +105,7 @@ import li.songe.gkd.sdp.util.json
         AutoMigration(from = 27, to = 28),  // 添加 url_blocker_lock 表
         AutoMigration(from = 28, to = 29),  // UrlBlockRule 添加 is_locked, lock_end_time 字段
         AutoMigration(from = 29, to = 30),  // 添加 usage_guard_* 表
+        AutoMigration(from = 30, to = 31),  // 添加 self_control_attempt 表
     ]
 )
 @TypeConverters(DbConverters::class)
@@ -136,6 +139,7 @@ abstract class AppDb : RoomDatabase() {
     abstract fun usageGuardAppProfileDao(): UsageGuardAppProfile.UsageGuardAppProfileDao
     abstract fun usageGuardTagDao(): UsageGuardTag.UsageGuardTagDao
     abstract fun usageGuardRecordDao(): UsageGuardRecord.UsageGuardRecordDao
+    abstract fun selfControlAttemptDao(): SelfControlAttempt.SelfControlAttemptDao
 }
 
 @RenameColumn(
@@ -219,4 +223,5 @@ object DbSet {
     val usageGuardAppProfileDao get() = db.usageGuardAppProfileDao()
     val usageGuardTagDao get() = db.usageGuardTagDao()
     val usageGuardRecordDao get() = db.usageGuardRecordDao()
+    val selfControlAttemptDao get() = db.selfControlAttemptDao()
 }

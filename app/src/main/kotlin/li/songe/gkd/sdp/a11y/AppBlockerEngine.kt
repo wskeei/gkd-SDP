@@ -16,6 +16,7 @@ import li.songe.gkd.sdp.db.DbSet
 import li.songe.gkd.sdp.service.A11yService
 import li.songe.gkd.sdp.service.AppBlockerOverlayService
 import li.songe.gkd.sdp.util.LogUtils
+import li.songe.gkd.sdp.util.SelfControlElapsedPolicy
 import java.util.concurrent.ConcurrentHashMap
 
 object AppBlockerEngine {
@@ -188,8 +189,12 @@ object AppBlockerEngine {
     private fun showBlockerOverlay(service: A11yService, packageName: String, message: String) {
         try {
             val intent = Intent(service, AppBlockerOverlayService::class.java).apply {
-                putExtra("message", message)
-                putExtra("blockedApp", packageName)
+                putExtra(AppBlockerOverlayService.EXTRA_MESSAGE, message)
+                putExtra(AppBlockerOverlayService.EXTRA_BLOCKED_APP, packageName)
+                putExtra(
+                    AppBlockerOverlayService.EXTRA_EVENT_KEY,
+                    SelfControlElapsedPolicy.appBlockerEventKey(packageName),
+                )
             }
             service.startService(intent)
         } catch (e: Exception) {
