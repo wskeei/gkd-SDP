@@ -105,4 +105,28 @@ class SelfControlElapsedPolicyTest {
             SelfControlElapsedPolicy.stateForUsageRequest(previousRequestedAt = null),
         )
     }
+
+    @Test
+    fun eventKeysRemainStableAndIncludeTheActualTarget() {
+        assertEquals(
+            "app_blocker:com.example.video",
+            SelfControlElapsedPolicy.appBlockerEventKey("com.example.video"),
+        )
+        assertEquals(
+            "selector_intercept:123:com.example.video:7",
+            SelfControlElapsedPolicy.selectorInterceptEventKey(
+                subsId = 123L,
+                appId = "com.example.video",
+                groupKey = 7,
+            ),
+        )
+        assertEquals(
+            "url_intercept:456",
+            SelfControlElapsedPolicy.urlInterceptEventKey(456L),
+        )
+        assertTrue(
+            SelfControlElapsedPolicy.selectorInterceptEventKey(123L, "a.app", 7) !=
+                SelfControlElapsedPolicy.selectorInterceptEventKey(123L, "b.app", 7),
+        )
+    }
 }

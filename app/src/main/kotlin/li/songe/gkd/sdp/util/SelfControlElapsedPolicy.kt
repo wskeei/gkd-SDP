@@ -100,4 +100,16 @@ object SelfControlElapsedPolicy {
             )
         } ?: ElapsedState.NoHistory
     }
+
+    fun appBlockerEventKey(packageName: String): String {
+        return "app_blocker:$packageName"
+    }
+
+    fun selectorInterceptEventKey(subsId: Long, appId: String, groupKey: Int): String {
+        return "selector_intercept:$subsId:$appId:$groupKey"
+    }
+
+    fun urlInterceptEventKey(ruleId: Long): String {
+        return "url_intercept:$ruleId"
+    }
 }
