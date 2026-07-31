@@ -93,6 +93,9 @@ import li.songe.gkd.sdp.util.latestRecordFlow
 import li.songe.gkd.sdp.util.launchAsFn
 import li.songe.gkd.sdp.util.throttle
 import li.songe.gkd.sdp.util.toast
+import java.util.concurrent.atomic.AtomicLong
+
+private val accessibilityGuardRequestSequence = AtomicLong(0L)
 
 @Composable
 fun useControlPage(): ScaffoldExt {
@@ -338,7 +341,10 @@ fun useControlPage(): ScaffoldExt {
 }
 
 private fun disableAccessibilityGuard() {
-    storeFlow.update { it.copy(accessibilityGuardEnabled = false) }
+    synchronized(accessibilityGuardRequestSequence) {
+        accessibilityGuardRequestSequence.incrementAndGet()
+        storeFlow.update { it.copy(accessibilityGuardEnabled = false) }
+    }
     AccessibilityGuardRuntime.disableAndReset()
     AccessibilityGuardOverlayService.stop()
 }
@@ -347,6 +353,7 @@ private suspend fun enableAccessibilityGuard(
     context: MainActivity,
     mainVm: MainViewModel,
 ) {
+    val requestId = accessibilityGuardRequestSequence.incrementAndGet()
     if (!META.isGkdChannel) return
     if (!storeFlow.value.useA11y) {
         toast("请先切换到无障碍模式")
@@ -365,6 +372,7 @@ private suspend fun enableAccessibilityGuard(
     requiredPermission(context, canDrawOverlaysState)
     if (!StatusService.requestStart(context)) return
 
+    if (requestId != accessibilityGuardRequestSequence.get()) return
     if (!storeFlow.value.useA11y || !mainVm.a11yServiceEnabledFlow.value ||
         !secureA11yServiceEnabled() ||
         !notificationState.updateAndGet() ||
@@ -377,7 +385,10 @@ private suspend fun enableAccessibilityGuard(
         }
         return
     }
-    storeFlow.update { it.copy(accessibilityGuardEnabled = true) }
+    synchronized(accessibilityGuardRequestSequence) {
+        if (requestId != accessibilityGuardRequestSequence.get()) return
+        storeFlow.update { it.copy(accessibilityGuardEnabled = true) }
+    }
     AccessibilityGuardRuntime.requestReconcile()
 }
 
