@@ -57,6 +57,7 @@ import li.songe.gkd.sdp.permission.writeSecureSettingsState
 import li.songe.gkd.sdp.service.A11yService
 import li.songe.gkd.sdp.service.ActivityService
 import li.songe.gkd.sdp.service.AccessibilityGuardRuntime
+import li.songe.gkd.sdp.service.AccessibilityGuardOverlayService
 import li.songe.gkd.sdp.service.StatusService
 import li.songe.gkd.sdp.service.a11yPartDisabledFlow
 import li.songe.gkd.sdp.service.switchAutomatorService
@@ -338,6 +339,7 @@ fun useControlPage(): ScaffoldExt {
 private fun disableAccessibilityGuard() {
     storeFlow.update { it.copy(accessibilityGuardEnabled = false) }
     AccessibilityGuardRuntime.disableAndReset()
+    AccessibilityGuardOverlayService.stop()
 }
 
 private suspend fun enableAccessibilityGuard(
