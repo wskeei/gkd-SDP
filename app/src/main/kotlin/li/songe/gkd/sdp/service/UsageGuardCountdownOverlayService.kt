@@ -12,7 +12,10 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
@@ -31,7 +34,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.lifecycle.LifecycleService
 import androidx.lifecycle.setViewTreeLifecycleOwner
 import androidx.savedstate.SavedStateRegistryController
@@ -47,7 +52,17 @@ import li.songe.gkd.sdp.util.UsageGuardCountdownOverlayPolicy
 import li.songe.gkd.sdp.util.px
 import kotlin.math.roundToInt
 
+internal val USAGE_GUARD_COUNTDOWN_OVERLAY_FLAGS =
+    WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
+        WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or
+        WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or
+        WindowManager.LayoutParams.FLAG_SECURE
+
 class UsageGuardCountdownOverlayService : LifecycleService(), SavedStateRegistryOwner {
+    companion object {
+        const val EXTRA_REASON_TEXT = "reasonText"
+    }
+
     private val windowManager by lazy { getSystemService(WINDOW_SERVICE) as WindowManager }
     private var view: ComposeView? = null
     private var layoutParams: WindowManager.LayoutParams? = null
@@ -59,6 +74,9 @@ class UsageGuardCountdownOverlayService : LifecycleService(), SavedStateRegistry
     private var recordId: Long = 0L
     private var expiresAt: Long = 0L
     private var expiresAtState by mutableStateOf(0L)
+    private var reasonTextState by mutableStateOf(
+        UsageGuardCountdownOverlayPolicy.MISSING_REASON_TEXT,
+    )
     private var showTerminateConfirm by mutableStateOf(false)
 
     override fun onCreate() {
@@ -72,6 +90,9 @@ class UsageGuardCountdownOverlayService : LifecycleService(), SavedStateRegistry
         val incomingAppId = intent?.getStringExtra("appId").orEmpty()
         val incomingRecordId = intent?.getLongExtra("recordId", 0L) ?: 0L
         val incomingExpiresAt = intent?.getLongExtra("expiresAt", 0L) ?: 0L
+        val incomingReasonText = UsageGuardCountdownOverlayPolicy.displayReasonText(
+            intent?.getStringExtra(EXTRA_REASON_TEXT).orEmpty(),
+        )
         val now = System.currentTimeMillis()
         if (incomingAppId.isBlank() || incomingRecordId <= 0L || incomingExpiresAt <= now) {
             stopSelf()
@@ -88,6 +109,7 @@ class UsageGuardCountdownOverlayService : LifecycleService(), SavedStateRegistry
         recordId = incomingRecordId
         expiresAt = incomingExpiresAt
         expiresAtState = incomingExpiresAt
+        reasonTextState = incomingReasonText
         if (view == null) {
             showOverlay()
         } else if (shouldResetPosition) {
@@ -105,8 +127,15 @@ class UsageGuardCountdownOverlayService : LifecycleService(), SavedStateRegistry
             setViewTreeSavedStateRegistryOwner(this@UsageGuardCountdownOverlayService)
             setContent {
                 AppTheme {
+                    val horizontalMarginPx = 12.dp.px.roundToInt()
+                    val maxPillWidthPx = UsageGuardCountdownOverlayLayoutPolicy.maxPillWidthPx(
+                        screenWidthPx = ScreenUtils.getScreenWidth(),
+                        horizontalMarginPx = horizontalMarginPx,
+                    )
                     UsageGuardCountdownOverlayContent(
                         expiresAt = expiresAtState,
+                        reasonText = reasonTextState,
+                        maxPillWidthPx = maxPillWidthPx,
                         showTerminateConfirm = showTerminateConfirm,
                         onPillTap = { showTerminateConfirmScreen() },
                         onDrag = { dx, dy -> updatePosition(dx, dy) },
@@ -126,9 +155,7 @@ class UsageGuardCountdownOverlayService : LifecycleService(), SavedStateRegistry
             WindowManager.LayoutParams.WRAP_CONTENT,
             WindowManager.LayoutParams.WRAP_CONTENT,
             WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
-            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
-                WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or
-                WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
+            USAGE_GUARD_COUNTDOWN_OVERLAY_FLAGS,
             PixelFormat.TRANSLUCENT
         ).apply {
             gravity = Gravity.START or Gravity.TOP
@@ -230,6 +257,7 @@ class UsageGuardCountdownOverlayService : LifecycleService(), SavedStateRegistry
         recordId = 0L
         expiresAt = 0L
         expiresAtState = 0L
+        reasonTextState = UsageGuardCountdownOverlayPolicy.MISSING_REASON_TEXT
         showTerminateConfirm = false
     }
 }
@@ -237,6 +265,8 @@ class UsageGuardCountdownOverlayService : LifecycleService(), SavedStateRegistry
 @Composable
 private fun UsageGuardCountdownOverlayContent(
     expiresAt: Long,
+    reasonText: String,
+    maxPillWidthPx: Int,
     showTerminateConfirm: Boolean,
     onPillTap: () -> Unit,
     onDrag: (Float, Float) -> Unit,
@@ -252,6 +282,8 @@ private fun UsageGuardCountdownOverlayContent(
     } else {
         UsageGuardCountdownPill(
             expiresAt = expiresAt,
+            reasonText = reasonText,
+            maxPillWidthPx = maxPillWidthPx,
             onTap = onPillTap,
             onDrag = onDrag,
             onExpired = onExpired,
@@ -262,6 +294,8 @@ private fun UsageGuardCountdownOverlayContent(
 @Composable
 private fun UsageGuardCountdownPill(
     expiresAt: Long,
+    reasonText: String,
+    maxPillWidthPx: Int,
     onTap: () -> Unit,
     onDrag: (Float, Float) -> Unit,
     onExpired: () -> Unit,
@@ -278,6 +312,9 @@ private fun UsageGuardCountdownPill(
         }
     }
     val remainingText = UsageGuardCountdownOverlayPolicy.formatRemainingText(expiresAt, now)
+    val maxPillWidth = with(LocalDensity.current) {
+        maxPillWidthPx.toDp()
+    }
 
     Surface(
         color = Color.Black.copy(alpha = 0.72f),
@@ -293,12 +330,34 @@ private fun UsageGuardCountdownPill(
                 }
             },
     ) {
-        Text(
-            text = remainingText,
-            color = Color.White,
-            style = MaterialTheme.typography.labelLarge,
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-        )
+        Row(
+            modifier = Modifier
+                .widthIn(max = maxPillWidth)
+                .padding(horizontal = 12.dp, vertical = 6.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = remainingText,
+                color = Color.White,
+                style = MaterialTheme.typography.labelLarge,
+                maxLines = 1,
+            )
+            Box(
+                modifier = Modifier
+                    .width(1.dp)
+                    .height(24.dp)
+                    .background(Color.White.copy(alpha = 0.36f)),
+            )
+            Text(
+                text = reasonText,
+                color = Color.White,
+                style = MaterialTheme.typography.labelMedium,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f, fill = false),
+            )
+        }
     }
 }
 

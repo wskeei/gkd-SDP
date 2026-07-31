@@ -114,6 +114,22 @@ Common examples:
 
 The app manifest is large because many behaviors are service-driven. See [`app/src/main/AndroidManifest.xml`](app/src/main/AndroidManifest.xml) before changing permissions or background behavior.
 
+### Digital Self-Discipline / Usage Guard
+
+An approved usage request is persisted as a `UsageGuardRecord`. Its
+`reasonText` remains the source of truth for the active countdown reminder;
+the overlay must not keep an independently editable reason.
+
+The countdown service renders remaining time and reason in one movable
+`TYPE_APPLICATION_OVERLAY` window. That window uses `FLAG_SECURE`, so neither
+field should be readable in screenshots, screen recording, or non-secure
+display output. Android/OEM capture behavior may produce a blank or black
+protected region, or reject capture; the app does not promise reconstruction
+of the third-party app pixels behind the secure window.
+
+Screenshot protection requires physical-device/manual verification; JVM unit
+tests only validate the configured flag contract.
+
 ### Accessibility Guard
 
 The accessibility guard is a `gkd`-channel feature. The `play` flavor keeps the shared code compiling, but strict guard behavior is disabled there. It depends on all of the following runtime capabilities:

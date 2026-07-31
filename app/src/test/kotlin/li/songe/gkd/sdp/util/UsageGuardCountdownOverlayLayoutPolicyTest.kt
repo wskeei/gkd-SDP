@@ -51,4 +51,26 @@ class UsageGuardCountdownOverlayLayoutPolicyTest {
             )
         )
     }
+
+    @Test
+    fun maxPillWidthKeepsBothHorizontalMargins() {
+        assertEquals(
+            1032,
+            UsageGuardCountdownOverlayLayoutPolicy.maxPillWidthPx(
+                screenWidthPx = 1080,
+                horizontalMarginPx = 24,
+            ),
+        )
+    }
+
+    @Test
+    fun maxPillWidthNeverReturnsNegativePixels() {
+        assertEquals(
+            0,
+            UsageGuardCountdownOverlayLayoutPolicy.maxPillWidthPx(
+                screenWidthPx = 30,
+                horizontalMarginPx = 24,
+            ),
+        )
+    }
 }

@@ -8,6 +8,29 @@ import org.junit.Test
 
 class UsageGuardCountdownOverlayPolicyTest {
     @Test
+    fun displayReasonTextTrimsOnlyOuterWhitespace() {
+        assertEquals(
+            "查资料 准备演讲",
+            UsageGuardCountdownOverlayPolicy.displayReasonText("  查资料 准备演讲  "),
+        )
+    }
+
+    @Test
+    fun displayReasonTextUsesExplicitFallbackForBlankData() {
+        assertEquals(
+            "未填写申请理由",
+            UsageGuardCountdownOverlayPolicy.displayReasonText("   "),
+        )
+    }
+
+    @Test
+    fun displayReasonTextDoesNotPretruncateTheStoredReason() {
+        val reason = "查资料并整理今晚演讲所需的全部重点内容"
+
+        assertEquals(reason, UsageGuardCountdownOverlayPolicy.displayReasonText(reason))
+    }
+
+    @Test
     fun formatRemainingTextUsesMinuteSecondLayoutBelowOneHour() {
         val text = UsageGuardCountdownOverlayPolicy.formatRemainingText(
             expiresAt = 598_000L,
