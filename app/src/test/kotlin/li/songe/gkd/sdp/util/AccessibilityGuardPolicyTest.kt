@@ -136,6 +136,56 @@ class AccessibilityGuardPolicyTest {
     }
 
     @Test
+    fun strictChannelUnavailableDisablesTheGuard() {
+        assertEquals(
+            AccessibilityGuardPolicy.SessionMode.DISABLED,
+            AccessibilityGuardPolicy.sessionMode(
+                featureEnabled = true,
+                useA11yMode = true,
+                temporaryShutdown = false,
+                currentAppBlocked = false,
+                strictChannelAvailable = false,
+                a11yEnabled = false,
+            ),
+        )
+        assertFalse(
+            AccessibilityGuardPolicy.shouldGuard(
+                featureEnabled = true,
+                useA11yMode = true,
+                temporaryShutdown = false,
+                currentAppBlocked = false,
+                strictChannelAvailable = false,
+                a11yEnabled = false,
+            )
+        )
+    }
+
+    @Test
+    fun recoveredAccessibilityPermissionResetsTheGuardSession() {
+        assertEquals(
+            AccessibilityGuardPolicy.SessionMode.DISABLED,
+            AccessibilityGuardPolicy.sessionMode(
+                featureEnabled = true,
+                useA11yMode = true,
+                temporaryShutdown = false,
+                currentAppBlocked = false,
+                strictChannelAvailable = true,
+                a11yEnabled = true,
+            ),
+        )
+        assertFalse(
+            AccessibilityGuardPolicy.shouldGuard(
+                featureEnabled = true,
+                useA11yMode = true,
+                temporaryShutdown = false,
+                currentAppBlocked = false,
+                strictChannelAvailable = true,
+                a11yEnabled = true,
+            )
+        )
+    }
+
+    @Test
     fun overlayRequiresEnforcementAndHidesForGrantFlowOrVisibleApp() {
         val base = AccessibilityGuardPolicy.OverlayInput(
             sessionMode = AccessibilityGuardPolicy.SessionMode.MANUAL_DISABLED,

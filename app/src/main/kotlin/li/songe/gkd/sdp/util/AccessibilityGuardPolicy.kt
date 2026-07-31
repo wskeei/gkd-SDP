@@ -52,8 +52,14 @@ object AccessibilityGuardPolicy {
         useA11yMode: Boolean,
         temporaryShutdown: Boolean,
         currentAppBlocked: Boolean,
+        strictChannelAvailable: Boolean = true,
+        a11yEnabled: Boolean = false,
     ): SessionMode {
-        if (!featureEnabled || !useA11yMode) return SessionMode.DISABLED
+        // A recovered permission ends the current guard session. The normal
+        // guard trigger is therefore represented by a11yEnabled == false.
+        if (!featureEnabled || !useA11yMode || !strictChannelAvailable || a11yEnabled) {
+            return SessionMode.DISABLED
+        }
         if (temporaryShutdown && currentAppBlocked) return SessionMode.TEMPORARY_SHUTDOWN
         return SessionMode.MANUAL_DISABLED
     }
@@ -107,12 +113,16 @@ object AccessibilityGuardPolicy {
         useA11yMode: Boolean,
         temporaryShutdown: Boolean,
         currentAppBlocked: Boolean,
+        strictChannelAvailable: Boolean = true,
+        a11yEnabled: Boolean = false,
     ): Boolean {
         return sessionMode(
             featureEnabled = featureEnabled,
             useA11yMode = useA11yMode,
             temporaryShutdown = temporaryShutdown,
             currentAppBlocked = currentAppBlocked,
+            strictChannelAvailable = strictChannelAvailable,
+            a11yEnabled = a11yEnabled,
         ) == SessionMode.MANUAL_DISABLED
     }
 
