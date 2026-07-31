@@ -24,6 +24,7 @@ import li.songe.gkd.sdp.service.HttpService
 import li.songe.gkd.sdp.service.ScreenshotService
 import li.songe.gkd.sdp.service.TrackService
 import li.songe.gkd.sdp.util.AndroidTarget
+import li.songe.gkd.sdp.util.AccessibilityGuardNotificationPolicy
 import li.songe.gkd.sdp.util.componentName
 import kotlin.reflect.KClass
 
@@ -38,6 +39,8 @@ data class Notif(
     val text: String? = null,
     val ongoing: Boolean = true,
     val autoCancel: Boolean = false,
+    val priority: Int = NotificationCompat.PRIORITY_DEFAULT,
+    val category: String? = null,
     val uri: String? = null,
     val stopService: KClass<out Service>? = null,
 ) {
@@ -59,6 +62,10 @@ data class Notif(
             .setContentIntent(contextIntent)
             .setOngoing(ongoing)
             .setAutoCancel(autoCancel)
+            .setPriority(priority)
+            .apply {
+                if (category != null) setCategory(category)
+            }
         if (stopService != null) {
             val deleteIntent = PendingIntent.getBroadcast(
                 app,
@@ -75,7 +82,6 @@ data class Notif(
 
     fun notifySelf() {
         if (!notificationState.updateAndGet()) return
-        if (!foregroundServiceSpecialUseState.updateAndGet()) return
         @SuppressLint("MissingPermission")
         NotificationManagerCompat.from(app).notify(id, toNotification())
     }
@@ -168,3 +174,33 @@ val focusEndNotif = Notif(
     ongoing = false,
     autoCancel = true,
 )
+
+const val ACCESSIBILITY_GUARD_NOTIF_ID_START = 110
+const val ACCESSIBILITY_GUARD_NOTIF_COUNT = 6
+
+fun accessibilityGuardNotif(index: Int): Notif {
+    require(index in 0 until ACCESSIBILITY_GUARD_NOTIF_COUNT)
+    return Notif(
+        channel = NotifChannel.AccessibilityGuard,
+        id = ACCESSIBILITY_GUARD_NOTIF_ID_START + index,
+        title = AccessibilityGuardNotificationPolicy.TITLE,
+        text = AccessibilityGuardNotificationPolicy.text(index),
+        ongoing = false,
+        autoCancel = true,
+        uri = "gkd://page?tab=0",
+        priority = NotificationCompat.PRIORITY_HIGH,
+        category = NotificationCompat.CATEGORY_ERROR,
+    )
+}
+
+fun cancelAccessibilityGuardNotifications() {
+    val manager = NotificationManagerCompat.from(app)
+    repeat(ACCESSIBILITY_GUARD_NOTIF_COUNT) { index ->
+        manager.cancel(ACCESSIBILITY_GUARD_NOTIF_ID_START + index)
+    }
+}
+
+fun postAccessibilityGuardNotification(index: Int) {
+    cancelAccessibilityGuardNotifications()
+    accessibilityGuardNotif(index).notifySelf()
+}

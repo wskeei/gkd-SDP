@@ -25,6 +25,11 @@ jobs:
         with:
           cache-encryption-key: ${{ secrets.GRADLE_CACHE_ENCRYPTION_KEY }}
 
+      - name: Test selector and app
+        run: |
+          chmod +x ./gradlew
+          ./gradlew :selector:jvmTest :app:testGkdDebugUnitTest
+
       - name: Configure release signing
         run: |
           if [ -z "${{ secrets.GKD_STORE_FILE_BASE64 }}" ]; then
@@ -41,7 +46,6 @@ jobs:
 
       - name: Build release APK
         run: |
-          chmod +x ./gradlew
           ./gradlew :app:assembleGkdRelease
 
       - name: Prepare release assets

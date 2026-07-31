@@ -22,6 +22,7 @@ import li.songe.gkd.sdp.permission.canWriteExternalStorage
 import li.songe.gkd.sdp.permission.foregroundServiceSpecialUseState
 import li.songe.gkd.sdp.permission.notificationState
 import li.songe.gkd.sdp.permission.requiredPermission
+import li.songe.gkd.sdp.service.AccessibilityGuardRuntime
 import java.io.File
 import kotlin.reflect.KClass
 
@@ -68,13 +69,15 @@ suspend fun MainActivity.saveFileToDownloads(file: File) {
     toast("已保存 ${file.name} 到下载")
 }
 
-fun Context.tryStartActivity(intent: Intent) {
+fun Context.tryStartActivity(intent: Intent): Boolean {
     try {
         startActivity(intent)
+        return true
     } catch (e: Exception) {
         e.printStackTrace()
         LogUtils.d("tryStartActivity", e)
         toast("跳转失败\n" + (e.message ?: e.stackTraceToString()))
+        return false
     }
 }
 
@@ -90,9 +93,12 @@ fun openWeChatScaner() {
 }
 
 fun openA11ySettings() {
+    AccessibilityGuardRuntime.beginGrantFlow()
     val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
     intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
-    app.tryStartActivity(intent)
+    if (!app.tryStartActivity(intent)) {
+        AccessibilityGuardRuntime.cancelGrantFlow()
+    }
 }
 
 fun openAppDetailsSettings() {
@@ -135,16 +141,18 @@ fun <T : Service> stopServiceByClass(clazz: KClass<T>) {
     app.stopService(intent)
 }
 
-fun <T : Service> startForegroundServiceByClass(clazz: KClass<T>) {
-    if (!notificationState.checkOrToast()) return
-    if (!foregroundServiceSpecialUseState.checkOrToast()) return
+fun <T : Service> startForegroundServiceByClass(clazz: KClass<T>): Boolean {
+    if (!notificationState.checkOrToast()) return false
+    if (!foregroundServiceSpecialUseState.checkOrToast()) return false
     val intent = Intent(app, clazz.java)
     try {
         app.startForegroundService(intent)
+        return true
     } catch (e: Throwable) {
         LogUtils.d(e)
         val prefix = if (isActivityVisible) "" else "${META.appName}: "
         toast("${prefix}启动服务失败: ${e.message}", forced = true)
+        return false
     }
 }
 

@@ -37,8 +37,12 @@ jobs:
           chmod +x ./gradlew
           ./gradlew :selector:jvmTest :app:testGkdDebugUnitTest
 
-      - name: Build debug APKs
-        run: ./gradlew :app:assembleGkdDebug :app:assemblePlayDebug
+      - name: Build debug and release APKs
+        run: |
+          ./gradlew \
+            :app:assembleGkdDebug \
+            :app:assemblePlayDebug \
+            :app:assembleGkdRelease
 
       - uses: actions/upload-artifact@v7
         if: always()

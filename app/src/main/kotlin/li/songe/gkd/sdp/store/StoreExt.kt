@@ -79,6 +79,7 @@ fun initStore() = appScope.launchTry(Dispatchers.IO) {
     blockMatchAppListFlow.value
     blockA11yAppListFlow.value
     a11yScopeAppListFlow.value
+    accessibilityGuardSessionFlow.value
     gkdStartCommandText
     ExposeService.initCommandFile()
 }
