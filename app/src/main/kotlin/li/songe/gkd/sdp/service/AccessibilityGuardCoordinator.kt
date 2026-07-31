@@ -33,6 +33,7 @@ import li.songe.gkd.sdp.store.MutableStoreStateFlow
 import li.songe.gkd.sdp.store.SettingsStore
 import li.songe.gkd.sdp.store.storeFlow
 import li.songe.gkd.sdp.util.AccessibilityGuardPolicy
+import li.songe.gkd.sdp.util.LogUtils
 
 /**
  * Pure reset transition used by the runtime and JVM tests.
@@ -96,6 +97,20 @@ internal fun transitionAccessibilityGuardSession(
         }
     }
 }
+
+/**
+ * Pure fence used immediately before a notification or enforcement side
+ * effect. A state update from an older generation must never leak a stale
+ * action after the feature has been disabled or temporarily suppressed.
+ */
+internal fun canApplyAccessibilityGuardSideEffect(
+    expectedGeneration: Long,
+    currentGeneration: Long,
+    mode: AccessibilityGuardPolicy.SessionMode,
+    featureEnabled: Boolean,
+): Boolean = expectedGeneration == currentGeneration &&
+    featureEnabled &&
+    mode == AccessibilityGuardPolicy.SessionMode.TRACK
 
 /**
  * Process-local entrance for events that affect the accessibility guard.
@@ -178,12 +193,18 @@ class AccessibilityGuardCoordinator(
         private const val APP_EXIT_DEBOUNCE_MS = 750L
     }
 
+    private data class TimerToken(
+        val generation: Long,
+        val targetEpochMs: Long,
+    )
+
     private val reconcileMutex = Mutex()
     private val wakeChannel = Channel<Unit>(Channel.CONFLATED)
     private var coordinatorJob: Job? = null
     private var timerJob: Job? = null
-    private var timerTargetEpochMs: Long? = null
+    private var timerToken: TimerToken? = null
     private var screenReceiverRegistered = false
+    private var previousMode: AccessibilityGuardPolicy.SessionMode? = null
 
     /** The last visibility value seen by the coordinator, or null before its first pass. */
     private var previousAppVisible: Boolean? = null
@@ -215,6 +236,7 @@ class AccessibilityGuardCoordinator(
                     currentAppBlockedFlow.map { Unit },
                     activityVisibleCountFlow.map { Unit },
                     overlayRunningFlow.map { Unit },
+                    canDrawOverlaysState.stateFlow.map { Unit },
                 ).collect { wake() }
             }
             launch { runtimeWakeups.collect { wake() } }
@@ -231,7 +253,10 @@ class AccessibilityGuardCoordinator(
     fun close() {
         timerJob?.cancel()
         timerJob = null
-        timerTargetEpochMs = null
+        timerToken = null
+        if (overlayRunningFlow.value) {
+            AccessibilityGuardOverlayService.stop(context)
+        }
         coordinatorJob?.cancel()
         coordinatorJob = null
         if (screenReceiverRegistered) {
@@ -276,6 +301,15 @@ class AccessibilityGuardCoordinator(
             temporaryShutdownExpected = sessionBefore.temporaryShutdownExpected,
             currentAppBlocked = currentAppBlocked,
         )
+        if (previousMode != mode) {
+            LogUtils.d(
+                "AccessibilityGuard transition " +
+                    "generation=${sessionBefore.generation} " +
+                    "from=${previousMode ?: "NONE"} to=$mode " +
+                    "reminder=${sessionBefore.lastReminderIndex} reason=policy",
+            )
+            previousMode = mode
+        }
 
         when (mode) {
             AccessibilityGuardPolicy.SessionMode.RESET -> {
@@ -303,6 +337,13 @@ class AccessibilityGuardCoordinator(
         )
         if (session != sessionBefore) {
             sessionStateFlow.value = session
+            val reason = when {
+                sessionBefore.temporaryShutdownExpected && !currentAppBlocked ->
+                    "temporary_marker_cleared"
+                sessionBefore.disabledAtEpochMs == 0L -> "track_started"
+                else -> "session_mode"
+            }
+            logSessionTransition(sessionBefore, session, reason)
         }
 
         val evaluation = AccessibilityGuardPolicy.evaluate(
@@ -319,6 +360,7 @@ class AccessibilityGuardCoordinator(
         if (dueReminderIndex != null) {
             // The flow can be stale while Settings.Secure changes. Read it
             // immediately before posting and never notify a recovered user.
+            if (!sideEffectFenceOpen(session.generation)) return
             if (secureA11yServiceEnabled()) {
                 resetAndStop(sessionStateFlow.value)
                 return
@@ -332,6 +374,7 @@ class AccessibilityGuardCoordinator(
                     resetAndStop(sessionStateFlow.value)
                     return
                 }
+                val beforePersist = sessionStateFlow.value
                 sessionStateFlow.update { current ->
                     if (current.generation == session.generation) {
                         current.copy(
@@ -342,7 +385,13 @@ class AccessibilityGuardCoordinator(
                         current
                     }
                 }
+                logSessionTransition(
+                    beforePersist,
+                    sessionStateFlow.value,
+                    "final_enforcement_started",
+                )
             } else {
+                val beforePersist = sessionStateFlow.value
                 sessionStateFlow.update { current ->
                     if (current.generation == session.generation &&
                         dueReminderIndex > current.lastReminderIndex
@@ -352,12 +401,18 @@ class AccessibilityGuardCoordinator(
                         current
                     }
                 }
+                logSessionTransition(
+                    beforePersist,
+                    sessionStateFlow.value,
+                    "reminder_${dueReminderIndex}",
+                )
             }
         }
 
         val currentSession = sessionStateFlow.value
         reconcileOverlay(
             session = currentSession,
+            expectedGeneration = currentSession.generation,
             a11yEnabled = a11yServiceEnabledFlow.value,
             appVisible = appVisible,
             nowEpochMs = nowEpochMs,
@@ -370,7 +425,7 @@ class AccessibilityGuardCoordinator(
                 it > nowEpochMs && !appVisible && currentSession.enforcementStarted
             },
         ).minOrNull()
-        scheduleTimerAt(nextWakeAt)
+        scheduleTimerAt(nextWakeAt, currentSession.generation)
     }
 
     private fun updateVisibilityDebounce(appVisible: Boolean, nowEpochMs: Long) {
@@ -391,10 +446,51 @@ class AccessibilityGuardCoordinator(
         return app.getSecureA11yServices().contains(A11yService.a11yCn)
     }
 
+    private fun sideEffectFenceOpen(expectedGeneration: Long): Boolean {
+        val store = storeStateFlow.value
+        val currentSession = sessionStateFlow.value
+        val mode = AccessibilityGuardPolicy.sessionMode(
+            featureEnabled = store.accessibilityGuardEnabled,
+            strictChannelAvailable = META.isGkdChannel,
+            useA11yMode = store.useA11y,
+            a11yEnabled = a11yServiceEnabledFlow.value,
+            temporaryShutdownExpected = currentSession.temporaryShutdownExpected,
+            currentAppBlocked = currentAppBlockedFlow.value,
+        )
+        return canApplyAccessibilityGuardSideEffect(
+            expectedGeneration = expectedGeneration,
+            currentGeneration = currentSession.generation,
+            mode = mode,
+            featureEnabled = store.accessibilityGuardEnabled,
+        )
+    }
+
+    private fun logSessionTransition(
+        from: AccessibilityGuardSession,
+        to: AccessibilityGuardSession,
+        reason: String,
+    ) {
+        if (from == to) return
+        LogUtils.d(
+            "AccessibilityGuard state transition " +
+                "generation=${to.generation} " +
+                "from=${redactedState(from)} to=${redactedState(to)} " +
+                "reminder=${to.lastReminderIndex} reason=$reason",
+        )
+    }
+
+    private fun redactedState(session: AccessibilityGuardSession): String = when {
+        session.temporaryShutdownExpected -> "SUPPRESSED"
+        session.disabledAtEpochMs == 0L -> "IDLE"
+        session.enforcementStarted -> "ENFORCING"
+        else -> "TRACKING"
+    }
+
     private fun resetAndStop(session: AccessibilityGuardSession) {
         val reset = resetAccessibilityGuardSession(session)
         if (reset != session) {
             sessionStateFlow.value = reset
+            logSessionTransition(session, reset, "reset")
         }
         cancelAccessibilityGuardNotifications()
         stopOverlayIfRunning()
@@ -410,6 +506,7 @@ class AccessibilityGuardCoordinator(
 
     private fun reconcileOverlay(
         session: AccessibilityGuardSession,
+        expectedGeneration: Long,
         a11yEnabled: Boolean,
         appVisible: Boolean,
         nowEpochMs: Long,
@@ -433,6 +530,8 @@ class AccessibilityGuardCoordinator(
         }
         if (overlayRunningFlow.value) return
 
+        if (!sideEffectFenceOpen(expectedGeneration)) return
+
         // Check Settings.Secure again immediately before the enforcement
         // side effect. A recovered component always wins over a stale flow.
         if (secureA11yServiceEnabled()) {
@@ -442,21 +541,25 @@ class AccessibilityGuardCoordinator(
         AccessibilityGuardOverlayService.start(context)
     }
 
-    private fun scheduleTimerAt(targetEpochMs: Long?) {
+    private fun scheduleTimerAt(
+        targetEpochMs: Long?,
+        generation: Long = sessionStateFlow.value.generation,
+    ) {
         if (targetEpochMs == null) {
             timerJob?.cancel()
             timerJob = null
-            timerTargetEpochMs = null
+            timerToken = null
             return
         }
-        if (timerTargetEpochMs == targetEpochMs && timerJob?.isActive == true) return
+        val token = TimerToken(generation = generation, targetEpochMs = targetEpochMs)
+        if (timerToken == token && timerJob?.isActive == true) return
 
         timerJob?.cancel()
-        timerTargetEpochMs = targetEpochMs
+        timerToken = token
         timerJob = scope.launch {
             delay((targetEpochMs - System.currentTimeMillis()).coerceAtLeast(0L))
-            if (timerTargetEpochMs == targetEpochMs) {
-                timerTargetEpochMs = null
+            if (timerToken == token) {
+                timerToken = null
                 timerJob = null
                 wake()
             }

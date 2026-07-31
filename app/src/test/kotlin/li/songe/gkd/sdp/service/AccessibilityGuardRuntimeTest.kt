@@ -3,6 +3,8 @@ package li.songe.gkd.sdp.service
 import li.songe.gkd.sdp.store.AccessibilityGuardSession
 import li.songe.gkd.sdp.util.AccessibilityGuardPolicy
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class AccessibilityGuardRuntimeTest {
@@ -99,6 +101,42 @@ class AccessibilityGuardRuntimeTest {
                 currentAppBlocked = false,
                 nowEpochMs = 9_000L,
             ),
+        )
+    }
+
+    @Test
+    fun sideEffectFenceRequiresTheCurrentTrackGenerationAndEnabledFeature() {
+        assertTrue(
+            canApplyAccessibilityGuardSideEffect(
+                expectedGeneration = 4L,
+                currentGeneration = 4L,
+                mode = AccessibilityGuardPolicy.SessionMode.TRACK,
+                featureEnabled = true,
+            )
+        )
+        assertFalse(
+            canApplyAccessibilityGuardSideEffect(
+                expectedGeneration = 4L,
+                currentGeneration = 5L,
+                mode = AccessibilityGuardPolicy.SessionMode.TRACK,
+                featureEnabled = true,
+            )
+        )
+        assertFalse(
+            canApplyAccessibilityGuardSideEffect(
+                expectedGeneration = 4L,
+                currentGeneration = 4L,
+                mode = AccessibilityGuardPolicy.SessionMode.SUPPRESSED_TEMPORARY,
+                featureEnabled = true,
+            )
+        )
+        assertFalse(
+            canApplyAccessibilityGuardSideEffect(
+                expectedGeneration = 4L,
+                currentGeneration = 4L,
+                mode = AccessibilityGuardPolicy.SessionMode.TRACK,
+                featureEnabled = false,
+            )
         )
     }
 }
