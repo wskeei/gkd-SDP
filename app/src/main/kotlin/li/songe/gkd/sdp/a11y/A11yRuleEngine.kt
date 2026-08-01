@@ -67,11 +67,13 @@ class A11yRuleEngine(val service: A11yCommonImpl) {
         AutomatorModeOption.A11yMode -> uiAutomationFlow.value != null
         AutomatorModeOption.AutomationMode -> A11yService.instance != null
     }
+    private var runtimeOwner: SdpRuntimeFeatureCoordinator.RuntimeOwner? = null
 
     fun onA11yConnected() {
         val serviceTime = System.currentTimeMillis()
         latestServiceMode.value = service.mode.value
         latestServiceTime.value = serviceTime
+        runtimeOwner = sdpRuntimeFeatureCoordinator.attach(service)
         if (storeFlow.value.enableBlockA11yAppList && !actualBlockA11yAppList.contains(topAppIdFlow.value)) {
             startQueryJob(byForced = true)
         }
@@ -82,6 +84,13 @@ class A11yRuleEngine(val service: A11yCommonImpl) {
                     AutomatorModeOption.AutomationMode -> A11yService.instance?.shutdown(true)
                 }
             }
+        }
+    }
+
+    fun onA11yDisconnected() {
+        runtimeOwner?.let { owner ->
+            runtimeOwner = null
+            sdpRuntimeFeatureCoordinator.detach(owner)
         }
     }
 
@@ -121,6 +130,11 @@ class A11yRuleEngine(val service: A11yCommonImpl) {
     private val eventDeque = ArrayDeque<A11yEvent>()
     fun onA11yEvent(event: AccessibilityEvent?) {
         if (!effective) return
+        event?.let { value ->
+            runtimeOwner?.let { owner ->
+                sdpRuntimeFeatureCoordinator.onAccessibilityEvent(owner, value)
+            }
+        }
         if (!event.isUseful()) return
         // 拒绝副屏无障碍事件
         if (AndroidTarget.TIRAMISU && event.displayId != Display.DEFAULT_DISPLAY) return

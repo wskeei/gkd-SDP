@@ -82,6 +82,7 @@ class AutomationService private constructor() : A11yCommonImpl {
     }
 
     private fun disconnect() {
+        ruleEngine.onA11yDisconnected()
         scope.cancel()
         handlerThread.quit()
         if (!connected) return

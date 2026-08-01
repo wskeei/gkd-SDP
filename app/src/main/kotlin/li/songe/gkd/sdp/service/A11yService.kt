@@ -17,8 +17,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.suspendCancellableCoroutine
 import li.songe.gkd.sdp.a11y.A11yCommonImpl
 import li.songe.gkd.sdp.a11y.A11yRuleEngine
-import li.songe.gkd.sdp.a11y.initSdpA11yFeatures
-import li.songe.gkd.sdp.a11y.onSdpA11yEvent
 import li.songe.gkd.sdp.a11y.topActivityFlow
 import li.songe.gkd.sdp.a11y.updateTopActivity
 import li.songe.gkd.sdp.shizuku.shizukuContextFlow
@@ -78,7 +76,6 @@ abstract class A11yService : AccessibilityService(), OnA11yLife by DefaultA11yLi
     override fun onInterrupt() {}
     override fun onDestroy() = onDestroyed()
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
-        event?.let(::onSdpA11yEvent)
         ruleEngine.onA11yEvent(event)
     }
 
@@ -131,7 +128,6 @@ abstract class A11yService : AccessibilityService(), OnA11yLife by DefaultA11yLi
             }
         }
         useAliveOverlayView()
-        initSdpA11yFeatures()
         onCreated { StatusService.autoStart() }
         onDestroyed {
             synchronized(topActivityFlow) {
@@ -144,6 +140,7 @@ abstract class A11yService : AccessibilityService(), OnA11yLife by DefaultA11yLi
             }
         }
         onDestroyed { destroyed = true }
+        onDestroyed { ruleEngine.onA11yDisconnected() }
         onA11yConnected {
             connected = true
             toast("无障碍已启动")
