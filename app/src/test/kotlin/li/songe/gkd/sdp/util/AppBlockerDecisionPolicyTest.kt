@@ -92,6 +92,79 @@ class AppBlockerDecisionPolicyTest {
     }
 
     @Test
+    fun enabledGroupRuleBlocksMemberApp() {
+        val group = AppGroup(id = 8, name = "娱乐", appIds = "[\"com.example.app\"]")
+        val rule = rule(targetType = BlockTimeRule.TARGET_TYPE_GROUP, targetId = "8")
+
+        assertTrue(
+            AppBlockerDecisionPolicy.decide(
+                packageName = "com.example.app",
+                snapshot = AppBlockerDecisionPolicy.Snapshot(
+                    rules = listOf(rule),
+                    groups = listOf(group),
+                ),
+                now = LocalDateTime.of(2026, 8, 3, 9, 0),
+            ) is AppBlockerDecision.Block
+        )
+    }
+
+    @Test
+    fun groupWithoutTimeRuleReturnsNoEnabledRule() {
+        val group = AppGroup(id = 9, name = "娱乐", appIds = "[\"com.example.app\"]")
+
+        assertEquals(
+            AppBlockerDecision.NoEnabledRule,
+            AppBlockerDecisionPolicy.decide(
+                packageName = "com.example.app",
+                snapshot = AppBlockerDecisionPolicy.Snapshot(groups = listOf(group)),
+                now = LocalDateTime.of(2026, 8, 3, 9, 0),
+            ),
+        )
+    }
+
+    @Test
+    fun disabledRuleDoesNotBlock() {
+        val rule = rule().copy(enabled = false)
+
+        assertEquals(
+            AppBlockerDecision.NoEnabledRule,
+            AppBlockerDecisionPolicy.decide(
+                packageName = "com.example.app",
+                snapshot = snapshot(rule),
+                now = LocalDateTime.of(2026, 8, 3, 9, 0),
+            ),
+        )
+    }
+
+    @Test
+    fun outsideForbiddenWindowDoesNotBlock() {
+        val rule = rule(start = "09:00", end = "10:00")
+
+        assertEquals(
+            AppBlockerDecision.OutsideSchedule,
+            AppBlockerDecisionPolicy.decide(
+                packageName = "com.example.app",
+                snapshot = snapshot(rule),
+                now = LocalDateTime.of(2026, 8, 3, 12, 0),
+            ),
+        )
+    }
+
+    @Test
+    fun allowModeBlocksOutsideAllowedWindow() {
+        val rule = rule(start = "09:00", end = "10:00").copy(isAllowMode = true)
+
+        assertEquals(
+            AppBlockerDecision.Block(ruleId = rule.id, message = rule.interceptMessage),
+            AppBlockerDecisionPolicy.decide(
+                packageName = "com.example.app",
+                snapshot = snapshot(rule),
+                now = LocalDateTime.of(2026, 8, 3, 12, 0),
+            ),
+        )
+    }
+
+    @Test
     fun newestBlockingRuleWinsMessagePriority() {
         val older = rule(id = 1, createdAt = 1, message = "旧")
         val newer = rule(id = 2, createdAt = 2, message = "新")
@@ -111,6 +184,8 @@ class AppBlockerDecisionPolicyTest {
 
     private fun rule(
         id: Long = 1,
+        targetType: Int = BlockTimeRule.TARGET_TYPE_APP,
+        targetId: String = "com.example.app",
         start: String = "09:00",
         end: String = "10:00",
         days: String = "1,2,3,4,5,6,7",
@@ -118,8 +193,8 @@ class AppBlockerDecisionPolicyTest {
         message: String = "这真的重要吗？",
     ) = BlockTimeRule(
         id = id,
-        targetType = BlockTimeRule.TARGET_TYPE_APP,
-        targetId = "com.example.app",
+        targetType = targetType,
+        targetId = targetId,
         startTime = start,
         endTime = end,
         daysOfWeek = days,

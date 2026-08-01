@@ -22,6 +22,7 @@ import li.songe.gkd.sdp.util.UsageGuardCountdownOverlayPolicy
 import li.songe.gkd.sdp.store.storeFlow
 import li.songe.gkd.sdp.util.UsageGuardPolicy
 import li.songe.gkd.sdp.util.appInfoMapFlow
+import li.songe.gkd.sdp.util.LogUtils
 import li.songe.gkd.sdp.util.systemUiAppId
 import li.songe.gkd.sdp.widget.UsageGuardReviewWidget
 
@@ -49,7 +50,11 @@ object UsageGuardEngine {
     fun onAppChanged(packageName: String) {
         appScope.launch(Dispatchers.IO) {
             stateMutex.withLock {
-                handleAppChanged(packageName)
+                try {
+                    handleAppChanged(packageName)
+                } catch (error: Throwable) {
+                    LogUtils.d("usage guard app reconciliation failed", error::class.java.simpleName)
+                }
             }
         }
     }
