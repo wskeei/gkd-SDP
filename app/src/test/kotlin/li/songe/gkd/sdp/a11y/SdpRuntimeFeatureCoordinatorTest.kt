@@ -56,7 +56,7 @@ class SdpRuntimeFeatureCoordinatorTest {
         val foreground = MutableStateFlow("com.example.reader")
         val seen = mutableListOf<String>()
         val coordinator = coordinator(foreground) {
-            onAppChanged = { appId, owner -> seen += "${owner.mode}:$appId" }
+            onAppChanged = { appId, owner -> seen += "${owner.mode.label}:$appId" }
         }
 
         val a11y = coordinator.attach("a11y", AutomatorModeOption.A11yMode)
@@ -99,7 +99,7 @@ class SdpRuntimeFeatureCoordinatorTest {
         val foreground = MutableStateFlow("com.example.reader")
         val seen = mutableListOf<String>()
         val coordinator = coordinator(foreground) {
-            onAppChanged = { appId, owner -> seen += "${owner.mode}:$appId" }
+            onAppChanged = { appId, owner -> seen += "${owner.mode.label}:$appId" }
         }
 
         val oldOwner = coordinator.attach("a11y", AutomatorModeOption.A11yMode)
@@ -121,7 +121,7 @@ class SdpRuntimeFeatureCoordinatorTest {
         val foreground = MutableStateFlow("com.example.reader")
         val seen = mutableListOf<String>()
         val coordinator = coordinator(foreground) {
-            onAppChanged = { appId, owner -> seen += "${owner.mode}:$appId" }
+            onAppChanged = { appId, owner -> seen += "${owner.mode.label}:$appId" }
         }
 
         coordinator.attach("a11y", AutomatorModeOption.A11yMode)
