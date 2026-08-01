@@ -16,6 +16,7 @@ import li.songe.gkd.sdp.data.BlockTimeRule
 import li.songe.gkd.sdp.db.DbSet
 import li.songe.gkd.sdp.ui.share.BaseViewModel
 import li.songe.gkd.sdp.util.AutoReenableDisableGuard
+import li.songe.gkd.sdp.util.AppBlockerDecisionPolicy
 import li.songe.gkd.sdp.util.json
 import li.songe.gkd.sdp.util.toast
 
@@ -192,6 +193,16 @@ class AppBlockerVm : BaseViewModel() {
     fun saveRule() = viewModelScope.launch(Dispatchers.IO) {
         if (ruleTargetId.isBlank()) {
             toast("请选择拦截对象")
+            return@launch
+        }
+        if (!AppBlockerDecisionPolicy.isValidTime(ruleStartTime) ||
+            !AppBlockerDecisionPolicy.isValidTime(ruleEndTime)
+        ) {
+            toast("时间格式必须为 HH:mm（例如 09:00）")
+            return@launch
+        }
+        if (ruleDaysOfWeek.isEmpty() || ruleDaysOfWeek.any { it !in 1..7 }) {
+            toast("请选择至少一个生效日期")
             return@launch
         }
 

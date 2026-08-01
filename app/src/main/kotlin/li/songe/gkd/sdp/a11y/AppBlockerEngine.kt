@@ -17,13 +17,16 @@ import li.songe.gkd.sdp.service.AppBlockerOverlayService
 import li.songe.gkd.sdp.util.LogUtils
 import li.songe.gkd.sdp.util.SelfControlElapsedPolicy
 import java.util.concurrent.ConcurrentHashMap
+import java.time.LocalDateTime
 
 object AppBlockerEngine {
     private const val TAG = "AppBlockerEngine"
 
     // 缓存的规则和应用组
-    private var cachedRules: List<BlockTimeRule> = emptyList()
-    private var cachedGroups: List<AppGroup> = emptyList()
+    @Volatile
+    private var cachedSnapshot = AppBlockerDecisionPolicy.Snapshot()
+    private val cachedRules: List<BlockTimeRule> get() = cachedSnapshot.rules
+    private val cachedGroups: List<AppGroup> get() = cachedSnapshot.groups
 
     // 冷却时间缓存，防止重复触发
     private val cooldownMap = ConcurrentHashMap<String, Long>()
@@ -56,13 +59,15 @@ object AppBlockerEngine {
         // 监听规则和应用组变化
         appScope.launch(Dispatchers.IO) {
             combine(
-                DbSet.blockTimeRuleDao.queryEnabled(),
-                DbSet.appGroupDao.queryEnabled()
+                DbSet.blockTimeRuleDao.queryAll(),
+                DbSet.appGroupDao.queryAll()
             ) { rules, groups ->
                 rules to groups
             }.collect { (rules, groups) ->
-                cachedRules = rules
-                cachedGroups = groups
+                cachedSnapshot = AppBlockerDecisionPolicy.Snapshot(
+                    rules = rules.toList(),
+                    groups = groups.toList(),
+                )
                 if (META.debuggable) {
                     Log.d(TAG, "Rules updated: ${rules.size}, Groups: ${groups.size}")
                 }
@@ -75,42 +80,19 @@ object AppBlockerEngine {
      * @return Pair<是否拦截, 拦截消息>
      */
     fun shouldBlock(packageName: String): Pair<Boolean, String?> {
-        if (!enabledFlow.value) return false to null
-
-        val effectiveRules = getEffectiveRules(packageName)
-        if (effectiveRules.isEmpty()) return false to null
-
-        // 使用最新规则的拦截消息
-        return true to effectiveRules.first().interceptMessage
+        return when (val decision = evaluate(packageName)) {
+            is AppBlockerDecision.Block -> true to decision.message
+            else -> false to null
+        }
     }
 
-    /**
-     * 获取应用的所有生效规则（按创建时间倒序）
-     */
-    private fun getEffectiveRules(packageName: String): List<BlockTimeRule> {
-        // 1. 收集应用的单独规则
-        val appRules = cachedRules.filter {
-            it.targetType == BlockTimeRule.TARGET_TYPE_APP &&
-            it.targetId == packageName &&
-            it.isActiveNow()
-        }
-
-        // 2. 收集应用所属应用组的规则
-        val groupRules = mutableListOf<BlockTimeRule>()
-        for (group in cachedGroups) {
-            if (group.containsApp(packageName)) {
-                val rules = cachedRules.filter {
-                    it.targetType == BlockTimeRule.TARGET_TYPE_GROUP &&
-                    it.targetId == group.id.toString() &&
-                    it.isActiveNow()
-                }
-                groupRules.addAll(rules)
-            }
-        }
-
-        // 3. 合并并按创建时间排序（最新的在前）
-        return (appRules + groupRules).sortedByDescending { it.createdAt }
-    }
+    fun evaluate(packageName: String, now: LocalDateTime = LocalDateTime.now()): AppBlockerDecision =
+        AppBlockerDecisionPolicy.decide(
+            packageName = packageName,
+            snapshot = cachedSnapshot,
+            now = now,
+            enabled = enabledFlow.value,
+        )
 
     /**
      * 获取应用的所有规则（包括未生效的，用于冲突检测）
@@ -172,8 +154,10 @@ object AppBlockerEngine {
         }
 
         // 判断是否应该拦截
-        val (shouldBlock, message) = shouldBlock(packageName)
-        LogUtils.d("$TAG: shouldBlock=$shouldBlock for $packageName, rules=${cachedRules.size}, groups=${cachedGroups.size}")
+        val decision = evaluate(packageName)
+        val shouldBlock = decision is AppBlockerDecision.Block
+        val message = (decision as? AppBlockerDecision.Block)?.message
+        LogUtils.d("$TAG: decision=${decision::class.simpleName} for $packageName, rules=${cachedRules.size}, groups=${cachedGroups.size}")
         
         if (shouldBlock) {
             LogUtils.d("App blocker blocking: $packageName")
