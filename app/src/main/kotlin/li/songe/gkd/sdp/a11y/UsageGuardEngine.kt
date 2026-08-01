@@ -80,11 +80,11 @@ object UsageGuardEngine {
                 }
                 if (appId == null) return@withLock
                 if (topActivityFlow.value.appId != appId) {
-                    stopCountdownOverlay(appId = appId)
+                    stopCountdownOverlay(appId = appId, owner = owner, token = token)
                     return@withLock
                 }
                 val record = DbSet.usageGuardRecordDao.getActiveRecord(appId) ?: run {
-                    stopCountdownOverlay(appId = appId)
+                    stopCountdownOverlay(appId = appId, owner = owner, token = token)
                     return@withLock
                 }
                 scheduleExpiryWatch(record, owner, token)
@@ -153,7 +153,7 @@ object UsageGuardEngine {
                 if (!isCurrentRequest(appId, owner, token)) return@withLock
                 lastProtectedAppId = appId
                 val record = DbSet.usageGuardRecordDao.getActiveRecord(appId) ?: run {
-                    stopCountdownOverlay(appId = appId)
+                    stopCountdownOverlay(appId = appId, owner = owner, token = token)
                     return@withLock
                 }
                 scheduleExpiryWatch(record, owner, token)

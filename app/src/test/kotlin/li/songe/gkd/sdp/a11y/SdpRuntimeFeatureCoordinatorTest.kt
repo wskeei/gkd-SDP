@@ -65,6 +65,7 @@ class SdpRuntimeFeatureCoordinatorTest {
         awaitCondition { seen.size == 3 }
 
         assertEquals(
+            "seen=$seen",
             listOf(
                 "无障碍:com.example.reader",
                 "自动化:com.example.reader",
@@ -108,7 +109,7 @@ class SdpRuntimeFeatureCoordinatorTest {
         awaitCondition { seen.contains("自动化:com.example.video") }
 
         assertTrue(coordinator.isCurrent(newOwner))
-        assertEquals("自动化:com.example.video", seen.last())
+        assertEquals("seen=$seen", "自动化:com.example.video", seen.last())
     }
 
     @Test
@@ -123,8 +124,8 @@ class SdpRuntimeFeatureCoordinatorTest {
         coordinator.attach("automation", AutomatorModeOption.AutomationMode)
         awaitCondition { seen.size == 2 }
 
-        assertEquals(2, seen.size)
-        assertEquals("自动化:com.example.reader", seen.last())
+        assertEquals("seen=$seen", 2, seen.size)
+        assertEquals("seen=$seen", "自动化:com.example.reader", seen.last())
     }
 
     @Test
@@ -145,6 +146,7 @@ class SdpRuntimeFeatureCoordinatorTest {
                     onAppChanged = { appId, _ -> healthy += appId },
                 ),
             ),
+            foregroundDispatcher = Dispatchers.Unconfined,
             onHandlerFailure = { _, _ -> failures.incrementAndGet() },
         )
 
@@ -171,6 +173,7 @@ class SdpRuntimeFeatureCoordinatorTest {
                     onAccessibilityEvent = config.onAccessibilityEvent,
                 )
             ),
+            foregroundDispatcher = Dispatchers.Unconfined,
         )
     }
 
