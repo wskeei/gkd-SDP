@@ -1,6 +1,5 @@
 package li.songe.gkd.sdp.a11y
 
-import android.content.Intent
 import android.util.Log
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -9,11 +8,11 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import li.songe.gkd.sdp.META
+import li.songe.gkd.sdp.app
 import li.songe.gkd.sdp.appScope
 import li.songe.gkd.sdp.data.AppGroup
 import li.songe.gkd.sdp.data.BlockTimeRule
 import li.songe.gkd.sdp.db.DbSet
-import li.songe.gkd.sdp.service.A11yService
 import li.songe.gkd.sdp.service.AppBlockerOverlayService
 import li.songe.gkd.sdp.util.LogUtils
 import li.songe.gkd.sdp.util.SelfControlElapsedPolicy
@@ -156,7 +155,7 @@ object AppBlockerEngine {
     /**
      * 处理应用切换事件
      */
-    fun onAppChanged(packageName: String, service: A11yService) {
+    fun onAppChanged(packageName: String) {
         LogUtils.d("$TAG: onAppChanged called for $packageName, enabled=${enabledFlow.value}")
         
         if (!enabledFlow.value) {
@@ -177,29 +176,27 @@ object AppBlockerEngine {
         LogUtils.d("$TAG: shouldBlock=$shouldBlock for $packageName, rules=${cachedRules.size}, groups=${cachedGroups.size}")
         
         if (shouldBlock) {
-            cooldownMap[packageName] = now
             LogUtils.d("App blocker blocking: $packageName")
-            showBlockerOverlay(service, packageName, message ?: "这真的重要吗？")
+            val result = showBlockerOverlay(packageName, message ?: "这真的重要吗？")
+            if (result == OverlayLaunchResult.Accepted) {
+                cooldownMap[packageName] = now
+            }
         }
     }
 
     /**
      * 显示应用拦截全屏界面
      */
-    private fun showBlockerOverlay(service: A11yService, packageName: String, message: String) {
-        try {
-            val intent = Intent(service, AppBlockerOverlayService::class.java).apply {
-                putExtra(AppBlockerOverlayService.EXTRA_MESSAGE, message)
-                putExtra(AppBlockerOverlayService.EXTRA_BLOCKED_APP, packageName)
-                putExtra(
-                    AppBlockerOverlayService.EXTRA_EVENT_KEY,
-                    SelfControlElapsedPolicy.appBlockerEventKey(packageName),
-                )
-            }
-            service.startService(intent)
-        } catch (e: Exception) {
-            LogUtils.d("Failed to show app blocker overlay: ${e.message}")
+    private fun showBlockerOverlay(packageName: String, message: String): OverlayLaunchResult {
+        val intent = android.content.Intent(app, AppBlockerOverlayService::class.java).apply {
+            putExtra(AppBlockerOverlayService.EXTRA_MESSAGE, message)
+            putExtra(AppBlockerOverlayService.EXTRA_BLOCKED_APP, packageName)
+            putExtra(
+                AppBlockerOverlayService.EXTRA_EVENT_KEY,
+                SelfControlElapsedPolicy.appBlockerEventKey(packageName),
+            )
         }
+        return selfControlOverlayLauncher.launch(intent)
     }
 
     /**

@@ -9,9 +9,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import li.songe.gkd.sdp.appScope
-import li.songe.gkd.sdp.service.A11yService
-import li.songe.gkd.sdp.shizuku.uiAutomationFlow
-import li.songe.gkd.sdp.store.storeFlow
 import li.songe.gkd.sdp.util.AutomatorModeOption
 import li.songe.gkd.sdp.util.LogUtils
 
@@ -192,43 +189,24 @@ private val selfControlRuntimeHandlers: List<SdpRuntimeFeatureCoordinator.Handle
         SdpRuntimeFeatureCoordinator.Handler(
             name = "focus",
             onAppChanged = { packageName, owner ->
-                (owner.runtime as? A11yService)?.let {
-                    FocusModeEngine.onAppChanged(packageName, it)
-                }
-            },
-            onAccessibilityEvent = { event, owner ->
-                if (owner.runtime is A11yService) {
-                    FocusModeEngine.onA11yEvent(event)
-                }
+                FocusModeEngine.onAppChanged(packageName)
             },
         ),
         SdpRuntimeFeatureCoordinator.Handler(
             name = "usage-guard",
-            onAppChanged = { packageName, owner ->
-                (owner.runtime as? A11yService)?.let {
-                    UsageGuardEngine.onAppChanged(packageName, it)
-                }
-            },
+            onAppChanged = { packageName, _ -> UsageGuardEngine.onAppChanged(packageName) },
             onDetached = { owner ->
-                (owner.runtime as? A11yService)?.let {
-                    UsageGuardEngine.onA11yServiceDestroyed(it)
-                }
+                UsageGuardEngine.onRuntimeDisconnected()
             },
         ),
         SdpRuntimeFeatureCoordinator.Handler(
             name = "app-blocker",
-            onAppChanged = { packageName, owner ->
-                (owner.runtime as? A11yService)?.let {
-                    AppBlockerEngine.onAppChanged(packageName, it)
-                }
-            },
+            onAppChanged = { packageName, _ -> AppBlockerEngine.onAppChanged(packageName) },
         ),
         SdpRuntimeFeatureCoordinator.Handler(
             name = "url-blocker",
             onAccessibilityEvent = { event, owner ->
-                (owner.runtime as? A11yService)?.let {
-                    UrlBlockerEngine.onAccessibilityEvent(event, it)
-                }
+                UrlBlockerEngine.onAccessibilityEvent(event, owner.runtime?.ruleEngine)
             },
         ),
     )

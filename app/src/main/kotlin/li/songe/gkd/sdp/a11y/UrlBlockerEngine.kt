@@ -17,7 +17,6 @@ import li.songe.gkd.sdp.data.UrlBlockRule
 import li.songe.gkd.sdp.data.UrlRuleGroup
 import li.songe.gkd.sdp.data.UrlTimeRule
 import li.songe.gkd.sdp.db.DbSet
-import li.songe.gkd.sdp.service.A11yService
 import li.songe.gkd.sdp.service.InterceptOverlayService
 import li.songe.gkd.sdp.util.LogUtils
 import li.songe.gkd.sdp.util.SelfControlElapsedPolicy
@@ -74,9 +73,10 @@ object UrlBlockerEngine {
     /**
      * 处理无障碍事件，检测浏览器 URL
      */
-    fun onAccessibilityEvent(event: AccessibilityEvent, service: A11yService) {
+    fun onAccessibilityEvent(event: AccessibilityEvent, ruleEngine: A11yRuleEngine?) {
         if (!enabledFlow.value) return
         if (cachedRules.isEmpty()) return
+        if (ruleEngine == null) return
 
         val packageName = event.packageName?.toString() ?: return
         val browserConfig = cachedBrowsers[packageName] ?: return
@@ -96,10 +96,10 @@ object UrlBlockerEngine {
         }
 
         // 尝试读取 URL
-        val url = tryReadUrl(service, browserConfig) ?: return
+        val url = tryReadUrl(ruleEngine, browserConfig) ?: return
 
         if (META.debuggable) {
-            Log.d(TAG, "Detected URL: $url in $packageName")
+            Log.d(TAG, "Detected URL in $packageName")
         }
 
         // 检查是否匹配任何规则
@@ -114,8 +114,8 @@ object UrlBlockerEngine {
             }
             
             cooldownMap[packageName] = now
-            LogUtils.d("URL Blocked: $url matched rule: ${matchedRule.name}")
-            executeBlock(service, matchedRule, packageName)
+            LogUtils.d("URL blocker matched a rule", "package=$packageName", "ruleId=${matchedRule.id}")
+            executeBlock(matchedRule, packageName)
         }
     }
 
@@ -164,9 +164,9 @@ object UrlBlockerEngine {
     /**
      * 尝试从浏览器读取当前 URL
      */
-    private fun tryReadUrl(service: A11yService, browserConfig: BrowserConfig): String? {
+    private fun tryReadUrl(ruleEngine: A11yRuleEngine, browserConfig: BrowserConfig): String? {
         return try {
-            val rootNode = service.ruleEngine.safeActiveWindow ?: return null
+            val rootNode = ruleEngine.safeActiveWindow ?: return null
             findUrlBarText(rootNode, browserConfig.urlBarId)
         } catch (e: Exception) {
             if (META.debuggable) {
@@ -226,7 +226,7 @@ object UrlBlockerEngine {
     /**
      * 执行拦截操作
      */
-    private fun executeBlock(service: A11yService, rule: UrlBlockRule, packageName: String) {
+    private fun executeBlock(rule: UrlBlockRule, packageName: String) {
         appScope.launch(Dispatchers.Main) {
             // 1. 先跳转到安全页面
             try {
@@ -234,18 +234,18 @@ object UrlBlockerEngine {
                     setPackage(packageName)
                     addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 }
-                service.startActivity(intent)
-                LogUtils.d("Redirected to: ${rule.redirectUrl}")
+                li.songe.gkd.sdp.app.startActivity(intent)
+                LogUtils.d("URL redirect succeeded", "package=$packageName", "ruleId=${rule.id}")
             } catch (e: Exception) {
-                LogUtils.d("Failed to redirect: ${e.message}")
+                LogUtils.d("URL redirect rejected", "package=$packageName", "ruleId=${rule.id}", e::class.java.simpleName)
                 // 如果无法在同一浏览器打开，尝试用默认浏览器
                 try {
                     val fallbackIntent = Intent(Intent.ACTION_VIEW, Uri.parse(rule.redirectUrl)).apply {
                         addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                     }
-                    service.startActivity(fallbackIntent)
+                    li.songe.gkd.sdp.app.startActivity(fallbackIntent)
                 } catch (e2: Exception) {
-                    LogUtils.d("Fallback redirect also failed: ${e2.message}")
+                    LogUtils.d("URL fallback redirect rejected", "package=$packageName", "ruleId=${rule.id}", e2::class.java.simpleName)
                 }
             }
 
@@ -253,7 +253,7 @@ object UrlBlockerEngine {
             if (rule.showIntercept) {
                 // 延迟一点显示全屏拦截，让跳转先完成
                 kotlinx.coroutines.delay(300)
-                showInterceptOverlay(service, rule)
+                showInterceptOverlay(rule)
             }
         }
     }
@@ -261,26 +261,22 @@ object UrlBlockerEngine {
     /**
      * 显示全屏拦截界面
      */
-    private fun showInterceptOverlay(service: A11yService, rule: UrlBlockRule) {
-        try {
-            val intent = Intent(service, InterceptOverlayService::class.java).apply {
-                putExtra(InterceptOverlayService.EXTRA_SUBS_ID, -2L)  // URL 拦截使用特殊 ID (-2 区别于默认的 -1)
-                putExtra(InterceptOverlayService.EXTRA_GROUP_KEY, rule.id.toInt())
-                putExtra(InterceptOverlayService.EXTRA_MESSAGE, rule.interceptMessage)
-                putExtra(InterceptOverlayService.EXTRA_COOLDOWN, 10)
-                putExtra(
-                    InterceptOverlayService.EXTRA_EVENT_KEY,
-                    SelfControlElapsedPolicy.urlInterceptEventKey(rule.id),
-                )
-                putExtra(
-                    InterceptOverlayService.EXTRA_EVENT_KIND,
-                    SelfControlAttempt.KIND_URL_INTERCEPT,
-                )
-            }
-            service.startService(intent)
-        } catch (e: Exception) {
-            LogUtils.d("Failed to show intercept overlay: ${e.message}")
+    private fun showInterceptOverlay(rule: UrlBlockRule): OverlayLaunchResult {
+        val intent = Intent(li.songe.gkd.sdp.app, InterceptOverlayService::class.java).apply {
+            putExtra(InterceptOverlayService.EXTRA_SUBS_ID, -2L)  // URL 拦截使用特殊 ID (-2 区别于默认的 -1)
+            putExtra(InterceptOverlayService.EXTRA_GROUP_KEY, rule.id.toInt())
+            putExtra(InterceptOverlayService.EXTRA_MESSAGE, rule.interceptMessage)
+            putExtra(InterceptOverlayService.EXTRA_COOLDOWN, 10)
+            putExtra(
+                InterceptOverlayService.EXTRA_EVENT_KEY,
+                SelfControlElapsedPolicy.urlInterceptEventKey(rule.id),
+            )
+            putExtra(
+                InterceptOverlayService.EXTRA_EVENT_KIND,
+                SelfControlAttempt.KIND_URL_INTERCEPT,
+            )
         }
+        return selfControlOverlayLauncher.launch(intent)
     }
 
     /**

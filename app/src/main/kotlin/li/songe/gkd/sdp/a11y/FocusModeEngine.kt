@@ -17,7 +17,6 @@ import li.songe.gkd.sdp.appScope
 import li.songe.gkd.sdp.data.FocusRule
 import li.songe.gkd.sdp.data.FocusSession
 import li.songe.gkd.sdp.db.DbSet
-import li.songe.gkd.sdp.service.A11yService
 import li.songe.gkd.sdp.service.FocusOverlayService
 import li.songe.gkd.sdp.notif.focusEndNotif
 import li.songe.gkd.sdp.a11y.topActivityFlow
@@ -149,7 +148,7 @@ object FocusModeEngine {
     private fun closeFocusOverlay() {
         try {
             val intent = Intent(app, FocusOverlayService::class.java)
-            app.stopService(intent)
+            selfControlOverlayLauncher.stop(intent)
             LogUtils.d("Focus overlay service stopped")
         } catch (e: Exception) {
             LogUtils.d("Failed to stop focus overlay: ${e.message}")
@@ -183,7 +182,7 @@ object FocusModeEngine {
     /**
      * 澶勭悊搴旂敤鍒囨崲浜嬩欢
      */
-    fun onAppChanged(packageName: String, service: A11yService) {
+    fun onAppChanged(packageName: String) {
         if (!enabledFlow.value) return
         if (!isInFocusMode()) {
             closeFocusOverlay()
@@ -205,13 +204,12 @@ object FocusModeEngine {
 
         cooldownMap[packageName] = now
         LogUtils.d("Focus mode blocking: $packageName")
-        showFocusOverlay(service, packageName)
+        showFocusOverlay(packageName)
     }
 
     fun onA11yEvent(event: android.view.accessibility.AccessibilityEvent) = Unit
 
     private fun showFocusOverlay(
-        service: A11yService,
         packageName: String,
         overrideWhitelist: List<String>? = null,
         overrideMessage: String? = null,
@@ -226,14 +224,14 @@ object FocusModeEngine {
             val isLocked = overrideIsLocked ?: (session?.isCurrentlyLocked == true || activeRule?.isCurrentlyLocked == true)
             val endTime = overrideEndTime ?: session?.endTime ?: 0L
 
-            val intent = Intent(service, FocusOverlayService::class.java).apply {
+            val intent = Intent(app, FocusOverlayService::class.java).apply {
                 putExtra("message", message)
                 putExtra("whitelist", json.encodeToString(whitelist))
                 putExtra("blockedApp", packageName)
                 putExtra("isLocked", isLocked)
                 putExtra("endTime", endTime)
             }
-            service.startService(intent)
+            selfControlOverlayLauncher.launch(intent)
         } catch (e: Exception) {
             LogUtils.d("Failed to show focus overlay: ${e.message}")
         }
@@ -270,16 +268,13 @@ object FocusModeEngine {
         LogUtils.d("Manual focus session started: ${durationMinutes}min, whitelist: ${whitelistApps.size} apps")
 
         // 绔嬪嵆瑙﹀彂鎷︽埅鐣岄潰锛岀洿鎺ヤ紶閫掑弬鏁帮紙鍥犱负 Flow 鍙兘杩樻湭鏇存柊锛?
-        A11yService.instance?.let { service ->
-            showFocusOverlay(
-                service = service,
-                packageName = "manual_start",
-                overrideWhitelist = whitelistApps,
-                overrideMessage = interceptMessage,
-                overrideEndTime = endTime,
-                overrideIsLocked = isLocked
-            )
-        }
+        showFocusOverlay(
+            packageName = "manual_start",
+            overrideWhitelist = whitelistApps,
+            overrideMessage = interceptMessage,
+            overrideEndTime = endTime,
+            overrideIsLocked = isLocked
+        )
     }
 
     /**
