@@ -74,25 +74,7 @@ class SdpRuntimeFeatureCoordinator<T>(
     init {
         scope.launch(foregroundDispatcher) {
             foregroundApps.collect { value ->
-                val appId = appIdOf(value)
-                val owner = synchronized(lock) {
-                    latestAppId = appId
-                    val active = currentOwner
-                    if (appId.isEmpty()) {
-                        dispatchedGeneration = -1L
-                        dispatchedAppId = ""
-                        if (active != null) {
-                            _statusFlow.value = _statusFlow.value.copy(packageName = "")
-                        }
-                    }
-                    if (active != null && appId.isNotEmpty()) {
-                        _statusFlow.value = _statusFlow.value.copy(packageName = appId)
-                    }
-                    active
-                }
-                if (owner != null && appId.isNotEmpty()) {
-                    dispatchAppIfNeeded(owner, appId)
-                }
+                onForegroundAppChanged(appIdOf(value))
             }
         }
     }
@@ -169,6 +151,27 @@ class SdpRuntimeFeatureCoordinator<T>(
     }
 
     fun currentOwner(): RuntimeOwner? = synchronized(lock) { currentOwner }
+
+    fun onForegroundAppChanged(appId: String) {
+        val owner = synchronized(lock) {
+            latestAppId = appId
+            val active = currentOwner
+            if (appId.isEmpty()) {
+                dispatchedGeneration = -1L
+                dispatchedAppId = ""
+                if (active != null) {
+                    _statusFlow.value = _statusFlow.value.copy(packageName = "")
+                }
+            }
+            if (active != null && appId.isNotEmpty()) {
+                _statusFlow.value = _statusFlow.value.copy(packageName = appId)
+            }
+            active
+        }
+        if (owner != null && appId.isNotEmpty()) {
+            dispatchAppIfNeeded(owner, appId)
+        }
+    }
 
     fun recordDecision(
         owner: RuntimeOwner?,

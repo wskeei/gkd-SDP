@@ -61,16 +61,15 @@ class SdpRuntimeFeatureCoordinatorTest {
 
         val a11y = coordinator.attach("a11y", AutomatorModeOption.A11yMode)
         val automation = coordinator.attach("automation", AutomatorModeOption.AutomationMode)
-        foreground.value = "com.example.video"
-        coordinator.reconcileCurrentApp("test-foreground-change")
+        coordinator.onForegroundAppChanged("com.example.video")
         awaitCondition { seen.size == 3 }
 
         assertEquals(
             "seen=$seen",
             listOf(
-                "无障碍:com.example.reader",
-                "自动化:com.example.reader",
-                "自动化:com.example.video",
+                "${AutomatorModeOption.A11yMode.label}:com.example.reader",
+                "${AutomatorModeOption.AutomationMode.label}:com.example.reader",
+                "${AutomatorModeOption.AutomationMode.label}:com.example.video",
             ),
             seen,
         )
@@ -106,12 +105,15 @@ class SdpRuntimeFeatureCoordinatorTest {
         val oldOwner = coordinator.attach("a11y", AutomatorModeOption.A11yMode)
         val newOwner = coordinator.attach("automation", AutomatorModeOption.AutomationMode)
         coordinator.detach(oldOwner)
-        foreground.value = "com.example.video"
-        coordinator.reconcileCurrentApp("test-foreground-change")
-        awaitCondition { seen.contains("自动化:com.example.video") }
+        coordinator.onForegroundAppChanged("com.example.video")
+        awaitCondition { seen.contains("${AutomatorModeOption.AutomationMode.label}:com.example.video") }
 
         assertTrue(coordinator.isCurrent(newOwner))
-        assertEquals("seen=$seen", "自动化:com.example.video", seen.last())
+        assertEquals(
+            "seen=$seen",
+            "${AutomatorModeOption.AutomationMode.label}:com.example.video",
+            seen.last(),
+        )
     }
 
     @Test
@@ -127,7 +129,11 @@ class SdpRuntimeFeatureCoordinatorTest {
         awaitCondition { seen.size == 2 }
 
         assertEquals("seen=$seen", 2, seen.size)
-        assertEquals("seen=$seen", "自动化:com.example.reader", seen.last())
+        assertEquals(
+            "seen=$seen",
+            "${AutomatorModeOption.AutomationMode.label}:com.example.reader",
+            seen.last(),
+        )
     }
 
     @Test
@@ -153,8 +159,7 @@ class SdpRuntimeFeatureCoordinatorTest {
         )
 
         coordinator.attach("a11y", AutomatorModeOption.A11yMode)
-        foreground.value = "com.example.video"
-        coordinator.reconcileCurrentApp("test-foreground-change")
+        coordinator.onForegroundAppChanged("com.example.video")
         awaitCondition { healthy.size == 2 && failures.get() == 2 }
 
         assertEquals(listOf("com.example.reader", "com.example.video"), healthy)
