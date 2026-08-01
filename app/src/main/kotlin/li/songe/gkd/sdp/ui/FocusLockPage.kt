@@ -529,7 +529,7 @@ fun SelfControlRuntimeStatusCard() {
     val readiness = li.songe.gkd.sdp.util.SelfControlRuntimeReadiness.evaluate(
         mode = runtime.mode,
         connected = runtime.connected,
-        switching = false,
+        switching = runtime.switching,
         overlayPermission = overlayPermission,
     )
     val issueText = when (readiness.issue) {
@@ -552,7 +552,11 @@ fun SelfControlRuntimeStatusCard() {
             )
             Spacer(modifier = Modifier.height(6.dp))
             Text(
-                text = "模式：${readiness.modeLabel} · 引擎：${if (runtime.connected) "已连接" else "未连接"}",
+                text = "模式：${readiness.modeLabel} · 引擎：${when {
+                    runtime.switching -> "切换中"
+                    runtime.connected -> "已连接"
+                    else -> "未连接"
+                }}",
                 style = MaterialTheme.typography.bodySmall,
             )
             Text(

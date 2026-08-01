@@ -3,6 +3,7 @@ package li.songe.gkd.sdp.a11y
 import android.view.accessibility.AccessibilityEvent
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -47,6 +48,7 @@ class SdpRuntimeFeatureCoordinator<T>(
         val mode: AutomatorModeOption? = null,
         val generation: Long = 0L,
         val packageName: String = "",
+        val switching: Boolean = false,
     )
 
     private val lock = Any()
@@ -89,7 +91,8 @@ class SdpRuntimeFeatureCoordinator<T>(
         mode: AutomatorModeOption,
         runtime: A11yCommonImpl? = null,
     ): RuntimeOwner {
-        val owner = synchronized(lock) {
+        val (owner, handoff) = synchronized(lock) {
+            val hadOwner = currentOwner != null
             generation += 1
             RuntimeOwner(identity, mode, runtime, generation).also {
                 currentOwner = it
@@ -100,13 +103,24 @@ class SdpRuntimeFeatureCoordinator<T>(
                     mode = mode,
                     generation = it.generation,
                     packageName = latestAppId,
+                    switching = hadOwner,
                 )
-            }
+            } to hadOwner
         }
         // Reconcile the current app immediately. This is intentionally fenced by
         // the generation so the StateFlow's initial replay cannot duplicate it.
         if (latestAppId.isNotEmpty()) {
             dispatchAppIfNeeded(owner, latestAppId)
+        }
+        if (handoff) {
+            scope.launch {
+                delay(1_000L)
+                synchronized(lock) {
+                    if (currentOwner === owner) {
+                        _statusFlow.value = _statusFlow.value.copy(switching = false)
+                    }
+                }
+            }
         }
         return owner
     }
@@ -117,7 +131,7 @@ class SdpRuntimeFeatureCoordinator<T>(
                 false
             } else {
                 currentOwner = null
-                _statusFlow.value = _statusFlow.value.copy(connected = false)
+                _statusFlow.value = _statusFlow.value.copy(connected = false, switching = false)
                 true
             }
         }
