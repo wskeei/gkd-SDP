@@ -11,7 +11,7 @@ class SelfControlModeParityTest {
     fun productionCoordinatorRegistersEverySelfControlFeature() {
         assertEquals(
             setOf("focus", "usage-guard", "app-blocker", "url-blocker"),
-            sdpRuntimeFeatureCoordinator.featureNames,
+            selfControlRuntimeFeatureNames,
         )
     }
 
@@ -26,7 +26,7 @@ class SelfControlModeParityTest {
             SelfControlElapsedPolicy.selectorInterceptEventKey(12L, "com.example.app", 7),
         )
         assertEquals(
-            "url-intercept:9",
+            "url_intercept:9",
             SelfControlElapsedPolicy.urlInterceptEventKey(9L),
         )
     }

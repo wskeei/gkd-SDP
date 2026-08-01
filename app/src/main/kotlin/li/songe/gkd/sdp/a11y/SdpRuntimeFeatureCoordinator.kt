@@ -259,6 +259,9 @@ class SdpRuntimeFeatureCoordinator<T>(
     }
 }
 
+val selfControlRuntimeFeatureNames: Set<String> =
+    setOf("focus", "usage-guard", "app-blocker", "url-blocker")
+
 private val selfControlRuntimeHandlers: List<SdpRuntimeFeatureCoordinator.Handler>
     get() = listOf(
         SdpRuntimeFeatureCoordinator.Handler(

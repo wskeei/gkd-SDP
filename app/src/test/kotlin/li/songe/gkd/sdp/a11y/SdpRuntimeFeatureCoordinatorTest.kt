@@ -4,9 +4,10 @@ import android.view.accessibility.AccessibilityEvent
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.yield
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeout
 import li.songe.gkd.sdp.util.AutomatorModeOption
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -31,7 +32,7 @@ class SdpRuntimeFeatureCoordinatorTest {
         }
 
         coordinator.attach("a11y", AutomatorModeOption.A11yMode)
-        yield()
+        awaitCondition { seen.size == 1 }
 
         assertEquals(listOf("com.example.reader"), seen)
     }
@@ -45,7 +46,7 @@ class SdpRuntimeFeatureCoordinatorTest {
         }
 
         coordinator.attach("automation", AutomatorModeOption.AutomationMode)
-        yield()
+        awaitCondition { seen.size == 1 }
 
         assertEquals(listOf("com.example.video"), seen)
     }
@@ -61,7 +62,7 @@ class SdpRuntimeFeatureCoordinatorTest {
         val a11y = coordinator.attach("a11y", AutomatorModeOption.A11yMode)
         val automation = coordinator.attach("automation", AutomatorModeOption.AutomationMode)
         foreground.value = "com.example.video"
-        yield()
+        awaitCondition { seen.size == 3 }
 
         assertEquals(
             listOf(
@@ -88,7 +89,6 @@ class SdpRuntimeFeatureCoordinatorTest {
         // A null event still exercises the stale-owner gate without invoking
         // Android's unmocked AccessibilityEvent factory in a JVM test.
         coordinator.onAccessibilityEvent(oldOwner, null)
-        yield()
 
         assertEquals(0, events.get())
     }
@@ -105,7 +105,7 @@ class SdpRuntimeFeatureCoordinatorTest {
         val newOwner = coordinator.attach("automation", AutomatorModeOption.AutomationMode)
         coordinator.detach(oldOwner)
         foreground.value = "com.example.video"
-        yield()
+        awaitCondition { seen.contains("自动化:com.example.video") }
 
         assertTrue(coordinator.isCurrent(newOwner))
         assertEquals("自动化:com.example.video", seen.last())
@@ -121,7 +121,7 @@ class SdpRuntimeFeatureCoordinatorTest {
 
         coordinator.attach("a11y", AutomatorModeOption.A11yMode)
         coordinator.attach("automation", AutomatorModeOption.AutomationMode)
-        yield()
+        awaitCondition { seen.size == 2 }
 
         assertEquals(2, seen.size)
         assertEquals("自动化:com.example.reader", seen.last())
@@ -150,7 +150,7 @@ class SdpRuntimeFeatureCoordinatorTest {
 
         coordinator.attach("a11y", AutomatorModeOption.A11yMode)
         foreground.value = "com.example.video"
-        yield()
+        awaitCondition { healthy.size == 2 && failures.get() == 2 }
 
         assertEquals(listOf("com.example.reader", "com.example.video"), healthy)
         assertEquals(2, failures.get())
@@ -177,5 +177,11 @@ class SdpRuntimeFeatureCoordinatorTest {
     private class HandlerConfig {
         var onAppChanged: (String, SdpRuntimeFeatureCoordinator.RuntimeOwner) -> Unit = { _, _ -> }
         var onAccessibilityEvent: (AccessibilityEvent, SdpRuntimeFeatureCoordinator.RuntimeOwner) -> Unit = { _, _ -> }
+    }
+
+    private suspend fun awaitCondition(condition: () -> Boolean) {
+        withTimeout(2_000L) {
+            while (!condition()) delay(5L)
+        }
     }
 }
