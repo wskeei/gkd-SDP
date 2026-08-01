@@ -1,52 +1,94 @@
 name: 错误反馈 / Bug report
+description: 报告可以在 GKD-SDP 中复现的问题
 title: "[BUG] "
-description: 反馈你遇到的错误 / Report the bug you encountered
-labels: ["pending triage"]
-
+labels:
+  - bug
+  - "status: needs-triage"
 body:
   - type: markdown
     attributes:
       value: |
-        ## 感谢您花时间填写，在提交问题之前，请确保您完成以下操作
-        1. 请 **确保** 您已经查阅了 [GKD 官方文档](https://gkd.li) 以及 [常见问题](https://gkd.li/guide/faq)
-        2. 请 **判断** 是不是第三方规则订阅的问题，如果是，你应该向规则提供者反馈，而不是在这里提交，**此处只接受 GKD 应用本体的问题**
-        3. 请 **确保** 已有的 [问题](https://github.com/gkd-kit/gkd/issues?q=is%3Aissue) 或 [讨论](https://github.com/orgs/gkd-kit/discussions?discussions_q=) 中没有人提交过相似问题，否则请在该问题下进行讨论
-        4. 请 **确保** 你的问题能在 [releases](https://github.com/gkd-kit/gkd/releases/latest) 发布的最新版本(包含测试版本)上复现 (如果不是请先更新到最新版本复现后再提交问题)
-  - type: textarea
-    id: log-file
+        感谢反馈。请先搜索已有 Issue/Discussion，并确认问题属于 GKD-SDP，而不是第三方订阅规则或上游 GKD。
+
+        **隐私提示：** 上传日志、截图或录屏前，请删除申请理由、账号、URL、token、通知正文和其他屏幕敏感内容。不要上传 keystore 或密码。
+  - type: input
+    id: version
     attributes:
-      label: |
-        日志文件
-      description: |
-        首页-设置-关于-日志，上传日志文件或生成链接并粘贴到下面的输入框\
-        任何问题都需要提供日志文件. 否则将直接关闭，请不要纯发文字/截图/视频
+      label: GKD-SDP 版本
+      description: 例如 2.0.0-beta.1，以及 Release/Nightly/自行构建来源
+      placeholder: 2.0.0-beta.1 (Release)
+    validations:
+      required: true
+  - type: input
+    id: device
+    attributes:
+      label: 设备和 Android 版本
+      placeholder: 厂商、型号、Android 版本、ROM
+    validations:
+      required: true
+  - type: dropdown
+    id: runtime-mode
+    attributes:
+      label: 运行模式
+      options:
+        - Accessibility 无障碍
+        - Automation / Shizuku 自动化
+        - 两种模式都复现
+        - 不确定
+    validations:
+      required: true
+  - type: input
+    id: permissions
+    attributes:
+      label: 相关权限状态
+      description: 只写开/关即可，不要粘贴系统日志
+      placeholder: 通知开，悬浮窗开，无障碍开，Shizuku 未使用
+  - type: dropdown
+    id: area
+    attributes:
+      label: 影响区域
+      options:
+        - 使用申请
+        - 应用拦截 / URL 拦截
+        - 专注模式 / Self Control
+        - 自动重开 / 无障碍守护
+        - 订阅选择器 / GKD 核心
+        - 更新 / 构建 / Release
+        - 其他
     validations:
       required: true
   - type: textarea
-    id: bug-1
+    id: steps
     attributes:
-      label: |
-        BUG描述(文字/截图/视频)
-      description: |
-        请使用尽量准确的描述，否则你的问题将会被直接关闭\
-        另外如果你的问题是关于快照/选择器的，请必须提供快照链接或者快照文件，否则你的问题将会被直接关闭
+      label: 最小复现步骤
+      description: 请使用编号步骤，避免只写“不能用”
     validations:
       required: true
   - type: textarea
-    id: bug-2
+    id: expected
     attributes:
-      label: |
-        期望行为(文字/截图/视频)
-      description: |
-        请使用尽量准确的描述，否则你的问题将会被直接关闭
+      label: 期望行为
     validations:
       required: true
   - type: textarea
-    id: bug-3
+    id: actual
     attributes:
-      label: |
-        实际行为(文字/截图/视频)
-      description: |
-        请使用尽量准确的描述，否则你的问题将会被直接关闭
+      label: 实际行为
     validations:
       required: true
+  - type: textarea
+    id: regression
+    attributes:
+      label: 回归信息和脱敏证据
+      description: 上一个正常版本、复现频率，以及必要的脱敏日志/截图链接；不要求所有问题上传原始日志
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: 提交前确认
+      options:
+        - label: 我已搜索过相似 Issue/Discussion。
+          required: true
+        - label: 我已删除申请理由、账号、URL、token、密码和不必要的屏幕内容。
+          required: true
+        - label: 这是 GKD-SDP 应用本体的问题，而不是第三方规则内容的问题。
+          required: true

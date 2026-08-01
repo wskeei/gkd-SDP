@@ -1,0 +1,8 @@
+# Default owner and high-risk runtime areas.
+# CODEOWNERS documents responsibility; Rulesets do not require code-owner approval
+# because this is currently a single-maintainer repository.
+* @wskeei
+/.github/ @wskeei
+/app/src/main/kotlin/li/songe/gkd/sdp/a11y/ @wskeei
+/app/src/main/kotlin/li/songe/gkd/sdp/service/ @wskeei
+/app/src/main/kotlin/li/songe/gkd/sdp/db/ @wskeei

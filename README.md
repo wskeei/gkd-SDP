@@ -121,8 +121,10 @@ Unix-like shell：
 
 - `applicationId`: `li.songe.gkd.sdp`
 - `minSdk`: 26
-- `compileSdk` / `targetSdk`: 36
+- `compileSdk` / `targetSdk`: 37
 - Debug 应用名：`GKD-SDP`
+
+Android 编译和 PR 质量检查以 [GitHub Actions](.github/workflows/ci.yml) 为准。正式版本和历史更新说明请查看 [Releases](https://github.com/wskeei/gkd-SDP/releases)；`main` 上的 Nightly 仅是短期测试构建，不等同于稳定版。
 
 ## 开发说明
 
@@ -132,11 +134,20 @@ Unix-like shell：
 
 如果你要改动无障碍运行时、自动重开、应用/URL 拦截或使用申请，请优先阅读 `README_DEV.md`，这些功能之间存在较多状态联动。
 
+## 参与和反馈
+
+- 使用问答、设备兼容性和想法： [Discussions](https://github.com/wskeei/gkd-SDP/discussions)
+- 可复现问题： [Issues](https://github.com/wskeei/gkd-SDP/issues)
+- 贡献代码： [CONTRIBUTING.md](CONTRIBUTING.md)
+- 安全问题： [SECURITY.md](SECURITY.md)
+- 隐私说明： [PRIVACY.md](PRIVACY.md)
+- 上游同步边界： [UPSTREAM.md](UPSTREAM.md)
+
 ## 免责声明
 
 本项目遵循 [GPL-3.0](LICENSE) 开源。
 
-本项目仅供学习、研究和个人自律使用，禁止用于商业用途、非法用途或绕过应用/系统安全策略。使用无障碍、悬浮窗、Shizuku 等能力时，请自行理解相关权限风险，并遵守所在地区法律法规和目标应用服务条款。
+GPL-3.0 的使用、修改和再分发权利与义务以许可证正文为准。本项目不鼓励也不保证任何违反法律、绕过应用/系统安全策略或违反目标应用服务条款的用途。使用无障碍、悬浮窗、Shizuku 等能力时，请自行理解相关权限风险并遵守所在地区法律法规。
 
 ## 致谢
 

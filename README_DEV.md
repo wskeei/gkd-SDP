@@ -42,6 +42,8 @@ Practical note: Gradle task plans in this repo have been run with JDK 21, while 
 - [`selector`](selector): selector parser/matcher shared logic, Kotlin Multiplatform
 - [`hidden_api`](hidden_api): compile-only Android hidden API stubs used by Shizuku/refine code
 - [`docs/plans`](docs/plans): implementation handoff notes and AI-oriented plans
+- [`docs/releasing.md`](docs/releasing.md): versioning, signing and GitHub Release procedure
+- [`docs/testing/release-smoke-checklist.md`](docs/testing/release-smoke-checklist.md): real-device release checks
 
 Within `app`, the most important directories are:
 
@@ -258,7 +260,9 @@ Gradle is configured with `-Dfile.encoding=UTF-8` in [`gradle.properties`](gradl
 
 ## Build and Test
 
-The authoritative verification environment is GitHub Actions (`.github/workflows/Verify-Merge.yml` and `.github/workflows/Build-Apk.yml`) with JDK 21. This project intentionally does not run Gradle locally for the digital-self-discipline runtime repair; local checks are limited to source inspection and `git diff --check`. Push the branch and inspect the Draft PR checks with `gh pr checks --watch`.
+The authoritative verification environment is GitHub Actions (`.github/workflows/ci.yml` and `.github/workflows/nightly.yml`) with JDK 21. This project intentionally does not require Gradle to run locally; local checks can be limited to source inspection and `git diff --check`. Push the branch and inspect the Draft PR checks with `gh pr checks --watch`.
+
+Formal GKD-SDP versions are maintained separately from the upstream GKD base. The current product version source is `gradle/version.properties`; do not reintroduce hard-coded `versionName`/`versionCode` values in workflows or documentation. See [`docs/releasing.md`](docs/releasing.md).
 
 When a local Gradle run is explicitly appropriate for another task, the equivalent commands are:
 
