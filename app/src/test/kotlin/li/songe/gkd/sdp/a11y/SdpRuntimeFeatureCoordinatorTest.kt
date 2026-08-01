@@ -62,6 +62,7 @@ class SdpRuntimeFeatureCoordinatorTest {
         val a11y = coordinator.attach("a11y", AutomatorModeOption.A11yMode)
         val automation = coordinator.attach("automation", AutomatorModeOption.AutomationMode)
         foreground.value = "com.example.video"
+        coordinator.reconcileCurrentApp("test-foreground-change")
         awaitCondition { seen.size == 3 }
 
         assertEquals(
@@ -106,6 +107,7 @@ class SdpRuntimeFeatureCoordinatorTest {
         val newOwner = coordinator.attach("automation", AutomatorModeOption.AutomationMode)
         coordinator.detach(oldOwner)
         foreground.value = "com.example.video"
+        coordinator.reconcileCurrentApp("test-foreground-change")
         awaitCondition { seen.contains("自动化:com.example.video") }
 
         assertTrue(coordinator.isCurrent(newOwner))
@@ -152,6 +154,7 @@ class SdpRuntimeFeatureCoordinatorTest {
 
         coordinator.attach("a11y", AutomatorModeOption.A11yMode)
         foreground.value = "com.example.video"
+        coordinator.reconcileCurrentApp("test-foreground-change")
         awaitCondition { healthy.size == 2 && failures.get() == 2 }
 
         assertEquals(listOf("com.example.reader", "com.example.video"), healthy)

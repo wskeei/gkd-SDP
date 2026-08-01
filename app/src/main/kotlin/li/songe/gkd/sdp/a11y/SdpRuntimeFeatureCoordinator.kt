@@ -192,9 +192,15 @@ class SdpRuntimeFeatureCoordinator<T>(
 
     fun reconcileCurrentApp(@Suppress("UNUSED_PARAMETER") reason: String = "manual") {
         val (owner, appId) = synchronized(lock) {
+            val foregroundAppId = appIdOf(foregroundApps.value)
+            latestAppId = foregroundAppId
+            if (foregroundAppId.isEmpty()) {
+                dispatchedGeneration = -1L
+                dispatchedAppId = ""
+            }
             dispatchedGeneration = -1L
             dispatchedAppId = ""
-            currentOwner to latestAppId
+            currentOwner to foregroundAppId
         }
         if (owner != null && appId.isNotEmpty()) {
             dispatchAppIfNeeded(owner, appId)
