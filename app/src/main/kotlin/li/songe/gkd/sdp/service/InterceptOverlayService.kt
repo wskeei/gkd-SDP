@@ -38,6 +38,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import li.songe.gkd.sdp.a11y.A11yRuleEngine
 import li.songe.gkd.sdp.data.SelfControlAttempt
 import li.songe.gkd.sdp.db.DbSet
 import li.songe.gkd.sdp.ui.component.SelfControlElapsedCard
@@ -136,7 +137,7 @@ class InterceptOverlayService : LifecycleService(), SavedStateRegistryOwner {
                             stopSelf()
                         },
                         onExit = {
-                            A11yService.instance?.performGlobalAction(android.accessibilityservice.AccessibilityService.GLOBAL_ACTION_HOME)
+                            A11yRuleEngine.performActionHome()
                             stopSelf()
                         }
                     )

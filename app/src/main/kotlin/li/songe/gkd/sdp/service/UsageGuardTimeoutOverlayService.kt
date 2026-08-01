@@ -25,6 +25,7 @@ import androidx.savedstate.SavedStateRegistryOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import li.songe.gkd.sdp.a11y.A11yRuleEngine
 import li.songe.gkd.sdp.a11y.UsageGuardEngine
 import li.songe.gkd.sdp.ui.style.AppTheme
 
@@ -68,9 +69,7 @@ class UsageGuardTimeoutOverlayService : LifecycleService(), SavedStateRegistryOw
                         onGoHome = {
                             lifecycleScope.launch(Dispatchers.IO) {
                                 UsageGuardEngine.markRecordHomeButton(recordId)
-                                A11yService.instance?.performGlobalAction(
-                                    android.accessibilityservice.AccessibilityService.GLOBAL_ACTION_HOME
-                                )
+                                A11yRuleEngine.performActionHome()
                                 stopSelf()
                             }
                         },

@@ -41,6 +41,7 @@ import li.songe.gkd.sdp.store.storeFlow
 import li.songe.gkd.sdp.util.AndroidTarget
 import li.songe.gkd.sdp.util.AutomatorModeOption
 import li.songe.gkd.sdp.util.InterceptUtils
+import li.songe.gkd.sdp.util.LogUtils
 import li.songe.gkd.sdp.util.SelfControlElapsedPolicy
 import li.songe.gkd.sdp.util.launchTry
 import li.songe.gkd.sdp.util.runMainPost
@@ -511,8 +512,21 @@ class A11yRuleEngine(val service: A11yCommonImpl) {
 
         fun performActionBack(): Boolean {
             val r1 = shizukuContextFlow.value.inputManager?.key(KeyEvent.KEYCODE_BACK)
-            if (r1 != null) return true
+            if (r1 == true) return true
             return A11yService.instance?.performGlobalAction(AccessibilityService.GLOBAL_ACTION_BACK) == true
+        }
+
+        fun performActionHome(): Boolean {
+            val result = SystemActionController(
+                inputHome = { shizukuContextFlow.value.inputManager?.key(KeyEvent.KEYCODE_HOME) },
+                accessibilityHome = {
+                    A11yService.instance?.performGlobalAction(
+                        AccessibilityService.GLOBAL_ACTION_HOME
+                    ) == true
+                },
+            ).performHome()
+            LogUtils.d("self-control HOME action", "success=$result")
+            return result
         }
 
         suspend fun screenshot(): Bitmap? = service?.screenshot()
