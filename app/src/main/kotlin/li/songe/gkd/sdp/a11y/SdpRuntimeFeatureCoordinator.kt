@@ -57,6 +57,7 @@ class SdpRuntimeFeatureCoordinator<T>(
     private var dispatchedAppId = ""
     private val _statusFlow = MutableStateFlow(RuntimeStatus(packageName = latestAppId))
     val statusFlow: StateFlow<RuntimeStatus> = _statusFlow.asStateFlow()
+    val featureNames: Set<String> get() = handlers.mapTo(linkedSetOf()) { it.name }
 
     init {
         scope.launch(Dispatchers.Default) {
