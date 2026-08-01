@@ -168,9 +168,9 @@ object UrlBlockerEngine {
         return try {
             val rootNode = ruleEngine.safeActiveWindow ?: return null
             findUrlBarText(rootNode, browserConfig.urlBarId)
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             if (META.debuggable) {
-                Log.e(TAG, "Failed to read URL", e)
+                Log.e(TAG, "Failed to read URL")
             }
             null
         }

@@ -202,9 +202,10 @@ object FocusModeEngine {
             return
         }
 
-        cooldownMap[packageName] = now
         LogUtils.d("Focus mode blocking: $packageName")
-        showFocusOverlay(packageName)
+        if (showFocusOverlay(packageName) == OverlayLaunchResult.Accepted) {
+            cooldownMap[packageName] = now
+        }
     }
 
     fun onA11yEvent(event: android.view.accessibility.AccessibilityEvent) = Unit
@@ -215,8 +216,8 @@ object FocusModeEngine {
         overrideMessage: String? = null,
         overrideEndTime: Long? = null,
         overrideIsLocked: Boolean? = null
-    ) {
-        try {
+    ): OverlayLaunchResult {
+        return try {
             val message = overrideMessage ?: currentMessageFlow.value
             val whitelist = overrideWhitelist ?: currentWhitelistFlow.value
             val session = cachedSession
@@ -233,7 +234,8 @@ object FocusModeEngine {
             }
             selfControlOverlayLauncher.launch(intent)
         } catch (e: Exception) {
-            LogUtils.d("Failed to show focus overlay: ${e.message}")
+            LogUtils.d("focus overlay start rejected", e::class.java.simpleName)
+            OverlayLaunchResult.Rejected(OverlayFailureCategory.UNKNOWN)
         }
     }
 

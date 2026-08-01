@@ -463,7 +463,7 @@ class A11yRuleEngine(val service: A11yCommonImpl) {
                         SelfControlAttempt.KIND_SELECTOR_INTERCEPT,
                     )
                 }
-                app.startService(intent)
+                selfControlOverlayLauncher.launch(intent)
                 return
             }
             val actionResult = rule.performAction(target)
