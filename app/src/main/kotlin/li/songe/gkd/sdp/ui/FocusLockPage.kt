@@ -564,6 +564,14 @@ fun SelfControlRuntimeStatusCard() {
                 style = MaterialTheme.typography.bodySmall,
                 color = if (readiness.ready) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
             )
+            runtime.lastDecision?.let { decision ->
+                Text(
+                    text = "最近判定：${decision.feature} · ${decision.decision} · " +
+                        li.songe.gkd.sdp.util.SelfControlElapsedPolicy.formatAbsolute(decision.atEpochMs),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
             if (!overlayPermission) {
                 TextButton(
                     onClick = {

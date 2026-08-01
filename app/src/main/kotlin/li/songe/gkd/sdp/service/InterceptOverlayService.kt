@@ -39,6 +39,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import li.songe.gkd.sdp.a11y.A11yRuleEngine
+import li.songe.gkd.sdp.a11y.UrlBlockerEngine
 import li.songe.gkd.sdp.util.LogUtils
 import li.songe.gkd.sdp.data.SelfControlAttempt
 import li.songe.gkd.sdp.db.DbSet
@@ -86,8 +87,9 @@ class InterceptOverlayService : LifecycleService(), SavedStateRegistryOwner {
 
         if (subsId != -1L && groupKey != -1) {
             elapsedState = SelfControlElapsedPolicy.ElapsedState.Loading
-            showOverlay(subsId, groupKey, message, cooldown)
-            recordElapsedAttempt(eventKey, eventKind, System.currentTimeMillis())
+            if (showOverlay(subsId, groupKey, message, cooldown)) {
+                recordElapsedAttempt(eventKey, eventKind, System.currentTimeMillis())
+            }
         } else {
             stopSelf()
         }
@@ -121,8 +123,8 @@ class InterceptOverlayService : LifecycleService(), SavedStateRegistryOwner {
         }
     }
 
-    private fun showOverlay(subsId: Long, groupKey: Int, message: String, cooldown: Int) {
-        if (view != null) return
+    private fun showOverlay(subsId: Long, groupKey: Int, message: String, cooldown: Int): Boolean {
+        if (view != null) return false
 
         view = ComposeView(this).apply {
             setViewTreeLifecycleOwner(this@InterceptOverlayService)
@@ -155,12 +157,18 @@ class InterceptOverlayService : LifecycleService(), SavedStateRegistryOwner {
             PixelFormat.TRANSLUCENT
         )
         
-        runCatching { windowManager.addView(view, params) }.onFailure { error ->
+        var mounted = false
+        runCatching {
+            windowManager.addView(view, params)
+            mounted = true
+        }.onFailure { error ->
             view?.let { runCatching { windowManager.removeViewImmediate(it) } }
             view = null
             LogUtils.d("selector intercept overlay mount rejected", error::class.java.simpleName)
+            UrlBlockerEngine.clearCooldown()
             stopSelf()
         }
+        return mounted
     }
 
     override fun onDestroy() {

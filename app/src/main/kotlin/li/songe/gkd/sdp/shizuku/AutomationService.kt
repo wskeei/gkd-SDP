@@ -81,7 +81,7 @@ class AutomationService private constructor() : A11yCommonImpl {
         updateEnableAutomator(true)
         // Keep the existing foreground notification service lifecycle in place
         // before overlays are launched from a background UiAutomation runtime.
-        runCatching { StatusService.autoStart() }
+        runCatching { StatusService.autoStart(forceForRuntime = true) }
         ruleEngine.onA11yConnected()
     }
 

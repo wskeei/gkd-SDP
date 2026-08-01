@@ -1,6 +1,7 @@
 package li.songe.gkd.sdp.a11y
 
 import android.content.Intent
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -25,6 +26,7 @@ import li.songe.gkd.sdp.util.appInfoMapFlow
 import li.songe.gkd.sdp.util.LogUtils
 import li.songe.gkd.sdp.util.systemUiAppId
 import li.songe.gkd.sdp.widget.UsageGuardReviewWidget
+import java.util.concurrent.atomic.AtomicLong
 
 object UsageGuardEngine {
     private val stateMutex = Mutex()
@@ -40,6 +42,7 @@ object UsageGuardEngine {
     private var expiryWatchRecordId: Long? = null
     private var expiryWatchExpiresAt: Long = 0L
     private var expiryWatchJob: Job? = null
+    private val appChangeToken = AtomicLong()
 
     val appProfilesFlow = DbSet.usageGuardAppProfileDao.queryAll()
         .stateIn(appScope, SharingStarted.Eagerly, emptyList())
@@ -47,11 +50,18 @@ object UsageGuardEngine {
     val tagsFlow = DbSet.usageGuardTagDao.queryAll()
         .stateIn(appScope, SharingStarted.Eagerly, emptyList())
 
-    fun onAppChanged(packageName: String) {
+    fun onAppChanged(
+        packageName: String,
+        owner: SdpRuntimeFeatureCoordinator.RuntimeOwner? = null,
+    ) {
+        val token = appChangeToken.incrementAndGet()
         appScope.launch(Dispatchers.IO) {
             stateMutex.withLock {
+                if (!isCurrentRequest(packageName, owner, token)) return@withLock
                 try {
-                    handleAppChanged(packageName)
+                    handleAppChanged(packageName, owner, token)
+                } catch (error: CancellationException) {
+                    throw error
                 } catch (error: Throwable) {
                     LogUtils.d("usage guard app reconciliation failed", error::class.java.simpleName)
                 }
@@ -62,6 +72,9 @@ object UsageGuardEngine {
     fun onRequestOverlayStopped(appId: String?) {
         appScope.launch(Dispatchers.IO) {
             stateMutex.withLock {
+                val owner = sdpRuntimeFeatureCoordinator.currentOwner() ?: return@withLock
+                val token = appChangeToken.get()
+                if (appId != null && !isCurrentRequest(appId, owner, token)) return@withLock
                 if (requestOverlayAppId == appId) {
                     requestOverlayAppId = null
                 }
@@ -74,10 +87,12 @@ object UsageGuardEngine {
                     stopCountdownOverlay(appId = appId)
                     return@withLock
                 }
-                scheduleExpiryWatch(record)
+                scheduleExpiryWatch(record, owner, token)
                 syncCountdownOverlay(
                     activeRecord = record,
                     foregroundAppId = appId,
+                    owner = owner,
+                    token = token,
                 )
             }
         }
@@ -86,6 +101,7 @@ object UsageGuardEngine {
     fun onTimeoutOverlayStopped(appId: String?) {
         appScope.launch {
             stateMutex.withLock {
+                if (sdpRuntimeFeatureCoordinator.currentOwner() == null) return@withLock
                 if (timeoutOverlayAppId == appId) {
                     timeoutOverlayAppId = null
                 }
@@ -96,6 +112,7 @@ object UsageGuardEngine {
     fun onCountdownOverlayStopped(appId: String?) {
         appScope.launch {
             stateMutex.withLock {
+                if (sdpRuntimeFeatureCoordinator.currentOwner() == null) return@withLock
                 if (appId == null || countdownOverlayAppId == appId) {
                     clearCountdownOverlayState()
                 }
@@ -104,24 +121,45 @@ object UsageGuardEngine {
     }
 
     fun onRuntimeDisconnected() {
+        appChangeToken.incrementAndGet()
         appScope.launch {
             stateMutex.withLock {
+                lastProtectedAppId = null
+                cancelExpiryWatch()
                 stopCountdownOverlay()
             }
         }
     }
 
+    fun onOverlayMountFailed(kind: String, appId: String?) {
+        appScope.launch {
+            stateMutex.withLock {
+                when (kind) {
+                    "request" -> if (requestOverlayAppId == appId) requestOverlayAppId = null
+                    "timeout" -> if (timeoutOverlayAppId == appId) timeoutOverlayAppId = null
+                    "countdown" -> if (countdownOverlayAppId == appId) clearCountdownOverlayState()
+                }
+            }
+        }
+        sdpRuntimeFeatureCoordinator.invalidateCurrentApp("usage-guard-overlay-mount-failed")
+        LogUtils.d("usage guard overlay mount failed", "kind=$kind")
+    }
+
     fun onRequestGranted(appId: String) {
         appScope.launch(Dispatchers.IO) {
             stateMutex.withLock {
+                val owner = sdpRuntimeFeatureCoordinator.currentOwner() ?: return@withLock
+                val token = appChangeToken.get()
+                if (!isCurrentRequest(appId, owner, token)) return@withLock
                 lastProtectedAppId = appId
                 val record = DbSet.usageGuardRecordDao.getActiveRecord(appId) ?: run {
                     stopCountdownOverlay(appId = appId)
                     return@withLock
                 }
-                scheduleExpiryWatch(record)
+                scheduleExpiryWatch(record, owner, token)
+                if (!isCurrentRequest(appId, owner, token)) return@withLock
                 if (topActivityFlow.value.appId != appId) {
-                    stopCountdownOverlay(appId = appId)
+                    stopCountdownOverlay(appId = appId, owner = owner, token = token)
                 }
             }
         }
@@ -160,11 +198,18 @@ object UsageGuardEngine {
         }
     }
 
-    private suspend fun handleAppChanged(packageName: String) {
-        closePreviousSessionIfNeeded(packageName)
+    private suspend fun handleAppChanged(
+        packageName: String,
+        owner: SdpRuntimeFeatureCoordinator.RuntimeOwner?,
+        token: Long,
+    ) {
+        if (!isCurrentRequest(packageName, owner, token)) return
+        closePreviousSessionIfNeeded(packageName, owner, token)
+        if (!isCurrentRequest(packageName, owner, token)) return
 
         if (shouldSkipApp(packageName)) {
-            stopCountdownOverlay()
+            sdpRuntimeFeatureCoordinator.recordDecision(owner, "usage-guard", packageName, "ignored_system_app")
+            stopCountdownOverlay(owner = owner, token = token)
             lastProtectedAppId = null
             return
         }
@@ -173,38 +218,57 @@ object UsageGuardEngine {
         if (FocusModeEngine.isActiveFlow.value &&
             !FocusModeEngine.currentWhitelistFlow.value.contains(packageName)
         ) {
-            stopCountdownOverlay()
+            sdpRuntimeFeatureCoordinator.recordDecision(owner, "usage-guard", packageName, "focus_priority")
+            stopCountdownOverlay(owner = owner, token = token)
             lastProtectedAppId = null
             return
         }
         if (AppBlockerEngine.shouldBlock(packageName).first) {
-            stopCountdownOverlay()
+            sdpRuntimeFeatureCoordinator.recordDecision(owner, "usage-guard", packageName, "app_blocker_priority")
+            stopCountdownOverlay(owner = owner, token = token)
             lastProtectedAppId = null
             return
         }
         val profile = DbSet.usageGuardAppProfileDao.getByAppId(packageName)
+        if (!isCurrentRequest(packageName, owner, token)) return
         val shouldProtect = UsageGuardPolicy.shouldProtectApp(
             enabled = settings.usageGuardEnabled,
             scopeMode = settings.usageGuardScopeMode,
             appProfile = profile?.toSnapshot(),
         )
         if (!shouldProtect) {
-            stopCountdownOverlay()
+            sdpRuntimeFeatureCoordinator.recordDecision(owner, "usage-guard", packageName, "outside_scope")
+            stopCountdownOverlay(owner = owner, token = token)
             lastProtectedAppId = null
             return
         }
 
         lastProtectedAppId = packageName
         if (requestOverlayAppId != null || timeoutOverlayAppId != null) {
-            stopCountdownOverlay(appId = packageName)
+            stopCountdownOverlay(appId = packageName, owner = owner, token = token)
             return
         }
 
         val activeRecord = DbSet.usageGuardRecordDao.getActiveRecord(packageName)
+        if (!isCurrentRequest(packageName, owner, token)) return
         val now = System.currentTimeMillis()
         if (activeRecord == null) {
             cancelExpiryWatch(packageName)
-            if (showRequestOverlay(packageName, profile, settings.usageGuardMinReasonLength) == OverlayLaunchResult.Accepted) {
+            if (!isCurrentRequest(packageName, owner, token)) return
+            val result = showRequestOverlay(
+                packageName,
+                profile,
+                settings.usageGuardMinReasonLength,
+                owner,
+                token,
+            )
+            sdpRuntimeFeatureCoordinator.recordDecision(
+                owner,
+                "usage-guard",
+                packageName,
+                "request_${result::class.simpleName ?: "unknown"}",
+            )
+            if (result == OverlayLaunchResult.Accepted && isCurrentRequest(packageName, owner, token)) {
                 requestOverlayAppId = packageName
             }
             return
@@ -212,35 +276,61 @@ object UsageGuardEngine {
 
         if (activeRecord.expiresAt <= now) {
             cancelExpiryWatch(packageName)
+            if (!isCurrentRequest(packageName, owner, token)) return
             DbSet.usageGuardRecordDao.closeRecord(
                 id = activeRecord.id,
                 endedAt = now,
                 endReason = UsageGuardRecord.END_REASON_EXPIRED,
             )
             UsageGuardReviewWidget.refreshAll(app)
-            if (showTimeoutOverlay(packageName, activeRecord.id, activeRecord.reasonText) == OverlayLaunchResult.Accepted) {
+            if (!isCurrentRequest(packageName, owner, token)) return
+            val result = showTimeoutOverlay(
+                packageName,
+                activeRecord.id,
+                activeRecord.reasonText,
+                owner,
+                token,
+            )
+            sdpRuntimeFeatureCoordinator.recordDecision(
+                owner,
+                "usage-guard",
+                packageName,
+                "timeout_${result::class.simpleName ?: "unknown"}",
+            )
+            if (result == OverlayLaunchResult.Accepted && isCurrentRequest(packageName, owner, token)) {
                 timeoutOverlayAppId = packageName
             }
             return
         }
 
-        scheduleExpiryWatch(activeRecord)
+        scheduleExpiryWatch(activeRecord, owner, token)
+        if (!isCurrentRequest(packageName, owner, token)) return
+        sdpRuntimeFeatureCoordinator.recordDecision(owner, "usage-guard", packageName, "countdown")
         syncCountdownOverlay(
             activeRecord = activeRecord,
             foregroundAppId = packageName,
             now = now,
+            owner = owner,
+            token = token,
         )
     }
 
-    private suspend fun closePreviousSessionIfNeeded(nextAppId: String) {
+    private suspend fun closePreviousSessionIfNeeded(
+        nextAppId: String,
+        owner: SdpRuntimeFeatureCoordinator.RuntimeOwner?,
+        token: Long,
+    ) {
         val previousAppId = lastProtectedAppId ?: return
         if (previousAppId == nextAppId) return
+        if (!isCurrentRequest(nextAppId, owner, token)) return
 
-        stopCountdownOverlay(appId = previousAppId)
+            stopCountdownOverlay(appId = previousAppId, owner = owner, token = token)
         cancelExpiryWatch(previousAppId)
 
         val active = DbSet.usageGuardRecordDao.getActiveRecord(previousAppId) ?: return
+        if (!isCurrentRequest(nextAppId, owner, token)) return
         if (active.grantMode != UsageGuardPolicy.GRANT_MODE_STRICT) return
+        if (!isCurrentRequest(nextAppId, owner, token)) return
 
         DbSet.usageGuardRecordDao.closeRecord(
             id = active.id,
@@ -258,9 +348,14 @@ object UsageGuardEngine {
             packageName == systemUiAppId
     }
 
-    private fun scheduleExpiryWatch(record: UsageGuardRecord) {
+    private fun scheduleExpiryWatch(
+        record: UsageGuardRecord,
+        owner: SdpRuntimeFeatureCoordinator.RuntimeOwner? = null,
+        token: Long = appChangeToken.get(),
+    ) {
+        if (!isCurrentRequest(record.appId, owner, token)) return
         if (topActivityFlow.value.appId != record.appId) {
-            stopCountdownOverlay(appId = record.appId)
+            stopCountdownOverlay(appId = record.appId, owner = owner, token = token)
             cancelExpiryWatch(record.appId)
             return
         }
@@ -280,12 +375,14 @@ object UsageGuardEngine {
             val delayMs = (record.expiresAt - System.currentTimeMillis()).coerceAtLeast(0L)
             delay(delayMs)
             stateMutex.withLock {
+                if (!isCurrentRequest(record.appId, owner, token)) return@withLock
                 if (topActivityFlow.value.appId != record.appId) return@withLock
                 if (timeoutOverlayAppId == record.appId) return@withLock
 
                 val activeRecord = DbSet.usageGuardRecordDao.getActiveRecord(record.appId) ?: return@withLock
                 if (activeRecord.id != record.id) return@withLock
                 if (activeRecord.expiresAt > System.currentTimeMillis()) return@withLock
+                if (!isCurrentRequest(record.appId, owner, token)) return@withLock
 
                 DbSet.usageGuardRecordDao.closeRecord(
                     id = activeRecord.id,
@@ -294,9 +391,17 @@ object UsageGuardEngine {
                 )
                 UsageGuardReviewWidget.refreshAll(app)
 
-                stopCountdownOverlay(appId = record.appId)
+                stopCountdownOverlay(appId = record.appId, owner = owner, token = token)
                 cancelExpiryWatch(record.appId)
-                if (showTimeoutOverlay(record.appId, activeRecord.id, activeRecord.reasonText) == OverlayLaunchResult.Accepted) {
+                if (!isCurrentRequest(record.appId, owner, token)) return@withLock
+                val result = showTimeoutOverlay(
+                    record.appId,
+                    activeRecord.id,
+                    activeRecord.reasonText,
+                    owner,
+                    token,
+                )
+                if (result == OverlayLaunchResult.Accepted && isCurrentRequest(record.appId, owner, token)) {
                     timeoutOverlayAppId = record.appId
                 }
             }
@@ -312,11 +417,25 @@ object UsageGuardEngine {
         expiryWatchExpiresAt = 0L
     }
 
+    private fun isCurrentRequest(
+        packageName: String,
+        owner: SdpRuntimeFeatureCoordinator.RuntimeOwner?,
+        token: Long,
+    ): Boolean {
+        if (appChangeToken.get() != token) return false
+        if (owner != null && !sdpRuntimeFeatureCoordinator.isCurrent(owner)) return false
+        if (sdpRuntimeFeatureCoordinator.currentOwner() == null) return false
+        return topActivityFlow.value.appId == packageName
+    }
+
     private fun syncCountdownOverlay(
         activeRecord: UsageGuardRecord?,
         foregroundAppId: String,
         now: Long = System.currentTimeMillis(),
+        owner: SdpRuntimeFeatureCoordinator.RuntimeOwner? = null,
+        token: Long = appChangeToken.get(),
     ) {
+        if (!isCurrentRequest(foregroundAppId, owner, token)) return
         val record = activeRecord
         if (
             record == null ||
@@ -328,15 +447,22 @@ object UsageGuardEngine {
                 now = now,
             )
         ) {
-            stopCountdownOverlay(appId = activeRecord?.appId ?: foregroundAppId)
+            stopCountdownOverlay(
+                appId = activeRecord?.appId ?: foregroundAppId,
+                owner = owner,
+                token = token,
+            )
             return
         }
-        showCountdownOverlay(record)
+        showCountdownOverlay(record, owner, token)
     }
 
     private fun showCountdownOverlay(
         record: UsageGuardRecord,
+        owner: SdpRuntimeFeatureCoordinator.RuntimeOwner?,
+        token: Long,
     ) {
+        if (!isCurrentRequest(record.appId, owner, token)) return
         if (
             countdownOverlayAppId == record.appId &&
             countdownOverlayRecordId == record.id &&
@@ -345,7 +471,7 @@ object UsageGuardEngine {
             return
         }
 
-        stopCountdownOverlay()
+        stopCountdownOverlay(owner = owner, token = token)
         val result = selfControlOverlayLauncher.launch(Intent(app, UsageGuardCountdownOverlayService::class.java).apply {
             putExtra("appId", record.appId)
             putExtra("recordId", record.id)
@@ -355,14 +481,19 @@ object UsageGuardEngine {
                 record.reasonText,
             )
         })
-        if (result == OverlayLaunchResult.Accepted) {
+        if (result == OverlayLaunchResult.Accepted && isCurrentRequest(record.appId, owner, token)) {
             countdownOverlayAppId = record.appId
             countdownOverlayRecordId = record.id
             countdownOverlayExpiresAt = record.expiresAt
         }
     }
 
-    private fun stopCountdownOverlay(appId: String? = null) {
+    private fun stopCountdownOverlay(
+        appId: String? = null,
+        owner: SdpRuntimeFeatureCoordinator.RuntimeOwner? = null,
+        token: Long = appChangeToken.get(),
+    ) {
+        if (owner != null && !isCurrentRequest(appId ?: topActivityFlow.value.appId, owner, token)) return
         if (appId != null && countdownOverlayAppId != appId) return
         val shouldStop = countdownOverlayAppId != null
         clearCountdownOverlayState()
@@ -375,8 +506,10 @@ object UsageGuardEngine {
         appId: String,
         profile: UsageGuardAppProfile?,
         minReasonLength: Int,
+        owner: SdpRuntimeFeatureCoordinator.RuntimeOwner? = null,
+        token: Long = appChangeToken.get(),
     ): OverlayLaunchResult {
-        stopCountdownOverlay(appId = appId)
+        stopCountdownOverlay(appId = appId, owner = owner, token = token)
         val appName = appInfoMapFlow.value[appId]?.name ?: appId
         val grantMode = profile?.grantMode ?: storeFlow.value.usageGuardDefaultGrantMode
         return selfControlOverlayLauncher.launch(Intent(app, UsageGuardRequestOverlayService::class.java).apply {
@@ -391,8 +524,10 @@ object UsageGuardEngine {
         appId: String,
         recordId: Long,
         reasonText: String,
+        owner: SdpRuntimeFeatureCoordinator.RuntimeOwner? = null,
+        token: Long = appChangeToken.get(),
     ): OverlayLaunchResult {
-        stopCountdownOverlay(appId = appId)
+        stopCountdownOverlay(appId = appId, owner = owner, token = token)
         return selfControlOverlayLauncher.launch(Intent(app, UsageGuardTimeoutOverlayService::class.java).apply {
             putExtra("appId", appId)
             putExtra("recordId", recordId)

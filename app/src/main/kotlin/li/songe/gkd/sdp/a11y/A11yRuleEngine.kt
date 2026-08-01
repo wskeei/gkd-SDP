@@ -128,17 +128,21 @@ class A11yRuleEngine(val service: A11yCommonImpl) {
 
     @Volatile
     private var latestStateEvent: A11yEvent? = null
+    private data class QueuedA11yEvent(
+        val event: A11yEvent,
+        val owner: SdpRuntimeFeatureCoordinator.RuntimeOwner,
+    )
+
     private var lastContentEventTime = 0L
     private var lastEventTime = 0L
-    private val eventDeque = ArrayDeque<A11yEvent>()
+    private val eventDeque = ArrayDeque<QueuedA11yEvent>()
     fun onA11yEvent(event: AccessibilityEvent?) {
         if (!effective) return
-        event?.let { value ->
-            runtimeOwner?.let { owner ->
-                sdpRuntimeFeatureCoordinator.onAccessibilityEvent(owner, value)
-            }
-        }
+        val eventOwner = runtimeOwner ?: return
+        if (!sdpRuntimeFeatureCoordinator.isCurrent(eventOwner)) return
+        event?.let { value -> sdpRuntimeFeatureCoordinator.onAccessibilityEvent(eventOwner, value) }
         if (!event.isUseful()) return
+        if (!sdpRuntimeFeatureCoordinator.isCurrent(eventOwner)) return
         // 拒绝副屏无障碍事件
         if (AndroidTarget.TIRAMISU && event.displayId != Display.DEFAULT_DISPLAY) return
         onA11yFeatEvent(event)
@@ -161,6 +165,7 @@ class A11yRuleEngine(val service: A11yCommonImpl) {
             }
             lastContentEventTime = a11yEvent.time
         }
+        if (!sdpRuntimeFeatureCoordinator.isCurrent(eventOwner)) return
         EventService.logEvent(event)
         if (META.debuggable) {
             Log.d(
@@ -173,22 +178,38 @@ class A11yRuleEngine(val service: A11yCommonImpl) {
             // type:32, time:-104, app:com.miui.home, cls:com.miui.home.launcher.Launcher
             return
         }
+        if (!sdpRuntimeFeatureCoordinator.isCurrent(eventOwner)) return
         lastEventTime = event.eventTime
         if (event.eventType == STATE_CHANGED) {
             latestStateEvent = a11yEvent
         }
-        synchronized(eventDeque) { eventDeque.addLast(a11yEvent) }
-        scope.launch(eventDispatcher) { consumeEvent(a11yEvent) }
+        synchronized(eventDeque) { eventDeque.addLast(QueuedA11yEvent(a11yEvent, eventOwner)) }
+        scope.launch(eventDispatcher) { consumeEvent(a11yEvent, eventOwner) }
     }
 
     private val queryEvents = mutableListOf<A11yEvent>()
-    private suspend fun consumeEvent(headEvent: A11yEvent) {
-        val consumedEvents = synchronized(eventDeque) {
-            if (eventDeque.firstOrNull() !== headEvent) return
-            eventDeque.filter { it.sameAs(headEvent) }.apply {
-                repeat(size) { eventDeque.removeFirst() }
+    private suspend fun consumeEvent(
+        headEvent: A11yEvent,
+        owner: SdpRuntimeFeatureCoordinator.RuntimeOwner,
+    ) {
+        if (!sdpRuntimeFeatureCoordinator.isCurrent(owner)) {
+            synchronized(eventDeque) {
+                eventDeque.removeAll { it.owner === owner && it.event === headEvent }
             }
+            return
         }
+        val consumedEvents = synchronized(eventDeque) {
+            val first = eventDeque.firstOrNull() ?: return
+            if (first.owner !== owner || first.event !== headEvent) return
+            val consumed = mutableListOf<A11yEvent>()
+            while (true) {
+                val next = eventDeque.firstOrNull() ?: break
+                if (next.owner !== owner || !next.event.sameAs(headEvent)) break
+                consumed += eventDeque.removeFirst().event
+            }
+            consumed
+        }
+        if (!sdpRuntimeFeatureCoordinator.isCurrent(owner)) return
         val latestEvent = consumedEvents.last()
         val evAppId = latestEvent.appId
         val evActivityId = latestEvent.name
@@ -200,6 +221,7 @@ class A11yRuleEngine(val service: A11yCommonImpl) {
         }
         if (rightAppId == evAppId) {
             if (latestEvent.type == STATE_CHANGED) {
+                if (!sdpRuntimeFeatureCoordinator.isCurrent(owner)) return
                 synchronized(topActivityFlow) {
                     // tv.danmaku.bili, com.miui.home, com.miui.home.launcher.Launcher
                     if (isActivity(evAppId, evActivityId)) {
@@ -209,6 +231,7 @@ class A11yRuleEngine(val service: A11yCommonImpl) {
             }
         }
         if (rightAppId != topActivityFlow.value.appId) {
+            if (!sdpRuntimeFeatureCoordinator.isCurrent(owner)) return
             synchronized(topActivityFlow) {
                 // 从 锁屏，下拉通知栏 返回等情况, 应用不会发送事件, 但是系统组件会发送事件
                 val topCpn = shizukuContextFlow.value.topCpn()
@@ -223,6 +246,7 @@ class A11yRuleEngine(val service: A11yCommonImpl) {
         if (evAppId != rightAppId || activityRule.skipConsumeEvent || !storeFlow.value.enableMatch) {
             return
         }
+        if (!sdpRuntimeFeatureCoordinator.isCurrent(owner)) return
         synchronized(queryEvents) { queryEvents.addAll(consumedEvents) }
         a11yContext.interruptKey++
         startQueryJob(byEvent = latestEvent)
@@ -333,6 +357,8 @@ class A11yRuleEngine(val service: A11yCommonImpl) {
         byForced: Boolean = false,
         delayRule: ResolvedRule? = null,
     ) {
+        val queryOwner = runtimeOwner ?: return
+        if (!sdpRuntimeFeatureCoordinator.isCurrent(queryOwner)) return
         val tempStateEvent = latestStateEvent
         val newEvents = if (delayRule != null) {// 延迟规则不消耗事件
             null
@@ -398,7 +424,7 @@ class A11yRuleEngine(val service: A11yCommonImpl) {
             }
         }
         for (rule in activityRule.priorityRules) { // 规则数量有可能过多导致耗时过长
-            if (!effective) return
+            if (!effective || runtimeOwner !== queryOwner) return
             if (checkOutDate(activityRule, tempStateEvent)) break
             if (delayRule != null && delayRule !== rule) continue
             if (rule.status != RuleStatus.StatusOk) continue
@@ -445,6 +471,7 @@ class A11yRuleEngine(val service: A11yCommonImpl) {
             if (interceptConfig?.enabled == true &&
                 !InterceptUtils.isAllowed(interceptConfig.subsId, interceptConfig.groupKey)
             ) {
+                if (!effective || runtimeOwner !== queryOwner) return
                 val intent = android.content.Intent(app, InterceptOverlayService::class.java).apply {
                     putExtra(InterceptOverlayService.EXTRA_SUBS_ID, interceptConfig.subsId)
                     putExtra(InterceptOverlayService.EXTRA_GROUP_KEY, interceptConfig.groupKey)
@@ -463,11 +490,18 @@ class A11yRuleEngine(val service: A11yCommonImpl) {
                         SelfControlAttempt.KIND_SELECTOR_INTERCEPT,
                     )
                 }
-                selfControlOverlayLauncher.launch(intent)
+                val launchResult = selfControlOverlayLauncher.launch(intent)
+                LogUtils.d(
+                    "selector intercept overlay",
+                    "package=$rightAppId",
+                    "result=$launchResult",
+                )
+                if (launchResult != OverlayLaunchResult.Accepted) return
                 return
             }
+            if (!effective || runtimeOwner !== queryOwner) return
             val actionResult = rule.performAction(target)
-            if (actionResult.result) {
+            if (actionResult.result && effective && runtimeOwner === queryOwner) {
                 val topActivity = topActivityFlow.value
                 rule.trigger()
                 scope.launch(actionDispatcher) {

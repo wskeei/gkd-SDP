@@ -34,6 +34,7 @@ object UrlBlockerEngine {
 
     // 冷却时间缓存，防止重复触发
     private val cooldownMap = ConcurrentHashMap<String, Long>()
+    private val pendingMap = ConcurrentHashMap<String, Boolean>()
     private const val COOLDOWN_MS = 5000L  // 5秒冷却时间
 
     // 是否启用 URL 拦截
@@ -73,10 +74,15 @@ object UrlBlockerEngine {
     /**
      * 处理无障碍事件，检测浏览器 URL
      */
-    fun onAccessibilityEvent(event: AccessibilityEvent, ruleEngine: A11yRuleEngine?) {
+    fun onAccessibilityEvent(
+        event: AccessibilityEvent,
+        ruleEngine: A11yRuleEngine?,
+        owner: SdpRuntimeFeatureCoordinator.RuntimeOwner? = null,
+    ) {
         if (!enabledFlow.value) return
         if (cachedRules.isEmpty()) return
         if (ruleEngine == null) return
+        if (!isOwnerCurrent(owner)) return
 
         val packageName = event.packageName?.toString() ?: return
         val browserConfig = cachedBrowsers[packageName] ?: return
@@ -108,14 +114,16 @@ object UrlBlockerEngine {
             // 检查时间规则
             if (!shouldBlockRule(matchedRule)) {
                 if (META.debuggable) {
-                    Log.d(TAG, "Rule ${matchedRule.name} matched but not active now due to time rules")
+                    Log.d(TAG, "Matched URL rule is outside its active schedule")
                 }
                 return
             }
             
-            cooldownMap[packageName] = now
+            if (!isOwnerCurrent(owner)) return
+            if (pendingMap.putIfAbsent(packageName, true) != null) return
             LogUtils.d("URL blocker matched a rule", "package=$packageName", "ruleId=${matchedRule.id}")
-            executeBlock(matchedRule, packageName)
+            sdpRuntimeFeatureCoordinator.recordDecision(owner, "url-blocker", packageName, "matched")
+            executeBlock(matchedRule, packageName, owner)
         }
     }
 
@@ -226,36 +234,62 @@ object UrlBlockerEngine {
     /**
      * 执行拦截操作
      */
-    private fun executeBlock(rule: UrlBlockRule, packageName: String) {
+    private fun executeBlock(
+        rule: UrlBlockRule,
+        packageName: String,
+        owner: SdpRuntimeFeatureCoordinator.RuntimeOwner?,
+    ) {
         appScope.launch(Dispatchers.Main) {
-            // 1. 先跳转到安全页面
             try {
-                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(rule.redirectUrl)).apply {
-                    setPackage(packageName)
-                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                }
-                li.songe.gkd.sdp.app.startActivity(intent)
-                LogUtils.d("URL redirect succeeded", "package=$packageName", "ruleId=${rule.id}")
-            } catch (e: Exception) {
-                LogUtils.d("URL redirect rejected", "package=$packageName", "ruleId=${rule.id}", e::class.java.simpleName)
-                // 如果无法在同一浏览器打开，尝试用默认浏览器
+                if (!isOwnerCurrent(owner)) return@launch
+                // 1. 先跳转到安全页面
+                var redirectAccepted = false
                 try {
-                    val fallbackIntent = Intent(Intent.ACTION_VIEW, Uri.parse(rule.redirectUrl)).apply {
+                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(rule.redirectUrl)).apply {
+                        setPackage(packageName)
                         addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                     }
-                    li.songe.gkd.sdp.app.startActivity(fallbackIntent)
-                } catch (e2: Exception) {
-                    LogUtils.d("URL fallback redirect rejected", "package=$packageName", "ruleId=${rule.id}", e2::class.java.simpleName)
+                    li.songe.gkd.sdp.app.startActivity(intent)
+                    redirectAccepted = true
+                    LogUtils.d("URL redirect succeeded", "package=$packageName", "ruleId=${rule.id}")
+                } catch (e: Exception) {
+                    LogUtils.d("URL redirect rejected", "package=$packageName", "ruleId=${rule.id}", e::class.java.simpleName)
+                    // 如果无法在同一浏览器打开，尝试用默认浏览器
+                    if (!isOwnerCurrent(owner)) return@launch
+                    try {
+                        val fallbackIntent = Intent(Intent.ACTION_VIEW, Uri.parse(rule.redirectUrl)).apply {
+                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        }
+                        li.songe.gkd.sdp.app.startActivity(fallbackIntent)
+                        redirectAccepted = true
+                    } catch (e2: Exception) {
+                        LogUtils.d("URL fallback redirect rejected", "package=$packageName", "ruleId=${rule.id}", e2::class.java.simpleName)
+                    }
                 }
-            }
 
-            // 2. 显示全屏拦截（如果启用）
-            if (rule.showIntercept) {
-                // 延迟一点显示全屏拦截，让跳转先完成
-                kotlinx.coroutines.delay(300)
-                showInterceptOverlay(rule)
+                // 2. 显示全屏拦截（如果启用）
+                val accepted = if (rule.showIntercept) {
+                    // 延迟一点显示全屏拦截，让跳转先完成
+                    kotlinx.coroutines.delay(300)
+                    if (!isOwnerCurrent(owner)) return@launch
+                    showInterceptOverlay(rule) == OverlayLaunchResult.Accepted
+                } else {
+                    redirectAccepted
+                }
+                if (accepted && isOwnerCurrent(owner)) {
+                    cooldownMap[packageName] = System.currentTimeMillis()
+                    sdpRuntimeFeatureCoordinator.recordDecision(owner, "url-blocker", packageName, "overlay_accepted")
+                } else if (!accepted) {
+                    sdpRuntimeFeatureCoordinator.recordDecision(owner, "url-blocker", packageName, "overlay_rejected")
+                }
+            } finally {
+                pendingMap.remove(packageName)
             }
         }
+    }
+
+    private fun isOwnerCurrent(owner: SdpRuntimeFeatureCoordinator.RuntimeOwner?): Boolean {
+        return owner == null || sdpRuntimeFeatureCoordinator.isCurrent(owner)
     }
 
     /**
@@ -284,5 +318,7 @@ object UrlBlockerEngine {
      */
     fun clearCooldown() {
         cooldownMap.clear()
+        pendingMap.clear()
+        sdpRuntimeFeatureCoordinator.invalidateCurrentApp("url-overlay-mount-failed")
     }
 }

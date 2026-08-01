@@ -179,6 +179,7 @@ class UsageGuardRequestOverlayService : LifecycleService(), SavedStateRegistryOw
             view?.let { runCatching { windowManager.removeViewImmediate(it) } }
             view = null
             LogUtils.d("usage guard request overlay mount rejected", error::class.java.simpleName)
+            UsageGuardEngine.onOverlayMountFailed("request", appId)
             stopSelf()
         }
     }

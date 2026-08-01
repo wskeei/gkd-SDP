@@ -171,6 +171,7 @@ class UsageGuardCountdownOverlayService : LifecycleService(), SavedStateRegistry
             view = null
             layoutParams = null
             LogUtils.d("usage guard countdown overlay mount rejected", error::class.java.simpleName)
+            UsageGuardEngine.onOverlayMountFailed("countdown", appId)
             stopSelf()
         }
     }

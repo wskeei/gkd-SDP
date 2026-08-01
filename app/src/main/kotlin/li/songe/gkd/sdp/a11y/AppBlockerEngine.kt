@@ -140,11 +140,20 @@ object AppBlockerEngine {
     /**
      * 处理应用切换事件
      */
-    fun onAppChanged(packageName: String) {
+    fun onAppChanged(
+        packageName: String,
+        owner: SdpRuntimeFeatureCoordinator.RuntimeOwner? = null,
+    ) {
         LogUtils.d("$TAG: onAppChanged called for $packageName, enabled=${enabledFlow.value}")
         
         if (!enabledFlow.value) {
             LogUtils.d("$TAG: App blocker disabled, skipping")
+            return
+        }
+        if (owner != null && !sdpRuntimeFeatureCoordinator.isCurrent(owner)) return
+        if (FocusModeEngine.isActiveFlow.value &&
+            !FocusModeEngine.currentWhitelistFlow.value.contains(packageName)
+        ) {
             return
         }
 
@@ -160,12 +169,27 @@ object AppBlockerEngine {
         val decision = evaluate(packageName)
         val shouldBlock = decision is AppBlockerDecision.Block
         val message = (decision as? AppBlockerDecision.Block)?.message
+        sdpRuntimeFeatureCoordinator.recordDecision(
+            owner = owner,
+            feature = "app-blocker",
+            packageName = packageName,
+            decision = decision::class.simpleName ?: "unknown",
+        )
         LogUtils.d("$TAG: decision=${decision::class.simpleName} for $packageName, rules=${cachedRules.size}, groups=${cachedGroups.size}")
         
         if (shouldBlock) {
             LogUtils.d("App blocker blocking: $packageName")
-            val result = showBlockerOverlay(packageName, message ?: "这真的重要吗？")
-            if (result == OverlayLaunchResult.Accepted) {
+            if (owner != null && !sdpRuntimeFeatureCoordinator.isCurrent(owner)) return
+            val result = showBlockerOverlay(packageName, message ?: "这真的重要吗？", owner)
+            sdpRuntimeFeatureCoordinator.recordDecision(
+                owner,
+                "app-blocker",
+                packageName,
+                "overlay_${result::class.simpleName ?: "unknown"}",
+            )
+            if (result == OverlayLaunchResult.Accepted &&
+                (owner == null || sdpRuntimeFeatureCoordinator.isCurrent(owner))
+            ) {
                 cooldownMap[packageName] = now
             }
         }
@@ -174,7 +198,11 @@ object AppBlockerEngine {
     /**
      * 显示应用拦截全屏界面
      */
-    private fun showBlockerOverlay(packageName: String, message: String): OverlayLaunchResult {
+    private fun showBlockerOverlay(
+        packageName: String,
+        message: String,
+        owner: SdpRuntimeFeatureCoordinator.RuntimeOwner? = null,
+    ): OverlayLaunchResult {
         val intent = android.content.Intent(app, AppBlockerOverlayService::class.java).apply {
             putExtra(AppBlockerOverlayService.EXTRA_MESSAGE, message)
             putExtra(AppBlockerOverlayService.EXTRA_BLOCKED_APP, packageName)
@@ -183,7 +211,18 @@ object AppBlockerEngine {
                 SelfControlElapsedPolicy.appBlockerEventKey(packageName),
             )
         }
-        return selfControlOverlayLauncher.launch(intent)
+        return if (owner == null || sdpRuntimeFeatureCoordinator.isCurrent(owner)) {
+            val result = selfControlOverlayLauncher.launch(intent)
+            if (result == OverlayLaunchResult.Accepted &&
+                owner != null && !sdpRuntimeFeatureCoordinator.isCurrent(owner)
+            ) {
+                OverlayLaunchResult.RuntimeUnavailable
+            } else {
+                result
+            }
+        } else {
+            OverlayLaunchResult.RuntimeUnavailable
+        }
     }
 
     /**
@@ -191,5 +230,6 @@ object AppBlockerEngine {
      */
     fun clearCooldown() {
         cooldownMap.clear()
+        sdpRuntimeFeatureCoordinator.invalidateCurrentApp("app-blocker-overlay-mount-failed")
     }
 }

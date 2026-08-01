@@ -195,6 +195,12 @@ class AppBlockerVm : BaseViewModel() {
             toast("请选择拦截对象")
             return@launch
         }
+        if (ruleTargetType != BlockTimeRule.TARGET_TYPE_APP &&
+            ruleTargetType != BlockTimeRule.TARGET_TYPE_GROUP
+        ) {
+            toast("拦截对象类型无效")
+            return@launch
+        }
         if (!AppBlockerDecisionPolicy.isValidTime(ruleStartTime) ||
             !AppBlockerDecisionPolicy.isValidTime(ruleEndTime)
         ) {
@@ -218,8 +224,17 @@ class AppBlockerVm : BaseViewModel() {
 
         // 检查目标对象是否锁定
         if (ruleTargetType == BlockTimeRule.TARGET_TYPE_GROUP) {
-            val group = DbSet.appGroupDao.getById(ruleTargetId.toLongOrNull() ?: 0L)
-            if (group?.isCurrentlyLocked == true) {
+            val groupId = ruleTargetId.toLongOrNull()
+            if (groupId == null || groupId <= 0L) {
+                toast("请选择有效的应用组")
+                return@launch
+            }
+            val group = DbSet.appGroupDao.getById(groupId)
+            if (group == null) {
+                toast("目标应用组不存在")
+                return@launch
+            }
+            if (group.isCurrentlyLocked) {
                 toast("目标应用组已锁定，无法修改其时间规则")
                 return@launch
             }

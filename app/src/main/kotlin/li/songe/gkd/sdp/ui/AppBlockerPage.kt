@@ -474,7 +474,8 @@ private fun AppGroupCard(
                         rules.any {
                             it.enabled &&
                                 (!AppBlockerDecisionPolicy.isValidTime(it.startTime) ||
-                                    !AppBlockerDecisionPolicy.isValidTime(it.endTime))
+                                    !AppBlockerDecisionPolicy.isValidTime(it.endTime) ||
+                                    !AppBlockerDecisionPolicy.isValidDays(it.daysOfWeek))
                         } -> Text(
                             text = "有时间规则格式无效，请编辑修正",
                             style = MaterialTheme.typography.bodySmall,
@@ -721,7 +722,8 @@ private fun AppRulesCard(
                         rules.any {
                             it.enabled &&
                                 (!AppBlockerDecisionPolicy.isValidTime(it.startTime) ||
-                                    !AppBlockerDecisionPolicy.isValidTime(it.endTime))
+                                    !AppBlockerDecisionPolicy.isValidTime(it.endTime) ||
+                                    !AppBlockerDecisionPolicy.isValidDays(it.daysOfWeek))
                         } -> Text(
                             text = "有时间规则格式无效，请编辑修正",
                             style = MaterialTheme.typography.bodySmall,

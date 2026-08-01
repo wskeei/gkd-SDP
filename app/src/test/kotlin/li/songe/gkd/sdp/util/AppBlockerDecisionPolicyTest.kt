@@ -84,6 +84,20 @@ class AppBlockerDecisionPolicyTest {
     }
 
     @Test
+    fun malformedWeekdayTokenIsInvalidLegacyData() {
+        val rule = rule(days = "1,x")
+
+        assertEquals(
+            AppBlockerDecision.InvalidRule(listOf(rule.id)),
+            AppBlockerDecisionPolicy.decide(
+                packageName = "com.example.app",
+                snapshot = snapshot(rule),
+                now = LocalDateTime.of(2026, 8, 3, 9, 0),
+            ),
+        )
+    }
+
+    @Test
     fun disabledGroupAndMissingRuleAreDistinguishable() {
         val disabledGroup = AppGroup(id = 7, name = "短视频", appIds = "[\"com.example.app\"]", enabled = false)
 

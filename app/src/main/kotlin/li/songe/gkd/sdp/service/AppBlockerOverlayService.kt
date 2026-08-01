@@ -39,6 +39,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import li.songe.gkd.sdp.a11y.A11yRuleEngine
+import li.songe.gkd.sdp.a11y.AppBlockerEngine
 import li.songe.gkd.sdp.util.LogUtils
 import li.songe.gkd.sdp.data.SelfControlAttempt
 import li.songe.gkd.sdp.db.DbSet
@@ -80,8 +81,9 @@ class AppBlockerOverlayService : LifecycleService(), SavedStateRegistryOwner {
         val occurredAt = System.currentTimeMillis()
 
         elapsedState = SelfControlElapsedPolicy.ElapsedState.Loading
-        showOverlay(message, blockedApp)
-        recordElapsedAttempt(eventKey, occurredAt)
+        if (showOverlay(message, blockedApp)) {
+            recordElapsedAttempt(eventKey, occurredAt)
+        }
         return START_NOT_STICKY
     }
 
@@ -108,8 +110,8 @@ class AppBlockerOverlayService : LifecycleService(), SavedStateRegistryOwner {
         }
     }
 
-    private fun showOverlay(message: String, blockedApp: String) {
-        if (view != null) return
+    private fun showOverlay(message: String, blockedApp: String): Boolean {
+        if (view != null) return false
 
         view = ComposeView(this).apply {
             setViewTreeLifecycleOwner(this@AppBlockerOverlayService)
@@ -137,12 +139,18 @@ class AppBlockerOverlayService : LifecycleService(), SavedStateRegistryOwner {
             PixelFormat.TRANSLUCENT
         )
 
-        runCatching { windowManager.addView(view, params) }.onFailure { error ->
+        var mounted = false
+        runCatching {
+            windowManager.addView(view, params)
+            mounted = true
+        }.onFailure { error ->
             view?.let { runCatching { windowManager.removeViewImmediate(it) } }
             view = null
             LogUtils.d("app blocker overlay mount rejected", error::class.java.simpleName)
+            AppBlockerEngine.clearCooldown()
             stopSelf()
         }
+        return mounted
     }
 
     override fun onDestroy() {

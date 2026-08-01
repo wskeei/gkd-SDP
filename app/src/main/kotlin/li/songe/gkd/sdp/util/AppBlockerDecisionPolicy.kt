@@ -80,10 +80,19 @@ object AppBlockerDecisionPolicy {
     private fun hasValidSchedule(rule: BlockTimeRule): Boolean =
         parseTimeOrNull(rule.startTime) != null &&
             parseTimeOrNull(rule.endTime) != null &&
-            rule.getDaysOfWeekList().isNotEmpty() &&
-            rule.getDaysOfWeekList().all { it in 1..7 }
+            hasValidDays(rule.daysOfWeek)
+
+    private fun hasValidDays(value: String): Boolean {
+        if (value.isBlank()) return false
+        return value.split(',').all { token ->
+            val day = token.trim().toIntOrNull()
+            day != null && day in 1..7
+        }
+    }
 
     fun isValidTime(value: String): Boolean = parseTimeOrNull(value) != null
+
+    fun isValidDays(value: String): Boolean = hasValidDays(value)
 
     private fun parseTimeOrNull(value: String): LocalTime? = runCatching {
         require(Regex("\\d{2}:\\d{2}").matches(value))

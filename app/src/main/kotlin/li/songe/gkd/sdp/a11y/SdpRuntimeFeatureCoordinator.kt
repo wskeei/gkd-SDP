@@ -49,6 +49,14 @@ class SdpRuntimeFeatureCoordinator<T>(
         val generation: Long = 0L,
         val packageName: String = "",
         val switching: Boolean = false,
+        val lastDecision: RuntimeDecision? = null,
+    )
+
+    data class RuntimeDecision(
+        val feature: String,
+        val packageName: String,
+        val decision: String,
+        val atEpochMs: Long,
     )
 
     private val lock = Any()
@@ -71,6 +79,9 @@ class SdpRuntimeFeatureCoordinator<T>(
                     if (appId.isEmpty()) {
                         dispatchedGeneration = -1L
                         dispatchedAppId = ""
+                        if (active != null) {
+                            _statusFlow.value = _statusFlow.value.copy(packageName = "")
+                        }
                     }
                     if (active != null && appId.isNotEmpty()) {
                         _statusFlow.value = _statusFlow.value.copy(packageName = appId)
@@ -108,6 +119,7 @@ class SdpRuntimeFeatureCoordinator<T>(
                     generation = it.generation,
                     packageName = latestAppId,
                     switching = hadOwner,
+                    lastDecision = _statusFlow.value.lastDecision,
                 )
             }
             Triple(newOwner, hadOwner, latestAppId)
@@ -156,6 +168,26 @@ class SdpRuntimeFeatureCoordinator<T>(
 
     fun currentOwner(): RuntimeOwner? = synchronized(lock) { currentOwner }
 
+    fun recordDecision(
+        owner: RuntimeOwner?,
+        feature: String,
+        packageName: String,
+        decision: String,
+    ) {
+        synchronized(lock) {
+            if (owner != null && currentOwner !== owner) return
+            if (currentOwner == null) return
+            _statusFlow.value = _statusFlow.value.copy(
+                lastDecision = RuntimeDecision(
+                    feature = feature,
+                    packageName = packageName,
+                    decision = decision,
+                    atEpochMs = System.currentTimeMillis(),
+                )
+            )
+        }
+    }
+
     fun reconcileCurrentApp(@Suppress("UNUSED_PARAMETER") reason: String = "manual") {
         val (owner, appId) = synchronized(lock) {
             dispatchedGeneration = -1L
@@ -164,6 +196,13 @@ class SdpRuntimeFeatureCoordinator<T>(
         }
         if (owner != null && appId.isNotEmpty()) {
             dispatchAppIfNeeded(owner, appId)
+        }
+    }
+
+    fun invalidateCurrentApp(@Suppress("UNUSED_PARAMETER") reason: String = "retry") {
+        synchronized(lock) {
+            dispatchedGeneration = -1L
+            dispatchedAppId = ""
         }
     }
 
@@ -206,7 +245,7 @@ class SdpRuntimeFeatureCoordinator<T>(
         block: () -> Unit,
     ) {
         runCatching(block).onFailure { error ->
-            onHandlerFailure(handlerName, error)
+            runCatching { onHandlerFailure(handlerName, error) }
             runCatching {
                 LogUtils.d(
                     "self-control runtime handler failure",
@@ -225,24 +264,24 @@ private val selfControlRuntimeHandlers: List<SdpRuntimeFeatureCoordinator.Handle
         SdpRuntimeFeatureCoordinator.Handler(
             name = "focus",
             onAppChanged = { packageName, owner ->
-                FocusModeEngine.onAppChanged(packageName)
+                FocusModeEngine.onAppChanged(packageName, owner)
             },
         ),
         SdpRuntimeFeatureCoordinator.Handler(
             name = "usage-guard",
-            onAppChanged = { packageName, _ -> UsageGuardEngine.onAppChanged(packageName) },
+            onAppChanged = { packageName, owner -> UsageGuardEngine.onAppChanged(packageName, owner) },
             onDetached = { owner ->
                 UsageGuardEngine.onRuntimeDisconnected()
             },
         ),
         SdpRuntimeFeatureCoordinator.Handler(
             name = "app-blocker",
-            onAppChanged = { packageName, _ -> AppBlockerEngine.onAppChanged(packageName) },
+            onAppChanged = { packageName, owner -> AppBlockerEngine.onAppChanged(packageName, owner) },
         ),
         SdpRuntimeFeatureCoordinator.Handler(
             name = "url-blocker",
             onAccessibilityEvent = { event, owner ->
-                UrlBlockerEngine.onAccessibilityEvent(event, owner.runtime?.ruleEngine)
+                UrlBlockerEngine.onAccessibilityEvent(event, owner.runtime?.ruleEngine, owner)
             },
         ),
     )

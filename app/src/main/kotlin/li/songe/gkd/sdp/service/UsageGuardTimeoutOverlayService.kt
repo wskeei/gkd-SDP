@@ -91,6 +91,7 @@ class UsageGuardTimeoutOverlayService : LifecycleService(), SavedStateRegistryOw
             view?.let { runCatching { windowManager.removeViewImmediate(it) } }
             view = null
             LogUtils.d("usage guard timeout overlay mount rejected", error::class.java.simpleName)
+            UsageGuardEngine.onOverlayMountFailed("timeout", appId)
             stopSelf()
         }
     }

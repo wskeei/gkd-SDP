@@ -224,11 +224,12 @@ class StatusService : Service(), OnSimpleLife by DefaultSimpleLifeImpl() {
         }
 
         private var lastAutoStart = 0L
-        fun autoStart() {
+        fun autoStart(forceForRuntime: Boolean = false) {
             if (System.currentTimeMillis() - lastAutoStart < 1000) return
             // 重启自动打开通知栏状态服务
             // 需要已有服务或前台才能自主启动，否则报错 startForegroundService() not allowed due to mAllowStartForeground false
-            if (needRestart) {
+            val canStart = notificationState.updateAndGet() && foregroundServiceSpecialUseState.updateAndGet()
+            if (canStart && (forceForRuntime || needRestart)) {
                 start()
                 lastAutoStart = System.currentTimeMillis()
             }
