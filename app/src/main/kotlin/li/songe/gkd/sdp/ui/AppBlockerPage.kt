@@ -70,6 +70,7 @@ import li.songe.gkd.sdp.ui.share.LocalMainViewModel
 import li.songe.gkd.sdp.ui.style.itemPadding
 import li.songe.gkd.sdp.ui.style.scaffoldPadding
 import li.songe.gkd.sdp.ui.style.surfaceCardColors
+import li.songe.gkd.sdp.util.AppBlockerDecisionPolicy
 import li.songe.gkd.sdp.util.appInfoMapFlow
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -118,6 +119,10 @@ fun AppBlockerPage() {
         }
     ) { padding ->
         LazyColumn(modifier = Modifier.scaffoldPadding(padding)) {
+            item(key = "self_control_runtime_status") {
+                SelfControlRuntimeStatusCard()
+                Spacer(modifier = Modifier.height(12.dp))
+            }
             item(key = "auto_reenable_notice") {
                 Card(
                     modifier = Modifier
@@ -450,6 +455,37 @@ private fun AppGroupCard(
                             )
                         }
                     }
+                    Text(
+                        text = "${rules.count { it.enabled }} 条启用时间规则",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    when {
+                        !group.enabled -> Text(
+                            text = "应用组已关闭",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.error,
+                        )
+                        rules.isEmpty() || rules.none { it.enabled } -> Text(
+                            text = "尚未生效：请添加时间规则",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.error,
+                        )
+                        rules.any {
+                            it.enabled &&
+                                (!AppBlockerDecisionPolicy.isValidTime(it.startTime) ||
+                                    !AppBlockerDecisionPolicy.isValidTime(it.endTime))
+                        } -> Text(
+                            text = "有时间规则格式无效，请编辑修正",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.error,
+                        )
+                        rules.none { it.enabled && it.isActiveNow() } -> Text(
+                            text = "已配置，当前时段不拦截",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                 }
 
                 Switch(
@@ -671,6 +707,32 @@ private fun AppRulesCard(
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                     )
+                    Text(
+                        text = "${rules.count { it.enabled }} 条启用规则",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    when {
+                        rules.none { it.enabled } -> Text(
+                            text = "尚未生效：请启用时间规则",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.error,
+                        )
+                        rules.any {
+                            it.enabled &&
+                                (!AppBlockerDecisionPolicy.isValidTime(it.startTime) ||
+                                    !AppBlockerDecisionPolicy.isValidTime(it.endTime))
+                        } -> Text(
+                            text = "有时间规则格式无效，请编辑修正",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.error,
+                        )
+                        rules.none { it.enabled && it.isActiveNow() } -> Text(
+                            text = "已配置，当前时段不拦截",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                 }
             }
 

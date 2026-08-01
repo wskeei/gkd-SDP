@@ -39,6 +39,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import li.songe.gkd.sdp.a11y.A11yRuleEngine
+import li.songe.gkd.sdp.util.LogUtils
 import li.songe.gkd.sdp.data.SelfControlAttempt
 import li.songe.gkd.sdp.db.DbSet
 import li.songe.gkd.sdp.ui.component.SelfControlElapsedCard
@@ -136,12 +137,17 @@ class AppBlockerOverlayService : LifecycleService(), SavedStateRegistryOwner {
             PixelFormat.TRANSLUCENT
         )
 
-        windowManager.addView(view, params)
+        runCatching { windowManager.addView(view, params) }.onFailure { error ->
+            view?.let { runCatching { windowManager.removeViewImmediate(it) } }
+            view = null
+            LogUtils.d("app blocker overlay mount rejected", error::class.java.simpleName)
+            stopSelf()
+        }
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        view?.let { windowManager.removeView(it) }
+        view?.let { runCatching { windowManager.removeView(it) } }
         view = null
     }
 }

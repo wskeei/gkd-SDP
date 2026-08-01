@@ -49,6 +49,7 @@ import li.songe.gkd.sdp.util.BarUtils
 import li.songe.gkd.sdp.util.ScreenUtils
 import li.songe.gkd.sdp.util.UsageGuardCountdownOverlayLayoutPolicy
 import li.songe.gkd.sdp.util.UsageGuardCountdownOverlayPolicy
+import li.songe.gkd.sdp.util.LogUtils
 import li.songe.gkd.sdp.util.px
 import kotlin.math.roundToInt
 
@@ -166,9 +167,10 @@ class UsageGuardCountdownOverlayService : LifecycleService(), SavedStateRegistry
         layoutParams = params
         runCatching {
             windowManager.addView(overlayView, params)
-        }.onFailure {
+        }.onFailure { error ->
             view = null
             layoutParams = null
+            LogUtils.d("usage guard countdown overlay mount rejected", error::class.java.simpleName)
             stopSelf()
         }
     }

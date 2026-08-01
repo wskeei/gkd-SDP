@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.serialization.Serializable
 import li.songe.gkd.sdp.util.json
 import java.time.DayOfWeek
+import java.time.LocalDateTime
 import java.time.LocalTime
 
 @Serializable
@@ -106,29 +107,35 @@ data class FocusRule(
      * 检查当前时间是否在规则时间段内
      * 注意：快速启动模板始终返回 false，需要手动启动
      */
-    fun isActiveNow(): Boolean {
+    fun isActiveNow(): Boolean = isActiveAt(LocalDateTime.now())
+
+    fun isActiveAt(now: LocalDateTime): Boolean {
         if (!enabled) return false
         if (isQuickStart) return false  // 快速启动模板不自动激活
 
-        val now = java.time.LocalDateTime.now()
         val currentDayOfWeek = now.dayOfWeek.value  // 1=周一, 7=周日
         val currentTime = now.toLocalTime()
-
-        // 检查星期几
-        if (currentDayOfWeek !in getDaysOfWeekList()) return false
-
-        // 检查时间段
-        val start = parseTime(startTime)
-        val end = parseTime(endTime)
-
-        return if (end.isAfter(start)) {
-            // 正常时间段，如 09:00 - 17:00
-            currentTime.isAfter(start) && currentTime.isBefore(end) ||
-                    currentTime == start
-        } else {
-            // 跨午夜时间段，如 22:00 - 02:00
-            currentTime.isAfter(start) || currentTime.isBefore(end) ||
-                    currentTime == start
+        val start = runCatching { parseTime(startTime) }.getOrNull() ?: return false
+        val end = runCatching { parseTime(endTime) }.getOrNull() ?: return false
+        if (!Regex("\\d{2}:\\d{2}").matches(startTime) ||
+            !Regex("\\d{2}:\\d{2}").matches(endTime)
+        ) return false
+        val days = getDaysOfWeekList().filter { it in 1..7 }.toSet()
+        return when {
+            start == end -> currentDayOfWeek in days
+            end.isAfter(start) && currentDayOfWeek in days -> {
+                if (end == LocalTime.of(23, 59)) {
+                    !currentTime.isBefore(start)
+                } else {
+                    !currentTime.isBefore(start) && currentTime.isBefore(end)
+                }
+            }
+            end.isAfter(start) -> false
+            else -> {
+                val previousDay = now.toLocalDate().minusDays(1).dayOfWeek.value
+                (currentDayOfWeek in days && !currentTime.isBefore(start)) ||
+                    (previousDay in days && currentTime.isBefore(end))
+            }
         }
     }
 

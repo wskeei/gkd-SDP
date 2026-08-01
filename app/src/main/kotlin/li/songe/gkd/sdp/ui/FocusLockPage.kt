@@ -55,11 +55,14 @@ import kotlinx.serialization.Serializable
 import kotlinx.coroutines.launch
 import li.songe.gkd.sdp.META
 import li.songe.gkd.sdp.MainActivity
+import li.songe.gkd.sdp.a11y.AppBlockerEngine
 import li.songe.gkd.sdp.a11y.FocusModeEngine
+import li.songe.gkd.sdp.a11y.sdpRuntimeFeatureCoordinator
 import li.songe.gkd.sdp.a11y.UrlBlockerEngine
 import li.songe.gkd.sdp.data.ConstraintConfig
 import li.songe.gkd.sdp.data.InterceptConfig
 import li.songe.gkd.sdp.service.AccessibilityGuardController
+import li.songe.gkd.sdp.permission.canDrawOverlaysState
 import li.songe.gkd.sdp.ui.component.PerfIcon
 import li.songe.gkd.sdp.ui.component.PerfIconButton
 import li.songe.gkd.sdp.ui.component.PerfTopAppBar
@@ -118,8 +121,14 @@ fun FocusLockPage() {
     ) { padding ->
         val urlBlockerEnabled by UrlBlockerEngine.enabledFlow.collectAsState()
         val focusModeActive by FocusModeEngine.isActiveFlow.collectAsState()
+        val appBlockerRules by AppBlockerEngine.enabledRulesFlow.collectAsState()
+        val appBlockerGroups by AppBlockerEngine.enabledGroupsFlow.collectAsState()
 
         LazyColumn(modifier = Modifier.scaffoldPadding(padding)) {
+            item(key = "self_control_runtime_status") {
+                SelfControlRuntimeStatusCard()
+                Spacer(modifier = Modifier.height(12.dp))
+            }
             // 专注模式卡片
             item(key = "focus_mode") {
                 FocusModeCard(
@@ -141,6 +150,8 @@ fun FocusLockPage() {
             // 应用拦截卡片
             item(key = "app_blocker") {
                 AppBlockerCard(
+                    enabledRuleCount = appBlockerRules.size,
+                    enabledGroupCount = appBlockerGroups.size,
                     onClick = { mainVm.navigatePage(AppBlockerRoute) }
                 )
                 Spacer(modifier = Modifier.height(12.dp))
@@ -506,6 +517,63 @@ fun FocusLockPage() {
                     }
                 }
             )
+        }
+    }
+}
+
+@Composable
+fun SelfControlRuntimeStatusCard() {
+    val context = LocalContext.current
+    val runtime by sdpRuntimeFeatureCoordinator.statusFlow.collectAsState()
+    val overlayPermission by canDrawOverlaysState.stateFlow.collectAsState()
+    val readiness = li.songe.gkd.sdp.util.SelfControlRuntimeReadiness.evaluate(
+        mode = runtime.mode,
+        connected = runtime.connected,
+        switching = false,
+        overlayPermission = overlayPermission,
+    )
+    val issueText = when (readiness.issue) {
+        li.songe.gkd.sdp.util.SelfControlRuntimeReadiness.Issue.None -> "可拦截"
+        li.songe.gkd.sdp.util.SelfControlRuntimeReadiness.Issue.Switching -> "运行模式切换中"
+        li.songe.gkd.sdp.util.SelfControlRuntimeReadiness.Issue.RuntimeUnavailable -> "运行引擎未连接"
+        li.songe.gkd.sdp.util.SelfControlRuntimeReadiness.Issue.OverlayPermissionMissing -> "悬浮窗权限缺失"
+    }
+    ElevatedCard(
+        colors = surfaceCardColors,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp),
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(
+                text = "自律拦截运行状态",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+            )
+            Spacer(modifier = Modifier.height(6.dp))
+            Text(
+                text = "模式：${readiness.modeLabel} · 引擎：${if (runtime.connected) "已连接" else "未连接"}",
+                style = MaterialTheme.typography.bodySmall,
+            )
+            Text(
+                text = "悬浮窗：${if (overlayPermission) "已授权" else "未授权"} · $issueText",
+                style = MaterialTheme.typography.bodySmall,
+                color = if (readiness.ready) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
+            )
+            if (!overlayPermission) {
+                TextButton(
+                    onClick = {
+                        context.startActivity(
+                            android.content.Intent(
+                                android.provider.Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                                android.net.Uri.parse("package:${context.packageName}"),
+                            )
+                        )
+                    },
+                ) {
+                    Text("前往授权")
+                }
+            }
         }
     }
 }
@@ -1230,6 +1298,8 @@ fun FocusModeCard(
 
 @Composable
 fun AppBlockerCard(
+    enabledRuleCount: Int,
+    enabledGroupCount: Int,
     onClick: () -> Unit
 ) {
     ElevatedCard(
@@ -1257,7 +1327,11 @@ fun AppBlockerCard(
                     fontWeight = FontWeight.SemiBold
                 )
                 Text(
-                    text = "拦截指定应用",
+                    text = if (enabledRuleCount == 0) {
+                        "尚未生效：请添加时间规则"
+                    } else {
+                        "${enabledGroupCount} 个应用组 · $enabledRuleCount 条启用规则"
+                    },
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

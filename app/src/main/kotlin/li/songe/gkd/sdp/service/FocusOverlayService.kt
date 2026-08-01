@@ -48,6 +48,7 @@ import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import li.songe.gkd.sdp.app
 import li.songe.gkd.sdp.ui.component.AppIcon
 import li.songe.gkd.sdp.ui.style.AppTheme
+import li.songe.gkd.sdp.util.LogUtils
 import li.songe.gkd.sdp.util.FocusTimeFormatter
 import li.songe.gkd.sdp.util.json
 
@@ -143,12 +144,17 @@ class FocusOverlayService : LifecycleService(), SavedStateRegistryOwner {
             PixelFormat.TRANSLUCENT
         )
 
-        windowManager.addView(view, params)
+        runCatching { windowManager.addView(view, params) }.onFailure { error ->
+            view?.let { runCatching { windowManager.removeViewImmediate(it) } }
+            view = null
+            LogUtils.d("focus overlay mount rejected", error::class.java.simpleName)
+            stopSelf()
+        }
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        view?.let { windowManager.removeView(it) }
+        view?.let { runCatching { windowManager.removeView(it) } }
         view = null
     }
 }
@@ -380,4 +386,3 @@ private fun WhitelistAppItem(
         }
     }
 }
-
