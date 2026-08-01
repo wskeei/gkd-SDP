@@ -63,7 +63,9 @@ private val latestServiceTime = atomic(0L)
 
 class A11yRuleEngine(val service: A11yCommonImpl) {
     private val a11yContext = A11yContext(this)
-    private val effective get() = latestServiceMode.value == service.mode.value
+    private val effective
+        get() = latestServiceMode.value == service.mode.value &&
+            runtimeOwner?.let(sdpRuntimeFeatureCoordinator::isCurrent) == true
     private val hasOthersService = when (service.mode) {
         AutomatorModeOption.A11yMode -> uiAutomationFlow.value != null
         AutomatorModeOption.AutomationMode -> A11yService.instance != null
