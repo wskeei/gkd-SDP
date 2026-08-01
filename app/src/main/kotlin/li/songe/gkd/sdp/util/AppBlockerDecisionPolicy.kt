@@ -80,6 +80,7 @@ object AppBlockerDecisionPolicy {
     private fun hasValidSchedule(rule: BlockTimeRule): Boolean =
         parseTimeOrNull(rule.startTime) != null &&
             parseTimeOrNull(rule.endTime) != null &&
+            rule.getDaysOfWeekList().isNotEmpty() &&
             rule.getDaysOfWeekList().all { it in 1..7 }
 
     fun isValidTime(value: String): Boolean = parseTimeOrNull(value) != null

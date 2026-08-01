@@ -85,7 +85,9 @@ class SdpRuntimeFeatureCoordinatorTest {
 
         val oldOwner = coordinator.attach("a11y", AutomatorModeOption.A11yMode)
         coordinator.attach("automation", AutomatorModeOption.AutomationMode)
-        coordinator.onAccessibilityEvent(oldOwner, AccessibilityEvent.obtain())
+        // A null event still exercises the stale-owner gate without invoking
+        // Android's unmocked AccessibilityEvent factory in a JVM test.
+        coordinator.onAccessibilityEvent(oldOwner, null)
         yield()
 
         assertEquals(0, events.get())

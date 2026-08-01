@@ -68,6 +68,10 @@ class SdpRuntimeFeatureCoordinator<T>(
                 val owner = synchronized(lock) {
                     latestAppId = appId
                     val active = currentOwner
+                    if (appId.isEmpty()) {
+                        dispatchedGeneration = -1L
+                        dispatchedAppId = ""
+                    }
                     if (active != null && appId.isNotEmpty()) {
                         _statusFlow.value = _statusFlow.value.copy(packageName = appId)
                     }
@@ -91,10 +95,10 @@ class SdpRuntimeFeatureCoordinator<T>(
         mode: AutomatorModeOption,
         runtime: A11yCommonImpl? = null,
     ): RuntimeOwner {
-        val (owner, handoff) = synchronized(lock) {
+        val (owner, handoff, currentAppId) = synchronized(lock) {
             val hadOwner = currentOwner != null
             generation += 1
-            RuntimeOwner(identity, mode, runtime, generation).also {
+            val newOwner = RuntimeOwner(identity, mode, runtime, generation).also {
                 currentOwner = it
                 dispatchedGeneration = -1L
                 dispatchedAppId = ""
@@ -105,12 +109,13 @@ class SdpRuntimeFeatureCoordinator<T>(
                     packageName = latestAppId,
                     switching = hadOwner,
                 )
-            } to hadOwner
+            }
+            Triple(newOwner, hadOwner, latestAppId)
         }
         // Reconcile the current app immediately. This is intentionally fenced by
         // the generation so the StateFlow's initial replay cannot duplicate it.
-        if (latestAppId.isNotEmpty()) {
-            dispatchAppIfNeeded(owner, latestAppId)
+        if (currentAppId.isNotEmpty()) {
+            dispatchAppIfNeeded(owner, currentAppId)
         }
         if (handoff) {
             scope.launch {
@@ -162,9 +167,11 @@ class SdpRuntimeFeatureCoordinator<T>(
         }
     }
 
-    fun onAccessibilityEvent(owner: RuntimeOwner, event: AccessibilityEvent) {
+    fun onAccessibilityEvent(owner: RuntimeOwner, event: AccessibilityEvent?) {
+        if (event == null) return
         if (!isCurrent(owner)) return
-        handlers.forEach { handler ->
+        for (handler in handlers) {
+            if (!isCurrent(owner)) return
             runHandler(handler.name, owner) {
                 handler.onAccessibilityEvent(event, owner)
             }
@@ -173,7 +180,7 @@ class SdpRuntimeFeatureCoordinator<T>(
 
     private fun dispatchAppIfNeeded(owner: RuntimeOwner, appId: String) {
         val shouldDispatch = synchronized(lock) {
-            if (currentOwner !== owner || appId.isEmpty()) {
+            if (currentOwner !== owner || latestAppId != appId || appId.isEmpty()) {
                 false
             } else if (dispatchedGeneration == owner.generation && dispatchedAppId == appId) {
                 false
@@ -185,7 +192,8 @@ class SdpRuntimeFeatureCoordinator<T>(
             }
         }
         if (!shouldDispatch) return
-        handlers.forEach { handler ->
+        for (handler in handlers) {
+            if (!isCurrent(owner)) return
             runHandler(handler.name, owner) {
                 handler.onAppChanged(appId, owner)
             }

@@ -18,11 +18,11 @@ class SelfControlModeParityTest {
     @Test
     fun elapsedEventKeysRemainStableAcrossFeatureKinds() {
         assertEquals(
-            "app-blocker:com.example.app",
+            "app_blocker:com.example.app",
             SelfControlElapsedPolicy.appBlockerEventKey("com.example.app"),
         )
         assertEquals(
-            "selector-intercept:12:com.example.app:7",
+            "selector_intercept:12:com.example.app:7",
             SelfControlElapsedPolicy.selectorInterceptEventKey(12L, "com.example.app", 7),
         )
         assertEquals(
