@@ -157,7 +157,7 @@ class SdpRuntimeFeatureCoordinatorTest {
     private fun coordinator(
         foreground: MutableStateFlow<String>,
         configure: HandlerConfig.() -> Unit,
-    ): SdpRuntimeFeatureCoordinator {
+    ): SdpRuntimeFeatureCoordinator<String> {
         val config = HandlerConfig().apply(configure)
         return SdpRuntimeFeatureCoordinator(
             foregroundApps = foreground,
