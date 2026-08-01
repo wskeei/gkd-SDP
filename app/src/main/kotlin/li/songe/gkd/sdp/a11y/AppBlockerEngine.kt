@@ -73,6 +73,7 @@ object AppBlockerEngine {
                 if (META.debuggable) {
                     Log.d(TAG, "Rules updated: ${rules.size}, Groups: ${groups.size}")
                 }
+                sdpRuntimeFeatureCoordinator.reconcileCurrentApp("app-blocker-rules-updated")
             }
         }
     }

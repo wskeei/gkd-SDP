@@ -137,6 +137,17 @@ class SdpRuntimeFeatureCoordinator<T>(
 
     fun currentOwner(): RuntimeOwner? = synchronized(lock) { currentOwner }
 
+    fun reconcileCurrentApp(@Suppress("UNUSED_PARAMETER") reason: String = "manual") {
+        val (owner, appId) = synchronized(lock) {
+            dispatchedGeneration = -1L
+            dispatchedAppId = ""
+            currentOwner to latestAppId
+        }
+        if (owner != null && appId.isNotEmpty()) {
+            dispatchAppIfNeeded(owner, appId)
+        }
+    }
+
     fun onAccessibilityEvent(owner: RuntimeOwner, event: AccessibilityEvent) {
         if (!isCurrent(owner)) return
         handlers.forEach { handler ->
