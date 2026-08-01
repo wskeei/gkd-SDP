@@ -42,6 +42,6 @@ class SafeInputManager(private val value: IInputManager) {
         command.runSwipe(x1, y1, x2, y2, duration)
     }
 
-    fun key(keyCode: Int) = command.runKeyEvent(keyCode)
+    fun key(keyCode: Int): Boolean = command.runKeyEvent(keyCode)
 
 }

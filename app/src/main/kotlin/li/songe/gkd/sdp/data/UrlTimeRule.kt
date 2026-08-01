@@ -11,6 +11,7 @@ import androidx.room.Query
 import androidx.room.Update
 import kotlinx.coroutines.flow.Flow
 import kotlinx.serialization.Serializable
+import java.time.LocalDateTime
 import java.time.LocalTime
 
 @Serializable
@@ -90,41 +91,36 @@ data class UrlTimeRule(
     /**
      * 检查当前时间是否应该拦截
      */
-    fun isActiveNow(): Boolean {
+    fun isActiveNow(): Boolean = isActiveAt(LocalDateTime.now())
+
+    fun isActiveAt(now: LocalDateTime): Boolean {
         if (!enabled) return false
 
-        val now = java.time.LocalDateTime.now()
         val currentDayOfWeek = now.dayOfWeek.value  // 1=周一, 7=周日
         val currentTime = now.toLocalTime()
-
-        // 检查星期几
-        val dayMatches = currentDayOfWeek in getDaysOfWeekList()
-
-        // 检查时间段
-        val start = parseTime(startTime)
-        val end = parseTime(endTime)
-
-        val timeMatches = if (end.isAfter(start)) {
-            // 正常时间段，如 09:00 - 17:00
-            currentTime.isAfter(start) && currentTime.isBefore(end) ||
-                    currentTime == start
-        } else {
-            // 跨午夜时间段，如 22:00 - 02:00
-            currentTime.isAfter(start) || currentTime.isBefore(end) ||
-                    currentTime == start
+        val start = runCatching { parseTime(startTime) }.getOrNull() ?: return false
+        val end = runCatching { parseTime(endTime) }.getOrNull() ?: return false
+        if (!Regex("\\d{2}:\\d{2}").matches(startTime) ||
+            !Regex("\\d{2}:\\d{2}").matches(endTime)
+        ) return false
+        val days = getDaysOfWeekList().filter { it in 1..7 }.toSet()
+        val inWindow = when {
+            start == end -> currentDayOfWeek in days
+            end.isAfter(start) && currentDayOfWeek in days -> {
+                if (end == LocalTime.of(23, 59)) {
+                    !currentTime.isBefore(start)
+                } else {
+                    !currentTime.isBefore(start) && currentTime.isBefore(end)
+                }
+            }
+            end.isAfter(start) -> false
+            else -> {
+                val previousDay = now.toLocalDate().minusDays(1).dayOfWeek.value
+                (currentDayOfWeek in days && !currentTime.isBefore(start)) ||
+                    (previousDay in days && currentTime.isBefore(end))
+            }
         }
-
-        val inTimeWindow = dayMatches && timeMatches
-
-        // 根据模式决定是否拦截
-        return if (isAllowMode) {
-            // 允许模式：时间窗口内不拦截，窗口外拦截
-            // 注意：星期几不匹配时，整天都拦截
-            if (!dayMatches) true else !inTimeWindow
-        } else {
-            // 禁止模式：时间窗口内拦截
-            inTimeWindow
-        }
+        return if (isAllowMode) !inWindow else inWindow
     }
 
     /**

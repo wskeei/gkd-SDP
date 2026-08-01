@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.withContext
 import li.songe.gkd.sdp.a11y.A11yCommonImpl
 import li.songe.gkd.sdp.a11y.A11yRuleEngine
+import li.songe.gkd.sdp.service.StatusService
 import li.songe.gkd.sdp.store.updateEnableAutomator
 import li.songe.gkd.sdp.util.AutomatorModeOption
 import li.songe.gkd.sdp.util.LogUtils
@@ -78,10 +79,14 @@ class AutomationService private constructor() : A11yCommonImpl {
         connected = true
         toast("自动化已启动")
         updateEnableAutomator(true)
+        // Keep the existing foreground notification service lifecycle in place
+        // before overlays are launched from a background UiAutomation runtime.
+        runCatching { StatusService.autoStart(forceForRuntime = true) }
         ruleEngine.onA11yConnected()
     }
 
     private fun disconnect() {
+        ruleEngine.onA11yDisconnected()
         scope.cancel()
         handlerThread.quit()
         if (!connected) return

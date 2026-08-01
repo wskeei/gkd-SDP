@@ -25,8 +25,10 @@ import androidx.savedstate.SavedStateRegistryOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import li.songe.gkd.sdp.a11y.A11yRuleEngine
 import li.songe.gkd.sdp.a11y.UsageGuardEngine
 import li.songe.gkd.sdp.ui.style.AppTheme
+import li.songe.gkd.sdp.util.LogUtils
 
 class UsageGuardTimeoutOverlayService : LifecycleService(), SavedStateRegistryOwner {
     private val windowManager by lazy { getSystemService(WINDOW_SERVICE) as WindowManager }
@@ -68,9 +70,7 @@ class UsageGuardTimeoutOverlayService : LifecycleService(), SavedStateRegistryOw
                         onGoHome = {
                             lifecycleScope.launch(Dispatchers.IO) {
                                 UsageGuardEngine.markRecordHomeButton(recordId)
-                                A11yService.instance?.performGlobalAction(
-                                    android.accessibilityservice.AccessibilityService.GLOBAL_ACTION_HOME
-                                )
+                                A11yRuleEngine.performActionHome()
                                 stopSelf()
                             }
                         },
@@ -87,12 +87,18 @@ class UsageGuardTimeoutOverlayService : LifecycleService(), SavedStateRegistryOw
                 WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
             PixelFormat.TRANSLUCENT
         )
-        windowManager.addView(view, params)
+        runCatching { windowManager.addView(view, params) }.onFailure { error ->
+            view?.let { runCatching { windowManager.removeViewImmediate(it) } }
+            view = null
+            LogUtils.d("usage guard timeout overlay mount rejected", error::class.java.simpleName)
+            UsageGuardEngine.onOverlayMountFailed("timeout", appId)
+            stopSelf()
+        }
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        view?.let { windowManager.removeView(it) }
+        view?.let { runCatching { windowManager.removeView(it) } }
         view = null
         UsageGuardEngine.onTimeoutOverlayStopped(appId.ifBlank { null })
     }

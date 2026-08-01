@@ -17,7 +17,6 @@ import li.songe.gkd.sdp.appScope
 import li.songe.gkd.sdp.data.FocusRule
 import li.songe.gkd.sdp.data.FocusSession
 import li.songe.gkd.sdp.db.DbSet
-import li.songe.gkd.sdp.service.A11yService
 import li.songe.gkd.sdp.service.FocusOverlayService
 import li.songe.gkd.sdp.notif.focusEndNotif
 import li.songe.gkd.sdp.a11y.topActivityFlow
@@ -149,10 +148,10 @@ object FocusModeEngine {
     private fun closeFocusOverlay() {
         try {
             val intent = Intent(app, FocusOverlayService::class.java)
-            app.stopService(intent)
+            selfControlOverlayLauncher.stop(intent)
             LogUtils.d("Focus overlay service stopped")
         } catch (e: Exception) {
-            LogUtils.d("Failed to stop focus overlay: ${e.message}")
+            LogUtils.d("Failed to stop focus overlay", e::class.java.simpleName)
         }
     }
 
@@ -183,10 +182,17 @@ object FocusModeEngine {
     /**
      * 澶勭悊搴旂敤鍒囨崲浜嬩欢
      */
-    fun onAppChanged(packageName: String, service: A11yService) {
+    fun onAppChanged(
+        packageName: String,
+        owner: SdpRuntimeFeatureCoordinator.RuntimeOwner? = null,
+    ) {
         if (!enabledFlow.value) return
+        if (owner != null && !sdpRuntimeFeatureCoordinator.isCurrent(owner)) return
         if (!isInFocusMode()) {
-            closeFocusOverlay()
+            sdpRuntimeFeatureCoordinator.recordDecision(owner, "focus", packageName, "outside_schedule")
+            if (owner == null || sdpRuntimeFeatureCoordinator.isCurrent(owner)) {
+                closeFocusOverlay()
+            }
             return
         }
 
@@ -197,28 +203,40 @@ object FocusModeEngine {
         }
 
         if (isWhitelisted(packageName)) {
+            sdpRuntimeFeatureCoordinator.recordDecision(owner, "focus", packageName, "whitelisted")
             if (META.debuggable) {
                 Log.d(TAG, "App $packageName is whitelisted, allowing")
             }
             return
         }
 
-        cooldownMap[packageName] = now
         LogUtils.d("Focus mode blocking: $packageName")
-        showFocusOverlay(service, packageName)
+        if (owner != null && !sdpRuntimeFeatureCoordinator.isCurrent(owner)) return
+        val result = showFocusOverlay(packageName, owner = owner)
+        sdpRuntimeFeatureCoordinator.recordDecision(
+            owner,
+            "focus",
+            packageName,
+            "overlay_${result::class.simpleName ?: "unknown"}",
+        )
+        if (result == OverlayLaunchResult.Accepted &&
+            (owner == null || sdpRuntimeFeatureCoordinator.isCurrent(owner))
+        ) {
+            cooldownMap[packageName] = now
+        }
     }
 
     fun onA11yEvent(event: android.view.accessibility.AccessibilityEvent) = Unit
 
     private fun showFocusOverlay(
-        service: A11yService,
         packageName: String,
         overrideWhitelist: List<String>? = null,
         overrideMessage: String? = null,
         overrideEndTime: Long? = null,
-        overrideIsLocked: Boolean? = null
-    ) {
-        try {
+        overrideIsLocked: Boolean? = null,
+        owner: SdpRuntimeFeatureCoordinator.RuntimeOwner? = null,
+    ): OverlayLaunchResult {
+        return try {
             val message = overrideMessage ?: currentMessageFlow.value
             val whitelist = overrideWhitelist ?: currentWhitelistFlow.value
             val session = cachedSession
@@ -226,16 +244,28 @@ object FocusModeEngine {
             val isLocked = overrideIsLocked ?: (session?.isCurrentlyLocked == true || activeRule?.isCurrentlyLocked == true)
             val endTime = overrideEndTime ?: session?.endTime ?: 0L
 
-            val intent = Intent(service, FocusOverlayService::class.java).apply {
+            val intent = Intent(app, FocusOverlayService::class.java).apply {
                 putExtra("message", message)
                 putExtra("whitelist", json.encodeToString(whitelist))
                 putExtra("blockedApp", packageName)
                 putExtra("isLocked", isLocked)
                 putExtra("endTime", endTime)
             }
-            service.startService(intent)
+            if (owner == null || sdpRuntimeFeatureCoordinator.isCurrent(owner)) {
+                val result = selfControlOverlayLauncher.launch(intent)
+                if (result == OverlayLaunchResult.Accepted &&
+                    owner != null && !sdpRuntimeFeatureCoordinator.isCurrent(owner)
+                ) {
+                    OverlayLaunchResult.RuntimeUnavailable
+                } else {
+                    result
+                }
+            } else {
+                OverlayLaunchResult.RuntimeUnavailable
+            }
         } catch (e: Exception) {
-            LogUtils.d("Failed to show focus overlay: ${e.message}")
+            LogUtils.d("focus overlay start rejected", e::class.java.simpleName)
+            OverlayLaunchResult.Rejected(OverlayFailureCategory.UNKNOWN)
         }
     }
 
@@ -270,16 +300,13 @@ object FocusModeEngine {
         LogUtils.d("Manual focus session started: ${durationMinutes}min, whitelist: ${whitelistApps.size} apps")
 
         // 绔嬪嵆瑙﹀彂鎷︽埅鐣岄潰锛岀洿鎺ヤ紶閫掑弬鏁帮紙鍥犱负 Flow 鍙兘杩樻湭鏇存柊锛?
-        A11yService.instance?.let { service ->
-            showFocusOverlay(
-                service = service,
-                packageName = "manual_start",
-                overrideWhitelist = whitelistApps,
-                overrideMessage = interceptMessage,
-                overrideEndTime = endTime,
-                overrideIsLocked = isLocked
-            )
-        }
+        showFocusOverlay(
+            packageName = "manual_start",
+            overrideWhitelist = whitelistApps,
+            overrideMessage = interceptMessage,
+            overrideEndTime = endTime,
+            overrideIsLocked = isLocked
+        )
     }
 
     /**
@@ -335,5 +362,6 @@ object FocusModeEngine {
      */
     fun clearCooldown() {
         cooldownMap.clear()
+        sdpRuntimeFeatureCoordinator.invalidateCurrentApp("focus-overlay-mount-failed")
     }
 }

@@ -1,6 +1,5 @@
 package li.songe.gkd.sdp.a11y
 
-import android.content.Intent
 import android.util.Log
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -9,22 +8,27 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import li.songe.gkd.sdp.META
+import li.songe.gkd.sdp.app
 import li.songe.gkd.sdp.appScope
 import li.songe.gkd.sdp.data.AppGroup
 import li.songe.gkd.sdp.data.BlockTimeRule
 import li.songe.gkd.sdp.db.DbSet
-import li.songe.gkd.sdp.service.A11yService
 import li.songe.gkd.sdp.service.AppBlockerOverlayService
+import li.songe.gkd.sdp.util.AppBlockerDecision
+import li.songe.gkd.sdp.util.AppBlockerDecisionPolicy
 import li.songe.gkd.sdp.util.LogUtils
 import li.songe.gkd.sdp.util.SelfControlElapsedPolicy
 import java.util.concurrent.ConcurrentHashMap
+import java.time.LocalDateTime
 
 object AppBlockerEngine {
     private const val TAG = "AppBlockerEngine"
 
     // 缓存的规则和应用组
-    private var cachedRules: List<BlockTimeRule> = emptyList()
-    private var cachedGroups: List<AppGroup> = emptyList()
+    @Volatile
+    private var cachedSnapshot = AppBlockerDecisionPolicy.Snapshot()
+    private val cachedRules: List<BlockTimeRule> get() = cachedSnapshot.rules
+    private val cachedGroups: List<AppGroup> get() = cachedSnapshot.groups
 
     // 冷却时间缓存，防止重复触发
     private val cooldownMap = ConcurrentHashMap<String, Long>()
@@ -57,16 +61,19 @@ object AppBlockerEngine {
         // 监听规则和应用组变化
         appScope.launch(Dispatchers.IO) {
             combine(
-                DbSet.blockTimeRuleDao.queryEnabled(),
-                DbSet.appGroupDao.queryEnabled()
+                DbSet.blockTimeRuleDao.queryAll(),
+                DbSet.appGroupDao.queryAll()
             ) { rules, groups ->
                 rules to groups
             }.collect { (rules, groups) ->
-                cachedRules = rules
-                cachedGroups = groups
+                cachedSnapshot = AppBlockerDecisionPolicy.Snapshot(
+                    rules = rules.toList(),
+                    groups = groups.toList(),
+                )
                 if (META.debuggable) {
                     Log.d(TAG, "Rules updated: ${rules.size}, Groups: ${groups.size}")
                 }
+                sdpRuntimeFeatureCoordinator.reconcileCurrentApp("app-blocker-rules-updated")
             }
         }
     }
@@ -76,42 +83,19 @@ object AppBlockerEngine {
      * @return Pair<是否拦截, 拦截消息>
      */
     fun shouldBlock(packageName: String): Pair<Boolean, String?> {
-        if (!enabledFlow.value) return false to null
-
-        val effectiveRules = getEffectiveRules(packageName)
-        if (effectiveRules.isEmpty()) return false to null
-
-        // 使用最新规则的拦截消息
-        return true to effectiveRules.first().interceptMessage
+        return when (val decision = evaluate(packageName)) {
+            is AppBlockerDecision.Block -> true to decision.message
+            else -> false to null
+        }
     }
 
-    /**
-     * 获取应用的所有生效规则（按创建时间倒序）
-     */
-    private fun getEffectiveRules(packageName: String): List<BlockTimeRule> {
-        // 1. 收集应用的单独规则
-        val appRules = cachedRules.filter {
-            it.targetType == BlockTimeRule.TARGET_TYPE_APP &&
-            it.targetId == packageName &&
-            it.isActiveNow()
-        }
-
-        // 2. 收集应用所属应用组的规则
-        val groupRules = mutableListOf<BlockTimeRule>()
-        for (group in cachedGroups) {
-            if (group.containsApp(packageName)) {
-                val rules = cachedRules.filter {
-                    it.targetType == BlockTimeRule.TARGET_TYPE_GROUP &&
-                    it.targetId == group.id.toString() &&
-                    it.isActiveNow()
-                }
-                groupRules.addAll(rules)
-            }
-        }
-
-        // 3. 合并并按创建时间排序（最新的在前）
-        return (appRules + groupRules).sortedByDescending { it.createdAt }
-    }
+    fun evaluate(packageName: String, now: LocalDateTime = LocalDateTime.now()): AppBlockerDecision =
+        AppBlockerDecisionPolicy.decide(
+            packageName = packageName,
+            snapshot = cachedSnapshot,
+            now = now,
+            enabled = enabledFlow.value,
+        )
 
     /**
      * 获取应用的所有规则（包括未生效的，用于冲突检测）
@@ -156,11 +140,20 @@ object AppBlockerEngine {
     /**
      * 处理应用切换事件
      */
-    fun onAppChanged(packageName: String, service: A11yService) {
+    fun onAppChanged(
+        packageName: String,
+        owner: SdpRuntimeFeatureCoordinator.RuntimeOwner? = null,
+    ) {
         LogUtils.d("$TAG: onAppChanged called for $packageName, enabled=${enabledFlow.value}")
         
         if (!enabledFlow.value) {
             LogUtils.d("$TAG: App blocker disabled, skipping")
+            return
+        }
+        if (owner != null && !sdpRuntimeFeatureCoordinator.isCurrent(owner)) return
+        if (FocusModeEngine.isActiveFlow.value &&
+            !FocusModeEngine.currentWhitelistFlow.value.contains(packageName)
+        ) {
             return
         }
 
@@ -173,32 +166,62 @@ object AppBlockerEngine {
         }
 
         // 判断是否应该拦截
-        val (shouldBlock, message) = shouldBlock(packageName)
-        LogUtils.d("$TAG: shouldBlock=$shouldBlock for $packageName, rules=${cachedRules.size}, groups=${cachedGroups.size}")
+        val decision = evaluate(packageName)
+        val shouldBlock = decision is AppBlockerDecision.Block
+        val message = (decision as? AppBlockerDecision.Block)?.message
+        sdpRuntimeFeatureCoordinator.recordDecision(
+            owner = owner,
+            feature = "app-blocker",
+            packageName = packageName,
+            decision = decision::class.simpleName ?: "unknown",
+        )
+        LogUtils.d("$TAG: decision=${decision::class.simpleName} for $packageName, rules=${cachedRules.size}, groups=${cachedGroups.size}")
         
         if (shouldBlock) {
-            cooldownMap[packageName] = now
             LogUtils.d("App blocker blocking: $packageName")
-            showBlockerOverlay(service, packageName, message ?: "这真的重要吗？")
+            if (owner != null && !sdpRuntimeFeatureCoordinator.isCurrent(owner)) return
+            val result = showBlockerOverlay(packageName, message ?: "这真的重要吗？", owner)
+            sdpRuntimeFeatureCoordinator.recordDecision(
+                owner,
+                "app-blocker",
+                packageName,
+                "overlay_${result::class.simpleName ?: "unknown"}",
+            )
+            if (result == OverlayLaunchResult.Accepted &&
+                (owner == null || sdpRuntimeFeatureCoordinator.isCurrent(owner))
+            ) {
+                cooldownMap[packageName] = now
+            }
         }
     }
 
     /**
      * 显示应用拦截全屏界面
      */
-    private fun showBlockerOverlay(service: A11yService, packageName: String, message: String) {
-        try {
-            val intent = Intent(service, AppBlockerOverlayService::class.java).apply {
-                putExtra(AppBlockerOverlayService.EXTRA_MESSAGE, message)
-                putExtra(AppBlockerOverlayService.EXTRA_BLOCKED_APP, packageName)
-                putExtra(
-                    AppBlockerOverlayService.EXTRA_EVENT_KEY,
-                    SelfControlElapsedPolicy.appBlockerEventKey(packageName),
-                )
+    private fun showBlockerOverlay(
+        packageName: String,
+        message: String,
+        owner: SdpRuntimeFeatureCoordinator.RuntimeOwner? = null,
+    ): OverlayLaunchResult {
+        val intent = android.content.Intent(app, AppBlockerOverlayService::class.java).apply {
+            putExtra(AppBlockerOverlayService.EXTRA_MESSAGE, message)
+            putExtra(AppBlockerOverlayService.EXTRA_BLOCKED_APP, packageName)
+            putExtra(
+                AppBlockerOverlayService.EXTRA_EVENT_KEY,
+                SelfControlElapsedPolicy.appBlockerEventKey(packageName),
+            )
+        }
+        return if (owner == null || sdpRuntimeFeatureCoordinator.isCurrent(owner)) {
+            val result = selfControlOverlayLauncher.launch(intent)
+            if (result == OverlayLaunchResult.Accepted &&
+                owner != null && !sdpRuntimeFeatureCoordinator.isCurrent(owner)
+            ) {
+                OverlayLaunchResult.RuntimeUnavailable
+            } else {
+                result
             }
-            service.startService(intent)
-        } catch (e: Exception) {
-            LogUtils.d("Failed to show app blocker overlay: ${e.message}")
+        } else {
+            OverlayLaunchResult.RuntimeUnavailable
         }
     }
 
@@ -207,5 +230,6 @@ object AppBlockerEngine {
      */
     fun clearCooldown() {
         cooldownMap.clear()
+        sdpRuntimeFeatureCoordinator.invalidateCurrentApp("app-blocker-overlay-mount-failed")
     }
 }

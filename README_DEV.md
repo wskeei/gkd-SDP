@@ -79,7 +79,9 @@ At runtime:
 
 1. Accessibility events enter `A11yService`.
 2. [`A11yRuleEngine`](app/src/main/kotlin/li/songe/gkd/sdp/a11y/A11yRuleEngine.kt) consumes relevant events, keeps `topActivityFlow` in sync, queries the node tree, and executes upstream-style selector actions.
-3. [`A11yFeat.kt`](app/src/main/kotlin/li/songe/gkd/sdp/a11y/A11yFeat.kt) wires additional behavior on top of that same runtime.
+3. [`SdpRuntimeFeatureCoordinator`](app/src/main/kotlin/li/songe/gkd/sdp/a11y/SdpRuntimeFeatureCoordinator.kt) is the single process-wide entry point for digital self-discipline features. Both `A11yService` and `AutomationService` attach their `A11yCommonImpl` owner through `A11yRuleEngine`; do not add feature hooks only to `A11yService`.
+
+`A11yFeat.kt` remains for upstream/common event watchers (screenshots, subscription refresh, volume and screen state). It is not a second foreground-app collector.
 
 Top activity detection is hybrid:
 
@@ -113,6 +115,10 @@ Common examples:
 - [`AutoReenableEnforcer`](app/src/main/kotlin/li/songe/gkd/sdp/service/AutoReenableEnforcer.kt)
 
 The app manifest is large because many behaviors are service-driven. See [`app/src/main/AndroidManifest.xml`](app/src/main/AndroidManifest.xml) before changing permissions or background behavior.
+
+All self-control overlay starts/stops go through [`SelfControlOverlayLauncher`](app/src/main/kotlin/li/songe/gkd/sdp/a11y/SelfControlOverlayLauncher.kt). It checks `Settings.canDrawOverlays`, classifies service-start failures, and callers only commit cooldown state after an `Accepted` result. The overlay services still guard their final `WindowManager.addView` call because a start request can be accepted while a ROM later rejects the window.
+
+System navigation from self-control overlays uses [`A11yRuleEngine.performActionHome`](app/src/main/kotlin/li/songe/gkd/sdp/a11y/A11yRuleEngine.kt), which injects `KEYCODE_HOME` through Shizuku when possible and falls back to `GLOBAL_ACTION_HOME`. `SafeInputManager.key()` must return the actual down/up injection result; do not treat a non-null manager as success.
 
 ### Digital Self-Discipline / Usage Guard
 
@@ -252,7 +258,9 @@ Gradle is configured with `-Dfile.encoding=UTF-8` in [`gradle.properties`](gradl
 
 ## Build and Test
 
-From the repository root:
+The authoritative verification environment is GitHub Actions (`.github/workflows/Verify-Merge.yml` and `.github/workflows/Build-Apk.yml`) with JDK 21. This project intentionally does not run Gradle locally for the digital-self-discipline runtime repair; local checks are limited to source inspection and `git diff --check`. Push the branch and inspect the Draft PR checks with `gh pr checks --watch`.
+
+When a local Gradle run is explicitly appropriate for another task, the equivalent commands are:
 
 ```bash
 ./gradlew :app:assembleGkdDebug
@@ -285,7 +293,7 @@ If you are new to the codebase, read in this order:
 3. [`app/src/main/kotlin/li/songe/gkd/sdp/App.kt`](app/src/main/kotlin/li/songe/gkd/sdp/App.kt)
 4. [`app/src/main/kotlin/li/songe/gkd/sdp/MainActivity.kt`](app/src/main/kotlin/li/songe/gkd/sdp/MainActivity.kt)
 5. [`app/src/main/kotlin/li/songe/gkd/sdp/a11y/A11yState.kt`](app/src/main/kotlin/li/songe/gkd/sdp/a11y/A11yState.kt)
-6. [`app/src/main/kotlin/li/songe/gkd/sdp/a11y/A11yFeat.kt`](app/src/main/kotlin/li/songe/gkd/sdp/a11y/A11yFeat.kt)
+6. [`app/src/main/kotlin/li/songe/gkd/sdp/a11y/SdpRuntimeFeatureCoordinator.kt`](app/src/main/kotlin/li/songe/gkd/sdp/a11y/SdpRuntimeFeatureCoordinator.kt)
 7. [`app/src/main/kotlin/li/songe/gkd/sdp/a11y/A11yRuleEngine.kt`](app/src/main/kotlin/li/songe/gkd/sdp/a11y/A11yRuleEngine.kt)
 8. [`app/src/main/kotlin/li/songe/gkd/sdp/db/AppDb.kt`](app/src/main/kotlin/li/songe/gkd/sdp/db/AppDb.kt)
 9. [`app/src/main/kotlin/li/songe/gkd/sdp/store/SettingsStore.kt`](app/src/main/kotlin/li/songe/gkd/sdp/store/SettingsStore.kt)
@@ -328,3 +336,5 @@ Audit all disable entry points. In this codebase, “disable” is product-sensi
 For coding agents, the main trap is treating this as only a GKD selector project. It is not. The selector engine is only one subsystem. Many user-facing restrictions are implemented as separate Room-backed domain models plus overlay services, and they are merely coordinated through the same accessibility/runtime layer.
 
 A second trap is over-trusting names. `gkd`, `subs`, `match`, `enable`, and `lock` have different meanings depending on the layer. Read the data model before changing behavior.
+
+For any new or changed self-control feature, register the foreground-app/event handler in `SdpRuntimeFeatureCoordinator`, use `SelfControlOverlayLauncher` for overlays, and use the common HOME/BACK bridge for system navigation. This keeps accessibility and Automation/Shizuku mode behavior identical and makes failures visible in the runtime status card.

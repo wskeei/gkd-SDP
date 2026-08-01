@@ -13,7 +13,6 @@ import kotlinx.coroutines.launch
 import li.songe.gkd.sdp.app
 import li.songe.gkd.sdp.appScope
 import li.songe.gkd.sdp.permission.shizukuGrantedState
-import li.songe.gkd.sdp.service.A11yService
 import li.songe.gkd.sdp.store.storeFlow
 import li.songe.gkd.sdp.util.LogUtils
 import li.songe.gkd.sdp.util.ScreenUtils
@@ -39,29 +38,6 @@ fun onA11yFeatEvent(event: AccessibilityEvent) = event.run {
             watchCheckShizukuState()
             watchAutoUpdateSubs()
         }
-    }
-}
-
-fun A11yService.onSdpA11yEvent(event: AccessibilityEvent) {
-    UrlBlockerEngine.onAccessibilityEvent(event, this)
-    FocusModeEngine.onA11yEvent(event)
-}
-
-fun A11yService.initSdpA11yFeatures() {
-    var lastAppId = ""
-    scope.launch(Dispatchers.Default) {
-        topActivityFlow.collect { activity ->
-            val currentAppId = activity.appId
-            if (currentAppId.isNotEmpty() && currentAppId != lastAppId) {
-                lastAppId = currentAppId
-                FocusModeEngine.onAppChanged(currentAppId, this@initSdpA11yFeatures)
-                UsageGuardEngine.onAppChanged(currentAppId, this@initSdpA11yFeatures)
-                AppBlockerEngine.onAppChanged(currentAppId, this@initSdpA11yFeatures)
-            }
-        }
-    }
-    onDestroyed {
-        UsageGuardEngine.onA11yServiceDestroyed(this@initSdpA11yFeatures)
     }
 }
 

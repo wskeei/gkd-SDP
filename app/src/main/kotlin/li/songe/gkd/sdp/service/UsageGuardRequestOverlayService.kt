@@ -42,6 +42,8 @@ import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import li.songe.gkd.sdp.a11y.A11yRuleEngine
+import li.songe.gkd.sdp.util.LogUtils
 import li.songe.gkd.sdp.a11y.UsageGuardEngine
 import li.songe.gkd.sdp.data.UsageGuardRecord
 import li.songe.gkd.sdp.data.UsageGuardTag
@@ -157,9 +159,7 @@ class UsageGuardRequestOverlayService : LifecycleService(), SavedStateRegistryOw
                             }
                         },
                         onCancel = {
-                            A11yService.instance?.performGlobalAction(
-                                android.accessibilityservice.AccessibilityService.GLOBAL_ACTION_HOME
-                            )
+                            A11yRuleEngine.performActionHome()
                             stopSelf()
                         },
                     )
@@ -175,7 +175,13 @@ class UsageGuardRequestOverlayService : LifecycleService(), SavedStateRegistryOw
                 WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
             PixelFormat.TRANSLUCENT
         )
-        windowManager.addView(view, params)
+        runCatching { windowManager.addView(view, params) }.onFailure { error ->
+            view?.let { runCatching { windowManager.removeViewImmediate(it) } }
+            view = null
+            LogUtils.d("usage guard request overlay mount rejected", error::class.java.simpleName)
+            UsageGuardEngine.onOverlayMountFailed("request", appId)
+            stopSelf()
+        }
     }
 
     private suspend fun addCustomTag(name: String, existing: List<UsageGuardTag>) {
@@ -190,7 +196,7 @@ class UsageGuardRequestOverlayService : LifecycleService(), SavedStateRegistryOw
 
     override fun onDestroy() {
         super.onDestroy()
-        view?.let { windowManager.removeView(it) }
+        view?.let { runCatching { windowManager.removeView(it) } }
         view = null
         UsageGuardEngine.onRequestOverlayStopped(appId.ifBlank { null })
     }

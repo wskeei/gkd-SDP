@@ -236,11 +236,9 @@ class InputShellCommand(val safeInputManager: SafeInputManager) {
         return (b - a) * alpha + a
     }
 
-    fun runKeyEvent(keyCode: Int) {
-        sendKeyEvent(keyCode)
-    }
+    fun runKeyEvent(keyCode: Int): Boolean = sendKeyEvent(keyCode)
 
-    private fun sendKeyEvent(keyCode: Int) {
+    private fun sendKeyEvent(keyCode: Int): Boolean {
         val inputSource = InputDevice.SOURCE_UNKNOWN
         val displayId = Display.INVALID_DISPLAY
         val async = false
@@ -254,17 +252,18 @@ class InputShellCommand(val safeInputManager: SafeInputManager) {
         if (AndroidTarget.Q) {
             event.casted.setDisplayId(displayId)
         }
-        injectKeyEvent(event, async)
+        val downAccepted = injectKeyEvent(event, async)
         val event2 = KeyEvent.changeTimeRepeat(event, SystemClock.uptimeMillis(), 0)
-        injectKeyEvent(KeyEvent.changeAction(event2, KeyEvent.ACTION_UP), async)
+        val upAccepted = injectKeyEvent(KeyEvent.changeAction(event2, KeyEvent.ACTION_UP), async)
+        return downAccepted == true && upAccepted == true
     }
 
-    private fun injectKeyEvent(event: KeyEvent, async: Boolean) {
+    private fun injectKeyEvent(event: KeyEvent, async: Boolean): Boolean? {
         val injectMode: Int = if (async) {
             InputManagerHidden.INJECT_INPUT_EVENT_MODE_ASYNC
         } else {
             InputManagerHidden.INJECT_INPUT_EVENT_MODE_WAIT_FOR_FINISH
         }
-        safeInputManager.compatInjectInputEvent(event, injectMode)
+        return safeInputManager.compatInjectInputEvent(event, injectMode)
     }
 }
