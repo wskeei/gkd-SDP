@@ -49,21 +49,25 @@ class SelfControlOverlayLauncher(
                 is IllegalStateException -> OverlayFailureCategory.BACKGROUND_START
                 else -> OverlayFailureCategory.UNKNOWN
             }
-            LogUtils.d(
-                "self-control overlay start rejected",
-                "category=$category",
-                error::class.java.simpleName,
-            )
+            runCatching {
+                LogUtils.d(
+                    "self-control overlay start rejected",
+                    "category=$category",
+                    error::class.java.simpleName,
+                )
+            }
             OverlayLaunchResult.Rejected(category)
         }
     }
 
     fun stop(intent: Intent): Boolean = runCatching { stopService(intent) }
         .onFailure { error ->
-            LogUtils.d(
-                "self-control overlay stop rejected",
-                error::class.java.simpleName,
-            )
+            runCatching {
+                LogUtils.d(
+                    "self-control overlay stop rejected",
+                    error::class.java.simpleName,
+                )
+            }
         }
         .getOrDefault(false)
 }

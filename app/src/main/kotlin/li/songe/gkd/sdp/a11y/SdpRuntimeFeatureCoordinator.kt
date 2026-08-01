@@ -25,7 +25,7 @@ class SdpRuntimeFeatureCoordinator<T>(
     private val scope: CoroutineScope,
     private val handlers: List<Handler>,
     private val onHandlerFailure: (handlerName: String, error: Throwable) -> Unit = { name, error ->
-        LogUtils.d("self-control handler failed", name, error::class.java.simpleName)
+        runCatching { LogUtils.d("self-control handler failed", name, error::class.java.simpleName) }
     },
 ) {
     class RuntimeOwner internal constructor(
@@ -174,13 +174,15 @@ class SdpRuntimeFeatureCoordinator<T>(
     ) {
         runCatching(block).onFailure { error ->
             onHandlerFailure(handlerName, error)
-            LogUtils.d(
-                "self-control runtime handler failure",
-                "mode=${owner.mode.value}",
-                "generation=${owner.generation}",
-                "feature=$handlerName",
-                error::class.java.simpleName,
-            )
+            runCatching {
+                LogUtils.d(
+                    "self-control runtime handler failure",
+                    "mode=${owner.mode.value}",
+                    "generation=${owner.generation}",
+                    "feature=$handlerName",
+                    error::class.java.simpleName,
+                )
+            }
         }
     }
 }
