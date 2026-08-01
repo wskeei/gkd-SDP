@@ -8,4 +8,4 @@ contact_links:
     about: 不要在公开 Issue 中披露未修复的安全漏洞
   - name: 上游 GKD 项目
     url: https://github.com/gkd-kit/gkd
-    about: 只有确认问题不属于 GKD-SDP 的上游核心问题才使用此入口
+    about: 只有确认问题属于上游 GKD 核心问题才使用此入口；否则请在 GKD-SDP 提交

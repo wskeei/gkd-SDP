@@ -1,5 +1,7 @@
 # GKD-SDP Release Guide
 
+本文描述版本化发布基础设施落地后的目标流程。迁移 PR 尚未全部合并时，仓库中的旧 workflow 可能仍会创建 legacy `latest` 快照；在新 workflow、版本源和 Environment 完成并通过 Actions 之前，不要把本文件的目标状态当成当前仓库已具备的能力。
+
 ## Version policy
 
 GKD-SDP 使用 Semantic Versioning 2.0：

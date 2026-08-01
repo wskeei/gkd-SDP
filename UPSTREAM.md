@@ -6,6 +6,7 @@ GKD-SDP 是基于 [gkd-kit/gkd](https://github.com/gkd-kit/gkd) 的非官方 for
 
 - Upstream repository: `https://github.com/gkd-kit/gkd`
 - Current recorded base: `v1.12.1`
+- Last base audit: `2026-08-02`
 - GKD-SDP repository: `https://github.com/wskeei/gkd-SDP`
 - GKD-SDP product versions use their own `v2.x` tags; upstream `v1.x` tags are historical references and must not be reused for SDP releases.
 

@@ -124,7 +124,7 @@ Unix-like shell：
 - `compileSdk` / `targetSdk`: 37
 - Debug 应用名：`GKD-SDP`
 
-Android 编译和 PR 质量检查以 [GitHub Actions](.github/workflows/ci.yml) 为准。正式版本和历史更新说明请查看 [Releases](https://github.com/wskeei/gkd-SDP/releases)；`main` 上的 Nightly 仅是短期测试构建，不等同于稳定版。
+Android 编译和 PR 质量检查以 [GitHub Actions](https://github.com/wskeei/gkd-SDP/actions) 为准。正式版本和历史更新说明请查看 [Releases](https://github.com/wskeei/gkd-SDP/releases)；`main` 上的 Nightly 仅是短期测试构建，不等同于稳定版。
 
 ## 开发说明
 

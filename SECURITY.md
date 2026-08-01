@@ -4,7 +4,7 @@
 
 | Version channel | Support |
 | --- | --- |
-| Latest stable release | Security fixes优先 |
+| Latest stable release | Security fixes prioritized |
 | Latest beta/rc release | Best effort，可能先要求升级到 stable |
 | Older releases and Nightly artifacts | 不承诺安全修复 |
 

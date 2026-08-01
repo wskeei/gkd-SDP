@@ -1,6 +1,6 @@
 # Release smoke checklist
 
-这是发布前的真实设备检查，不由 JVM/Actions 自动测试替代。记录设备型号、Android 版本、应用版本、测试日期和未覆盖项。
+这是版本化 Release workflow 落地后的真实设备检查，不由 JVM/Actions 自动测试替代。记录设备型号、Android 版本、应用版本、测试日期和未覆盖项。迁移完成前，旧 `latest` 快照不能满足这份清单的 Release 完整性项目。
 
 ## 安装与版本
 

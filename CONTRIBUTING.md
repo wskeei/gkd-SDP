@@ -44,8 +44,9 @@ PR 提交前至少运行 `git diff --check`，并确认没有把 `.jks`、密码
 本应用会处理应用列表、无障碍节点、快照、URL 规则、使用申请理由和行为日志等可能敏感的数据。上传日志或截图前请删除：
 
 - 申请理由、个人计划、账号、手机号、邮箱和聊天内容；
-- 完整 URL、token、Cookie、Authorization header；
-- 屏幕录制中不相关的第三方应用内容；
+- URL 中的 token、Cookie、Authorization header、私密 query 参数和完整路径；需要复现 URL blocker 时可以提供合成或脱敏后的 host/path；
+- 屏幕录制中不相关的第三方应用内容、应用列表、无障碍 node text 和通知正文；
+- 设备序列号、精确 build ID、导出的数据库、备份压缩包和 crash/log 原文中的个人数据；
 - keystore、`gradle.properties`、GitHub secret 和任何密码。
 
 如果无法确认某份日志是否安全，先在 Discussion 中询问，不要直接公开上传。

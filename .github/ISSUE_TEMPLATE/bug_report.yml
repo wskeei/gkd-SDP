@@ -10,7 +10,7 @@ body:
       value: |
         感谢反馈。请先搜索已有 Issue/Discussion，并确认问题属于 GKD-SDP，而不是第三方订阅规则或上游 GKD。
 
-        **隐私提示：** 上传日志、截图或录屏前，请删除申请理由、账号、URL、token、通知正文和其他屏幕敏感内容。不要上传 keystore 或密码。
+        **隐私提示：** 上传日志、截图或录屏前，请删除申请理由、账号、URL 中的 token/Cookie/私密 query、通知正文和其他屏幕敏感内容。URL blocker 问题可以提供合成或脱敏后的 host/path。不要上传 keystore 或密码。
   - type: input
     id: version
     attributes:
@@ -88,7 +88,7 @@ body:
       options:
         - label: 我已搜索过相似 Issue/Discussion。
           required: true
-        - label: 我已删除申请理由、账号、URL、token、密码和不必要的屏幕内容。
+        - label: 我已删除申请理由、账号、URL 中的凭据/私密参数、密码和不必要的屏幕内容。
           required: true
         - label: 这是 GKD-SDP 应用本体的问题，而不是第三方规则内容的问题。
           required: true
