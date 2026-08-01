@@ -16,7 +16,7 @@
 
 ## 网络访问与本地 HTTP 服务
 
-网络访问可能用于用户配置的订阅/规则更新、上游或项目文档链接、以及 GKD-SDP GitHub Releases 的版本检查和 APK 下载。应用内版本检查会访问公开的 GitHub API 和 Release asset；它不携带 GitHub token。
+网络访问可能用于用户配置的订阅/规则更新、上游或项目文档链接、以及 GKD-SDP GitHub Releases 的版本检查和 APK 下载。应用内版本检查会访问公开的 GitHub API 和 Release asset；APK 不内置 GitHub token，也不会把用户的 Cookie/Authorization header 当作版本检查凭据。网络服务仍可能看到 IP、时间、User-Agent 等请求元数据；用户配置的订阅/CDN/文档服务还可能按其自身策略记录请求，这些第三方日志不由项目控制。
 
 应用还可以由用户在高级设置中启用本地 HTTP 服务。启用后，同一局域网内能访问该端口的客户端可能读取或提交应用提供的订阅、快照、选择器/调试数据；这不是 GitHub 云端上传，但仍是数据离开本机进程边界的路径。只在可信网络启用，并在不需要时关闭；不要把该端口暴露到不可信网络。
 
