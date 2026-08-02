@@ -1,0 +1,41 @@
+name: Dependency graph
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - '**/*.gradle'
+      - '**/*.gradle.kts'
+      - '**/gradle.properties'
+      - 'gradle/**'
+      - 'settings.gradle.kts'
+      - 'gradle/libs.versions.toml'
+
+concurrency:
+  group: dependency-graph-main
+  cancel-in-progress: true
+
+jobs:
+  submit:
+    name: submit
+    if: ${{ github.ref == 'refs/heads/main' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write
+    steps:
+      - name: Check out source
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+
+      - name: Set up Java
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
+        with:
+          distribution: zulu
+          java-version: '21'
+
+      - name: Submit Gradle dependency graph
+        uses: gradle/actions/dependency-submission@90ddb51e90a5fd9ba75f40cf85156b7b41bf76a3 # v6
+        with:
+          cache-provider: basic

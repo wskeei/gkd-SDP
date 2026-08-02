@@ -1,0 +1,109 @@
+name: CI
+
+on:
+  workflow_dispatch:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  JAVA_VERSION: '21'
+
+jobs:
+  quality:
+    name: quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out source
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+
+      - name: Set up Java
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
+        with:
+          distribution: zulu
+          java-version: ${{ env.JAVA_VERSION }}
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@90ddb51e90a5fd9ba75f40cf85156b7b41bf76a3 # v6
+        with:
+          cache-provider: basic
+
+      - name: Run unit tests and lint
+        run: |
+          chmod +x ./gradlew
+          ./gradlew \
+            :selector:jvmTest \
+            :app:testGkdDebugUnitTest \
+            :app:lintGkdDebug \
+            :app:lintPlayDebug
+
+      - name: Upload quality reports
+        if: ${{ always() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: ci-quality-reports-${{ github.run_id }}
+          retention-days: 7
+          if-no-files-found: ignore
+          path: |
+            app/build/reports/
+            app/build/test-results/
+            app/schemas/
+            selector/build/reports/
+            selector/build/test-results/
+
+  build:
+    name: build
+    needs: quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - name: Check out source
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+
+      - name: Set up Java
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
+        with:
+          distribution: zulu
+          java-version: ${{ env.JAVA_VERSION }}
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@90ddb51e90a5fd9ba75f40cf85156b7b41bf76a3 # v6
+        with:
+          cache-provider: basic
+
+      - name: Build debug and release variants
+        run: |
+          chmod +x ./gradlew
+          ./gradlew \
+            :app:assembleGkdDebug \
+            :app:assemblePlayDebug \
+            :app:assembleGkdRelease
+
+      - name: Upload build outputs
+        if: ${{ always() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: ci-apk-outputs-${{ github.run_id }}
+          retention-days: 7
+          if-no-files-found: error
+          path: app/build/outputs/apk/
+
+  dependency-review:
+    name: dependency-review
+    if: ${{ github.event_name == 'pull_request' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Review dependency changes
+        uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294 # v5.0.0
+        with:
+          fail-on-severity: high

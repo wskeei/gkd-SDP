@@ -939,6 +939,7 @@ fun MindfulPauseSheet(
 }
 
 @Composable
+@android.annotation.SuppressLint("NonObservableLocale")
 fun LockDurationSheet(
     targetName: String,
     currentEndTime: Long,

@@ -36,6 +36,7 @@ import java.util.*
 data object AppInstallMonitorRoute : NavKey
 
 @Composable
+@android.annotation.SuppressLint("NonObservableLocale")
 fun AppInstallMonitorPage() {
     val mainVm = LocalMainViewModel.current
     val vm: AppInstallMonitorVm = viewModel()
@@ -264,6 +265,7 @@ fun AppInstallMonitorPage() {
 }
 
 @Composable
+@android.annotation.SuppressLint("NonObservableLocale")
 private fun HeatmapGrid(
     data: Map<String, Int>,
     onDateClick: (String) -> Unit
