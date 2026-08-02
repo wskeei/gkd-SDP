@@ -40,6 +40,7 @@ import li.songe.gkd.sdp.store.initStore
 import li.songe.gkd.sdp.util.AndroidTarget
 import li.songe.gkd.sdp.util.LogUtils
 import li.songe.gkd.sdp.util.PKG_FLAGS
+import li.songe.gkd.sdp.util.REPOSITORY_URL
 import li.songe.gkd.sdp.util.deviceInfoDesc
 import li.songe.gkd.sdp.util.initAppState
 import li.songe.gkd.sdp.util.initSubsState
@@ -82,7 +83,7 @@ data class AppMeta(
     val appId: String = app.packageName!!,
     val appName: String = app.getString(R.string.app_name)
 ) {
-    val commitUrl = "https://github.com/gkd-kit/gkd/".run {
+    val commitUrl = "${REPOSITORY_URL}/".run {
         plus(if (tagName != null) "tree/$tagName" else "commit/$commitId")
     }
     val isGkdChannel get() = channel == "gkd"

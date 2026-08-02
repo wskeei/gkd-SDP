@@ -6,7 +6,8 @@ const val IMPORT_SHORT_URL = "https://i.gkd.li/i/"
 const val SERVER_SCRIPT_URL =
     "https://registry.npmmirror.com/@gkd-kit/config/latest/files/dist/server.js"
 
-const val REPOSITORY_URL = "https://github.com/gkd-kit/gkd"
+const val REPOSITORY_URL = "https://github.com/wskeei/gkd-SDP"
+const val UPSTREAM_REPOSITORY_URL = "https://github.com/gkd-kit/gkd"
 const val ISSUES_URL = "${REPOSITORY_URL}/issues"
 
 const val HOME_PAGE_URL = "https://gkd.li"

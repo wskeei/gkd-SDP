@@ -15,47 +15,22 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
-import io.ktor.client.call.body
-import io.ktor.client.plugins.onDownload
 import io.ktor.client.request.get
 import io.ktor.client.statement.bodyAsChannel
-import io.ktor.util.cio.writeChannel
-import io.ktor.utils.io.copyAndClose
+import io.ktor.utils.io.readAvailable
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.serialization.Serializable
 import li.songe.gkd.sdp.META
 import li.songe.gkd.sdp.app
 import li.songe.gkd.sdp.store.createAnyFlow
 import li.songe.gkd.sdp.store.storeFlow
 import java.io.File
-import java.net.URI
+import java.security.MessageDigest
 import kotlin.time.Duration.Companion.days
-
-
-private val UPDATE_URL: String
-    get() = UpdateChannelOption.objects.findOption(storeFlow.value.updateChannel).url
-
-@Serializable
-data class NewVersion(
-    val versionCode: Int,
-    val versionName: String,
-    val changelog: String,
-    val downloadUrl: String,
-    val fileSize: Long,
-    val versionLogs: List<VersionLog> = emptyList(),
-)
-
-@Serializable
-data class VersionLog(
-    val name: String,
-    val code: Int,
-    val desc: String,
-)
 
 private var lastCheckTime = 0L
 
@@ -85,8 +60,9 @@ class UpdateStatus(val scope: CoroutineScope) {
             if (!NetworkUtils.isAvailable()) {
                 error("网络不可用")
             }
-            val newVersion = client.get(UPDATE_URL).body<NewVersion>()
-            if (newVersion.versionCode <= META.versionCode) {
+            val beta = storeFlow.value.updateChannel == UpdateChannelOption.Beta.value
+            val newVersion = GitHubReleaseUpdateSource.fetchLatest(client, beta)
+            if (newVersion == null || !GitHubReleaseUpdateSource.isNewer(newVersion, META.versionCode)) {
                 if (manual) toast("暂无更新")
                 return@launchTry
             }
@@ -98,29 +74,55 @@ class UpdateStatus(val scope: CoroutineScope) {
     private fun startDownload(newVersion: NewVersion) {
         if (downloadStatusFlow.value is LoadStatus.Loading) return
         downloadStatusFlow.value = LoadStatus.Loading(0f)
-        val apkFile = sharedDir.resolve("gkd-v${newVersion.versionCode}.apk").apply {
+        GitHubReleaseUpdateSource.validateDownloadUrl(newVersion.downloadUrl, newVersion.releaseTag)
+        val apkFile = sharedDir.resolve("gkd-sdp-v${newVersion.versionName}.apk").apply {
+            if (exists()) {
+                delete()
+            }
+        }
+        val partialFile = sharedDir.resolve(".${apkFile.name}.part").apply {
             if (exists()) {
                 delete()
             }
         }
         downloadJob = scope.launch(Dispatchers.IO) {
             try {
-                val channel =
-                    client.get(URI(UPDATE_URL).resolve(newVersion.downloadUrl).toString()) {
-                        onDownload { bytesSentTotal, _ ->
-                            val downloadStatus = downloadStatusFlow.value
-                            if (downloadStatus is LoadStatus.Loading) {
+                val digest = MessageDigest.getInstance("SHA-256")
+                var bytesReceived = 0L
+                val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+                val channel = client.get(newVersion.downloadUrl) {
+                    expectSuccess = true
+                }.bodyAsChannel()
+                try {
+                    partialFile.outputStream().use { output ->
+                        while (!channel.isClosedForRead) {
+                            val count = channel.readAvailable(buffer, 0, buffer.size)
+                            if (count == -1) break
+                            if (count == 0) continue
+                            output.write(buffer, 0, count)
+                            digest.update(buffer, 0, count)
+                            bytesReceived += count
+                            if (downloadStatusFlow.value is LoadStatus.Loading) {
                                 downloadStatusFlow.value = LoadStatus.Loading(
-                                    bytesSentTotal.toFloat() / (newVersion.fileSize)
+                                    (bytesReceived.toDouble() / newVersion.fileSize).toFloat().coerceIn(0f, 1f)
                                 )
-                            } else if (downloadStatus is LoadStatus.Failure) {
-                                // 提前终止下载
-                                downloadJob?.cancel()
                             }
                         }
-                    }.bodyAsChannel()
+                    }
+                } finally {
+                    channel.cancel()
+                }
+                require(bytesReceived == newVersion.fileSize) {
+                    "下载文件大小校验失败：${bytesReceived} != ${newVersion.fileSize}"
+                }
+                val actualSha256 = digest.digest().joinToString("") { byte -> "%02x".format(byte) }
+                require(actualSha256.equals(newVersion.sha256, ignoreCase = true)) {
+                    "下载文件 SHA-256 校验失败"
+                }
+                check(partialFile.renameTo(apkFile)) {
+                    "无法保存下载文件"
+                }
                 if (downloadStatusFlow.value is LoadStatus.Loading) {
-                    channel.copyAndClose(apkFile.writeChannel())
                     downloadStatusFlow.value = LoadStatus.Success(apkFile)
                 }
             } catch (e: Exception) {
@@ -128,6 +130,9 @@ class UpdateStatus(val scope: CoroutineScope) {
                     downloadStatusFlow.value = LoadStatus.Failure(e)
                 }
             } finally {
+                if (partialFile.exists()) {
+                    partialFile.delete()
+                }
                 downloadJob = null
             }
         }
@@ -207,6 +212,7 @@ class UpdateStatus(val scope: CoroutineScope) {
                                 downloadStatusFlow.value = LoadStatus.Failure(
                                     Exception("终止下载")
                                 )
+                                downloadJob?.cancel()
                             }) {
                                 Text(text = "终止下载")
                             }
