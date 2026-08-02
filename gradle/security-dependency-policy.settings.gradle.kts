@@ -58,11 +58,11 @@ fun configureSecurityResolution(configuration: Configuration) {
 gradle.beforeProject(object : Action<Project> {
     override fun execute(project: Project) {
         // Buildscript classpaths are resolved separately from normal project configurations.
-        project.buildscript.configurations.configureEach { configuration ->
-            configureSecurityResolution(configuration)
+        project.buildscript.configurations.configureEach {
+            configureSecurityResolution(this)
         }
-        project.configurations.configureEach { configuration ->
-            configureSecurityResolution(configuration)
+        project.configurations.configureEach {
+            configureSecurityResolution(this)
         }
     }
 })
