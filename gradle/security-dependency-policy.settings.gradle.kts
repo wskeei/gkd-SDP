@@ -5,7 +5,7 @@ import org.gradle.api.Project
 import java.util.Properties
 
 val securityFloors = Properties().apply {
-    file("gradle/security-dependency-floors.properties").inputStream().use(::load)
+    rootDir.resolve("gradle/security-dependency-floors.properties").inputStream().use(::load)
 }
 
 fun requiredFloor(key: String): String =
