@@ -34,6 +34,8 @@ jobs:
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@90ddb51e90a5fd9ba75f40cf85156b7b41bf76a3 # v6
+        with:
+          cache-provider: basic
 
       - name: Run unit tests and lint
         run: |
@@ -75,6 +77,8 @@ jobs:
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@90ddb51e90a5fd9ba75f40cf85156b7b41bf76a3 # v6
+        with:
+          cache-provider: basic
 
       - name: Build debug and release variants
         run: |
