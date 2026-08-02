@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-import json
+import os
+import stat
 import subprocess
 import sys
 import tempfile
@@ -10,6 +11,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 SCRIPT = ROOT / "scripts" / "verify-security-dependency-report.py"
+GENERATOR = ROOT / "scripts" / "generate-security-dependency-report.sh"
 FIXTURES = Path(__file__).parent / "fixtures"
 
 
@@ -81,6 +83,62 @@ class SecurityDependencyReportTests(unittest.TestCase):
             report.unlink(missing_ok=True)
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("httpmime", result.stdout + result.stderr)
+
+    def write_fake_gradlew(self, directory: Path) -> Path:
+        fake_gradle = directory / "gradlew"
+        fake_gradle.write_text(
+            "#!/usr/bin/env python3\n"
+            "import os\n"
+            "import pathlib\n"
+            "import sys\n"
+            "counter = pathlib.Path('.fake-gradle-counter')\n"
+            "count = int(counter.read_text()) + 1 if counter.exists() else 1\n"
+            "counter.write_text(str(count))\n"
+            "if os.environ.get('FAIL_AT') == str(count):\n"
+            "    raise SystemExit(17)\n"
+            "print('com.android.tools.build:gradle:9.3.0')\n"
+            "print('io.netty:netty-codec:4.1.136.Final')\n",
+            encoding="utf-8",
+        )
+        fake_gradle.chmod(fake_gradle.stat().st_mode | stat.S_IXUSR)
+        return fake_gradle
+
+    def test_generator_runs_all_reports_and_writes_completion_marker(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            directory = Path(temporary_directory)
+            self.write_fake_gradlew(directory)
+            result = subprocess.run(
+                ["bash", str(GENERATOR)],
+                cwd=directory,
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+            report = directory / "build" / "reports" / "security-dependencies.txt"
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            self.assertTrue(report.is_file())
+            report_text = report.read_text(encoding="utf-8")
+            self.assertEqual(report_text.count("SECURITY_DEPENDENCY_SECTION="), 7)
+            self.assertTrue(report_text.rstrip().endswith("SECURITY_DEPENDENCY_REPORT_COMPLETE=1"))
+
+    def test_generator_does_not_write_completion_marker_after_gradle_failure(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            directory = Path(temporary_directory)
+            self.write_fake_gradlew(directory)
+            environment = os.environ.copy()
+            environment["FAIL_AT"] = "3"
+            result = subprocess.run(
+                ["bash", str(GENERATOR)],
+                cwd=directory,
+                env=environment,
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+            report = directory / "build" / "reports" / "security-dependencies.txt"
+            self.assertNotEqual(result.returncode, 0)
+            self.assertTrue(report.is_file())
+            self.assertNotIn("SECURITY_DEPENDENCY_REPORT_COMPLETE=1", report.read_text(encoding="utf-8"))
 
 
 if __name__ == "__main__":
