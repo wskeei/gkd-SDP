@@ -96,20 +96,17 @@ sealed class RuleSortOption(override val value: Int, override val label: String)
 sealed class UpdateChannelOption(
     override val value: Int,
     override val label: String,
-    val url: String
 ) : Option<Int> {
     override val options get() = objects
 
     data object Stable : UpdateChannelOption(
         0,
         "稳定版",
-        "https://registry.npmmirror.com/@gkd-kit/app/latest/files/index.json"
     )
 
     data object Beta : UpdateChannelOption(
         1,
         "测试版",
-        "https://registry.npmmirror.com/@gkd-kit/app-beta/latest/files/index.json"
     )
 
     companion object {
@@ -158,4 +155,3 @@ sealed class AutomatorModeOption(
         val objects by lazy { listOf(A11yMode, AutomationMode) }
     }
 }
-

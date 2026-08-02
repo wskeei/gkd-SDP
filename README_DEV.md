@@ -260,9 +260,9 @@ Gradle is configured with `-Dfile.encoding=UTF-8` in [`gradle.properties`](gradl
 
 ## Build and Test
 
-The authoritative verification environment is GitHub Actions with JDK 21. The repository is migrating the legacy workflows to `ci.yml` and `nightly.yml` in the infrastructure plan; until that migration is merged, use the workflow shown on the [Actions page](https://github.com/wskeei/gkd-SDP/actions). This project intentionally does not require Gradle to run locally; local checks can be limited to source inspection and `git diff --check`. Push the branch and inspect the Draft PR checks with `gh pr checks --watch`.
+The authoritative verification environment is GitHub Actions with JDK 21. Pull requests use `ci.yml`; pushes to `main` produce a short-lived Nightly artifact through `nightly.yml`. This project intentionally does not require Gradle to run locally; local checks can be limited to source inspection, shell tests, and `git diff --check`. Push the branch and inspect the Draft PR checks with `gh pr checks --watch`.
 
-Formal GKD-SDP versions will be maintained separately from the upstream GKD base when the versioned-release phase lands. Until then, the legacy `app/build.gradle.kts` values remain the source of truth. Do not add new hard-coded version values to workflows or documentation; see [`docs/releasing.md`](docs/releasing.md) for the target procedure.
+Formal GKD-SDP versions are maintained separately from the upstream GKD base. The source of truth is [`gradle/version.properties`](gradle/version.properties), and [`scripts/verify-release-metadata.sh`](scripts/verify-release-metadata.sh) checks tag, changelog, and `versionCode` rules. Do not add hard-coded version values to workflows or documentation; see [`docs/releasing.md`](docs/releasing.md) for the release procedure.
 
 When a local Gradle run is explicitly appropriate for another task, the equivalent commands are:
 

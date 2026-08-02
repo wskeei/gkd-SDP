@@ -1,6 +1,6 @@
 # Release smoke checklist
 
-这是版本化 Release workflow 落地后的真实设备检查，不由 JVM/Actions 自动测试替代。记录设备型号、Android 版本、应用版本、测试日期和未覆盖项。迁移完成前，旧 `latest` 快照不能满足这份清单的 Release 完整性项目。
+这是版本化 Release workflow 的真实设备检查，不由 JVM/Actions 自动测试替代。记录设备型号、Android 版本、应用版本、测试日期和未覆盖项。旧 `latest` 快照是历史自动构建，不能满足这份清单的 Release 完整性项目。
 
 ## 安装与版本
 
@@ -34,3 +34,10 @@
 - [ ] `sha256sum --check SHA256SUMS.txt` 通过。
 - [ ] `gh attestation verify` 通过。
 - [ ] 日志和 Artifact 没有 keystore、密码、token 或个人申请内容。
+
+## GitHub Actions dry-run
+
+- [ ] 在 `release` Environment 配置四个 signing secrets 和 `RELEASE_CERT_SHA256` variable。
+- [ ] 从受保护的 `main` ref 手动运行 `Release` workflow，保持 `publish=false`；没有明确 tag 时只产生 7 天 Artifact，不创建 Release/tag；feature branch 运行应被跳过。
+- [ ] 若提供已有 tag，检查元数据、tag ancestry、签名指纹、APK SHA-256 和 provenance attestation。
+- [ ] 真实 tag workflow 成功后先检查 Draft Release 的三项资产和 release notes，确认无敏感内容、checksum 和 attestation 后再手动发布。
