@@ -6,6 +6,7 @@
 
 - 仓库公开，Issues、Discussions 已启用；`main` 合并后自动删除 head branch。
 - Secret scanning、push protection、Dependabot security updates、automated security fixes 和 private vulnerability reporting 保持启用。
+- CodeQL 使用仓库内固定 SHA 的 `codeql-java-kotlin.yml` Advanced workflow，同时扫描 Actions 与 Kotlin/Java；Kotlin/Java 以 JDK 21 手动编译后扫描。项目 Gradle 插件要求 JDK 21，不能依赖 default setup 的 JDK 17 autobuild，因此 default setup 保持关闭，避免两种配置重复上传 SARIF。
 - Actions 默认 `GITHUB_TOKEN` 权限为 `read`，禁止 workflow 批准 pull request review。
 - Actions SHA pinning required；所有工作流中的 `uses:` 使用完整 commit SHA。当前允许 action 来源为 `all`，后续移除不再使用的第三方 action 后再评估 allowlist。
 - Actions spending/budget 保持在 GitHub Free 的标准 hosted runner 范围，不使用 larger runner。
