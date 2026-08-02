@@ -91,7 +91,10 @@ class UpdateStatus(val scope: CoroutineScope) {
                 var bytesReceived = 0L
                 val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
                 val channel = client.get(newVersion.downloadUrl) {
-                    expectSuccess = true
+                }.also { response ->
+                    require(response.status.value in 200..299) {
+                        "下载文件请求失败：HTTP ${response.status.value}"
+                    }
                 }.bodyAsChannel()
                 try {
                     partialFile.outputStream().use { output ->
@@ -110,7 +113,7 @@ class UpdateStatus(val scope: CoroutineScope) {
                         }
                     }
                 } finally {
-                    channel.cancel()
+                    channel.cancel(null)
                 }
                 require(bytesReceived == newVersion.fileSize) {
                     "下载文件大小校验失败：${bytesReceived} != ${newVersion.fileSize}"

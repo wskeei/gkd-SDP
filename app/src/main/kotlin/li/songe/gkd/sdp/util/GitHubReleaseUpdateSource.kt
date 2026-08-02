@@ -57,18 +57,22 @@ object GitHubReleaseUpdateSource {
 
     suspend fun fetchLatest(httpClient: HttpClient, beta: Boolean): NewVersion? {
         val response = httpClient.get(RELEASE_API_URL) {
-            expectSuccess = true
             header("Accept", "application/vnd.github+json")
             header("User-Agent", "GKD-SDP-Updater")
+        }
+        require(response.status.value in 200..299) {
+            "GitHub Releases API request failed: HTTP ${response.status.value}"
         }
         val releases = parseReleasesJson(response.bodyAsText())
         val release = selectLatest(releases, beta) ?: return null
         val manifestAsset = findManifestAsset(release) ?: return null
         val manifestUrl = requireReleaseAssetUrl(manifestAsset.browserDownloadUrl, release.tagName, manifestAsset.name)
         val manifestResponse = httpClient.get(manifestUrl) {
-            expectSuccess = true
             header("Accept", "application/octet-stream")
             header("User-Agent", "GKD-SDP-Updater")
+        }
+        require(manifestResponse.status.value in 200..299) {
+            "GitHub update manifest request failed: HTTP ${manifestResponse.status.value}"
         }
         return parseManifest(manifestResponse.bodyAsText(), release)
     }
