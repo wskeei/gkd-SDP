@@ -39,6 +39,7 @@ class GitHubReleaseUpdateSourceTest {
     fun invalidOrOverflowingTagsDoNotBreakSelection() {
         val releases = listOf(
             release("v999999999999999999999.0.0"),
+            release("v02.0.0", prerelease = false),
             release("v2.0.0-beta.1", prerelease = true),
             release("v2.0.0-foo.1", prerelease = true),
         )
@@ -111,6 +112,8 @@ class GitHubReleaseUpdateSourceTest {
     fun malformedApiJsonAndUnexpectedApiObjectAreRejected() {
         assertThrows { GitHubReleaseUpdateSource.parseReleasesJson("not-json") }
         assertThrows { GitHubReleaseUpdateSource.parseReleasesJson("{\"message\":\"API rate limit exceeded\"}") }
+        assertTrue(GitHubReleaseUpdateSource.apiErrorMessage(403).contains("频率限制"))
+        assertTrue(GitHubReleaseUpdateSource.apiErrorMessage(404).contains("检查版本"))
     }
 
     @Test

@@ -47,7 +47,7 @@ done
 
 [[ -n "$APK" && -f "$APK" ]] || error "APK file does not exist: ${APK:-<empty>}"
 [[ "$(basename -- "$APK")" == *.apk ]] || error "APK input must end in .apk"
-[[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-(alpha|beta|rc)\.[0-9]+)?$ ]] \
+[[ "$TAG" =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-(alpha|beta|rc)\.(0|[1-9][0-9]*))?$ ]] \
     || error "tag must be vX.Y.Z with an optional prerelease suffix: ${TAG:-<empty>}"
 [[ -n "$OUTPUT" ]] || error "--output is required"
 [[ -d "$(dirname -- "$OUTPUT")" ]] || error "output directory does not exist: $(dirname -- "$OUTPUT")"

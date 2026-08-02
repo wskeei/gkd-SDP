@@ -147,18 +147,21 @@ class UpdateStatus(val scope: CoroutineScope) {
     @Composable
     fun UpgradeDialog() {
         newVersionFlow.collectAsState().value?.let { newVersionVal ->
-            val text = remember {
+            val text = remember(newVersionVal) {
                 val logs = newVersionVal.versionLogs.takeWhile { v ->
                     v.code > META.versionCode
                 }
-                "v${META.versionName} -> v${newVersionVal.versionName}\n\n${
+                val changelog = if (logs.isNotEmpty()) {
                     if (logs.size > 1) {
                         logs.joinToString("\n\n") { v -> "v${v.name}\n${v.desc}" }
-                    } else if (logs.isNotEmpty()) {
-                        logs.first().desc
                     } else {
-                        ""
+                        logs.first().desc
                     }
+                } else {
+                    newVersionVal.changelog
+                }
+                "v${META.versionName} -> v${newVersionVal.versionName}\n\n${
+                    changelog
                 }".trimEnd()
             }
             AlertDialog(

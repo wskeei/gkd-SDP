@@ -14,6 +14,7 @@ import java.net.URI
 private const val RELEASE_API_URL = "https://api.github.com/repos/wskeei/gkd-SDP/releases?per_page=100"
 private const val RELEASE_REPOSITORY_PATH = "/wskeei/gkd-SDP/releases/download/"
 private const val RELEASE_HOST = "github.com"
+const val RELEASES_PAGE_URL = "https://github.com/wskeei/gkd-SDP/releases"
 
 @Serializable
 data class GitHubRelease(
@@ -61,9 +62,7 @@ object GitHubReleaseUpdateSource {
             header("Accept", "application/vnd.github+json")
             header("User-Agent", "GKD-SDP-Updater")
         }
-        require(response.status.value in 200..299) {
-            "GitHub Releases API request failed: HTTP ${response.status.value}"
-        }
+        require(response.status.value in 200..299) { apiErrorMessage(response.status.value) }
         val releases = parseReleasesJson(response.bodyAsText())
         for (release in eligibleReleases(releases, beta)) {
             val manifestAsset = findManifestAsset(release) ?: continue
@@ -142,6 +141,12 @@ object GitHubReleaseUpdateSource {
 
     fun isNewer(version: NewVersion, currentVersionCode: Int): Boolean =
         version.versionCode > currentVersionCode
+
+    fun apiErrorMessage(statusCode: Int): String = when (statusCode) {
+        403, 429 -> "GitHub 更新接口触发访问频率限制（HTTP $statusCode），请稍后重试或打开 $RELEASES_PAGE_URL"
+        404 -> "GitHub 更新接口不存在（HTTP 404），请打开 $RELEASES_PAGE_URL 检查版本"
+        else -> "GitHub Releases 请求失败（HTTP $statusCode），请稍后重试或打开 $RELEASES_PAGE_URL"
+    }
 
     fun validateDownloadUrl(url: String, releaseTag: String) {
         val uri = URI(url)
@@ -224,8 +229,8 @@ object GitHubReleaseUpdateSource {
     }
 
     private val RELEASE_TAG_REGEX =
-        Regex("^v([0-9]+)\\.([0-9]+)\\.([0-9]+)(?:-((?:alpha|beta|rc)\\.[0-9]+))?$")
+        Regex("^v(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-((?:alpha|beta|rc)\\.(0|[1-9][0-9]*)))?$")
     private val SEMVER_REGEX =
-        Regex("^[0-9]+\\.[0-9]+\\.[0-9]+(-(alpha|beta|rc)\\.[0-9]+)?$")
+        Regex("^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(-(alpha|beta|rc)\\.(0|[1-9][0-9]*))?$")
     private val SHA256_REGEX = Regex("^[0-9a-fA-F]{64}$")
 }

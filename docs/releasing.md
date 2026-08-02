@@ -21,7 +21,7 @@ GKD-SDP 使用 Semantic Versioning 2.0：
 
 Nightly 是 Actions Artifact，不是正式版本，也不能替代版本号或 Release 历史。
 
-Nightly 通过 [`nightly.yml`](../.github/workflows/nightly.yml) 在 `main` 成功提交后构建未签名的 debug APK。它不读取 release Environment，不创建 tag/Release，不覆盖任何历史资产，Artifact 保留 7 天。
+Nightly 通过 [`nightly.yml`](../.github/workflows/nightly.yml) 在 `main` 成功提交后构建 debug keystore 签名的非发布 APK。它不读取 release Environment，不创建 tag/Release，不覆盖任何历史资产，Artifact 保留 7 天。
 
 ## Release flow
 

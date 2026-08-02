@@ -75,7 +75,7 @@ jobs:
             echo "Manual publishing requires an existing vX.Y.Z tag." >&2
             exit 1
           fi
-          if [[ -n "$release_tag" && ! "$release_tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-(alpha|beta|rc)\.[0-9]+)?$ ]]; then
+          if [[ -n "$release_tag" && ! "$release_tag" =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-(alpha|beta|rc)\.(0|[1-9][0-9]*))?$ ]]; then
             echo "Invalid release tag: $release_tag" >&2
             exit 1
           fi
@@ -188,6 +188,21 @@ jobs:
             echo "APK certificate fingerprint does not match RELEASE_CERT_SHA256." >&2
             exit 1
           fi
+          apkanalyzer_path="$(command -v apkanalyzer || find "$ANDROID_HOME" -type f -name apkanalyzer -print | head -n 1)"
+          test -x "$apkanalyzer_path"
+          version_code="$(awk -F= '$1 == "versionCode" {gsub(/^[[:space:]]+|[[:space:]]+$/, "", $2); print $2; exit}' gradle/version.properties)"
+          [[ "$($apkanalyzer_path manifest application-id "$source_apk")" == "li.songe.gkd.sdp" ]] || {
+            echo "APK applicationId does not match GKD-SDP." >&2
+            exit 1
+          }
+          [[ "$($apkanalyzer_path manifest version-name "$source_apk")" == "$version_name" ]] || {
+            echo "APK versionName does not match gradle/version.properties." >&2
+            exit 1
+          }
+          [[ "$($apkanalyzer_path manifest version-code "$source_apk")" == "$version_code" ]] || {
+            echo "APK versionCode does not match gradle/version.properties." >&2
+            exit 1
+          }
           mkdir -p release
           cp "$source_apk" "release/$apk_name"
           {

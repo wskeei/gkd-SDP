@@ -95,6 +95,10 @@ printf ' versionCode=94\n' >> "$TEST_ROOT/gradle/version.properties"
 assert_failure "non-canonical version property" --no-tag
 write_version "2.0.0-beta.1" 93
 
+write_version "02.0.0-beta.1" 93
+assert_failure "non-SemVer leading zero" --no-tag
+write_version "2.0.0-beta.1" 93
+
 cat > "$TEST_ROOT/CHANGELOG.md" <<'EOF'
 # Changelog
 

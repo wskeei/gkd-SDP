@@ -77,7 +77,7 @@ version_code="$(read_property versionCode)"
 upstream_base="$(read_property upstreamBase)"
 upstream_version_code="$(read_property upstreamVersionCode)"
 
-[[ "$version_name" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-(alpha|beta|rc)\.[0-9]+)?$ ]] \
+[[ "$version_name" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-(alpha|beta|rc)\.(0|[1-9][0-9]*))?$ ]] \
     || error "versionName must be SemVer with an optional alpha/beta/rc suffix: ${version_name:-<empty>}"
 [[ "$version_code" =~ ^[1-9][0-9]*$ ]] \
     || error "versionCode must be a positive decimal integer: ${version_code:-<empty>}"
@@ -85,7 +85,7 @@ upstream_version_code="$(read_property upstreamVersionCode)"
     || error "upstreamVersionCode must be a positive decimal integer: ${upstream_version_code:-<empty>}"
 ((10#${version_code} > 10#${upstream_version_code})) \
     || error "versionCode ${version_code} must be greater than upstreamVersionCode ${upstream_version_code}"
-[[ "$upstream_base" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] \
+[[ "$upstream_base" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]] \
     || error "upstreamBase must be a stable SemVer: ${upstream_base:-<empty>}"
 
 if ! grep -Eq "^## \\[${version_name//./\\.}\\] - [0-9]{4}-[0-9]{2}-[0-9]{2}$" "$CHANGELOG_FILE"; then
@@ -112,7 +112,7 @@ fi
 version_code_number=$((10#${version_code}))
 while IFS= read -r previous_tag; do
     [[ -n "$previous_tag" ]] || continue
-    [[ "$previous_tag" =~ ^v[2-9][0-9]*\.[0-9]+\.[0-9]+(-(alpha|beta|rc)\.[0-9]+)?$ ]] || continue
+    [[ "$previous_tag" =~ ^v(2|[3-9]|[1-9][0-9]+)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-(alpha|beta|rc)\.(0|[1-9][0-9]*))?$ ]] || continue
     [[ "$previous_tag" == "$current_tag" ]] && continue
 
     previous_properties="$(git -C "$ROOT_DIR" show "${previous_tag}:gradle/version.properties" 2>/dev/null || true)"
