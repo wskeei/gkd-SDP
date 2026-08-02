@@ -166,7 +166,10 @@ jobs:
           version_name="$(awk -F= '$1 == "versionName" {gsub(/^[[:space:]]+|[[:space:]]+$/, "", $2); print $2; exit}' gradle/version.properties)"
           apk_version_name="$version_name"
           if [[ -z "$RELEASE_TAG" ]]; then
-            apk_version_name="${version_name}-${GITHUB_SHA:0:7}"
+            exact_tag="$(git describe --tags --exact-match 2>/dev/null || true)"
+            if [[ -z "$exact_tag" ]]; then
+              apk_version_name="${version_name}-${GITHUB_SHA:0:7}"
+            fi
           fi
           apk_name="gkd-sdp-v${apk_version_name}.apk"
           source_apk="app/build/outputs/apk/gkd/release/app-gkd-release.apk"
