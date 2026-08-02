@@ -37,6 +37,12 @@ jobs:
         with:
           cache-provider: basic
 
+      - name: Test security dependency audit
+        run: python3 -m unittest discover -s scripts/tests -p 'test_*.py' -v
+
+      - name: Generate security dependency report
+        run: bash scripts/generate-security-dependency-report.sh
+
       - name: Run unit tests and lint
         run: |
           chmod +x ./gradlew
@@ -46,6 +52,11 @@ jobs:
             :app:lintGkdDebug \
             :app:lintPlayDebug
 
+      - name: Verify security dependency floors
+        run: |
+          python3 scripts/verify-security-dependency-report.py \
+            --report build/reports/security-dependencies.txt
+
       - name: Upload quality reports
         if: ${{ always() }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
@@ -54,6 +65,7 @@ jobs:
           retention-days: 7
           if-no-files-found: ignore
           path: |
+            build/reports/
             app/build/reports/
             app/build/test-results/
             app/schemas/

@@ -5,6 +5,8 @@ include(
     ":selector",
 )
 
+apply(from = "gradle/security-dependency-policy.settings.gradle.kts")
+
 pluginManagement {
     repositories {
         mavenLocal()

@@ -1,0 +1,18 @@
+## root buildEnvironment
+com.android.tools.build:gradle:9.3.0
+io.netty:netty-buffer:4.1.136.Final
+io.netty:netty-codec:4.1.136.Final
+io.netty:netty-codec-http:4.1.136.Final
+io.netty:netty-codec-http2:4.1.137.Final
+io.netty:netty-handler:4.1.136.Final
+io.netty:netty-handler-proxy:4.2.0.Final
+io.netty:netty-tcnative:2.0.61.Final
+org.bouncycastle:bcprov-jdk18on:1.84
+org.bouncycastle:bcpkix-jdk18on:1.84
+org.bouncycastle:bcutil-jdk18on:1.84
+org.apache.commons:commons-lang3:3.18.0
+org.apache.httpcomponents:httpclient:4.5.14
+org.apache.httpcomponents:httpmime:4.5.14
+org.bitbucket.b_c:jose4j:0.9.6
+org.jdom:jdom2:2.0.6.1
+SECURITY_DEPENDENCY_REPORT_COMPLETE=1

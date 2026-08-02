@@ -1,0 +1,6 @@
+## root buildEnvironment
+com.android.tools.build:gradle:9.3.0
+io.netty:netty-codec:4.1.136.Final-SNAPSHOT
+org.bouncycastle:bcprov-jdk18on:1.84-beta
+org.apache.commons:commons-lang3:3.18.0-rc1
+SECURITY_DEPENDENCY_REPORT_COMPLETE=1

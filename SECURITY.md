@@ -29,3 +29,5 @@
 ## Scope and privacy
 
 GKD-SDP 使用无障碍、悬浮窗、通知和可选 Shizuku 能力，漏洞报告中可能包含屏幕内容、URL 或使用申请数据。只提交复现所需的最小信息；维护者不会要求你上传完整的个人日志。
+
+构建工具链传递依赖的版本下限、Dependabot 限制和退出条件见 [构建依赖安全维护](docs/maintenance/dependency-security.md)。
