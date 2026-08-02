@@ -11,7 +11,8 @@ Usage: verify-release-metadata.sh [--tag <tag> | --no-tag]
 
 Validate gradle/version.properties, the matching CHANGELOG section, and
 versionCode monotonicity across GKD-SDP v2+ tags. With no option, an exact
-tag on the current commit is validated when one exists.
+tag on the current commit is validated when one exists. `--no-tag` validates
+unreleased metadata without requiring it to exceed the latest published tag.
 EOF
 }
 
@@ -109,21 +110,23 @@ if [[ -n "$current_tag" ]]; then
         || error "tag ${current_tag} does not match versionName ${version_name}; expected v${version_name}"
 fi
 
-version_code_number=$((10#${version_code}))
-while IFS= read -r previous_tag; do
-    [[ -n "$previous_tag" ]] || continue
-    [[ "$previous_tag" =~ ^v(2|[3-9]|[1-9][0-9]+)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-(alpha|beta|rc)\.(0|[1-9][0-9]*))?$ ]] || continue
-    [[ "$previous_tag" == "$current_tag" ]] && continue
+if [[ "$TAG_MODE" != "none" ]]; then
+    version_code_number=$((10#${version_code}))
+    while IFS= read -r previous_tag; do
+        [[ -n "$previous_tag" ]] || continue
+        [[ "$previous_tag" =~ ^v(2|[3-9]|[1-9][0-9]+)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-(alpha|beta|rc)\.(0|[1-9][0-9]*))?$ ]] || continue
+        [[ "$previous_tag" == "$current_tag" ]] && continue
 
-    previous_properties="$(git -C "$ROOT_DIR" show "${previous_tag}:gradle/version.properties" 2>/dev/null || true)"
-    [[ -n "$previous_properties" ]] || error "${previous_tag} is an SDP tag without gradle/version.properties"
-    previous_code="$(printf '%s\n' "$previous_properties" | awk -F= '$1 == "versionCode" {gsub(/^[[:space:]]+|[[:space:]]+$/, "", $2); print $2; exit}')"
-    [[ "$previous_code" =~ ^[1-9][0-9]*$ ]] \
-        || error "${previous_tag} has an invalid versionCode: ${previous_code:-<empty>}"
-    previous_code_number=$((10#${previous_code}))
-    ((version_code_number > previous_code_number)) \
-        || error "versionCode ${version_code} must be greater than ${previous_code} from ${previous_tag}"
-done < <(git -C "$ROOT_DIR" tag --list 'v*' --sort=version:refname)
+        previous_properties="$(git -C "$ROOT_DIR" show "${previous_tag}:gradle/version.properties" 2>/dev/null || true)"
+        [[ -n "$previous_properties" ]] || error "${previous_tag} is an SDP tag without gradle/version.properties"
+        previous_code="$(printf '%s\n' "$previous_properties" | awk -F= '$1 == "versionCode" {gsub(/^[[:space:]]+|[[:space:]]+$/, "", $2); print $2; exit}')"
+        [[ "$previous_code" =~ ^[1-9][0-9]*$ ]] \
+            || error "${previous_tag} has an invalid versionCode: ${previous_code:-<empty>}"
+        previous_code_number=$((10#${previous_code}))
+        ((version_code_number > previous_code_number)) \
+            || error "versionCode ${version_code} must be greater than ${previous_code} from ${previous_tag}"
+    done < <(git -C "$ROOT_DIR" tag --list 'v*' --sort=version:refname)
+fi
 
 printf 'release metadata ok: versionName=%s versionCode=%s upstreamBase=%s upstreamVersionCode=%s' \
     "$version_name" "$version_code" "$upstream_base" "$upstream_version_code"
