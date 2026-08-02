@@ -18,29 +18,27 @@ val httpcomponentsFloor = requiredFloor("httpcomponents4_5")
 val jose4jFloor = requiredFloor("jose4j")
 val bouncycastleFloor = requiredFloor("bouncycastleJdk18on")
 val jdom2Floor = requiredFloor("jdom2")
-val numericVersionPattern = "\\d+".toRegex()
-val netty41Pattern = "^4\\.1\\.(\\d+)\\.Final$".toRegex()
+val numericVersionPattern = "^\\d+(?:\\.\\d+)*".toRegex()
 
 fun versionParts(version: String): List<Int> =
-    numericVersionPattern.findAll(version).map { it.value.toInt() }.toList()
+    numericVersionPattern.find(version)?.value?.split('.')?.map(String::toInt).orEmpty()
 
 fun isBelowFloor(version: String, floor: String): Boolean {
     val actual = versionParts(version)
     val expected = versionParts(floor)
     if (actual.isEmpty() || expected.isEmpty()) return false
     val width = maxOf(actual.size, expected.size)
-    for (index in 0 until width) {
-        val actualPart = actual.getOrElse(index) { 0 }
-        val expectedPart = expected.getOrElse(index) { 0 }
-        if (actualPart < expectedPart) return true
-        if (actualPart > expectedPart) return false
-    }
-    return false
+    val paddedActual = actual + List(width - actual.size) { 0 }
+    val paddedExpected = expected + List(width - expected.size) { 0 }
+    if (paddedActual != paddedExpected) return paddedActual < paddedExpected
+    // A qualifier at the floor's numeric version is not the released floor.
+    // Keep snapshots, betas, and other non-canonical spellings below it.
+    return version != floor
 }
 
 fun securityFloor(group: String?, name: String, version: String): Pair<String, String>? {
     return when {
-        group == "io.netty" && netty41Pattern.matches(version) -> nettyFloor to "Netty 4.1 family security floor"
+        group == "io.netty" && version.startsWith("4.1.") -> nettyFloor to "Netty 4.1 family security floor"
         group == "org.apache.commons" && name == "commons-lang3" ->
             commonsLang3Floor to "Apache Commons Lang security floor"
         group == "org.apache.httpcomponents" && name in setOf("httpclient", "httpmime") ->

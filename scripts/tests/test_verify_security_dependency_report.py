@@ -54,6 +54,14 @@ class SecurityDependencyReportTests(unittest.TestCase):
         result = self.run_audit(FIXTURES / "security-dependencies-patched.txt")
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
+    def test_prerelease_target_versions_fail_closed(self) -> None:
+        result = self.run_audit(FIXTURES / "security-dependencies-prerelease.txt")
+        self.assertNotEqual(result.returncode, 0)
+        output = result.stdout + result.stderr
+        self.assertIn("io.netty:netty-codec", output)
+        self.assertIn("org.bouncycastle:bcprov-jdk18on", output)
+        self.assertIn("org.apache.commons:commons-lang3", output)
+
     def test_incomplete_text_report_fails_without_completion_marker(self) -> None:
         result = self.run_audit(FIXTURES / "security-dependencies-incomplete.txt")
         self.assertNotEqual(result.returncode, 0)

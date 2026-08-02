@@ -15,7 +15,7 @@ DEFAULT_FLOORS = ROOT / "gradle" / "security-dependency-floors.properties"
 COORDINATE_RE = re.compile(
     r"(?P<group>[A-Za-z0-9_.-]+):(?P<name>[A-Za-z0-9_.-]+):(?P<version>[0-9][A-Za-z0-9.+_-]*)"
 )
-NETTY_41_RE = re.compile(r"^4\.1\.(?P<patch>[0-9]+)\.Final$")
+NETTY_41_PREFIX = "4.1."
 AGP_GROUP = "com.android.tools.build"
 AGP_NAME = "gradle"
 BOUNCY_MODULES = {"bcpkix-jdk18on", "bcprov-jdk18on", "bcutil-jdk18on"}
@@ -48,7 +48,8 @@ def load_floors(path: Path) -> dict[str, str]:
 
 
 def numeric_version(version: str) -> tuple[int, ...]:
-    parts = tuple(int(part) for part in re.findall(r"\d+", version))
+    match = re.match(r"^\d+(?:\.\d+)*", version)
+    parts = tuple(int(part) for part in match.group(0).split(".")) if match else ()
     if not parts:
         raise ValueError(f"version has no numeric components: {version}")
     return parts
@@ -58,15 +59,19 @@ def is_below(actual: str, floor: str) -> bool:
     actual_parts = numeric_version(actual)
     floor_parts = numeric_version(floor)
     width = max(len(actual_parts), len(floor_parts))
-    return actual_parts + (0,) * (width - len(actual_parts)) < floor_parts + (0,) * (
-        width - len(floor_parts)
-    )
+    padded_actual = actual_parts + (0,) * (width - len(actual_parts))
+    padded_floor = floor_parts + (0,) * (width - len(floor_parts))
+    if padded_actual != padded_floor:
+        return padded_actual < padded_floor
+    # A qualifier at the floor's numeric version is not the released floor.
+    # Treat snapshots, betas, and other non-canonical spellings as below it.
+    return actual != floor
 
 
 def floor_for(group: str, name: str, version: str, floors: dict[str, str]) -> str | None:
     if group == "io.netty":
         # Leave netty-tcnative (2.x) and future 4.2.x releases alone.
-        if NETTY_41_RE.fullmatch(version):
+        if version.startswith(NETTY_41_PREFIX):
             return floors["netty4_1"]
         return None
     if group == "org.bouncycastle" and name in BOUNCY_MODULES:

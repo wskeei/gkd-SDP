@@ -14,7 +14,7 @@ Dependabot 报告的 45 条告警均来自 Maven/Gradle 传递依赖：1 条 Cri
 
 | 族群 / floor | 父依赖（当前工具链） | 告警编号 | 备注 |
 | --- | --- | --- | --- |
-| `io.netty` 4.1.x ≥ `4.1.136.Final` | Android Tools/UTP/testing-platform 的 grpc-netty 链 | 2–7, 9–11, 13, 15–16, 19–20, 22–45 | 统一覆盖 Netty 4.1 模块；不影响 tcnative 2.x 或未来更高版本 |
+| `io.netty` 4.1.x ≥ `4.1.136.Final` | Android Tools/UTP/testing-platform 的 grpc-netty 链 | 2–7, 9–11, 13, 15–16, 19–34, 36–45 | 统一覆盖 Netty 4.1 模块；不影响 tcnative 2.x 或未来更高版本 |
 | `org.apache.commons:commons-lang3` ≥ `3.18.0` | Android Tools / SDK common | 8 | CVE-2025-48924 |
 | `org.apache.httpcomponents:httpclient`, `httpmime` ≥ `4.5.14` | Android Tools / bundletool 工具链 | 1 | 两个 4.5 模块保持同版本 |
 | `org.bitbucket.b_c:jose4j` ≥ `0.9.6` | bundletool | 14 | CVE-2024-29371 |
