@@ -116,6 +116,7 @@ write_version "2.0.0-beta.0" 93
 write_changelog "2.0.0-beta.0"
 commit_fixture
 git -C "$TEST_ROOT" tag v2.0.0-beta.0
+assert_success "no-tag metadata may match the latest published version" --no-tag
 write_version "2.0.0-beta.1" 94
 write_changelog "2.0.0-beta.1"
 commit_fixture
