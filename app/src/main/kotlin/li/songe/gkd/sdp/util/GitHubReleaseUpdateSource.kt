@@ -10,6 +10,7 @@ import kotlinx.serialization.SerializationException
 import kotlinx.serialization.Transient
 import kotlinx.serialization.json.Json
 import java.net.URI
+import java.net.URISyntaxException
 
 private const val RELEASE_API_URL = "https://api.github.com/repos/wskeei/gkd-SDP/releases?per_page=100"
 private const val RELEASE_REPOSITORY_PATH = "/wskeei/gkd-SDP/releases/download/"
@@ -149,7 +150,7 @@ object GitHubReleaseUpdateSource {
     }
 
     fun validateDownloadUrl(url: String, releaseTag: String) {
-        val uri = URI(url)
+        val uri = parseUri(url)
         require(uri.scheme == "https") { "Release APK URL must use HTTPS" }
         require(uri.host == RELEASE_HOST) { "Release APK URL must use github.com" }
         require(releaseTag.isNotBlank() && uri.path.startsWith("$RELEASE_REPOSITORY_PATH$releaseTag/")) {
@@ -160,7 +161,7 @@ object GitHubReleaseUpdateSource {
 
     private fun requireReleaseAssetUrl(url: String?, tagName: String, assetName: String): String {
         require(!url.isNullOrBlank()) { "GitHub release asset has no browser download URL" }
-        val uri = URI(url)
+        val uri = parseUri(url)
         require(uri.scheme == "https") { "Release asset URL must use HTTPS" }
         require(uri.host == RELEASE_HOST) { "Release asset URL must use github.com" }
         val expectedPath = "$RELEASE_REPOSITORY_PATH$tagName/$assetName"
@@ -168,6 +169,12 @@ object GitHubReleaseUpdateSource {
             "Release asset URL must belong to wskeei/gkd-SDP and its release tag"
         }
         return url
+    }
+
+    private fun parseUri(url: String): URI = try {
+        URI(url)
+    } catch (error: URISyntaxException) {
+        throw IllegalArgumentException("Release asset URL is malformed", error)
     }
 
     private data class ReleaseVersion(

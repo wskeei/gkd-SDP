@@ -164,7 +164,11 @@ jobs:
         run: |
           set -euo pipefail
           version_name="$(awk -F= '$1 == "versionName" {gsub(/^[[:space:]]+|[[:space:]]+$/, "", $2); print $2; exit}' gradle/version.properties)"
-          apk_name="gkd-sdp-v${version_name}.apk"
+          apk_version_name="$version_name"
+          if [[ -z "$RELEASE_TAG" ]]; then
+            apk_version_name="${version_name}-${GITHUB_SHA:0:7}"
+          fi
+          apk_name="gkd-sdp-v${apk_version_name}.apk"
           source_apk="app/build/outputs/apk/gkd/release/app-gkd-release.apk"
           test -s "$source_apk"
           if [[ -n "$RELEASE_TAG" && "$RELEASE_TAG" != "v${version_name}" ]]; then
@@ -195,7 +199,7 @@ jobs:
             echo "APK applicationId does not match GKD-SDP." >&2
             exit 1
           }
-          [[ "$($apkanalyzer_path manifest version-name "$source_apk")" == "$version_name" ]] || {
+          [[ "$($apkanalyzer_path manifest version-name "$source_apk")" == "$apk_version_name" ]] || {
             echo "APK versionName does not match gradle/version.properties." >&2
             exit 1
           }
