@@ -394,6 +394,7 @@ fun AppBlockerPage() {
 }
 
 @Composable
+@android.annotation.SuppressLint("NonObservableLocale")
 private fun AppGroupCard(
     group: AppGroup,
     rules: List<BlockTimeRule>,
@@ -665,6 +666,7 @@ private fun AppGroupCard(
 }
 
 @Composable
+@android.annotation.SuppressLint("NonObservableLocale")
 private fun AppRulesCard(
     packageName: String,
     rules: List<BlockTimeRule>,

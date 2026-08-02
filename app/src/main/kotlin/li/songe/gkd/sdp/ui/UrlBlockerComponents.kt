@@ -57,6 +57,7 @@ import li.songe.gkd.sdp.ui.style.surfaceCardColors
 import li.songe.gkd.sdp.util.appInfoMapFlow
 
 @Composable
+@android.annotation.SuppressLint("NonObservableLocale")
 fun UrlGroupCard(
     group: UrlRuleGroup,
     rules: List<UrlTimeRule>,
@@ -239,6 +240,7 @@ fun UrlGroupCard(
 }
 
 @Composable
+@android.annotation.SuppressLint("NonObservableLocale")
 fun UrlItemCard(
     rule: UrlBlockRule,
     timeRules: List<UrlTimeRule>,
@@ -468,6 +470,7 @@ fun UrlInGroupRow(
 }
 
 @Composable
+@android.annotation.SuppressLint("NonObservableLocale")
 fun TimeRuleRow(
     rule: UrlTimeRule,
     onEdit: () -> Unit,

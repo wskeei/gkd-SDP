@@ -324,7 +324,7 @@ object UsageGuardEngine {
         if (previousAppId == nextAppId) return
         if (!isCurrentRequest(nextAppId, owner, token)) return
 
-            stopCountdownOverlay(appId = previousAppId, owner = owner, token = token)
+        stopCountdownOverlay(appId = previousAppId, owner = owner, token = token)
         cancelExpiryWatch(previousAppId)
 
         val active = DbSet.usageGuardRecordDao.getActiveRecord(previousAppId) ?: return
