@@ -140,6 +140,16 @@ class SecurityDependencyReportTests(unittest.TestCase):
             self.assertTrue(report.is_file())
             self.assertNotIn("SECURITY_DEPENDENCY_REPORT_COMPLETE=1", report.read_text(encoding="utf-8"))
 
+    def test_security_policy_declares_early_project_and_buildscript_hooks(self) -> None:
+        policy = ROOT / "gradle" / "security-dependency-policy.settings.gradle.kts"
+        self.assertTrue(policy.is_file())
+        policy_text = policy.read_text(encoding="utf-8")
+        self.assertIn("beforeProject", policy_text)
+        self.assertIn("buildscript.configurations", policy_text)
+        self.assertIn("configurations.configureEach", policy_text)
+        self.assertIn("useVersion", policy_text)
+        self.assertNotIn("resolutionStrategy.force", policy_text)
+
 
 if __name__ == "__main__":
     unittest.main()
