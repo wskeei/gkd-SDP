@@ -30,7 +30,10 @@ fun isBelowFloor(version: String, floor: String): Boolean {
     val width = maxOf(actual.size, expected.size)
     val paddedActual = actual + List(width - actual.size) { 0 }
     val paddedExpected = expected + List(width - expected.size) { 0 }
-    if (paddedActual != paddedExpected) return paddedActual < paddedExpected
+    for (index in 0 until width) {
+        if (paddedActual[index] < paddedExpected[index]) return true
+        if (paddedActual[index] > paddedExpected[index]) return false
+    }
     // A qualifier at the floor's numeric version is not the released floor.
     // Keep snapshots, betas, and other non-canonical spellings below it.
     return version != floor
