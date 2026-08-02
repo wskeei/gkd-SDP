@@ -49,7 +49,7 @@ Release signing secrets 只放在 GitHub `release` Environment：`GKD_STORE_FILE
 
 维护者还要在 `release` Environment/repository variable 中设置 `RELEASE_CERT_SHA256`，并从可信本机记录证书指纹。工作流把 keystore 解码到 `$RUNNER_TEMP`，通过 `ORG_GRADLE_PROJECT_*` 仅向当前 Gradle 进程提供配置，完成后无论成功失败都会清理临时文件。证书指纹必须与 `RELEASE_CERT_SHA256` 对照；指纹变化必须停止发布并调查。维护者应在本地加密保存至少两份离线 keystore 副本，记录 alias、创建日期和指纹，不记录密码到仓库。
 
-手动触发 `Release` workflow 时默认 `publish=false`：它仍会签名、验签并上传 7 天 Artifact，但不会创建 Release。只有已有的、与 `versionName` 匹配的 tag 才允许手动发布；正常发布应将 annotated `vX.Y.Z[-pre]` tag 推送到 `main` 的已合并提交。
+手动触发 `Release` workflow 时必须选择受保护的 `main` ref，默认 `publish=false`：它仍会签名、验签并上传 7 天 Artifact，但不会创建 Release。只有已有的、与 `versionName` 匹配的 tag 才允许手动发布；正常发布应将 annotated `vX.Y.Z[-pre]` tag 推送到 `main` 的已合并提交。来自 feature branch 的手动运行会被 job 条件跳过，避免把签名 Environment 暴露给未合并代码。
 
 ## Release notes
 

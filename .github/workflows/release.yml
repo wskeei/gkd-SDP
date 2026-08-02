@@ -29,6 +29,7 @@ env:
 jobs:
   release:
     name: release
+    if: ${{ github.event_name == 'push' || github.ref == 'refs/heads/main' }}
     runs-on: ubuntu-latest
     timeout-minutes: 60
     environment:

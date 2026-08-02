@@ -38,6 +38,6 @@
 ## GitHub Actions dry-run
 
 - [ ] 在 `release` Environment 配置四个 signing secrets 和 `RELEASE_CERT_SHA256` variable。
-- [ ] 手动运行 `Release` workflow，保持 `publish=false`；没有明确 tag 时只产生 7 天 Artifact，不创建 Release/tag。
+- [ ] 从受保护的 `main` ref 手动运行 `Release` workflow，保持 `publish=false`；没有明确 tag 时只产生 7 天 Artifact，不创建 Release/tag；feature branch 运行应被跳过。
 - [ ] 若提供已有 tag，检查元数据、tag ancestry、签名指纹、APK SHA-256 和 provenance attestation。
 - [ ] 真实 tag 发布前先检查 Draft Release 的三项资产和 release notes，确认无敏感内容后再发布。
