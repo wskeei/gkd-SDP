@@ -102,6 +102,15 @@ jobs:
             bash scripts/verify-release-metadata.sh --tag "$RELEASE_TAG"
             git fetch --force --tags origin main
             tag_commit="$(git rev-list -n 1 "${RELEASE_TAG}^{commit}")"
+            tag_object_type="$(git cat-file -t "refs/tags/${RELEASE_TAG}")"
+            if [[ "$tag_object_type" != "tag" ]]; then
+              echo "Release tag $RELEASE_TAG must be an annotated tag." >&2
+              exit 1
+            fi
+            if [[ "$GITHUB_EVENT_NAME" == "push" && "$tag_commit" != "$GITHUB_SHA" ]]; then
+              echo "Tag $RELEASE_TAG no longer points to the event commit." >&2
+              exit 1
+            fi
             if ! git merge-base --is-ancestor "$tag_commit" origin/main; then
               echo "Release tag $RELEASE_TAG is not contained in origin/main." >&2
               exit 1
