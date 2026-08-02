@@ -8,7 +8,7 @@
 - Secret scanning、push protection、Dependabot security updates、automated security fixes 和 private vulnerability reporting 保持启用。
 - CodeQL 使用仓库内固定 SHA 的 `codeql-java-kotlin.yml` Advanced workflow，同时扫描 Actions 与 Kotlin/Java；Kotlin/Java 以 JDK 21 手动编译后扫描。项目 Gradle 插件要求 JDK 21，不能依赖 default setup 的 JDK 17 autobuild，因此 default setup 保持关闭，避免两种配置重复上传 SARIF。
 - Actions 默认 `GITHUB_TOKEN` 权限为 `read`，禁止 workflow 批准 pull request review。
-- Actions SHA pinning required；所有工作流中的 `uses:` 使用完整 commit SHA。当前允许 action 来源为 `all`，后续移除不再使用的第三方 action 后再评估 allowlist。
+- Actions SHA pinning required；所有工作流中的 `uses:` 使用完整 commit SHA。当前允许 action 来源已收紧为 GitHub-owned actions、Marketplace verified creators，以及显式的 `gradle/actions/*`；新增 Action 必须先核对来源、完整 SHA 和权限需求，再更新 allowlist。
 - Actions spending/budget 保持在 GitHub Free 的标准 hosted runner 范围，不使用 larger runner。
 - GitHub Immutable Releases 已启用（当前 API `enabled: true`）；它只保护启用后发布的 Release，旧 `latest` 快照不自动获得不可变保护。
 
