@@ -1,5 +1,7 @@
 import org.gradle.api.artifacts.Configuration
 import org.gradle.api.artifacts.DependencyResolveDetails
+import org.gradle.api.Action
+import org.gradle.api.Project
 import java.util.Properties
 
 val securityFloors = Properties().apply {
@@ -53,8 +55,14 @@ fun configureSecurityResolution(configuration: Configuration) {
     configuration.resolutionStrategy.eachDependency(::applySecurityFloor)
 }
 
-gradle.beforeProject { project ->
-    // Buildscript classpaths are resolved separately from normal project configurations.
-    project.buildscript.configurations.configureEach(::configureSecurityResolution)
-    project.configurations.configureEach(::configureSecurityResolution)
-}
+gradle.beforeProject(object : Action<Project> {
+    override fun execute(project: Project) {
+        // Buildscript classpaths are resolved separately from normal project configurations.
+        project.buildscript.configurations.configureEach { configuration ->
+            configureSecurityResolution(configuration)
+        }
+        project.configurations.configureEach { configuration ->
+            configureSecurityResolution(configuration)
+        }
+    }
+})
