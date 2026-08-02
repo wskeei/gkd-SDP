@@ -1,6 +1,6 @@
 # GKD-SDP Release Guide
 
-本文描述版本化发布基础设施落地后的目标流程。迁移 PR 尚未全部合并时，仓库中的旧 workflow 可能仍会创建 legacy `latest` 快照；在新 workflow、版本源和 Environment 完成并通过 Actions 之前，不要把本文件的目标状态当成当前仓库已具备的能力。
+本文描述 GKD-SDP 的版本化发布流程。Android 编译的权威结果来自 GitHub Actions；本地不需要执行完整 Gradle 构建。
 
 ## Version policy
 
@@ -30,7 +30,7 @@ PR CI + dependency review + CodeQL
         ↓
 合并 main，生成 Nightly artifact
         ↓
-更新 version.properties 并创建 annotated vX.Y.Z tag
+更新 `gradle/version.properties` 和 `CHANGELOG.md`，运行元数据测试，并创建 annotated `vX.Y.Z` tag
         ↓
 Release workflow：测试、Lint、签名、验签、checksum、attestation
         ↓
@@ -39,7 +39,7 @@ Draft Release：上传 APK/update.json/SHA256SUMS
 人工检查后发布不可变 Release
 ```
 
-正式发布不强推 tag、不覆盖已发布资产、不把 main 的每次提交写成 Release。若已发布版本有问题，创建新的 patch/beta/rc 版本，并在旧版本说明中标注已知问题。
+正式发布不强推 tag、不覆盖已发布资产、不把 main 的每次提交写成 Release。Tag 必须与 `versionName` 完全匹配，`versionCode` 只能递增且不可复用；若已发布版本有问题，创建新的 patch/beta/rc 版本，并在旧版本说明中标注已知问题。发布工作流会在发现同名 Release 或 tag 已存在时停止，不覆盖历史资产。
 
 ## Signing safety
 

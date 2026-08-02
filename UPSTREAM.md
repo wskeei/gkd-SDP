@@ -9,6 +9,7 @@ GKD-SDP 是基于 [gkd-kit/gkd](https://github.com/gkd-kit/gkd) 的非官方 for
 - Last base audit: `2026-08-02`
 - GKD-SDP repository: `https://github.com/wskeei/gkd-SDP`
 - GKD-SDP product versions use their own `v2.x` tags; upstream `v1.x` tags are historical references and must not be reused for SDP releases.
+- The product version source is [`gradle/version.properties`](gradle/version.properties); the release verifier enforces a matching `v${versionName}` tag and strictly increasing `versionCode` across SDP tags.
 
 ## Sync procedure
 
