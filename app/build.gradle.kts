@@ -1,6 +1,34 @@
 import com.android.build.api.variant.impl.VariantOutputImpl
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import java.util.Properties
 import kotlin.reflect.full.declaredMemberProperties
+
+val sdpVersionFile = rootProject.file("gradle/version.properties")
+require(sdpVersionFile.isFile) {
+    "Missing GKD-SDP version metadata: ${sdpVersionFile.absolutePath}"
+}
+val sdpVersionProperties = Properties().apply {
+    sdpVersionFile.inputStream().use(::load)
+}
+
+fun requiredSdpVersionProperty(name: String): String =
+    sdpVersionProperties.getProperty(name)?.trim()?.takeIf { it.isNotEmpty() }
+        ?: error("Missing required GKD-SDP version property: $name")
+
+val sdpVersionName = requiredSdpVersionProperty("versionName")
+val sdpVersionCodeText = requiredSdpVersionProperty("versionCode")
+val sdpUpstreamBase = requiredSdpVersionProperty("upstreamBase")
+require(sdpVersionName.matches(Regex("^[0-9]+\\.[0-9]+\\.[0-9]+(-(alpha|beta|rc)\\.[0-9]+)?$"))) {
+    "Invalid GKD-SDP versionName: $sdpVersionName"
+}
+require(sdpVersionCodeText.matches(Regex("^[1-9][0-9]*$"))) {
+    "Invalid GKD-SDP versionCode: $sdpVersionCodeText"
+}
+val sdpVersionCode = sdpVersionCodeText.toIntOrNull()?.takeIf { it > 0 }
+    ?: error("GKD-SDP versionCode is outside the supported integer range: $sdpVersionCodeText")
+require(sdpUpstreamBase.matches(Regex("^[0-9]+\\.[0-9]+\\.[0-9]+$"))) {
+    "Invalid GKD-SDP upstreamBase: $sdpUpstreamBase"
+}
 
 fun String.runCommand(): String {
     val process = ProcessBuilder(split(" "))
@@ -69,8 +97,8 @@ android {
         targetSdk = rootProject.ext["android.targetSdk"] as Int
 
         applicationId = "li.songe.gkd.sdp"
-        versionCode = 92
-        versionName = "1.12.1"
+        versionCode = sdpVersionCode
+        versionName = sdpVersionName
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
