@@ -150,6 +150,26 @@ class SecurityDependencyReportTests(unittest.TestCase):
         self.assertIn("useVersion", policy_text)
         self.assertNotIn("resolutionStrategy.force", policy_text)
 
+    def test_security_policy_covers_every_non_netty_security_family(self) -> None:
+        policy = ROOT / "gradle" / "security-dependency-policy.settings.gradle.kts"
+        policy_text = policy.read_text(encoding="utf-8")
+        for floor_name in (
+            "commonsLang3Floor",
+            "httpcomponentsFloor",
+            "jose4jFloor",
+            "bouncycastleFloor",
+            "jdom2Floor",
+        ):
+            self.assertIn(floor_name, policy_text)
+        for coordinate in (
+            'group == "org.apache.commons"',
+            'group == "org.apache.httpcomponents"',
+            'group == "org.bitbucket.b_c"',
+            'group == "org.bouncycastle"',
+            'group == "org.jdom"',
+        ):
+            self.assertIn(coordinate, policy_text)
+
 
 if __name__ == "__main__":
     unittest.main()

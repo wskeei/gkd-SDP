@@ -13,6 +13,11 @@ fun requiredFloor(key: String): String =
         ?: error("Missing security dependency floor: $key")
 
 val nettyFloor = requiredFloor("netty4_1")
+val commonsLang3Floor = requiredFloor("commonsLang3")
+val httpcomponentsFloor = requiredFloor("httpcomponents4_5")
+val jose4jFloor = requiredFloor("jose4j")
+val bouncycastleFloor = requiredFloor("bouncycastleJdk18on")
+val jdom2Floor = requiredFloor("jdom2")
 val numericVersionPattern = "\\d+".toRegex()
 val netty41Pattern = "^4\\.1\\.(\\d+)\\.Final$".toRegex()
 
@@ -36,6 +41,14 @@ fun isBelowFloor(version: String, floor: String): Boolean {
 fun securityFloor(group: String?, name: String, version: String): Pair<String, String>? {
     return when {
         group == "io.netty" && netty41Pattern.matches(version) -> nettyFloor to "Netty 4.1 family security floor"
+        group == "org.apache.commons" && name == "commons-lang3" ->
+            commonsLang3Floor to "Apache Commons Lang security floor"
+        group == "org.apache.httpcomponents" && name in setOf("httpclient", "httpmime") ->
+            httpcomponentsFloor to "Apache HttpClient 4.5 security floor"
+        group == "org.bitbucket.b_c" && name == "jose4j" -> jose4jFloor to "jose4j security floor"
+        group == "org.bouncycastle" && name in setOf("bcpkix-jdk18on", "bcprov-jdk18on", "bcutil-jdk18on") ->
+            bouncycastleFloor to "Bouncy Castle JDK 18 security floor"
+        group == "org.jdom" && name == "jdom2" -> jdom2Floor to "JDOM 2 security floor"
         else -> null
     }
 }
