@@ -1,0 +1,270 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v[0-9]*'
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: Publish a draft after all checks (push a tag for normal releases)
+        required: true
+        default: false
+        type: boolean
+      tag:
+        description: Existing vX.Y.Z tag to validate for a manual signed dry-run
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  JAVA_VERSION: '21'
+
+jobs:
+  release:
+    name: release
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    environment:
+      name: release
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
+    steps:
+      - name: Check out source
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          fetch-depth: 0
+
+      - name: Set up Java
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
+        with:
+          distribution: zulu
+          java-version: ${{ env.JAVA_VERSION }}
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@90ddb51e90a5fd9ba75f40cf85156b7b41bf76a3 # v6
+        with:
+          cache-provider: basic
+
+      - name: Resolve release context
+        id: context
+        shell: bash
+        env:
+          MANUAL_PUBLISH: ${{ inputs.publish }}
+          MANUAL_TAG: ${{ inputs.tag }}
+        run: |
+          set -euo pipefail
+          if [[ "$GITHUB_EVENT_NAME" == "push" ]]; then
+            release_tag="$GITHUB_REF_NAME"
+            publish=true
+          else
+            release_tag="$MANUAL_TAG"
+            publish="${MANUAL_PUBLISH:-false}"
+          fi
+          if [[ "$publish" == "true" && -z "$release_tag" ]]; then
+            echo "Manual publishing requires an existing vX.Y.Z tag." >&2
+            exit 1
+          fi
+          if [[ -n "$release_tag" && ! "$release_tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-(alpha|beta|rc)\.[0-9]+)?$ ]]; then
+            echo "Invalid release tag: $release_tag" >&2
+            exit 1
+          fi
+          {
+            echo "release_tag=$release_tag"
+            echo "publish=$publish"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Check out requested tag
+        if: ${{ steps.context.outputs.release_tag != '' }}
+        env:
+          RELEASE_TAG: ${{ steps.context.outputs.release_tag }}
+        run: git checkout --detach "$RELEASE_TAG"
+
+      - name: Run release metadata tests
+        run: bash scripts/test-verify-release-metadata.sh
+
+      - name: Verify release metadata and tag ancestry
+        env:
+          RELEASE_TAG: ${{ steps.context.outputs.release_tag }}
+        run: |
+          set -euo pipefail
+          if [[ -n "$RELEASE_TAG" ]]; then
+            bash scripts/verify-release-metadata.sh --tag "$RELEASE_TAG"
+            git fetch --force --tags origin main
+            tag_commit="$(git rev-list -n 1 "${RELEASE_TAG}^{commit}")"
+            if ! git merge-base --is-ancestor "$tag_commit" origin/main; then
+              echo "Release tag $RELEASE_TAG is not contained in origin/main." >&2
+              exit 1
+            fi
+          else
+            bash scripts/verify-release-metadata.sh --no-tag
+          fi
+
+      - name: Run unit tests, lint, and release compilation
+        run: |
+          chmod +x ./gradlew
+          ./gradlew \
+            :selector:jvmTest \
+            :app:testGkdDebugUnitTest \
+            :app:lintGkdDebug \
+            :app:lintPlayDebug \
+            :app:assembleGkdRelease
+
+      - name: Configure release signing
+        shell: bash
+        env:
+          GKD_STORE_FILE_BASE64: ${{ secrets.GKD_STORE_FILE_BASE64 }}
+          GKD_STORE_PASSWORD: ${{ secrets.GKD_STORE_PASSWORD }}
+          GKD_KEY_ALIAS: ${{ secrets.GKD_KEY_ALIAS }}
+          GKD_KEY_PASSWORD: ${{ secrets.GKD_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          umask 077
+          for secret_name in GKD_STORE_FILE_BASE64 GKD_STORE_PASSWORD GKD_KEY_ALIAS GKD_KEY_PASSWORD; do
+            if [[ -z "${!secret_name:-}" ]]; then
+              echo "Missing release Environment secret: $secret_name" >&2
+              exit 1
+            fi
+          done
+          printf '%s' "$GKD_STORE_FILE_BASE64" | base64 --decode > "$RUNNER_TEMP/gkd-sdp-release.jks"
+          test -s "$RUNNER_TEMP/gkd-sdp-release.jks"
+
+      - name: Build signed release APK
+        env:
+          ORG_GRADLE_PROJECT_GKD_STORE_FILE: ${{ runner.temp }}/gkd-sdp-release.jks
+          ORG_GRADLE_PROJECT_GKD_STORE_PASSWORD: ${{ secrets.GKD_STORE_PASSWORD }}
+          ORG_GRADLE_PROJECT_GKD_KEY_ALIAS: ${{ secrets.GKD_KEY_ALIAS }}
+          ORG_GRADLE_PROJECT_GKD_KEY_PASSWORD: ${{ secrets.GKD_KEY_PASSWORD }}
+        run: ./gradlew --stacktrace :app:assembleGkdRelease
+
+      - name: Verify APK signature and prepare assets
+        id: assets
+        env:
+          RELEASE_TAG: ${{ steps.context.outputs.release_tag }}
+          RELEASE_CERT_SHA256: ${{ vars.RELEASE_CERT_SHA256 }}
+        run: |
+          set -euo pipefail
+          version_name="$(awk -F= '$1 == "versionName" {gsub(/^[[:space:]]+|[[:space:]]+$/, "", $2); print $2; exit}' gradle/version.properties)"
+          apk_name="gkd-sdp-v${version_name}.apk"
+          source_apk="app/build/outputs/apk/gkd/release/app-gkd-release.apk"
+          test -s "$source_apk"
+          if [[ -n "$RELEASE_TAG" && "$RELEASE_TAG" != "v${version_name}" ]]; then
+            echo "Tag $RELEASE_TAG does not match versionName $version_name." >&2
+            exit 1
+          fi
+          apksigner_path="$(find "$ANDROID_HOME/build-tools" -type f -name apksigner -print | sort -V | tail -n 1)"
+          test -x "$apksigner_path"
+          "$apksigner_path" verify --verbose --print-certs "$source_apk"
+          expected_fingerprint="$(printf '%s' "${RELEASE_CERT_SHA256:-}" | tr -d '[:space:]:')"
+          [[ "$expected_fingerprint" =~ ^[0-9a-fA-F]{64}$ ]] || {
+            echo "Missing or invalid release variable: RELEASE_CERT_SHA256" >&2
+            exit 1
+          }
+          actual_fingerprint="$("$apksigner_path" verify --print-certs "$source_apk" | awk -F': ' '/certificate SHA-256 digest/ {print $2; exit}' | tr -d '[:space:]:')"
+          [[ "$actual_fingerprint" =~ ^[0-9a-fA-F]{64}$ ]] || {
+            echo "Could not read APK certificate SHA-256 fingerprint." >&2
+            exit 1
+          }
+          if [[ "${actual_fingerprint,,}" != "${expected_fingerprint,,}" ]]; then
+            echo "APK certificate fingerprint does not match RELEASE_CERT_SHA256." >&2
+            exit 1
+          fi
+          mkdir -p release
+          cp "$source_apk" "release/$apk_name"
+          {
+            echo "apk_name=$apk_name"
+            echo "apk_path=release/$apk_name"
+            echo "version_name=$version_name"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Generate update manifest and checksums
+        if: ${{ steps.context.outputs.release_tag != '' }}
+        env:
+          RELEASE_TAG: ${{ steps.context.outputs.release_tag }}
+          APK_PATH: ${{ steps.assets.outputs.apk_path }}
+        run: |
+          set -euo pipefail
+          bash scripts/generate-update-manifest.sh \
+            --apk "$APK_PATH" \
+            --tag "$RELEASE_TAG" \
+            --output release/update.json
+          (
+            cd release
+            sha256sum "${{ steps.assets.outputs.apk_name }}" update.json > SHA256SUMS.txt
+          )
+
+      - name: Extract release notes
+        if: ${{ steps.context.outputs.release_tag != '' }}
+        env:
+          VERSION_NAME: ${{ steps.assets.outputs.version_name }}
+        run: |
+          set -euo pipefail
+          awk -v version="$VERSION_NAME" '
+            $0 ~ "^## \\[" version "\\] - " { in_section = 1; next }
+            in_section && /^## / { exit }
+            in_section { print }
+          ' CHANGELOG.md > release/release-notes.md
+          grep -Eq '[^[:space:]]' release/release-notes.md
+
+      - name: Create APK provenance attestation
+        if: ${{ steps.context.outputs.release_tag != '' }}
+        uses: actions/attest-build-provenance@78e6cbd37d0ac1a40113c04f2037dacf1ea3f12e # v4
+        with:
+          subject-path: ${{ steps.assets.outputs.apk_path }}
+
+      - name: Verify no existing release
+        if: ${{ steps.context.outputs.publish == 'true' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ steps.context.outputs.release_tag }}
+        run: |
+          set -euo pipefail
+          if gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "A GitHub Release already exists for $RELEASE_TAG; refusing to replace it." >&2
+            exit 1
+          fi
+
+      - name: Create draft release and upload immutable assets
+        if: ${{ steps.context.outputs.publish == 'true' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ steps.context.outputs.release_tag }}
+          APK_PATH: ${{ steps.assets.outputs.apk_path }}
+        run: |
+          set -euo pipefail
+          release_args=(
+            "$RELEASE_TAG"
+            --draft
+            --verify-tag
+            --title "GKD-SDP $RELEASE_TAG"
+            --notes-file release/release-notes.md
+          )
+          if [[ "$RELEASE_TAG" == *-* ]]; then
+            release_args+=(--prerelease)
+          else
+            release_args+=(--latest)
+          fi
+          gh release create "${release_args[@]}" --repo "$GITHUB_REPOSITORY"
+          gh release upload "$RELEASE_TAG" "$APK_PATH" release/update.json release/SHA256SUMS.txt --repo "$GITHUB_REPOSITORY"
+          gh release edit "$RELEASE_TAG" --draft=false --repo "$GITHUB_REPOSITORY"
+
+      - name: Upload signed dry-run artifact
+        if: ${{ steps.context.outputs.publish != 'true' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: gkd-sdp-signed-dry-run-${{ github.sha }}-${{ github.run_number }}
+          retention-days: 7
+          if-no-files-found: error
+          path: release/
+
+      - name: Remove release signing material
+        if: ${{ always() }}
+        run: rm -f "$RUNNER_TEMP/gkd-sdp-release.jks"

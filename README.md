@@ -1,5 +1,10 @@
 # GKD-SDP
 
+[![CI](https://github.com/wskeei/gkd-SDP/actions/workflows/ci.yml/badge.svg)](https://github.com/wskeei/gkd-SDP/actions/workflows/ci.yml)
+[![Nightly](https://github.com/wskeei/gkd-SDP/actions/workflows/nightly.yml/badge.svg)](https://github.com/wskeei/gkd-SDP/actions/workflows/nightly.yml)
+[![Latest release](https://img.shields.io/github/v/release/wskeei/gkd-SDP?display_name=tag&include_prereleases)](https://github.com/wskeei/gkd-SDP/releases)
+[![License: GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-blue.svg)](LICENSE)
+
 `GKD-SDP` 是一个基于 [GKD](https://github.com/gkd-kit/gkd) fork 的 Android 数字自律工具。
 
 本项目保留了 GKD 的高级选择器、订阅规则、无障碍运行时和快照能力，并在此基础上加入一组面向“减少冲动使用手机”的二开功能。它不是上游 GKD 的官方版本，也不再只是一个自动点击工具。
@@ -124,7 +129,9 @@ Unix-like shell：
 - `compileSdk` / `targetSdk`: 37
 - Debug 应用名：`GKD-SDP`
 
-Android 编译和 PR 质量检查以 [GitHub Actions](https://github.com/wskeei/gkd-SDP/actions) 为准。正式版本和历史更新说明请查看 [Releases](https://github.com/wskeei/gkd-SDP/releases)；`main` 上的 Nightly 仅是短期测试构建，不等同于稳定版。
+Android 编译和 PR 质量检查以 [GitHub Actions](https://github.com/wskeei/gkd-SDP/actions) 为准。正式版本和历史更新说明请查看 [Releases](https://github.com/wskeei/gkd-SDP/releases)；`main` 上的 [Nightly 构建](https://github.com/wskeei/gkd-SDP/actions/workflows/nightly.yml)仅保留 7 天，是短期测试构建，不等同于稳定版。
+
+版本号、更新说明和可验证安装包遵循 [`docs/releasing.md`](docs/releasing.md)。`v2.x` 是 GKD-SDP 自有版本；上游 `v1.x` tag 只作为历史基线，不会覆盖本项目的 Release 历史。
 
 ## 开发说明
 
@@ -142,6 +149,7 @@ Android 编译和 PR 质量检查以 [GitHub Actions](https://github.com/wskeei/
 - 安全问题： [SECURITY.md](SECURITY.md)
 - 隐私说明： [PRIVACY.md](PRIVACY.md)
 - 上游同步边界： [UPSTREAM.md](UPSTREAM.md)
+- 发布与恢复： [docs/releasing.md](docs/releasing.md) · [recovery runbook](docs/maintenance/recovery-runbook.md)
 
 ## 免责声明
 

@@ -21,6 +21,8 @@ GKD-SDP 使用 Semantic Versioning 2.0：
 
 Nightly 是 Actions Artifact，不是正式版本，也不能替代版本号或 Release 历史。
 
+Nightly 通过 [`nightly.yml`](../.github/workflows/nightly.yml) 在 `main` 成功提交后构建未签名的 debug APK。它不读取 release Environment，不创建 tag/Release，不覆盖任何历史资产，Artifact 保留 7 天。
+
 ## Release flow
 
 ```text
@@ -45,7 +47,9 @@ Draft Release：上传 APK/update.json/SHA256SUMS
 
 Release signing secrets 只放在 GitHub `release` Environment：`GKD_STORE_FILE_BASE64`、`GKD_STORE_PASSWORD`、`GKD_KEY_ALIAS`、`GKD_KEY_PASSWORD`。不要把 keystore、密码、base64 或临时 `gradle.properties` 提交到 Git、Issue、日志或 Artifact。
 
-维护者应在本地加密保存至少两份离线 keystore 副本，并记录 alias、创建日期和证书 SHA-256 指纹，不记录密码到仓库。证书指纹必须与 `RELEASE_CERT_SHA256` 对照；指纹变化必须停止发布并调查。
+维护者还要在 `release` Environment/repository variable 中设置 `RELEASE_CERT_SHA256`，并从可信本机记录证书指纹。工作流把 keystore 解码到 `$RUNNER_TEMP`，通过 `ORG_GRADLE_PROJECT_*` 仅向当前 Gradle 进程提供配置，完成后无论成功失败都会清理临时文件。证书指纹必须与 `RELEASE_CERT_SHA256` 对照；指纹变化必须停止发布并调查。维护者应在本地加密保存至少两份离线 keystore 副本，记录 alias、创建日期和指纹，不记录密码到仓库。
+
+手动触发 `Release` workflow 时默认 `publish=false`：它仍会签名、验签并上传 7 天 Artifact，但不会创建 Release。只有已有的、与 `versionName` 匹配的 tag 才允许手动发布；正常发布应将 annotated `vX.Y.Z[-pre]` tag 推送到 `main` 的已合并提交。
 
 ## Release notes
 
@@ -59,3 +63,5 @@ Release signing secrets 只放在 GitHub `release` Environment：`GKD_STORE_FILE
 - 已发布 Release 失败：不覆盖 tag/资产，发布新的 patch/prerelease。
 - 签名失败或证书指纹不一致：停止发布，检查 Environment 和离线 keystore，不得绕过验签。
 - GitHub API/Actions 暂时故障：保留待发布状态，恢复后从同一个已确认 commit 重新运行；不要移动已经公开的 tag。
+
+发布完成后独立运行 `sha256sum --check SHA256SUMS.txt`、`gh attestation verify <apk> --repo wskeei/gkd-SDP`，并按 [`docs/testing/release-smoke-checklist.md`](testing/release-smoke-checklist.md) 做真机升级与应用内更新检查。
