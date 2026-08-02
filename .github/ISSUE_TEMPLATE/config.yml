@@ -1,5 +1,11 @@
 blank_issues_enabled: false
 contact_links:
   - name: 讨论交流 / Discussions
-    url: https://github.com/gkd-kit/gkd/discussions
-    about: '其他提问或请求: 选择器/规则/快照/无障碍/设备/相关问题. 在 issues 搜索不到可前往搜索讨论'
+    url: https://github.com/wskeei/gkd-SDP/discussions
+    about: 使用问答、设备兼容性和还不确定的想法请先在这里讨论
+  - name: 私密安全报告 / Private vulnerability report
+    url: https://github.com/wskeei/gkd-SDP/security/advisories/new
+    about: 不要在公开 Issue 中披露未修复的安全漏洞
+  - name: 上游 GKD 项目
+    url: https://github.com/gkd-kit/gkd
+    about: 只有确认问题属于上游 GKD 核心问题才使用此入口；否则请在 GKD-SDP 提交

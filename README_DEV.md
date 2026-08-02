@@ -42,6 +42,8 @@ Practical note: Gradle task plans in this repo have been run with JDK 21, while 
 - [`selector`](selector): selector parser/matcher shared logic, Kotlin Multiplatform
 - [`hidden_api`](hidden_api): compile-only Android hidden API stubs used by Shizuku/refine code
 - [`docs/plans`](docs/plans): implementation handoff notes and AI-oriented plans
+- [`docs/releasing.md`](docs/releasing.md): versioning, signing and GitHub Release procedure
+- [`docs/testing/release-smoke-checklist.md`](docs/testing/release-smoke-checklist.md): real-device release checks
 
 Within `app`, the most important directories are:
 
@@ -258,7 +260,9 @@ Gradle is configured with `-Dfile.encoding=UTF-8` in [`gradle.properties`](gradl
 
 ## Build and Test
 
-The authoritative verification environment is GitHub Actions (`.github/workflows/Verify-Merge.yml` and `.github/workflows/Build-Apk.yml`) with JDK 21. This project intentionally does not run Gradle locally for the digital-self-discipline runtime repair; local checks are limited to source inspection and `git diff --check`. Push the branch and inspect the Draft PR checks with `gh pr checks --watch`.
+The authoritative verification environment is GitHub Actions with JDK 21. The repository is migrating the legacy workflows to `ci.yml` and `nightly.yml` in the infrastructure plan; until that migration is merged, use the workflow shown on the [Actions page](https://github.com/wskeei/gkd-SDP/actions). This project intentionally does not require Gradle to run locally; local checks can be limited to source inspection and `git diff --check`. Push the branch and inspect the Draft PR checks with `gh pr checks --watch`.
+
+Formal GKD-SDP versions will be maintained separately from the upstream GKD base when the versioned-release phase lands. Until then, the legacy `app/build.gradle.kts` values remain the source of truth. Do not add new hard-coded version values to workflows or documentation; see [`docs/releasing.md`](docs/releasing.md) for the target procedure.
 
 When a local Gradle run is explicitly appropriate for another task, the equivalent commands are:
 
