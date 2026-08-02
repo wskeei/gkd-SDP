@@ -36,5 +36,7 @@ AGENTS.md
 
 # Build artifacts
 /app/gkd/
+__pycache__/
+*.py[cod]
 /更新
 .worktrees/

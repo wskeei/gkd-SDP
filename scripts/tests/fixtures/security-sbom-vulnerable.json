@@ -1,0 +1,16 @@
+{
+  "sbom": {
+    "packages": [
+      {"name": "com.android.tools.build:gradle", "versionInfo": "9.3.0"},
+      {"name": "io.netty:netty-codec", "versionInfo": "4.1.110.Final"},
+      {"name": "org.bouncycastle:bcprov-jdk18on", "versionInfo": "1.79"},
+      {"name": "org.bouncycastle:bcpkix-jdk18on", "versionInfo": "1.79"},
+      {"name": "org.bouncycastle:bcutil-jdk18on", "versionInfo": "1.79"},
+      {"name": "org.apache.commons:commons-lang3", "versionInfo": "3.16.0"},
+      {"name": "org.apache.httpcomponents:httpclient", "versionInfo": "4.5.6"},
+      {"name": "org.apache.httpcomponents:httpmime", "versionInfo": "4.5.6"},
+      {"name": "org.bitbucket.b_c:jose4j", "versionInfo": "0.9.5"},
+      {"name": "org.jdom:jdom2", "versionInfo": "2.0.6"}
+    ]
+  }
+}
