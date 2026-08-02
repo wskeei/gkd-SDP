@@ -9,6 +9,7 @@
 - Actions 默认 `GITHUB_TOKEN` 权限为 `read`，禁止 workflow 批准 pull request review。
 - Actions SHA pinning required；所有工作流中的 `uses:` 使用完整 commit SHA。当前允许 action 来源为 `all`，后续移除不再使用的第三方 action 后再评估 allowlist。
 - Actions spending/budget 保持在 GitHub Free 的标准 hosted runner 范围，不使用 larger runner。
+- GitHub Immutable Releases 已启用（当前 API `enabled: true`）；它只保护启用后发布的 Release，旧 `latest` 快照不自动获得不可变保护。
 
 ## Main Ruleset
 
@@ -30,6 +31,7 @@ gh api repos/wskeei/gkd-SDP \
 gh api repos/wskeei/gkd-SDP/actions/permissions/workflow
 gh api repos/wskeei/gkd-SDP/actions/permissions
 gh api repos/wskeei/gkd-SDP/rulesets/20211725
+gh api repos/wskeei/gkd-SDP/immutable-releases
 gh run list --repo wskeei/gkd-SDP --limit 20
 gh release list --repo wskeei/gkd-SDP --limit 20
 ```

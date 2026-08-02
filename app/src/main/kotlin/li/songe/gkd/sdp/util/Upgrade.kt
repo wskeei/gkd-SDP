@@ -102,6 +102,9 @@ class UpdateStatus(val scope: CoroutineScope) {
                             val count = channel.readAvailable(buffer, 0, buffer.size)
                             if (count == -1) break
                             if (count == 0) continue
+                            require(bytesReceived + count <= newVersion.fileSize) {
+                                "下载文件超过 manifest 声明大小"
+                            }
                             output.write(buffer, 0, count)
                             digest.update(buffer, 0, count)
                             bytesReceived += count

@@ -48,6 +48,12 @@ CHANGELOG_FILE="${ROOT_DIR}/CHANGELOG.md"
 [[ -f "$VERSION_FILE" ]] || error "missing ${VERSION_FILE}"
 [[ -f "$CHANGELOG_FILE" ]] || error "missing ${CHANGELOG_FILE}"
 
+while IFS= read -r version_line || [[ -n "$version_line" ]]; do
+    [[ -z "$version_line" || "$version_line" == \#* || "$version_line" == \!* ]] && continue
+    [[ "$version_line" =~ ^[A-Za-z][A-Za-z0-9]*=[^=]*$ ]] \
+        || error "${VERSION_FILE} contains a non-canonical property line"
+done < "$VERSION_FILE"
+
 read_property() {
     local key="$1"
     awk -F= -v wanted="$key" '
@@ -60,14 +66,25 @@ read_property() {
     ' "$VERSION_FILE"
 }
 
+for property_name in versionName versionCode upstreamBase upstreamVersionCode; do
+    property_count="$(awk -F= -v wanted="$property_name" '$1 == wanted { count++ } END { print count + 0 }' "$VERSION_FILE")"
+    [[ "$property_count" == "1" ]] \
+        || error "${VERSION_FILE} must contain exactly one ${property_name} entry (found ${property_count})"
+done
+
 version_name="$(read_property versionName)"
 version_code="$(read_property versionCode)"
 upstream_base="$(read_property upstreamBase)"
+upstream_version_code="$(read_property upstreamVersionCode)"
 
 [[ "$version_name" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-(alpha|beta|rc)\.[0-9]+)?$ ]] \
     || error "versionName must be SemVer with an optional alpha/beta/rc suffix: ${version_name:-<empty>}"
 [[ "$version_code" =~ ^[1-9][0-9]*$ ]] \
     || error "versionCode must be a positive decimal integer: ${version_code:-<empty>}"
+[[ "$upstream_version_code" =~ ^[1-9][0-9]*$ ]] \
+    || error "upstreamVersionCode must be a positive decimal integer: ${upstream_version_code:-<empty>}"
+((10#${version_code} > 10#${upstream_version_code})) \
+    || error "versionCode ${version_code} must be greater than upstreamVersionCode ${upstream_version_code}"
 [[ "$upstream_base" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] \
     || error "upstreamBase must be a stable SemVer: ${upstream_base:-<empty>}"
 
@@ -108,8 +125,8 @@ while IFS= read -r previous_tag; do
         || error "versionCode ${version_code} must be greater than ${previous_code} from ${previous_tag}"
 done < <(git -C "$ROOT_DIR" tag --list 'v*' --sort=version:refname)
 
-printf 'release metadata ok: versionName=%s versionCode=%s upstreamBase=%s' \
-    "$version_name" "$version_code" "$upstream_base"
+printf 'release metadata ok: versionName=%s versionCode=%s upstreamBase=%s upstreamVersionCode=%s' \
+    "$version_name" "$version_code" "$upstream_base" "$upstream_version_code"
 if [[ -n "$current_tag" ]]; then
     printf ' tag=%s' "$current_tag"
 fi

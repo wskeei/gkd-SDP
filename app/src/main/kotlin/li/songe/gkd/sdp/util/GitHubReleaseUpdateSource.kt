@@ -6,11 +6,12 @@ import io.ktor.client.request.get
 import io.ktor.client.statement.bodyAsText
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.Transient
 import kotlinx.serialization.json.Json
 import java.net.URI
 
-private const val RELEASE_API_URL = "https://api.github.com/repos/wskeei/gkd-SDP/releases"
+private const val RELEASE_API_URL = "https://api.github.com/repos/wskeei/gkd-SDP/releases?per_page=100"
 private const val RELEASE_REPOSITORY_PATH = "/wskeei/gkd-SDP/releases/download/"
 private const val RELEASE_HOST = "github.com"
 
@@ -64,30 +65,47 @@ object GitHubReleaseUpdateSource {
             "GitHub Releases API request failed: HTTP ${response.status.value}"
         }
         val releases = parseReleasesJson(response.bodyAsText())
-        val release = selectLatest(releases, beta) ?: return null
-        val manifestAsset = findManifestAsset(release) ?: return null
-        val manifestUrl = requireReleaseAssetUrl(manifestAsset.browserDownloadUrl, release.tagName, manifestAsset.name)
-        val manifestResponse = httpClient.get(manifestUrl) {
-            header("Accept", "application/octet-stream")
-            header("User-Agent", "GKD-SDP-Updater")
+        for (release in eligibleReleases(releases, beta)) {
+            val manifestAsset = findManifestAsset(release) ?: continue
+            val manifestUrl = runCatching {
+                requireReleaseAssetUrl(
+                    manifestAsset.browserDownloadUrl,
+                    release.tagName,
+                    manifestAsset.name,
+                )
+            }.getOrNull() ?: continue
+            val parsedManifest = try {
+                val manifestResponse = httpClient.get(manifestUrl) {
+                    header("Accept", "application/octet-stream")
+                    header("User-Agent", "GKD-SDP-Updater")
+                }
+                require(manifestResponse.status.value in 200..299) {
+                    "GitHub update manifest request failed: HTTP ${manifestResponse.status.value}"
+                }
+                parseManifest(manifestResponse.bodyAsText(), release)
+            } catch (_: IllegalArgumentException) {
+                null
+            } catch (_: SerializationException) {
+                null
+            }
+            parsedManifest?.let { return it }
         }
-        require(manifestResponse.status.value in 200..299) {
-            "GitHub update manifest request failed: HTTP ${manifestResponse.status.value}"
-        }
-        return parseManifest(manifestResponse.bodyAsText(), release)
+        return null
     }
 
     fun parseReleasesJson(raw: String): List<GitHubRelease> =
         json.decodeFromString(raw)
 
     fun selectLatest(releases: List<GitHubRelease>, beta: Boolean): GitHubRelease? =
+        eligibleReleases(releases, beta).firstOrNull()
+
+    private fun eligibleReleases(releases: List<GitHubRelease>, beta: Boolean): List<GitHubRelease> =
         releases
             .asSequence()
             .filter { !it.draft && (beta || !it.prerelease) }
             .filter { it.tagName.toReleaseVersion() != null }
-            .maxWithOrNull(Comparator { left, right ->
-                left.tagName.toReleaseVersion()!!.compareTo(right.tagName.toReleaseVersion()!!)
-            })
+            .sortedWith(releaseComparator.reversed())
+            .toList()
 
     fun findManifestAsset(release: GitHubRelease): GitHubReleaseAsset? =
         release.assets.singleOrNull { it.name == "update.json" }
@@ -186,20 +204,27 @@ object GitHubReleaseUpdateSource {
 
     private fun String.toReleaseVersion(): ReleaseVersion? {
         val match = RELEASE_TAG_REGEX.matchEntire(this) ?: return null
+        val major = match.groups[1]?.value?.toIntOrNull() ?: return null
+        val minor = match.groups[2]?.value?.toIntOrNull() ?: return null
+        val patch = match.groups[3]?.value?.toIntOrNull() ?: return null
         val identifiers = match.groups[4]?.value?.split('.')?.map { part ->
             part.toIntOrNull()?.let(PreReleaseIdentifier::Numeric)
                 ?: PreReleaseIdentifier.Text(part)
         } ?: emptyList()
         return ReleaseVersion(
-            major = match.groups[1]!!.value.toInt(),
-            minor = match.groups[2]!!.value.toInt(),
-            patch = match.groups[3]!!.value.toInt(),
+            major = major,
+            minor = minor,
+            patch = patch,
             prerelease = identifiers,
         )
     }
 
+    private val releaseComparator = Comparator<GitHubRelease> { left, right ->
+        left.tagName.toReleaseVersion()!!.compareTo(right.tagName.toReleaseVersion()!!)
+    }
+
     private val RELEASE_TAG_REGEX =
-        Regex("^v([0-9]+)\\.([0-9]+)\\.([0-9]+)(?:-([0-9A-Za-z.-]+))?$")
+        Regex("^v([0-9]+)\\.([0-9]+)\\.([0-9]+)(?:-((?:alpha|beta|rc)\\.[0-9]+))?$")
     private val SEMVER_REGEX =
         Regex("^[0-9]+\\.[0-9]+\\.[0-9]+(-(alpha|beta|rc)\\.[0-9]+)?$")
     private val SHA256_REGEX = Regex("^[0-9a-fA-F]{64}$")

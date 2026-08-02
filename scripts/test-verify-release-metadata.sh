@@ -42,6 +42,7 @@ write_version() {
 versionName=${version_name}
 versionCode=${version_code}
 upstreamBase=1.12.1
+upstreamVersionCode=92
 EOF
 }
 
@@ -71,6 +72,10 @@ commit_fixture() {
 
 reset_repo
 write_version "2.0.0-beta.1" 93
+
+write_version "2.0.0-beta.1" 1
+assert_failure "versionCode below the upstream baseline" --no-tag
+write_version "2.0.0-beta.1" 93
 write_changelog "2.0.0-beta.1"
 commit_fixture
 
@@ -80,6 +85,14 @@ assert_failure "mismatched tag" --tag v2.0.0
 
 write_version "2.0.0-beta.1" 0
 assert_failure "non-positive versionCode" --no-tag
+write_version "2.0.0-beta.1" 93
+
+printf '\nversionCode=94\n' >> "$TEST_ROOT/gradle/version.properties"
+assert_failure "duplicate versionCode" --no-tag
+write_version "2.0.0-beta.1" 93
+
+printf ' versionCode=94\n' >> "$TEST_ROOT/gradle/version.properties"
+assert_failure "non-canonical version property" --no-tag
 write_version "2.0.0-beta.1" 93
 
 cat > "$TEST_ROOT/CHANGELOG.md" <<'EOF'
@@ -110,7 +123,7 @@ commit_fixture
 assert_failure "versionCode reused from the previous SDP tag" --tag v2.0.0-beta.2
 
 reset_repo
-write_version "2.0.0-beta.1" 1
+write_version "2.0.0-beta.1" 93
 write_changelog "2.0.0-beta.1"
 commit_fixture
 git -C "$TEST_ROOT" tag v1.12.1

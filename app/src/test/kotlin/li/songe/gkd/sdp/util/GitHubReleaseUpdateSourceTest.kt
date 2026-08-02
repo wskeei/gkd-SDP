@@ -36,6 +36,20 @@ class GitHubReleaseUpdateSourceTest {
     }
 
     @Test
+    fun invalidOrOverflowingTagsDoNotBreakSelection() {
+        val releases = listOf(
+            release("v999999999999999999999.0.0"),
+            release("v2.0.0-beta.1", prerelease = true),
+            release("v2.0.0-foo.1", prerelease = true),
+        )
+
+        assertEquals(
+            "v2.0.0-beta.1",
+            GitHubReleaseUpdateSource.selectLatest(releases, beta = true)?.tagName,
+        )
+    }
+
+    @Test
     fun manifestParsingValidatesVersionTagDownloadSizeAndDigest() {
         val apkUrl = "https://github.com/wskeei/gkd-SDP/releases/download/v2.0.0-beta.1/gkd-sdp-v2.0.0-beta.1.apk"
         val digest = "a".repeat(64)

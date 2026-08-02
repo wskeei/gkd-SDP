@@ -7,6 +7,25 @@ val sdpVersionFile = rootProject.file("gradle/version.properties")
 require(sdpVersionFile.isFile) {
     "Missing GKD-SDP version metadata: ${sdpVersionFile.absolutePath}"
 }
+val sdpVersionLines = sdpVersionFile.readLines()
+val canonicalVersionPropertyRegex = Regex("^[A-Za-z][A-Za-z0-9]*=[^=]*$")
+val invalidVersionPropertyLine = sdpVersionLines.firstOrNull { line ->
+    line.isNotEmpty() && !line.startsWith('#') && !line.startsWith('!') &&
+        !canonicalVersionPropertyRegex.matches(line)
+}
+require(invalidVersionPropertyLine == null) {
+    "GKD-SDP version metadata contains a non-canonical property line"
+}
+val sdpVersionKeys = sdpVersionLines
+    .asSequence()
+    .filter { it.isNotEmpty() && !it.startsWith('#') && !it.startsWith('!') }
+    .map { it.substringBefore('=').trim() }
+    .toList()
+listOf("versionName", "versionCode", "upstreamBase", "upstreamVersionCode").forEach { key ->
+    require(sdpVersionKeys.count { it == key } == 1) {
+        "GKD-SDP version metadata must contain exactly one $key entry"
+    }
+}
 val sdpVersionProperties = Properties().apply {
     sdpVersionFile.inputStream().use(::load)
 }
@@ -18,6 +37,7 @@ fun requiredSdpVersionProperty(name: String): String =
 val sdpVersionName = requiredSdpVersionProperty("versionName")
 val sdpVersionCodeText = requiredSdpVersionProperty("versionCode")
 val sdpUpstreamBase = requiredSdpVersionProperty("upstreamBase")
+val sdpUpstreamVersionCodeText = requiredSdpVersionProperty("upstreamVersionCode")
 require(sdpVersionName.matches(Regex("^[0-9]+\\.[0-9]+\\.[0-9]+(-(alpha|beta|rc)\\.[0-9]+)?$"))) {
     "Invalid GKD-SDP versionName: $sdpVersionName"
 }
@@ -26,6 +46,14 @@ require(sdpVersionCodeText.matches(Regex("^[1-9][0-9]*$"))) {
 }
 val sdpVersionCode = sdpVersionCodeText.toIntOrNull()?.takeIf { it > 0 }
     ?: error("GKD-SDP versionCode is outside the supported integer range: $sdpVersionCodeText")
+val sdpUpstreamVersionCode = sdpUpstreamVersionCodeText.toIntOrNull()?.takeIf { it > 0 }
+    ?: error("GKD-SDP upstreamVersionCode is outside the supported integer range: $sdpUpstreamVersionCodeText")
+require(sdpUpstreamVersionCodeText.matches(Regex("^[1-9][0-9]*$"))) {
+    "Invalid GKD-SDP upstreamVersionCode: $sdpUpstreamVersionCodeText"
+}
+require(sdpVersionCode > sdpUpstreamVersionCode) {
+    "GKD-SDP versionCode must be greater than upstreamVersionCode $sdpUpstreamVersionCode"
+}
 require(sdpUpstreamBase.matches(Regex("^[0-9]+\\.[0-9]+\\.[0-9]+$"))) {
     "Invalid GKD-SDP upstreamBase: $sdpUpstreamBase"
 }

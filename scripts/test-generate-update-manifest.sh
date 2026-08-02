@@ -13,6 +13,7 @@ cat > "$TEST_ROOT/gradle/version.properties" <<'EOF'
 versionName=2.0.0-beta.1
 versionCode=93
 upstreamBase=1.12.1
+upstreamVersionCode=92
 EOF
 cat > "$TEST_ROOT/CHANGELOG.md" <<'EOF'
 # Changelog
