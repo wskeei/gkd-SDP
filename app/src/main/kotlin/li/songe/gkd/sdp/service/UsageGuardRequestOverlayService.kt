@@ -45,6 +45,7 @@ import kotlinx.coroutines.withContext
 import li.songe.gkd.sdp.a11y.A11yRuleEngine
 import li.songe.gkd.sdp.util.LogUtils
 import li.songe.gkd.sdp.a11y.UsageGuardEngine
+import li.songe.gkd.sdp.data.SelfControlIntervalRepository
 import li.songe.gkd.sdp.data.UsageGuardRecord
 import li.songe.gkd.sdp.data.UsageGuardTag
 import li.songe.gkd.sdp.db.DbSet
@@ -70,6 +71,7 @@ class UsageGuardRequestOverlayService : LifecycleService(), SavedStateRegistryOw
     private var elapsedState by mutableStateOf<SelfControlElapsedPolicy.ElapsedState>(
         SelfControlElapsedPolicy.ElapsedState.Loading,
     )
+    private var recentCompletedIntervalsMs by mutableStateOf(emptyList<Long>())
 
     override fun onCreate() {
         super.onCreate()
@@ -86,6 +88,7 @@ class UsageGuardRequestOverlayService : LifecycleService(), SavedStateRegistryOw
             ?: UsageGuardPolicy.GRANT_MODE_RESUMABLE
         minReasonLength = intent?.getIntExtra("minReasonLength", 8) ?: 8
         elapsedState = SelfControlElapsedPolicy.ElapsedState.Loading
+        recentCompletedIntervalsMs = emptyList()
         showOverlay()
         loadElapsedState()
         return START_NOT_STICKY
@@ -93,15 +96,19 @@ class UsageGuardRequestOverlayService : LifecycleService(), SavedStateRegistryOw
 
     private fun loadElapsedState() {
         lifecycleScope.launch {
-            elapsedState = runCatching {
-                val previousRecord = withContext(Dispatchers.IO) {
-                    DbSet.usageGuardRecordDao.getLatestRecord(appId)
+            val result = runCatching {
+                withContext(Dispatchers.IO) {
+                    SelfControlIntervalRepository.fromDb().loadUsageRequestOverlay(appId)
                 }
-                SelfControlElapsedPolicy.stateForUsageRequest(
-                    previousRequestedAt = previousRecord?.requestedAt,
+            }
+            result.onSuccess { overlay ->
+                recentCompletedIntervalsMs = overlay.recentCompletedIntervalsMs
+                elapsedState = SelfControlElapsedPolicy.stateForUsageRequest(
+                    previousRequestedAt = overlay.latestRequestedAt,
                 )
-            }.getOrElse {
-                SelfControlElapsedPolicy.ElapsedState.Unavailable
+            }.onFailure {
+                recentCompletedIntervalsMs = emptyList()
+                elapsedState = SelfControlElapsedPolicy.ElapsedState.Unavailable
             }
         }
     }
@@ -122,6 +129,7 @@ class UsageGuardRequestOverlayService : LifecycleService(), SavedStateRegistryOw
                         grantMode = grantMode,
                         minReasonLength = settings.usageGuardMinReasonLength,
                         elapsedState = elapsedState,
+                        recentCompletedIntervalsMs = recentCompletedIntervalsMs,
                         durationOptions = UsageGuardUiStatePolicy.normalizeDurationOptions(
                             settings.usageGuardDurationOptionsMinutes,
                         ),
@@ -210,6 +218,7 @@ private fun UsageGuardRequestContent(
     grantMode: Int,
     minReasonLength: Int,
     elapsedState: SelfControlElapsedPolicy.ElapsedState,
+    recentCompletedIntervalsMs: List<Long>,
     durationOptions: List<Int>,
     onAddTag: (String, List<UsageGuardTag>) -> Unit,
     onSubmit: (List<String>, String, Int) -> Unit,
@@ -259,6 +268,7 @@ private fun UsageGuardRequestContent(
             SelfControlElapsedCard(
                 context = SelfControlElapsedPolicy.Context.USAGE_REQUEST,
                 state = elapsedState,
+                recentCompletedIntervalsMs = recentCompletedIntervalsMs,
             )
 
             Text("选择标签", style = MaterialTheme.typography.titleSmall)
