@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.catch
 import li.songe.gkd.sdp.db.DbSet
 import li.songe.gkd.sdp.data.SelfControlIntervalRepository
 import li.songe.gkd.sdp.store.actionCountFlow
@@ -60,6 +61,7 @@ class HomeVm : BaseViewModel() {
         DbSet.usageGuardRecordDao
             .queryByRequestedAtRange(usageGuardTodayRange.first, usageGuardTodayRange.second)
             .map { records -> UsageGuardReviewPolicy.summarize(records) }
+            .catch { emit(UsageGuardReviewPolicy.summarize(emptyList())) }
     }
         .stateInit(UsageGuardReviewPolicy.summarize(emptyList()))
 
@@ -77,6 +79,7 @@ class HomeVm : BaseViewModel() {
                     },
                 )
             }
+            .catch { emit(DigitalSelfDisciplineTodaySummary(0, 0)) }
     }.stateInit(DigitalSelfDisciplineTodaySummary(0, 0))
 
     val sortTypeFlow = storeFlow.asMutableStateFlow(

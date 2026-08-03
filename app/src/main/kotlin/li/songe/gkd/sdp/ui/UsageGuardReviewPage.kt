@@ -145,6 +145,7 @@ class UsageGuardReviewVm : BaseViewModel() {
             val bounds = DigitalSelfDisciplineReviewPolicy.rangeBounds(range, today)
             DbSet.usageGuardRecordDao.queryByRequestedAtRange(bounds.startAt, bounds.endAt)
                 .map { UsageGuardReviewPolicy.summarize(it) }
+                .catch { emit(UsageGuardReviewPolicy.summarize(emptyList())) }
         }.stateInit(UsageGuardReviewPolicy.summarize(emptyList()))
 
     fun updateRange(range: DigitalSelfDisciplineReviewPolicy.Range) = rangeFlow.update { range }

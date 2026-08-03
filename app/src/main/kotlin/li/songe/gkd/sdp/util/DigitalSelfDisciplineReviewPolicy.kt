@@ -119,6 +119,15 @@ object DigitalSelfDisciplineReviewPolicy {
         )
     }
 
+    fun rangeBounds(
+        range: Range,
+        nowEpochMs: Long,
+        zoneId: ZoneId = ZoneId.systemDefault(),
+    ): RangeBounds {
+        val today = Instant.ofEpochMilli(nowEpochMs).atZone(zoneId).toLocalDate()
+        return rangeBounds(range, today, zoneId)
+    }
+
     fun hasCrossedDateBoundary(
         previousNow: Long,
         currentNow: Long,

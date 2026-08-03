@@ -49,38 +49,47 @@ fun SelfControlIntervalChart(
         }
     }
 
-    CartesianChartHost(
-        chart = rememberCartesianChart(
-            rememberColumnCartesianLayer(
-                columnProvider = ColumnCartesianLayer.ColumnProvider.series(
-                    rememberLineComponent(
-                        color = MaterialTheme.colorScheme.primary,
-                        thickness = 14.dp,
+    try {
+        CartesianChartHost(
+            chart = rememberCartesianChart(
+                rememberColumnCartesianLayer(
+                    columnProvider = ColumnCartesianLayer.ColumnProvider.series(
+                        rememberLineComponent(
+                            color = MaterialTheme.colorScheme.primary,
+                            thickness = 14.dp,
+                        )
                     )
-                )
+                ),
+                startAxis = rememberStartAxis(
+                    valueFormatter = { value, _, _ ->
+                        SelfControlIntervalPolicy.formatAxisValue(
+                            (value.toDouble() * axisUnit.divisorMs.toDouble()).toLong(),
+                            axisUnit,
+                        )
+                    },
+                ),
+                bottomAxis = rememberBottomAxis(
+                    valueFormatter = { x, _, _ ->
+                        points.getOrNull(x.toInt())?.label.orEmpty()
+                    }
+                ),
             ),
-            startAxis = rememberStartAxis(
-                valueFormatter = { value, _, _ ->
-                    SelfControlIntervalPolicy.formatAxisValue(
-                        (value.toDouble() * axisUnit.divisorMs.toDouble()).toLong(),
-                        axisUnit,
-                    )
+            modelProducer = modelProducer,
+            animationSpec = null,
+            animateIn = false,
+            modifier = modifier
+                .fillMaxWidth()
+                .height(148.dp)
+                .semantics {
+                    contentDescription = "$semanticSummary，纵轴单位 ${axisUnit.suffix}"
                 },
-            ),
-            bottomAxis = rememberBottomAxis(
-                valueFormatter = { x, _, _ ->
-                    points.getOrNull(x.toInt())?.label.orEmpty()
-                }
-            ),
-        ),
-        modelProducer = modelProducer,
-        animationSpec = null,
-        animateIn = false,
-        modifier = modifier
-            .fillMaxWidth()
-            .height(148.dp)
-            .semantics {
-                contentDescription = "$semanticSummary，纵轴单位 ${axisUnit.suffix}"
-            },
-    )
+        )
+    } catch (_: Throwable) {
+        // Chart rendering is enhancement-only. A Vico/layout failure must not tear down an
+        // overlay service; the visible values rendered by the parent card remain authoritative.
+        Text(
+            text = "图表暂时不可用，请参考上方文字数据。",
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
 }

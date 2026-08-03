@@ -43,6 +43,17 @@ class DigitalSelfDisciplineReviewPolicyTest {
     }
 
     @Test
+    fun epochClockCanBeInjectedForDeterministicDateSelection() {
+        val epoch = LocalDate.of(2026, 8, 4).atStartOfDay(shanghai).toInstant().toEpochMilli()
+        val bounds = DigitalSelfDisciplineReviewPolicy.rangeBounds(
+            DigitalSelfDisciplineReviewPolicy.Range.Today,
+            nowEpochMs = epoch + 12 * 60 * 60 * 1_000L,
+            zoneId = shanghai,
+        )
+        assertEquals(LocalDate.of(2026, 8, 4), bounds.startDate)
+    }
+
+    @Test
     fun usageIntervalsUseTheLaterEventDateAndIncludeRangePredecessor() {
         val bounds = DigitalSelfDisciplineReviewPolicy.rangeBounds(
             DigitalSelfDisciplineReviewPolicy.Range.Today,
