@@ -295,6 +295,15 @@ private fun IntervalSummaryCard(summary: DigitalSelfDisciplineReviewPolicy.Revie
         }
         Spacer(Modifier.height(8.dp))
         SelfControlReviewChart(summary)
+        if (summary.stats.minMs != null && summary.stats.minMs > 0L &&
+            summary.stats.maxMs != null && summary.stats.maxMs / summary.stats.minMs >= 30L
+        ) {
+            Text(
+                "最长间隔会影响柱高，请结合中位数阅读。",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
         Text(summary.comparison.message, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
