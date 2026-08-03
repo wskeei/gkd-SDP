@@ -27,6 +27,7 @@ import li.songe.gkd.sdp.util.getSubsStatus
 import li.songe.gkd.sdp.util.ruleSummaryFlow
 import li.songe.gkd.sdp.util.usedSubsEntriesFlow
 import java.time.LocalDate
+import java.time.ZoneId
 
 data class DigitalSelfDisciplineTodaySummary(
     val requestCount: Int,
@@ -44,20 +45,20 @@ class HomeVm : BaseViewModel() {
     val usedSubsItemCountFlow = usedSubsEntriesFlow.mapNew { it.size }
 
     private val todayFlow = flow {
-        var current = LocalDate.now()
+        var current = homeClock()
         emit(current)
         while (true) {
             delay(60_000L)
-            val next = LocalDate.now()
+            val next = homeClock()
             if (next != current) {
                 current = next
                 emit(current)
             }
         }
-    }.stateIn(viewModelScope, SharingStarted.Eagerly, LocalDate.now())
+    }.stateIn(viewModelScope, SharingStarted.Eagerly, homeClock())
 
-    val usageGuardReviewSummaryFlow = todayFlow.flatMapLatest { today ->
-        val usageGuardTodayRange = UsageGuardHistoryPolicy.dayRange(today)
+    val usageGuardReviewSummaryFlow = todayFlow.flatMapLatest { clock ->
+        val usageGuardTodayRange = UsageGuardHistoryPolicy.dayRange(clock.date, clock.zoneId)
         DbSet.usageGuardRecordDao
             .queryByRequestedAtRange(usageGuardTodayRange.first, usageGuardTodayRange.second)
             .map { records -> UsageGuardReviewPolicy.summarize(records) }
@@ -65,8 +66,8 @@ class HomeVm : BaseViewModel() {
     }
         .stateInit(UsageGuardReviewPolicy.summarize(emptyList()))
 
-    val digitalSelfDisciplineTodaySummaryFlow = todayFlow.flatMapLatest { today ->
-        val bounds = UsageGuardHistoryPolicy.dayRange(today)
+    val digitalSelfDisciplineTodaySummaryFlow = todayFlow.flatMapLatest { clock ->
+        val bounds = UsageGuardHistoryPolicy.dayRange(clock.date, clock.zoneId)
         SelfControlIntervalRepository.fromDb()
             .observeReviewSource(bounds.first, bounds.second)
             .map { source ->
@@ -133,4 +134,14 @@ class HomeVm : BaseViewModel() {
     val showA11yBlockDlgFlow = MutableStateFlow(false)
     val showBackupDlgFlow = MutableStateFlow(false)
     val showExportBackupDlgFlow = MutableStateFlow(false)
+
+    private fun homeClock() = HomeClock(
+        date = LocalDate.now(),
+        zoneId = ZoneId.systemDefault(),
+    )
+
+    private data class HomeClock(
+        val date: LocalDate,
+        val zoneId: ZoneId,
+    )
 }

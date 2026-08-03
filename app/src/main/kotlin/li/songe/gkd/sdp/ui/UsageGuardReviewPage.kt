@@ -56,6 +56,7 @@ import li.songe.gkd.sdp.util.UsageGuardHistoryPolicy
 import li.songe.gkd.sdp.util.UsageGuardReviewPolicy
 import li.songe.gkd.sdp.util.SelfControlIntervalPolicy
 import java.time.LocalDate
+import java.time.ZoneId
 
 sealed interface DigitalSelfDisciplineReviewUiState {
     data object Loading : DigitalSelfDisciplineReviewUiState
@@ -74,11 +75,11 @@ class UsageGuardReviewVm : BaseViewModel() {
     val selectedInterceptFilterFlow = interceptFilterFlow
 
     private val todayFlow = flow {
-        var current = LocalDate.now()
+        var current = reviewClock()
         emit(current)
         while (true) {
             delay(60_000L)
-            val next = LocalDate.now()
+            val next = reviewClock()
             if (next != current) {
                 current = next
                 emit(current)
@@ -87,7 +88,7 @@ class UsageGuardReviewVm : BaseViewModel() {
     }.distinctUntilChanged().stateIn(
         viewModelScope,
         SharingStarted.Eagerly,
-        LocalDate.now(),
+        reviewClock(),
     )
 
     val reviewUiStateFlow = combine(
@@ -96,15 +97,17 @@ class UsageGuardReviewVm : BaseViewModel() {
         interceptFilterFlow,
         todayFlow,
     ) { range, reviewType, interceptFilter, today ->
-        ReviewSelection(range, reviewType, interceptFilter, today)
+        ReviewSelection(range, reviewType, interceptFilter, today.date, today.zoneId)
     }.flatMapLatest { selection ->
         val bounds = DigitalSelfDisciplineReviewPolicy.rangeBounds(
             selection.range,
             selection.today,
+            selection.zoneId,
         )
         val previousBounds = DigitalSelfDisciplineReviewPolicy.rangeBounds(
             selection.range,
             selection.today.minusDays(selection.range.days),
+            selection.zoneId,
         )
         combine(
             repository.observeReviewSource(bounds.startAt, bounds.endAt),
@@ -140,9 +143,9 @@ class UsageGuardReviewVm : BaseViewModel() {
         DigitalSelfDisciplineReviewUiState.Loading,
     )
 
-    val usageGuardSummaryFlow = combine(rangeFlow, todayFlow) { range, today -> range to today }
-        .flatMapLatest { (range, today) ->
-            val bounds = DigitalSelfDisciplineReviewPolicy.rangeBounds(range, today)
+    val usageGuardSummaryFlow = combine(rangeFlow, todayFlow) { range, clock -> range to clock }
+        .flatMapLatest { (range, clock) ->
+            val bounds = DigitalSelfDisciplineReviewPolicy.rangeBounds(range, clock.date, clock.zoneId)
             DbSet.usageGuardRecordDao.queryByRequestedAtRange(bounds.startAt, bounds.endAt)
                 .map { UsageGuardReviewPolicy.summarize(it) }
                 .catch { emit(UsageGuardReviewPolicy.summarize(emptyList())) }
@@ -166,6 +169,17 @@ class UsageGuardReviewVm : BaseViewModel() {
         val reviewType: DigitalSelfDisciplineReviewPolicy.ReviewType,
         val interceptFilter: DigitalSelfDisciplineReviewPolicy.InterceptKindFilter,
         val today: LocalDate,
+        val zoneId: ZoneId,
+    )
+
+    private fun reviewClock(): ReviewClock = ReviewClock(
+        date = LocalDate.now(),
+        zoneId = ZoneId.systemDefault(),
+    )
+
+    private data class ReviewClock(
+        val date: LocalDate,
+        val zoneId: ZoneId,
     )
 }
 
