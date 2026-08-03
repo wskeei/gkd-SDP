@@ -27,6 +27,45 @@ class UsageGuardBlockingOverlayStateTest {
     }
 
     @Test
+    fun unknownRequestStopClearsRequestState() {
+        val state = UsageGuardBlockingOverlayState()
+        state.markRequestStarted("com.example.reader")
+
+        assertTrue(state.clearRequest(null))
+        assertFalse(state.hasBlockingOverlay)
+    }
+
+    @Test
+    fun matchingTimeoutStopClearsOnlyTimeoutState() {
+        val state = UsageGuardBlockingOverlayState()
+        state.markTimeoutStarted("com.example.video")
+
+        assertTrue(state.clearTimeout("com.example.video"))
+        assertFalse(state.hasBlockingOverlay)
+        assertNull(state.timeoutAppId)
+    }
+
+    @Test
+    fun staleTimeoutStopDoesNotClearCurrentTimeout() {
+        val state = UsageGuardBlockingOverlayState()
+        state.markTimeoutStarted("com.example.video")
+
+        assertFalse(state.clearTimeout("com.example.old"))
+        assertEquals("com.example.video", state.timeoutAppId)
+    }
+
+    @Test
+    fun activeKindDescribesBlockingOverlayType() {
+        val state = UsageGuardBlockingOverlayState()
+
+        assertNull(state.activeKind)
+        state.markRequestStarted("com.example.reader")
+        assertEquals("request", state.activeKind)
+        state.markTimeoutStarted("com.example.video")
+        assertEquals("timeout", state.activeKind)
+    }
+
+    @Test
     fun runtimeDisconnectClearsBlockingState() {
         val state = UsageGuardBlockingOverlayState()
         state.markTimeoutStarted("com.example.video")
