@@ -1,6 +1,8 @@
 package li.songe.gkd.sdp.service
 
 import li.songe.gkd.sdp.data.SelfControlIntervalRepository
+import li.songe.gkd.sdp.data.SelfControlAttempt
+import li.songe.gkd.sdp.data.SelfControlAttemptEvent
 import li.songe.gkd.sdp.data.UsageGuardRecord
 import li.songe.gkd.sdp.util.SelfControlElapsedPolicy
 import kotlinx.coroutines.flow.Flow
@@ -31,7 +33,7 @@ class UsageGuardRequestIntervalContractTest {
                 override suspend fun getPreviousRecord(appId: String, requestedAt: Long, id: Long): UsageGuardRecord? = null
                 override fun queryByRequestedAtRange(startAt: Long, endAt: Long): Flow<List<UsageGuardRecord>> = emptyFlow()
             },
-            attemptEvents = error("not used"),
+            attemptEvents = unusedAttemptSource(),
         )
 
         val overlay = repository.loadUsageRequestOverlay("target")
@@ -58,4 +60,11 @@ class UsageGuardRequestIntervalContractTest {
         grantedAt = requestedAt,
         expiresAt = requestedAt + 600_000L,
     )
+
+    private fun unusedAttemptSource() = object : SelfControlIntervalRepository.AttemptEventSource {
+        override suspend fun recordEventAndGetInsight(event: SelfControlAttemptEvent) =
+            SelfControlAttempt.RecordedAttemptInsight(null, emptyList())
+
+        override fun queryByOccurredAtRange(startAt: Long, endAt: Long): Flow<List<SelfControlAttemptEvent>> = emptyFlow()
+    }
 }
