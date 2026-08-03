@@ -143,6 +143,12 @@ object UsageGuardEngine {
                 cancelExpiryWatch()
                 blockingOverlayState.clearAll()
                 stopCountdownOverlay()
+                // The service may still be alive even if its bookkeeping was
+                // lost during a previous teardown, so stop it unconditionally
+                // as part of the runtime-disconnect boundary.
+                selfControlOverlayLauncher.stop(
+                    Intent(app, UsageGuardCountdownOverlayService::class.java),
+                )
                 selfControlOverlayLauncher.stop(
                     Intent(app, UsageGuardRequestOverlayService::class.java),
                 )
@@ -469,11 +475,11 @@ object UsageGuardEngine {
         if (
             record == null ||
             !UsageGuardCountdownOverlayPolicy.shouldDisplay(
-                activeRecord = record,
-                foregroundAppId = foregroundAppId,
-                requestOverlayAppId = blockingOverlayState.requestAppId,
-                timeoutOverlayAppId = blockingOverlayState.timeoutAppId,
-                now = now,
+                record,
+                foregroundAppId,
+                blockingOverlayState.requestAppId,
+                blockingOverlayState.timeoutAppId,
+                now,
             )
         ) {
             stopCountdownOverlay(
