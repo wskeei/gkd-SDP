@@ -75,12 +75,13 @@ class SelfControlIntervalRepository(
         descriptor: AttemptDescriptor,
         occurredAt: Long,
     ): SelfControlAttempt.RecordedAttemptInsight {
+        val subjectId = normalizeLabel(descriptor.subjectId, "unknown")
         return attemptEvents.recordEventAndGetInsight(
             SelfControlAttemptEvent(
                 eventKey = descriptor.eventKey,
                 eventKind = descriptor.eventKind,
-                subjectId = normalizeLabel(descriptor.subjectId, "unknown"),
-                subjectLabel = normalizeLabel(descriptor.subjectLabel, descriptor.subjectId),
+                subjectId = subjectId,
+                subjectLabel = normalizeLabel(descriptor.subjectLabel, subjectId),
                 occurredAt = occurredAt,
                 intervalMs = null,
             ),

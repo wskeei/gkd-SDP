@@ -489,6 +489,11 @@ class A11yRuleEngine(val service: A11yCommonImpl) {
                         InterceptOverlayService.EXTRA_EVENT_KIND,
                         SelfControlAttempt.KIND_SELECTOR_INTERCEPT,
                     )
+                    putExtra(InterceptOverlayService.EXTRA_SUBJECT_ID, rightAppId)
+                    putExtra(
+                        InterceptOverlayService.EXTRA_SUBJECT_LABEL,
+                        "规则组 ${interceptConfig.groupKey}",
+                    )
                 }
                 val launchResult = selfControlOverlayLauncher.launch(intent)
                 LogUtils.d(
