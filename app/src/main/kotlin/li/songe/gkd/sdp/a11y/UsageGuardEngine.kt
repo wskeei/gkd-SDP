@@ -6,6 +6,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
@@ -43,11 +45,26 @@ object UsageGuardEngine {
     private var expiryWatchJob: Job? = null
     private val appChangeToken = AtomicLong()
 
+    private val configurationReconciler = UsageGuardConfigurationReconciler { reason ->
+        sdpRuntimeFeatureCoordinator.reconcileCurrentApp(reason)
+    }
+
     val appProfilesFlow = DbSet.usageGuardAppProfileDao.queryAll()
         .stateIn(appScope, SharingStarted.Eagerly, emptyList())
 
     val tagsFlow = DbSet.usageGuardTagDao.queryAll()
         .stateIn(appScope, SharingStarted.Eagerly, emptyList())
+
+    init {
+        appScope.launch(Dispatchers.IO) {
+            combine(
+                storeFlow,
+                DbSet.usageGuardAppProfileDao.queryAll(),
+            ) { settings, profiles ->
+                UsageGuardRuntimeConfiguration.from(settings, profiles)
+            }.collect(configurationReconciler::accept)
+        }
+    }
 
     fun onAppChanged(
         packageName: String,

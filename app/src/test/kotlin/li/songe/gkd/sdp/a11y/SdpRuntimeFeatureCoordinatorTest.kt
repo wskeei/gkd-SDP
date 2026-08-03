@@ -137,6 +137,26 @@ class SdpRuntimeFeatureCoordinatorTest {
     }
 
     @Test
+    fun manualReconcileRedispatchesTheSameForegroundApp() = runBlocking {
+        val foreground = MutableStateFlow("com.example.video")
+        val seen = mutableListOf<String>()
+        val coordinator = coordinator(foreground) {
+            onAppChanged = { appId, _ -> seen += appId }
+        }
+
+        coordinator.attach("a11y", AutomatorModeOption.A11yMode)
+        awaitCondition { seen.size == 1 }
+
+        coordinator.reconcileCurrentApp("usage-guard-configuration-updated")
+        awaitCondition { seen.size == 2 }
+
+        assertEquals(
+            listOf("com.example.video", "com.example.video"),
+            seen,
+        )
+    }
+
+    @Test
     fun handlerFailureDoesNotCancelFollowingHandlersOrFutureAppChanges() = runBlocking {
         val foreground = MutableStateFlow("com.example.reader")
         val healthy = mutableListOf<String>()
