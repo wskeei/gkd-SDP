@@ -64,7 +64,6 @@ class UsageGuardConfigurationReconcilerTest {
         val reconciler = UsageGuardConfigurationReconciler { reasons += it }
         val profile = UsageGuardAppProfile(
             appId = "com.example.reader",
-            selectedTarget = true,
         )
 
         reconciler.accept(
@@ -82,11 +81,29 @@ class UsageGuardConfigurationReconcilerTest {
         reconciler.accept(
             UsageGuardRuntimeConfiguration.from(
                 SettingsStore(usageGuardEnabled = true),
-                listOf(profile.copy(selectedTarget = false)),
+                listOf(profile.copy(selectedTarget = true)),
+            )
+        )
+        reconciler.accept(
+            UsageGuardRuntimeConfiguration.from(
+                SettingsStore(usageGuardEnabled = true),
+                listOf(profile.copy(selectedTarget = true, globalWhitelist = true)),
+            )
+        )
+        reconciler.accept(
+            UsageGuardRuntimeConfiguration.from(
+                SettingsStore(usageGuardEnabled = true),
+                listOf(
+                    profile.copy(
+                        selectedTarget = true,
+                        globalWhitelist = true,
+                        grantMode = UsageGuardPolicy.GRANT_MODE_STRICT,
+                    )
+                ),
             )
         )
 
-        assertEquals(3, reasons.size)
+        assertEquals(5, reasons.size)
         assertTrue(reasons.all { it == "usage-guard-configuration-updated" })
     }
 
