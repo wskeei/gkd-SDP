@@ -13,7 +13,7 @@ class UsageGuardConfigurationReconcilerTest {
         val reasons = mutableListOf<String>()
         val reconciler = UsageGuardConfigurationReconciler { reasons += it }
         val configuration = UsageGuardRuntimeConfiguration.from(
-            SettingsStore(usageGuardEnabled = true),
+            settings(usageGuardEnabled = true),
             listOf(
                 UsageGuardAppProfile(
                     appId = "com.example.reader",
@@ -32,7 +32,7 @@ class UsageGuardConfigurationReconcilerTest {
         val reasons = mutableListOf<String>()
         val reconciler = UsageGuardConfigurationReconciler { reasons += it }
         val first = UsageGuardRuntimeConfiguration.from(
-            SettingsStore(usageGuardEnabled = true),
+            settings(usageGuardEnabled = true),
             listOf(
                 UsageGuardAppProfile(
                     appId = "com.example.reader",
@@ -42,7 +42,7 @@ class UsageGuardConfigurationReconcilerTest {
             ),
         )
         val sameSemantics = UsageGuardRuntimeConfiguration.from(
-            SettingsStore(usageGuardEnabled = true),
+            settings(usageGuardEnabled = true),
             listOf(
                 UsageGuardAppProfile(
                     appId = "com.example.reader",
@@ -68,31 +68,31 @@ class UsageGuardConfigurationReconcilerTest {
 
         reconciler.accept(
             UsageGuardRuntimeConfiguration.from(
-                SettingsStore(usageGuardEnabled = false),
+                settings(usageGuardEnabled = false),
                 listOf(profile),
             )
         )
         reconciler.accept(
             UsageGuardRuntimeConfiguration.from(
-                SettingsStore(usageGuardEnabled = true),
+                settings(usageGuardEnabled = true),
                 listOf(profile),
             )
         )
         reconciler.accept(
             UsageGuardRuntimeConfiguration.from(
-                SettingsStore(usageGuardEnabled = true),
+                settings(usageGuardEnabled = true),
                 listOf(profile.copy(selectedTarget = true)),
             )
         )
         reconciler.accept(
             UsageGuardRuntimeConfiguration.from(
-                SettingsStore(usageGuardEnabled = true),
+                settings(usageGuardEnabled = true),
                 listOf(profile.copy(selectedTarget = true, globalWhitelist = true)),
             )
         )
         reconciler.accept(
             UsageGuardRuntimeConfiguration.from(
-                SettingsStore(usageGuardEnabled = true),
+                settings(usageGuardEnabled = true),
                 listOf(
                     profile.copy(
                         selectedTarget = true,
@@ -110,7 +110,7 @@ class UsageGuardConfigurationReconcilerTest {
     @Test
     fun snapshotSortsProfilesAndOmitsPersistenceTimestamp() {
         val snapshot = UsageGuardRuntimeConfiguration.from(
-            SettingsStore(
+            settings(
                 usageGuardEnabled = true,
                 usageGuardScopeMode = UsageGuardPolicy.SCOPE_GLOBAL_EXCEPT_WHITELIST,
                 usageGuardDefaultGrantMode = UsageGuardPolicy.GRANT_MODE_STRICT,
@@ -134,4 +134,17 @@ class UsageGuardConfigurationReconcilerTest {
         assertEquals(UsageGuardPolicy.GRANT_MODE_STRICT, snapshot.defaultGrantMode)
         assertEquals(listOf("com.example.a", "com.example.z"), snapshot.profiles.map { it.appId })
     }
+
+    private fun settings(
+        usageGuardEnabled: Boolean,
+        usageGuardScopeMode: Int = UsageGuardPolicy.SCOPE_SELECTED_ONLY,
+        usageGuardDefaultGrantMode: Int = UsageGuardPolicy.GRANT_MODE_RESUMABLE,
+    ): SettingsStore = SettingsStore(
+        actionToast = "",
+        customNotifTitle = "",
+        updateChannel = 0,
+        usageGuardEnabled = usageGuardEnabled,
+        usageGuardScopeMode = usageGuardScopeMode,
+        usageGuardDefaultGrantMode = usageGuardDefaultGrantMode,
+    )
 }
