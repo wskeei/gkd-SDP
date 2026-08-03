@@ -65,7 +65,7 @@ class SelfControlIntervalPresentationTest {
 
         assertEquals(90_000L, presentation.stats.averageMs)
         assertEquals(90_000L, presentation.stats.medianMs)
-        assertEquals("本次间隔比平均值多 31 秒", presentation.comparisonText)
+        assertEquals("本次间隔比平均值多 31秒", presentation.comparisonText)
         assertTrue(presentation.semanticSummary.contains("2 个"))
         assertTrue(presentation.semanticSummary.contains("平均 1分 30秒"))
         assertTrue(presentation.semanticSummary.contains("中位数 1分 30秒"))

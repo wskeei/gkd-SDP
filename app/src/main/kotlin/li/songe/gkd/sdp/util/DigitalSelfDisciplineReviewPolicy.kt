@@ -137,7 +137,7 @@ object DigitalSelfDisciplineReviewPolicy {
         zoneId: ZoneId = bounds.zoneId,
         previousSummary: ReviewSummary? = null,
     ): ReviewSummary {
-        val currentRecords = records.filter(bounds::contains)
+        val currentRecords = records.filter { bounds.contains(it.requestedAt) }
         val currentEvents = events.filter { event ->
             bounds.contains(event.occurredAt) &&
                 (interceptFilter.eventKind == null || event.eventKind == interceptFilter.eventKind)
