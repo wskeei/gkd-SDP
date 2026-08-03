@@ -32,6 +32,7 @@ import li.songe.gkd.sdp.data.Snapshot
 import li.songe.gkd.sdp.data.SubsConfig
 import li.songe.gkd.sdp.data.SubsItem
 import li.songe.gkd.sdp.data.SelfControlAttempt
+import li.songe.gkd.sdp.data.SelfControlAttemptEvent
 import li.songe.gkd.sdp.data.UrlBlockRule
 import li.songe.gkd.sdp.data.WechatContact
 import li.songe.gkd.sdp.data.AppInstallLog
@@ -43,7 +44,7 @@ import li.songe.gkd.sdp.util.dbFolder
 import li.songe.gkd.sdp.util.json
 
 @Database(
-    version = 31,
+    version = 32,
     entities = [
         SubsItem::class,
         Snapshot::class,
@@ -74,6 +75,7 @@ import li.songe.gkd.sdp.util.json
         UsageGuardTag::class,
         UsageGuardRecord::class,
         SelfControlAttempt::class,
+        SelfControlAttemptEvent::class,
     ],
     autoMigrations = [
         AutoMigration(from = 1, to = 2),
@@ -106,6 +108,7 @@ import li.songe.gkd.sdp.util.json
         AutoMigration(from = 28, to = 29),  // UrlBlockRule 添加 is_locked, lock_end_time 字段
         AutoMigration(from = 29, to = 30),  // 添加 usage_guard_* 表
         AutoMigration(from = 30, to = 31),  // 添加 self_control_attempt 表
+        AutoMigration(from = 31, to = 32),  // 添加 self_control_attempt_event 表和申请时间索引
     ]
 )
 @TypeConverters(DbConverters::class)
