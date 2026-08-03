@@ -79,8 +79,8 @@ object SelfControlIntervalPolicy {
         return intervalsMs
             .asSequence()
             .filter { it >= 0L }
-            .takeLast(limit)
             .toList()
+            .takeLast(limit)
     }
 
     fun statsFor(intervalsMs: List<Long>): Stats {
