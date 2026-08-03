@@ -9,6 +9,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import li.songe.gkd.sdp.util.DigitalSelfDisciplineReviewPolicy
 import li.songe.gkd.sdp.util.SelfControlIntervalPolicy
+import java.time.temporal.ChronoUnit
 
 @Composable
 fun SelfControlReviewChart(
@@ -16,12 +17,17 @@ fun SelfControlReviewChart(
     modifier: Modifier = Modifier,
 ) {
     val rawPoints = DigitalSelfDisciplineReviewPresentation.chartPoints(summary)
+    val firstBucketDate = summary.dailyBuckets.firstOrNull()?.date
     val points = rawPoints.mapIndexed { index, point ->
+        val shouldShowLabel = if (summary.range == DigitalSelfDisciplineReviewPolicy.Range.ThirtyDays) {
+            val date = summary.dailyBuckets.getOrNull(index)?.date
+            date != null && firstBucketDate != null &&
+                ChronoUnit.DAYS.between(firstBucketDate, date) % 5L == 0L
+        } else {
+            true
+        }
         SelfControlIntervalPresentation.ChartPoint(
-            label = if (
-                summary.range == DigitalSelfDisciplineReviewPolicy.Range.ThirtyDays &&
-                index % 5 != 0
-            ) "" else point.label,
+            label = if (shouldShowLabel) point.label else "",
             valueMs = point.valueMs,
             isCurrent = false,
         )

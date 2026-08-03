@@ -345,7 +345,7 @@ private fun UsageRequestSummaryCard(
     range: DigitalSelfDisciplineReviewPolicy.Range,
 ) {
     ReviewSectionCard("使用申请补充复盘 · ${range.label}", "保留原有申请记录、时长、标签和结束状态统计。") {
-        val widgetSummary = UsageGuardReviewPolicy.widgetSummary(summary)
+        val widgetSummary = UsageGuardReviewPolicy.widgetSummary(summary, range.label)
         Text(widgetSummary.title, style = MaterialTheme.typography.titleSmall)
         Text(widgetSummary.metric, color = MaterialTheme.colorScheme.primary)
         Text(widgetSummary.hint, color = MaterialTheme.colorScheme.onSurfaceVariant)
