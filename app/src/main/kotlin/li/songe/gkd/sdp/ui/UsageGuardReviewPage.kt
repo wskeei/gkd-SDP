@@ -45,6 +45,7 @@ import li.songe.gkd.sdp.ui.component.PerfIcon
 import li.songe.gkd.sdp.ui.component.PerfIconButton
 import li.songe.gkd.sdp.ui.component.PerfTopAppBar
 import li.songe.gkd.sdp.ui.component.SelfControlReviewChart
+import li.songe.gkd.sdp.ui.component.DigitalSelfDisciplineReviewPresentation
 import li.songe.gkd.sdp.ui.share.BaseViewModel
 import li.songe.gkd.sdp.ui.share.LocalMainViewModel
 import li.songe.gkd.sdp.ui.style.itemPadding
@@ -227,7 +228,7 @@ fun UsageGuardReviewPage() {
                                 )
                             }
                         }
-                        if (selectedType == DigitalSelfDisciplineReviewPolicy.ReviewType.InterceptAttempt) {
+                        if (DigitalSelfDisciplineReviewPresentation.showInterceptFilters(selectedType)) {
                             Text("拦截类型", style = MaterialTheme.typography.titleSmall)
                             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                                 DigitalSelfDisciplineReviewPolicy.InterceptKindFilter.entries.forEach { filter ->

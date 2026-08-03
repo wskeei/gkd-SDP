@@ -9,32 +9,21 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import li.songe.gkd.sdp.util.DigitalSelfDisciplineReviewPolicy
 import li.songe.gkd.sdp.util.SelfControlIntervalPolicy
-import java.time.format.DateTimeFormatter
 
 @Composable
 fun SelfControlReviewChart(
     summary: DigitalSelfDisciplineReviewPolicy.ReviewSummary,
     modifier: Modifier = Modifier,
 ) {
-    val points = if (summary.range == DigitalSelfDisciplineReviewPolicy.Range.Today) {
-        summary.recentIntervals.mapIndexed { index, item ->
-            SelfControlIntervalPresentation.ChartPoint(
-                label = "${index + 1}",
-                valueMs = item.intervalMs,
-                isCurrent = false,
-            )
-        }
-    } else {
-        summary.dailyBuckets.map { bucket ->
-            SelfControlIntervalPresentation.ChartPoint(
-                label = bucket.date.format(DateTimeFormatter.ofPattern("MM-dd")),
-                valueMs = bucket.medianMs,
-                isCurrent = false,
-            )
-        }
+    val points = DigitalSelfDisciplineReviewPresentation.chartPoints(summary).map {
+        SelfControlIntervalPresentation.ChartPoint(
+            label = it.label,
+            valueMs = it.valueMs,
+            isCurrent = false,
+        )
     }
     if (points.isEmpty()) {
-        Text("暂无可绘制的有效间隔", color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(DigitalSelfDisciplineReviewPresentation.emptyText, color = MaterialTheme.colorScheme.onSurfaceVariant)
         return
     }
     val summaryText = buildString {
