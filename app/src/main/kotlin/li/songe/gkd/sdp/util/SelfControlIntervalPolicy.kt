@@ -186,7 +186,9 @@ object SelfControlIntervalPolicy {
         val sum = values.fold(BigInteger.ZERO) { acc, value ->
             acc.add(BigInteger.valueOf(value))
         }
-        return sum.divide(BigInteger.valueOf(values.size.toLong())).longValueExact()
+        // The quotient is bounded by the Long inputs, so the API-1 conversion is safe and
+        // avoids BigInteger.longValueExact(), which is only available from API 31.
+        return sum.divide(BigInteger.valueOf(values.size.toLong())).longValue()
     }
 
     private fun median(sortedValues: List<Long>): Long {
@@ -197,7 +199,7 @@ object SelfControlIntervalPolicy {
             BigInteger.valueOf(sortedValues[middle - 1])
                 .add(BigInteger.valueOf(sortedValues[middle]))
                 .divide(BigInteger.TWO)
-                .longValueExact()
+                .longValue()
         }
     }
 }
