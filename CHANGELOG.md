@@ -22,6 +22,19 @@ All notable GKD-SDP changes are documented here. The format follows
 
 - None yet.
 
+## [2.0.0-beta.2] - 2026-08-03
+
+This prerelease contains the runtime repair for digital self-discipline usage
+requests.
+
+### Fixed
+
+- Reconcile the current foreground app after controlled-app configuration is
+  persisted, so adding an app to normal or strict mode immediately evaluates
+  its usage request even when the app was already in the foreground.
+- Re-evaluate usage-request policy changes after saving the related settings,
+  preventing stale runtime decisions from suppressing the request form.
+
 ## [2.0.0-beta.1] - 2026-08-02
 
 This is the first independently versioned GKD-SDP prerelease. It is based on
@@ -58,5 +71,6 @@ since that base rather than repeating upstream release notes.
   when the required service permission is disabled.
 - Added screenshot protection for the usage reason overlay.
 
-[Unreleased]: https://github.com/wskeei/gkd-SDP/compare/v2.0.0-beta.1...HEAD
+[Unreleased]: https://github.com/wskeei/gkd-SDP/compare/v2.0.0-beta.2...HEAD
+[2.0.0-beta.2]: https://github.com/wskeei/gkd-SDP/releases/tag/v2.0.0-beta.2
 [2.0.0-beta.1]: https://github.com/wskeei/gkd-SDP/releases/tag/v2.0.0-beta.1
