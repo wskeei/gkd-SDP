@@ -245,10 +245,13 @@ fun useControlPage(): ScaffoldExt {
             ServerStatusCard()
 
             val usageGuardSummary by vm.usageGuardReviewSummaryFlow.collectAsState()
+            val digitalSelfDisciplineToday by vm.digitalSelfDisciplineTodaySummaryFlow.collectAsState()
             val usageGuardWidgetSummary = UsageGuardReviewPolicy.widgetSummary(usageGuardSummary)
             PageItemCard(
                 title = "数字自律复盘",
-                subtitle = "${usageGuardWidgetSummary.metric}｜${usageGuardWidgetSummary.hint}",
+                subtitle = "今日 ${digitalSelfDisciplineToday.requestCount} 次申请 · " +
+                    "${digitalSelfDisciplineToday.interceptCount} 次拦截｜" +
+                    usageGuardWidgetSummary.hint,
                 imageVector = PerfIcon.Equalizer,
                 onClickLabel = "打开数字自律复盘页面",
                 onClick = {

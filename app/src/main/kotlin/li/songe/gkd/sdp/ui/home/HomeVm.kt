@@ -1,9 +1,16 @@
 package li.songe.gkd.sdp.ui.home
 
+import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.stateIn
 import li.songe.gkd.sdp.db.DbSet
+import li.songe.gkd.sdp.data.SelfControlIntervalRepository
 import li.songe.gkd.sdp.store.actionCountFlow
 import li.songe.gkd.sdp.store.blockMatchAppListFlow
 import li.songe.gkd.sdp.store.storeFlow
@@ -20,6 +27,11 @@ import li.songe.gkd.sdp.util.ruleSummaryFlow
 import li.songe.gkd.sdp.util.usedSubsEntriesFlow
 import java.time.LocalDate
 
+data class DigitalSelfDisciplineTodaySummary(
+    val requestCount: Int,
+    val interceptCount: Int,
+)
+
 class HomeVm : BaseViewModel() {
 
     val subsStatusFlow by lazy {
@@ -30,11 +42,42 @@ class HomeVm : BaseViewModel() {
 
     val usedSubsItemCountFlow = usedSubsEntriesFlow.mapNew { it.size }
 
-    private val usageGuardTodayRange = UsageGuardHistoryPolicy.dayRange(LocalDate.now())
-    val usageGuardReviewSummaryFlow = DbSet.usageGuardRecordDao
-        .queryByRequestedAtRange(usageGuardTodayRange.first, usageGuardTodayRange.second)
-        .map { records -> UsageGuardReviewPolicy.summarize(records) }
+    private val todayFlow = flow {
+        var current = LocalDate.now()
+        emit(current)
+        while (true) {
+            delay(60_000L)
+            val next = LocalDate.now()
+            if (next != current) {
+                current = next
+                emit(current)
+            }
+        }
+    }.stateIn(viewModelScope, SharingStarted.Eagerly, LocalDate.now())
+
+    val usageGuardReviewSummaryFlow = todayFlow.flatMapLatest { today ->
+        val usageGuardTodayRange = UsageGuardHistoryPolicy.dayRange(today)
+        DbSet.usageGuardRecordDao
+            .queryByRequestedAtRange(usageGuardTodayRange.first, usageGuardTodayRange.second)
+            .map { records -> UsageGuardReviewPolicy.summarize(records) }
+    }
         .stateInit(UsageGuardReviewPolicy.summarize(emptyList()))
+
+    val digitalSelfDisciplineTodaySummaryFlow = todayFlow.flatMapLatest { today ->
+        val bounds = UsageGuardHistoryPolicy.dayRange(today)
+        SelfControlIntervalRepository.fromDb()
+            .observeReviewSource(bounds.first, bounds.second)
+            .map { source ->
+                DigitalSelfDisciplineTodaySummary(
+                    requestCount = source.usageRecords.count {
+                        it.requestedAt >= bounds.first && it.requestedAt < bounds.second
+                    },
+                    interceptCount = source.interceptEvents.count {
+                        it.occurredAt >= bounds.first && it.occurredAt < bounds.second
+                    },
+                )
+            }
+    }.stateInit(DigitalSelfDisciplineTodaySummary(0, 0))
 
     val sortTypeFlow = storeFlow.asMutableStateFlow(
         getter = { AppSortOption.objects.findOption(it.appSort) },
