@@ -15,10 +15,14 @@ fun SelfControlReviewChart(
     summary: DigitalSelfDisciplineReviewPolicy.ReviewSummary,
     modifier: Modifier = Modifier,
 ) {
-    val points = DigitalSelfDisciplineReviewPresentation.chartPoints(summary).map {
+    val rawPoints = DigitalSelfDisciplineReviewPresentation.chartPoints(summary)
+    val points = rawPoints.mapIndexed { index, point ->
         SelfControlIntervalPresentation.ChartPoint(
-            label = it.label,
-            valueMs = it.valueMs,
+            label = if (
+                summary.range == DigitalSelfDisciplineReviewPolicy.Range.ThirtyDays &&
+                index % 5 != 0
+            ) "" else point.label,
+            valueMs = point.valueMs,
             isCurrent = false,
         )
     }

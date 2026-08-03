@@ -59,7 +59,14 @@ fun SelfControlIntervalChart(
                     )
                 )
             ),
-            startAxis = rememberStartAxis(),
+            startAxis = rememberStartAxis(
+                valueFormatter = { value, _, _ ->
+                    SelfControlIntervalPolicy.formatAxisValue(
+                        (value.toDouble() * axisUnit.divisorMs.toDouble()).toLong(),
+                        axisUnit,
+                    )
+                },
+            ),
             bottomAxis = rememberBottomAxis(
                 valueFormatter = { x, _, _ ->
                     points.getOrNull(x.toInt())?.label.orEmpty()
@@ -67,9 +74,13 @@ fun SelfControlIntervalChart(
             ),
         ),
         modelProducer = modelProducer,
+        animationSpec = null,
+        animateIn = false,
         modifier = modifier
             .fillMaxWidth()
             .height(148.dp)
-            .semantics { contentDescription = semanticSummary },
+            .semantics {
+                contentDescription = "$semanticSummary，纵轴单位 ${axisUnit.suffix}"
+            },
     )
 }

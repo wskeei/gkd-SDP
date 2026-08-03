@@ -116,7 +116,7 @@ object SelfControlIntervalPolicy {
         val recent = recentCompletedIntervals(recentCompletedIntervalsMs, historyLimit)
         val stats = statsFor(recent)
         val currentElapsedMs = anchorAtEpochMs?.let { elapsedMs(it, nowEpochMs) }
-        val comparison = if (currentElapsedMs != null && stats.averageMs != null) {
+        val comparison = if (currentElapsedMs != null && stats.averageMs != null && stats.sampleCount >= 2) {
             Comparison(
                 currentMs = currentElapsedMs,
                 averageMs = stats.averageMs,
@@ -186,9 +186,7 @@ object SelfControlIntervalPolicy {
         val sum = values.fold(BigInteger.ZERO) { acc, value ->
             acc.add(BigInteger.valueOf(value))
         }
-        // The quotient is bounded by the Long inputs, so the API-1 conversion is safe and
-        // avoids BigInteger.longValueExact(), which is only available from API 31.
-        return sum.divide(BigInteger.valueOf(values.size.toLong())).toString().toLong()
+        return roundedLong(sum, BigInteger.valueOf(values.size.toLong()))
     }
 
     private fun median(sortedValues: List<Long>): Long {
@@ -196,11 +194,24 @@ object SelfControlIntervalPolicy {
         return if (sortedValues.size % 2 == 1) {
             sortedValues[middle]
         } else {
-            BigInteger.valueOf(sortedValues[middle - 1])
-                .add(BigInteger.valueOf(sortedValues[middle]))
-                .divide(BigInteger.TWO)
-                .toString()
-                .toLong()
+            roundedLong(
+                numerator = BigInteger.valueOf(sortedValues[middle - 1])
+                    .add(BigInteger.valueOf(sortedValues[middle])),
+                denominator = BigInteger.TWO,
+            )
         }
+    }
+
+    /** Rounds a non-negative rational value to the nearest millisecond, half up. */
+    private fun roundedLong(numerator: BigInteger, denominator: BigInteger): Long {
+        val (quotient, remainder) = numerator.divideAndRemainder(denominator)
+        val rounded = if (remainder.multiply(BigInteger.TWO) >= denominator) {
+            quotient.add(BigInteger.ONE)
+        } else {
+            quotient
+        }
+        // The result is bounded by the Long-valued input samples; toString/toLong works on
+        // API 26, while BigInteger.longValueExact is only available from API 31 in Android.
+        return rounded.toString().toLong()
     }
 }

@@ -140,11 +140,12 @@ class UsageGuardReviewVm : BaseViewModel() {
         DigitalSelfDisciplineReviewUiState.Loading,
     )
 
-    val usageGuardSummaryFlow = todayFlow.flatMapLatest { today ->
-        val (startAt, endAt) = UsageGuardHistoryPolicy.dayRange(today)
-        DbSet.usageGuardRecordDao.queryByRequestedAtRange(startAt, endAt)
-            .map { UsageGuardReviewPolicy.summarize(it) }
-    }.stateInit(UsageGuardReviewPolicy.summarize(emptyList()))
+    val usageGuardSummaryFlow = combine(rangeFlow, todayFlow) { range, today -> range to today }
+        .flatMapLatest { (range, today) ->
+            val bounds = DigitalSelfDisciplineReviewPolicy.rangeBounds(range, today)
+            DbSet.usageGuardRecordDao.queryByRequestedAtRange(bounds.startAt, bounds.endAt)
+                .map { UsageGuardReviewPolicy.summarize(it) }
+        }.stateInit(UsageGuardReviewPolicy.summarize(emptyList()))
 
     fun updateRange(range: DigitalSelfDisciplineReviewPolicy.Range) = rangeFlow.update { range }
 
@@ -271,7 +272,7 @@ fun UsageGuardReviewPage() {
             }
 
             item(key = "legacy_usage_summary") {
-                UsageRequestSummaryCard(usageSummary)
+                UsageRequestSummaryCard(usageSummary, selectedRange)
             }
         }
     }
@@ -330,8 +331,11 @@ private fun RankedTargetsCard(summary: DigitalSelfDisciplineReviewPolicy.ReviewS
 }
 
 @Composable
-private fun UsageRequestSummaryCard(summary: UsageGuardReviewPolicy.Summary) {
-    ReviewSectionCard("使用申请补充复盘", "保留原有申请记录、时长、标签和结束状态统计。") {
+private fun UsageRequestSummaryCard(
+    summary: UsageGuardReviewPolicy.Summary,
+    range: DigitalSelfDisciplineReviewPolicy.Range,
+) {
+    ReviewSectionCard("使用申请补充复盘 · ${range.label}", "保留原有申请记录、时长、标签和结束状态统计。") {
         val widgetSummary = UsageGuardReviewPolicy.widgetSummary(summary)
         Text(widgetSummary.title, style = MaterialTheme.typography.titleSmall)
         Text(widgetSummary.metric, color = MaterialTheme.colorScheme.primary)
@@ -341,6 +345,43 @@ private fun UsageRequestSummaryCard(summary: UsageGuardReviewPolicy.Summary) {
             MetricBlock("申请", "${summary.requestCount} 次", Modifier.weight(1f))
             MetricBlock("时长", "${summary.totalRequestedMinutes} 分钟", Modifier.weight(1f))
             MetricBlock("高风险", summary.riskPeriod.label, Modifier.weight(1f))
+        }
+        Spacer(Modifier.height(12.dp))
+        Text("高频模式", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+        LegacyRankingList("应用排行", summary.topApps)
+        Spacer(Modifier.height(8.dp))
+        LegacyRankingList("标签排行", summary.topTags)
+        Spacer(Modifier.height(12.dp))
+        Text("结束状态", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+        if (summary.endReasonCounts.isEmpty()) {
+            Text("暂无结束状态", color = MaterialTheme.colorScheme.onSurfaceVariant)
+        } else {
+            summary.endReasonCounts.toList()
+                .sortedByDescending { it.second }
+                .forEachIndexed { index, (reason, count) ->
+                    CompactResultRow(UsageGuardReviewPolicy.endReasonLabel(reason), "$count 次")
+                    if (index != summary.endReasonCounts.size - 1) {
+                        HorizontalDivider(Modifier.padding(vertical = 8.dp))
+                    }
+                }
+        }
+    }
+}
+
+@Composable
+private fun LegacyRankingList(
+    title: String,
+    items: List<UsageGuardReviewPolicy.RankedItem>,
+) {
+    Text(title, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
+    if (items.isEmpty()) {
+        Text("暂无记录", color = MaterialTheme.colorScheme.onSurfaceVariant)
+        return
+    }
+    items.take(5).forEachIndexed { index, item ->
+        CompactResultRow("${index + 1}. ${item.label}", "${item.count} 次")
+        if (index != minOf(items.lastIndex, 4)) {
+            HorizontalDivider(Modifier.padding(vertical = 8.dp))
         }
     }
 }

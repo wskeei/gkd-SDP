@@ -118,6 +118,15 @@ fun SelfControlIntervalInsightCard(
                 points = presentation.chartPoints,
                 semanticSummary = presentation.semanticSummary,
             )
+            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                presentation.chartPoints.forEach { point ->
+                    Text(
+                        text = "${point.label}：${SelfControlIntervalPolicy.formatDurationCompact(point.valueMs)}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
         }
         Text(
             text = presentation.supportingText,

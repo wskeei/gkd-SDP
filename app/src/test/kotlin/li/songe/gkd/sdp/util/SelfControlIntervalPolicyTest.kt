@@ -56,6 +56,8 @@ class SelfControlIntervalPolicyTest {
         assertEquals(20L, SelfControlIntervalPolicy.statsFor(listOf(10L, 20L, 30L)).medianMs)
         assertEquals(25L, SelfControlIntervalPolicy.statsFor(listOf(10L, 20L, 30L, 40L)).medianMs)
         assertEquals(25L, SelfControlIntervalPolicy.statsFor(listOf(10L, 20L, 30L, 40L)).averageMs)
+        assertEquals(1L, SelfControlIntervalPolicy.statsFor(listOf(0L, 1L)).averageMs)
+        assertEquals(1L, SelfControlIntervalPolicy.statsFor(listOf(0L, 1L)).medianMs)
     }
 
     @Test
