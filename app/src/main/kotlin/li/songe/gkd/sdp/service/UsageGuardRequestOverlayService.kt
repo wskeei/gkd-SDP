@@ -26,9 +26,10 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.text.input.KeyboardType
@@ -40,6 +41,9 @@ import androidx.savedstate.SavedStateRegistryController
 import androidx.savedstate.SavedStateRegistryOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import li.songe.gkd.sdp.a11y.A11yRuleEngine
@@ -47,14 +51,24 @@ import li.songe.gkd.sdp.util.LogUtils
 import li.songe.gkd.sdp.a11y.UsageGuardEngine
 import li.songe.gkd.sdp.data.UsageGuardRecord
 import li.songe.gkd.sdp.data.UsageGuardTag
+import li.songe.gkd.sdp.data.SelfControlIntervalRepository
 import li.songe.gkd.sdp.db.DbSet
 import li.songe.gkd.sdp.store.storeFlow
 import li.songe.gkd.sdp.ui.component.SelfControlElapsedCard
+import li.songe.gkd.sdp.ui.component.SelfControlInsightCurrentReference
 import li.songe.gkd.sdp.ui.style.AppTheme
 import li.songe.gkd.sdp.util.SelfControlElapsedPolicy
+import li.songe.gkd.sdp.util.SelfControlInsightWindowPolicy
 import li.songe.gkd.sdp.util.UsageGuardPolicy
 import li.songe.gkd.sdp.util.UsageGuardUiStatePolicy
+import li.songe.gkd.sdp.util.UsageRequestRhythmPolicy
 import li.songe.gkd.sdp.widget.UsageGuardReviewWidget
+
+sealed interface UsageRequestDatasetState {
+    data object Loading : UsageRequestDatasetState
+    data class Ready(val data: SelfControlIntervalRepository.UsageRequestOverlayData) : UsageRequestDatasetState
+    data object Unavailable : UsageRequestDatasetState
+}
 
 class UsageGuardRequestOverlayService : LifecycleService(), SavedStateRegistryOwner {
     private val windowManager by lazy { getSystemService(WINDOW_SERVICE) as WindowManager }
@@ -67,10 +81,13 @@ class UsageGuardRequestOverlayService : LifecycleService(), SavedStateRegistryOw
     private var appName: String = ""
     private var grantMode: Int = UsageGuardPolicy.GRANT_MODE_RESUMABLE
     private var minReasonLength: Int = 8
-    private var elapsedState by mutableStateOf<SelfControlElapsedPolicy.ElapsedState>(
-        SelfControlElapsedPolicy.ElapsedState.Loading,
-    )
-    private var recentCompletedIntervalsMs by mutableStateOf(emptyList<Long>())
+    private var datasetState by mutableStateOf<UsageRequestDatasetState>(UsageRequestDatasetState.Loading)
+    private var selectedWindow by mutableStateOf(SelfControlInsightWindowPolicy.Window.LAST_24_HOURS)
+    private var selectedMetric by mutableStateOf(SelfControlInsightWindowPolicy.Metric.INTERVAL)
+    private var nowEpochMs by mutableLongStateOf(System.currentTimeMillis())
+    private var isSubmitting by mutableStateOf(false)
+    private var submitError by mutableStateOf<String?>(null)
+    private var tickerJob: Job? = null
 
     override fun onCreate() {
         super.onCreate()
@@ -86,11 +103,27 @@ class UsageGuardRequestOverlayService : LifecycleService(), SavedStateRegistryOw
         grantMode = intent?.getIntExtra("grantMode", UsageGuardPolicy.GRANT_MODE_RESUMABLE)
             ?: UsageGuardPolicy.GRANT_MODE_RESUMABLE
         minReasonLength = intent?.getIntExtra("minReasonLength", 8) ?: 8
-        elapsedState = SelfControlElapsedPolicy.ElapsedState.Loading
-        recentCompletedIntervalsMs = emptyList()
-        showOverlay()
-        loadElapsedState()
+        datasetState = UsageRequestDatasetState.Loading
+        selectedWindow = SelfControlInsightWindowPolicy.Window.LAST_24_HOURS
+        selectedMetric = SelfControlInsightWindowPolicy.Metric.INTERVAL
+        nowEpochMs = System.currentTimeMillis()
+        isSubmitting = false
+        submitError = null
+        if (showOverlay()) {
+            startTicker()
+            loadElapsedState()
+        }
         return START_NOT_STICKY
+    }
+
+    private fun startTicker() {
+        tickerJob?.cancel()
+        tickerJob = lifecycleScope.launch {
+            while (isActive) {
+                nowEpochMs = System.currentTimeMillis()
+                delay(1_000L)
+            }
+        }
     }
 
     private fun loadElapsedState() {
@@ -104,29 +137,35 @@ class UsageGuardRequestOverlayService : LifecycleService(), SavedStateRegistryOw
                 }
             }
             result.onSuccess { overlay ->
-                recentCompletedIntervalsMs = overlay.samples.mapNotNull { it.gapMs }
-                elapsedState = when (overlay.anchorStatus) {
+                datasetState = UsageRequestDatasetState.Ready(overlay)
+            }.onFailure {
+                datasetState = UsageRequestDatasetState.Unavailable
+            }
+        }
+    }
+
+    private fun elapsedStateFor(
+        state: UsageRequestDatasetState,
+    ): SelfControlElapsedPolicy.ElapsedState = when (state) {
+        UsageRequestDatasetState.Loading -> SelfControlElapsedPolicy.ElapsedState.Loading
+        UsageRequestDatasetState.Unavailable -> SelfControlElapsedPolicy.ElapsedState.Unavailable
+        is UsageRequestDatasetState.Ready -> when (state.data.anchorStatus) {
                     SelfControlIntervalRepository.UsageGapAnchorStatus.NoPreviousRequest ->
                         SelfControlElapsedPolicy.ElapsedState.NoHistory
 
                     SelfControlIntervalRepository.UsageGapAnchorStatus.Available ->
                         SelfControlElapsedPolicy.ElapsedState.Running(
-                            anchorAtEpochMs = requireNotNull(overlay.previousLastUsageEndedAt),
+                            anchorAtEpochMs = requireNotNull(state.data.previousLastUsageEndedAt),
                             firstOccurrence = false,
                         )
 
                     SelfControlIntervalRepository.UsageGapAnchorStatus.MissingActualEnd ->
-                        SelfControlElapsedPolicy.ElapsedState.Unavailable
+                        SelfControlElapsedPolicy.ElapsedState.MissingActualEnd
                 }
-            }.onFailure {
-                recentCompletedIntervalsMs = emptyList()
-                elapsedState = SelfControlElapsedPolicy.ElapsedState.Unavailable
-            }
-        }
     }
 
-    private fun showOverlay() {
-        if (view != null) return
+    private fun showOverlay(): Boolean {
+        if (view != null) return false
 
         view = ComposeView(this).apply {
             setViewTreeLifecycleOwner(this@UsageGuardRequestOverlayService)
@@ -140,8 +179,15 @@ class UsageGuardRequestOverlayService : LifecycleService(), SavedStateRegistryOw
                         tags = tags,
                         grantMode = grantMode,
                         minReasonLength = settings.usageGuardMinReasonLength,
-                        elapsedState = elapsedState,
-                        recentCompletedIntervalsMs = recentCompletedIntervalsMs,
+                        elapsedState = elapsedStateFor(datasetState),
+                        samples = (datasetState as? UsageRequestDatasetState.Ready)?.data?.samples.orEmpty(),
+                        insightAnchorAt = (datasetState as? UsageRequestDatasetState.Ready)?.data?.insightAnchorAt,
+                        selectedWindow = selectedWindow,
+                        onWindowSelected = { selectedWindow = it },
+                        selectedMetric = selectedMetric,
+                        onMetricSelected = { selectedMetric = it },
+                        nowEpochMs = nowEpochMs,
+                        supportsUsageRatio = true,
                         durationOptions = UsageGuardUiStatePolicy.normalizeDurationOptions(
                             settings.usageGuardDurationOptionsMinutes,
                         ),
@@ -150,26 +196,41 @@ class UsageGuardRequestOverlayService : LifecycleService(), SavedStateRegistryOw
                                 addCustomTag(name, existing)
                             }
                         },
+                        isSubmitting = isSubmitting,
+                        submitError = submitError,
                         onSubmit = { selectedTags, reason, requestedDurationMinutes ->
-                            lifecycleScope.launch(Dispatchers.IO) {
-                                val now = System.currentTimeMillis()
-                                DbSet.usageGuardRecordDao.insertRequestWithGap(
-                                    record = UsageGuardRecord(
-                                            appId = appId,
-                                            appName = appName,
-                                            tagNames = selectedTags,
-                                            reasonText = reason.trim(),
-                                            grantMode = grantMode,
-                                            requestedDurationMinutes = requestedDurationMinutes,
-                                            requestedAt = now,
-                                            grantedAt = now,
-                                            expiresAt = now + requestedDurationMinutes * 60_000L,
-                                        ),
-                                    replacedAt = now,
-                                )
-                                UsageGuardReviewWidget.refreshAll(applicationContext)
-                                UsageGuardEngine.onRequestGranted(appId)
-                                stopSelf()
+                            if (!isSubmitting) {
+                                isSubmitting = true
+                                submitError = null
+                                lifecycleScope.launch {
+                                    val result = runCatching {
+                                        withContext(Dispatchers.IO) {
+                                            val now = System.currentTimeMillis()
+                                            DbSet.usageGuardRecordDao.insertRequestWithGap(
+                                                record = UsageGuardRecord(
+                                                    appId = appId,
+                                                    appName = appName,
+                                                    tagNames = selectedTags,
+                                                    reasonText = reason.trim(),
+                                                    grantMode = grantMode,
+                                                    requestedDurationMinutes = requestedDurationMinutes,
+                                                    requestedAt = now,
+                                                    grantedAt = now,
+                                                    expiresAt = now + requestedDurationMinutes.toLong() * 60_000L,
+                                                ),
+                                                replacedAt = now,
+                                            )
+                                        }
+                                    }
+                                    result.onSuccess {
+                                        UsageGuardReviewWidget.refreshAll(applicationContext)
+                                        UsageGuardEngine.onRequestGranted(appId)
+                                        stopSelf()
+                                    }.onFailure {
+                                        isSubmitting = false
+                                        submitError = "暂时无法保存本次申请，请稍后重试"
+                                    }
+                                }
                             }
                         },
                         onCancel = {
@@ -196,6 +257,7 @@ class UsageGuardRequestOverlayService : LifecycleService(), SavedStateRegistryOw
             UsageGuardEngine.onOverlayMountFailed("request", appId)
             stopSelf()
         }
+        return view != null
     }
 
     private suspend fun addCustomTag(name: String, existing: List<UsageGuardTag>) {
@@ -210,6 +272,7 @@ class UsageGuardRequestOverlayService : LifecycleService(), SavedStateRegistryOw
 
     override fun onDestroy() {
         super.onDestroy()
+        tickerJob?.cancel()
         view?.let { runCatching { windowManager.removeView(it) } }
         view = null
         UsageGuardEngine.onRequestOverlayStopped(appId.ifBlank { null })
@@ -224,9 +287,18 @@ private fun UsageGuardRequestContent(
     grantMode: Int,
     minReasonLength: Int,
     elapsedState: SelfControlElapsedPolicy.ElapsedState,
-    recentCompletedIntervalsMs: List<Long>,
+    samples: List<SelfControlInsightWindowPolicy.IntervalSample>,
+    insightAnchorAt: Long?,
+    selectedWindow: SelfControlInsightWindowPolicy.Window,
+    onWindowSelected: (SelfControlInsightWindowPolicy.Window) -> Unit,
+    selectedMetric: SelfControlInsightWindowPolicy.Metric,
+    onMetricSelected: (SelfControlInsightWindowPolicy.Metric) -> Unit,
+    nowEpochMs: Long,
+    supportsUsageRatio: Boolean,
     durationOptions: List<Int>,
     onAddTag: (String, List<UsageGuardTag>) -> Unit,
+    isSubmitting: Boolean,
+    submitError: String?,
     onSubmit: (List<String>, String, Int) -> Unit,
     onCancel: () -> Unit,
 ) {
@@ -241,6 +313,19 @@ private fun UsageGuardRequestContent(
     var reasonError by remember { mutableStateOf<String?>(null) }
     var durationError by remember { mutableStateOf<String?>(null) }
     var tagsError by remember { mutableStateOf<String?>(null) }
+
+    val effectiveRequestedDurationMinutes = if (showCustomDuration) {
+        customMinutesText.toIntOrNull()?.takeIf { it > 0 }
+    } else {
+        selectedDuration
+    }
+    val currentGapMs = (elapsedState as? SelfControlElapsedPolicy.ElapsedState.Running)?.let {
+        UsageRequestRhythmPolicy.gapMs(it.anchorAtEpochMs, nowEpochMs)
+    }
+    val currentReference = SelfControlInsightCurrentReference(
+        gapMs = currentGapMs,
+        durationMinutes = effectiveRequestedDurationMinutes,
+    )
 
     Surface(
         modifier = Modifier.fillMaxSize(),
@@ -271,12 +356,6 @@ private fun UsageGuardRequestContent(
                 color = MaterialTheme.colorScheme.primary,
             )
 
-            SelfControlElapsedCard(
-                context = SelfControlElapsedPolicy.Context.USAGE_REQUEST,
-                state = elapsedState,
-                recentCompletedIntervalsMs = recentCompletedIntervalsMs,
-            )
-
             Text("选择标签", style = MaterialTheme.typography.titleSmall)
             FlowRow(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -285,6 +364,7 @@ private fun UsageGuardRequestContent(
                 tags.forEach { tag ->
                     FilterChip(
                         selected = selectedTags.contains(tag.name),
+                        enabled = !isSubmitting,
                         onClick = {
                             tagsError = null
                             selectedTags = if (selectedTags.contains(tag.name)) {
@@ -305,7 +385,10 @@ private fun UsageGuardRequestContent(
                 )
             }
 
-            TextButton(onClick = { showAddTagEditor = !showAddTagEditor }) {
+            TextButton(
+                enabled = !isSubmitting,
+                onClick = { showAddTagEditor = !showAddTagEditor },
+            ) {
                 Text(if (showAddTagEditor) "收起添加标签" else "没有合适的标签？添加标签")
             }
             if (showAddTagEditor) {
@@ -316,8 +399,10 @@ private fun UsageGuardRequestContent(
                         modifier = Modifier.weight(1f),
                         label = { Text("添加标签") },
                         singleLine = true,
+                        enabled = !isSubmitting,
                     )
                     Button(
+                        enabled = !isSubmitting,
                         onClick = {
                             val normalized = newTagText.trim()
                             if (normalized.isBlank()) return@Button
@@ -351,6 +436,7 @@ private fun UsageGuardRequestContent(
                 },
                 isError = reasonError != null,
                 minLines = 3,
+                enabled = !isSubmitting,
             )
             reasonError?.let {
                 Text(
@@ -368,6 +454,7 @@ private fun UsageGuardRequestContent(
                 durationOptions.forEach { minutes ->
                     FilterChip(
                         selected = selectedDuration == minutes && !showCustomDuration,
+                        enabled = !isSubmitting,
                         onClick = {
                             durationError = null
                             selectedDuration = minutes
@@ -379,7 +466,10 @@ private fun UsageGuardRequestContent(
                 }
             }
 
-            TextButton(onClick = { showCustomDuration = !showCustomDuration }) {
+            TextButton(
+                enabled = !isSubmitting,
+                onClick = { showCustomDuration = !showCustomDuration },
+            ) {
                 Text(if (showCustomDuration) "收起自定义时长" else "自定义时长")
             }
             if (showCustomDuration) {
@@ -396,6 +486,7 @@ private fun UsageGuardRequestContent(
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     singleLine = true,
                     isError = durationError != null,
+                    enabled = !isSubmitting,
                 )
             }
             durationError?.let {
@@ -406,9 +497,32 @@ private fun UsageGuardRequestContent(
                 )
             }
 
+            SelfControlElapsedCard(
+                context = SelfControlElapsedPolicy.Context.USAGE_REQUEST,
+                state = elapsedState,
+                samples = samples,
+                insightAnchorAt = insightAnchorAt,
+                selectedWindow = selectedWindow,
+                onWindowSelected = onWindowSelected,
+                selectedMetric = selectedMetric,
+                onMetricSelected = onMetricSelected,
+                supportsUsageRatio = supportsUsageRatio,
+                currentReference = currentReference,
+                nowEpochMs = nowEpochMs,
+            )
+
+            submitError?.let {
+                Text(
+                    text = it,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error,
+                )
+            }
+
             Spacer(modifier = Modifier.height(8.dp))
 
             Button(
+                enabled = !isSubmitting,
                 onClick = {
                     val requestedDurationMinutes = if (showCustomDuration) {
                         customMinutesText.toIntOrNull() ?: 0
@@ -433,6 +547,7 @@ private fun UsageGuardRequestContent(
                 Text("开始使用")
             }
             TextButton(
+                enabled = !isSubmitting,
                 onClick = onCancel,
                 modifier = Modifier.fillMaxWidth(),
             ) {

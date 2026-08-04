@@ -78,6 +78,15 @@ fun SelfControlElapsedCard(
                     )
                 }
 
+                SelfControlElapsedPolicy.ElapsedState.MissingActualEnd -> {
+                    Text(
+                        text = "暂无可确认的上次结束时间",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 8.dp),
+                    )
+                }
+
                 is SelfControlElapsedPolicy.ElapsedState.Running -> {
                     RunningElapsedContent(
                         copy = copy,

@@ -28,6 +28,9 @@ object SelfControlElapsedPolicy {
 
         data object Unavailable : ElapsedState
 
+        /** A previous request exists, but no trustworthy real-use end is available. */
+        data object MissingActualEnd : ElapsedState
+
         data class Running(
             val anchorAtEpochMs: Long,
             val firstOccurrence: Boolean,
@@ -54,12 +57,12 @@ object SelfControlElapsedPolicy {
     fun copyFor(context: Context): Copy {
         return when (context) {
             Context.USAGE_REQUEST -> Copy(
-                title = "距离上次申请",
-                previousTimeLabel = "上次申请",
+                title = "距离上次结束使用",
+                previousTimeLabel = "上次结束使用",
                 firstTimeLabel = "本次申请",
-                noHistoryText = "此前没有提交过使用申请",
-                firstSupportingText = "这次选择“取消”不会创建申请记录。",
-                supportingText = "如果这次选择“取消”，这段未申请时间会继续延长。",
+                noHistoryText = "此前没有成功的使用申请",
+                firstSupportingText = "完成一次使用并离开后开始统计；取消申请不会重置这段时间。",
+                supportingText = "这段时间从上次实际结束使用开始计算；取消申请不会重置。",
             )
 
             Context.APP_OPEN_ATTEMPT -> Copy(

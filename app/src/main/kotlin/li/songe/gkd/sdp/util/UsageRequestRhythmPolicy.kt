@@ -2,7 +2,6 @@ package li.songe.gkd.sdp.util
 
 import java.math.BigDecimal
 import java.math.RoundingMode
-import java.util.Locale
 
 /** Pure, clock-free semantics for usage-request rhythm and 间用比. */
 object UsageRequestRhythmPolicy {
@@ -50,6 +49,11 @@ object UsageRequestRhythmPolicy {
 
     fun formatRatio(value: Double?): String? {
         if (value == null || !value.isFinite() || value < 0.0) return "暂无"
-        return "%.2f".format(Locale.ROOT, value)
+        val scale = if (value >= 10.0) 1 else 2
+        val formatted = BigDecimal.valueOf(value)
+            .setScale(scale, RoundingMode.HALF_UP)
+            .stripTrailingZeros()
+            .toPlainString()
+        return if (value < 10.0 && !formatted.contains('.')) "$formatted.0" else formatted
     }
 }

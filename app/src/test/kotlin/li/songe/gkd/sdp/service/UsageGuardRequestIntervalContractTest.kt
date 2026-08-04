@@ -40,7 +40,7 @@ class UsageGuardRequestIntervalContractTest {
 
         assertEquals(7_000L, overlay.latestRequestedAt)
         assertEquals(
-            listOf(1_000L, 2_000L, 1_000L, 1_000L, 1_000L),
+            listOf(2_000L, 1_000L, 1_000L, 1_000L, 1_000L),
             overlay.samples.mapNotNull { it.gapMs }.takeLast(5),
         )
     }

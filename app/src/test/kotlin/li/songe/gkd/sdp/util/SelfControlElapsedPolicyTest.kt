@@ -61,12 +61,12 @@ class SelfControlElapsedPolicyTest {
     }
 
     @Test
-    fun usageRequestCopySaysCancelDoesNotCreateARecord() {
+    fun usageRequestCopyUsesActualEndAndDoesNotResetOnCancel() {
         val copy = SelfControlElapsedPolicy.copyFor(SelfControlElapsedPolicy.Context.USAGE_REQUEST)
 
         assertTrue(copy.supportingText.contains("取消"))
-        assertTrue(copy.supportingText.contains("延长"))
-        assertEquals("距离上次申请", copy.title)
+        assertTrue(copy.supportingText.contains("结束使用"))
+        assertEquals("距离上次结束使用", copy.title)
     }
 
     @Test

@@ -73,8 +73,9 @@ class UsageRequestRhythmPolicyTest {
 
     @Test
     fun ratioFormattingIsStableForUi() {
-        assertEquals("4.00", UsageRequestRhythmPolicy.formatRatio(4.0))
+        assertEquals("4.0", UsageRequestRhythmPolicy.formatRatio(4.0))
         assertEquals("暂无", UsageRequestRhythmPolicy.formatRatio(null))
         assertTrue(UsageRequestRhythmPolicy.formatRatio(1.234)!!.contains("1.23"))
+        assertEquals("10", UsageRequestRhythmPolicy.formatRatio(10.0))
     }
 }
