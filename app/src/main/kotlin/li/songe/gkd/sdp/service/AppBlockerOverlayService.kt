@@ -51,6 +51,7 @@ import li.songe.gkd.sdp.ui.component.SelfControlInsightCurrentReference
 import li.songe.gkd.sdp.ui.style.AppTheme
 import li.songe.gkd.sdp.util.SelfControlElapsedPolicy
 import li.songe.gkd.sdp.util.SelfControlInsightWindowPolicy
+import li.songe.gkd.sdp.util.AppBlockerDecisionPolicy
 
 class AppBlockerOverlayService : LifecycleService(), SavedStateRegistryOwner {
 
@@ -256,7 +257,10 @@ class AppBlockerOverlayService : LifecycleService(), SavedStateRegistryOwner {
             targetId.isBlank() ||
             startTime.isBlank() ||
             endTime.isBlank() ||
-            daysOfWeek.isBlank()
+            daysOfWeek.isBlank() ||
+            !AppBlockerDecisionPolicy.isValidTime(startTime) ||
+            !AppBlockerDecisionPolicy.isValidTime(endTime) ||
+            !AppBlockerDecisionPolicy.isValidDays(daysOfWeek)
         ) return null
         val rule = BlockTimeRule(
             id = ruleId,

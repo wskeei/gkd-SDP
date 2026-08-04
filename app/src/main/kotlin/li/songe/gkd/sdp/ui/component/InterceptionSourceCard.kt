@@ -14,6 +14,7 @@ import androidx.compose.ui.unit.dp
 import java.util.Locale
 import li.songe.gkd.sdp.data.BlockTimeRule
 import li.songe.gkd.sdp.data.SelectorRuleSnapshot
+import li.songe.gkd.sdp.data.SubsConfig
 
 data class InterceptionSourcePresentation(
     val title: String,
@@ -24,8 +25,8 @@ data class InterceptionSourcePresentation(
             val lines = buildList {
                 add("订阅：${snapshot.subscriptionName ?: "id=${snapshot.subsId}"} · v${snapshot.subsVersion}")
                 val groupType = when (snapshot.groupType) {
-                    2 -> "应用"
-                    3 -> "全局"
+                    SubsConfig.AppGroupType -> "应用"
+                    SubsConfig.GlobalGroupType -> "全局"
                     else -> "未知类型"
                 }
                 add("规则组：${snapshot.groupName ?: "规则组 ${snapshot.groupKey}"}（$groupType，key=${snapshot.groupKey}）")

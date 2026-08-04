@@ -41,6 +41,7 @@ import li.songe.gkd.sdp.a11y.A11yRuleEngine
 import li.songe.gkd.sdp.appScope
 import li.songe.gkd.sdp.a11y.UrlBlockerEngine
 import li.songe.gkd.sdp.data.SelectorRuleSnapshot
+import li.songe.gkd.sdp.data.SubsConfig
 import li.songe.gkd.sdp.util.LogUtils
 import li.songe.gkd.sdp.data.SelfControlAttempt
 import li.songe.gkd.sdp.ui.component.SelfControlElapsedCard
@@ -78,6 +79,8 @@ class InterceptOverlayService : LifecycleService(), SavedStateRegistryOwner {
         const val EXTRA_SELECTOR_SUBS_NAME = "selectorSubsName"
         const val EXTRA_URL_RULE_ID = "urlRuleId"
         const val EXTRA_URL_RULE_NAME = "urlRuleName"
+        private const val URL_SUBS_ID = -2L
+        private const val URL_GROUP_KEY = 0
     }
 
     private val windowManager by lazy { getSystemService(WINDOW_SERVICE) as WindowManager }
@@ -116,7 +119,27 @@ class InterceptOverlayService : LifecycleService(), SavedStateRegistryOwner {
         val matchedAt = intent?.getLongExtra(EXTRA_MATCHED_AT, 0L) ?: 0L
         val source = intent?.interceptionSource(eventKind)
 
-        if (subsId != -1L && groupKey != -1 && source != null) {
+        val selectorSnapshot = intent?.selectorSnapshot(eventKind)
+        val validIntent = when (eventKind) {
+            SelfControlAttempt.KIND_SELECTOR_INTERCEPT ->
+                subsId > 0L &&
+                    groupKey >= 0 &&
+                    selectorSnapshot != null &&
+                    eventKey == selectorSnapshot.eventKey() &&
+                    subjectId == selectorSnapshot.appId &&
+                    source != null
+            SelfControlAttempt.KIND_URL_INTERCEPT -> {
+                val ruleId = intent?.getLongExtra(EXTRA_URL_RULE_ID, -1L) ?: -1L
+                subsId == URL_SUBS_ID &&
+                    groupKey == URL_GROUP_KEY &&
+                    ruleId >= 0L &&
+                    eventKey == SelfControlElapsedPolicy.urlInterceptEventKey(ruleId) &&
+                    subjectId == ruleId.toString() &&
+                    source != null
+            }
+            else -> false
+        }
+        if (validIntent) {
             elapsedState = SelfControlElapsedPolicy.ElapsedState.Loading
             insightSamples = emptyList()
             insightAnchorAt = null
@@ -290,7 +313,7 @@ class InterceptOverlayService : LifecycleService(), SavedStateRegistryOwner {
         ).takeIf {
             it.subsId > 0L &&
                 it.appId.isNotBlank() &&
-                it.groupType >= 0 &&
+                it.groupType in setOf(SubsConfig.AppGroupType, SubsConfig.GlobalGroupType) &&
                 it.groupKey >= 0 &&
                 it.ruleIndex >= 0
         }
@@ -302,7 +325,13 @@ class InterceptOverlayService : LifecycleService(), SavedStateRegistryOwner {
                 selectorSnapshot(eventKind)?.let(InterceptionSourcePresentation::selector)
             SelfControlAttempt.KIND_URL_INTERCEPT -> {
                 val ruleId = getLongExtra(EXTRA_URL_RULE_ID, -1L)
-                if (hasExtra(EXTRA_URL_RULE_ID) && ruleId >= 0L) {
+                if (hasExtra(EXTRA_URL_RULE_ID) &&
+                    getLongExtra(EXTRA_SUBS_ID, -1L) == URL_SUBS_ID &&
+                    getIntExtra(EXTRA_GROUP_KEY, -1) == URL_GROUP_KEY &&
+                    ruleId >= 0L &&
+                    getStringExtra(EXTRA_SUBJECT_ID) == ruleId.toString() &&
+                    getStringExtra(EXTRA_EVENT_KEY) == SelfControlElapsedPolicy.urlInterceptEventKey(ruleId)
+                ) {
                     InterceptionSourcePresentation.url(
                         ruleId = ruleId,
                         ruleName = getStringExtra(EXTRA_URL_RULE_NAME),
@@ -312,6 +341,7 @@ class InterceptOverlayService : LifecycleService(), SavedStateRegistryOwner {
             else -> null
         }
     }
+
 }
 
 @Composable
