@@ -93,8 +93,7 @@ data class UsageGuardRecord(
 
         @Query(
             """
-            SELECT id, requested_at, requested_duration_minutes,
-                   last_usage_ended_at, request_gap_ms
+            SELECT *
             FROM usage_guard_record
             WHERE app_id = :appId
               AND requested_at >= :startAt
@@ -102,23 +101,11 @@ data class UsageGuardRecord(
             ORDER BY requested_at ASC, id ASC
             """
         )
-        suspend fun queryByAppAndRequestedAtRange(
+        suspend fun queryRecordsByAppAndRequestedAtRange(
             appId: String,
             startAt: Long,
             endAt: Long,
-        ): List<UsageRequestInsightRow>
-
-        @Query(
-            """
-            SELECT id, requested_at, requested_duration_minutes,
-                   last_usage_ended_at, request_gap_ms
-            FROM usage_guard_record
-            WHERE app_id = :appId
-            ORDER BY requested_at DESC, id DESC
-            LIMIT 1
-            """
-        )
-        suspend fun getLatestInsightRow(appId: String): UsageRequestInsightRow?
+        ): List<UsageGuardRecord>
 
         @Query("SELECT * FROM usage_guard_record ORDER BY id DESC LIMIT :limit")
         fun queryLatest(limit: Int = 100): Flow<List<UsageGuardRecord>>

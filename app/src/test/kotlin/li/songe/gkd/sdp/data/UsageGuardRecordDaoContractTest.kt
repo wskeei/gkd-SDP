@@ -29,8 +29,7 @@ class UsageGuardRecordDaoContractTest {
         assertTrue(methods.contains("markUsageStarted"))
         assertTrue(methods.contains("closeRecordFromActiveUse"))
         assertTrue(methods.contains("insertRequestWithGap"))
-        assertTrue(methods.contains("queryByAppAndRequestedAtRange"))
-        assertTrue(methods.contains("getLatestInsightRow"))
+        assertTrue(methods.contains("queryRecordsByAppAndRequestedAtRange"))
     }
 
     @Test
