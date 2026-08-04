@@ -138,6 +138,36 @@ of the third-party app pixels behind the secure window.
 Screenshot protection requires physical-device/manual verification; JVM unit
 tests only validate the configured flag contract.
 
+#### Interception attribution and rhythm data
+
+Selector interception has two separate persistence boundaries. `A11yRuleEngine`
+captures a safe `SelectorRuleSnapshot` and an exact v2 event key, launches the
+overlay, and returns without calling `rule.trigger()`. After `WindowManager.addView`
+actually succeeds, `MountedInterceptRecorder` writes the `ActionLog` row with
+`INTERCEPTED` outcome and the append-only attempt event. A rejected, duplicate, or
+failed mount writes neither displayed history nor a fake interval. Both accessibility
+and automation/Shizuku owners enter this same engine path.
+
+The selector key is scoped by subscription, actual app, group type/key, and exact
+rule identity (key when present, otherwise subscription version plus rule index),
+so different rules cannot share an interval. URL attempts keep
+`url_intercept:<ruleId>`; app-blocker attempts keep `app_blocker:<packageName>` while
+their immutable matched `BlockTimeRule` snapshot is used for the source card.
+
+Usage-request rhythm data has a different fact boundary. `lastUsageEndedAt` is the
+last confirmed real foreground-use end on the active `UsageGuardRecord`; resumable
+leave is mark-only and a return clears the candidate. A successful request freezes
+`requestGapMs = requestedAt - previous.lastUsageEndedAt`. A cancelled request does
+not write a row or reset the anchor, and an active replacement receives a null gap.
+The pure `UsageRequestRhythmPolicy` calculates “间用比” as gap divided by the
+selected request duration. Overlays load one 30-day raw dataset and switch 24-hour,
+7-day, or 30-day windows in memory; current request feedback is never inserted into
+historical statistics.
+
+These columns and the outcome snapshots are added by the Room 32 → 33 auto migration.
+Keep `app/schemas` in sync with Room processor output and preserve nullable legacy
+values; old records are not reconstructed as if an end event had been observed.
+
 ### Accessibility Guard
 
 The accessibility guard is a `gkd`-channel feature exposed under the Digital

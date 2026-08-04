@@ -1,36 +1,35 @@
-# 数字自律间隔洞察测试矩阵
+# 数字自律间隔与拦截归因测试矩阵
 
-这份矩阵补充 `release-smoke-checklist.md`，用于 beta.2 → beta.3 的真实设备回归。所有测试数据使用测试包名、虚构规则名和虚构申请理由，不记录真实 URL、截图或个人内容。
+本矩阵覆盖规则归因、申请节律、滚动洞察和 Room 迁移。自动化数据使用测试包名、虚构规则名和虚构申请理由；不写入真实 URL、屏幕文本或设备标识。
+本次发布不把真机/OEM 验收设为门禁，device-only 状态统一为：**未执行；用户选择在公开 prerelease 下载后自行验证，不作为本次发布门禁。**
 
-## 自动化覆盖
+## 自动化矩阵
 
-| 区域 | 覆盖内容 | 测试位置 |
-| --- | --- | --- |
-| 间隔算法 | 稳定 key 配对、负值过滤、最近 5 个、平均/中位数、当前值不进入历史、超大整数 | `SelfControlIntervalPolicyTest` |
-| Room/保留 | 事件表字段、DAO/事务契约、保留常量与 31 → 32 schema 静态覆盖；真实清理与升级需按下方设备矩阵验证 | `SelfControlAttemptDaoContractTest`、`SelfControlAttemptEventDaoContractTest`、`32.json` |
-| 数据协调 | 申请范围前驱、拦截 descriptor、标签回退、申请/拦截来源合并 | `SelfControlIntervalRepositoryTest`、`SelfControlAttemptRecordingContractTest` |
-| 弹窗 presentation | 0/1/5 历史、最多 6 柱、本次增长、平均差值、无敏感文案、超大跨度提示 | `SelfControlIntervalPresentationTest` |
-| 复盘策略 | 自然日/DST、跨范围前驱、按后一个事件归日、筛选、每日中位数、最近 10 条、比较门槛 | `DigitalSelfDisciplineReviewPolicyTest` |
-| 复盘 presentation | 今日/多日图表点、空状态、申请/拦截筛选可见性、首页摘要 | `DigitalSelfDisciplineReviewPresentationTest` |
+| requirement | data setup | automated test | expected result | device-only status |
+| --- | --- | --- | --- | --- |
+| exact selector attribution | 同一组两条带 key/无 key 规则、两个 app | `SelectorRuleSnapshotTest`、`SelfControlElapsedPolicyTest` | v2 key 隔离订阅/app/group/exact rule，来源只含安全名称/编号 | 未执行；用户选择在公开 prerelease 下载后自行验证，不作为本次发布门禁。 |
+| mounted success boundary | accepted、duplicate、invalid、mount failure | `MountedInterceptRecorderTest`、`SelfControlAttemptRecordingContractTest` | 只有 `addView` 成功写 ActionLog/attempt；失败不写冷却或历史 | 同上 |
+| missing ActionLog regression | selector 命中拦截分支 | `ActionLogOutcomeContractTest`、`RuleTriggerLogRepositoryTest` | intercepted 行写入，且不调用 `rule.trigger()` | 同上 |
+| strict/resumable usage end | 离开、返回、到期、终止、断开 | `UsageGuardUsageEndPolicyTest`、`UsageGuardRecordDaoContractTest` | mark-only/mark+close 语义正确，未知结束不猜时间 | 同上 |
+| cancel/no reset | 有 anchor 后取消表单 | `UsageGuardRequestIntervalContractTest`、`UsageRequestRhythmPresentationTest` | 不插入、不关闭、不重置 anchor | 同上 |
+| 24h/7d/30d windows | 固定 now、边界内外样本 | `SelfControlInsightWindowPolicyTest`、`SelfControlIntervalPresentationTest` | 含边界、排除未来/旧样本，切换复用同一 30 天数据 | 同上 |
+| >30 point aggregation | 31+ 原始点、空桶 | `SelfControlInsightWindowPolicyTest`、`SelfControlInsightAccessibilityContractTest` | 24/28/30 桶上限、桶内平均、原始样本数保留 | 同上 |
+| 间用比 formula | gap 120m、时长 30/60、缺失/回拨 | `UsageRequestRhythmPolicyTest`、`UsageRequestRhythmPresentationTest` | 4.0×/2.0×，缺失不变成 0，当前值不进历史平均 | 同上 |
+| three ratio averages | 同一数据集分别落入三个窗口 | `SelfControlInsightWindowPolicyTest`、`UsageRequestRhythmPresentationTest` | 近 24h/7d/30d 平均和有效样本数分别显示 | 同上 |
+| legacy null data | 旧 row gap/end 为 null、gap=0 | `DigitalSelfDisciplineReviewPolicyTest`、`SelfControlIntervalRepositoryTest` | null 不纳入有效样本，0 合法；显示新口径积累/未知 | 同上 |
+| review alignment | requestedAt 与 lastUsageEndedAt 不同 | `DigitalSelfDisciplineReviewPolicyTest` | 复盘使用冻结 `requestGapMs`，不再用相邻 requestedAt 配对 | 同上 |
+| privacy | selector/url/reason/node text 作为输入 | `InterceptionSourcePresentationTest`、事件实体契约测试 | 持久化和语义不含敏感文本或 URL | 同上 |
+| Room compatibility | schema 32 → 33 新列 | `scripts/tests/test_room_schema_33.py`、Room processor | 仅新增可空/默认字段，32 不变，无 destructive migration | 同上 |
+| flavor parity | gkd/play 共享源码 | CI `:app:lintGkdDebug :app:lintPlayDebug`、双 flavor assemble | 两 flavor 编译/Lint 通过 | 同上 |
 
-## 真实设备矩阵
+## 发布后由用户执行的设备检查
 
-| 场景 | 操作 | 预期 |
-| --- | --- | --- |
-| 申请首条 | 打开纳入申请的测试应用，取消表单，再次打开 | 取消不产生记录；第二次仍显示无历史或原有锚点，不阻塞输入 |
-| 申请连续 | 提交两次合法申请，中间等待并再次打开 | 计时以最后成功提交为锚点；出现最近间隔、平均/中位数和本次动态柱 |
-| 应用拦截 | 触发同一包名两次，再触发另一包名 | 同一包名才配对；另一包名从首条开始，不跨应用平均 |
-| 选择器拦截 | 同一订阅/组在两个实际应用触发 | 每个实际前台应用分开统计；继续/退出、冷却和回桌面行为不变 |
-| 网址拦截 | 同一规则触发两次，检查记录和界面 | 以规则 ID 配对；图表/日志无实际 URL、pattern 或页面文本 |
-| 挂载边界 | 拒绝悬浮窗权限或制造重复 start | 不新增事件；原 cooldown 恢复和业务判定保持原样 |
-| 数据库异常 | 在测试环境阻断数据库读取后打开拦截/申请 | 洞察显示不可用；申请提交、拦截退出/继续和 10 秒倒计时仍可用 |
-| 复盘范围 | 分别选择今日、近 7 天、近 30 天和上一周期无数据 | 今日显示最近样本；多日显示每日中位数；缺失日期不绘制 0；比较显示样本不足 |
-| 跨午夜 | 23:59 触发一次，00:01 触发一次并返回复盘 | 间隔归到第二天；首页摘要和复盘范围自动切换到新日期 |
-| 升级 | 安装 beta.2，制造申请/拦截记录，覆盖安装候选版本 | Room 31 → 32 成功；既有申请和最后拦截时间保留；第一条新拦截能承接旧锚点 |
-| 保留 | 构造超过 90 天和超过 10,000 行的事件 | 旧事件按规则清理，最新 10,000 行保留；`self_control_attempt` 最后状态仍存在 |
-| 无障碍 | TalkBack、200% 字体、360dp、横屏、深色 | 图表有稳定文字摘要和明细；秒级数字不主动播报；控件不少于 48dp |
+- 申请：首条、连续申请、取消、strict/resumable 离开/返回、升级迁移。
+- 拦截：selector exact 来源、URL/app 来源、重复启动/挂载失败、10 秒倒计时、HOME 回退。
+- UI：24h/7d/30d 下拉、间隔/间用比切换、长数据、360dp/大字体/TalkBack、深色主题。
+- 平台：无障碍/Shizuku 两 owner、悬浮窗拒绝、系统 Back/Home/最近任务/Force stop/OEM 截图表现。
 
-## 隐私/静态检查
+## 隐私静态检查
 
 ```bash
 rg -n "reasonText|interceptMessage|pattern|redirectUrl|actualUrl" \
@@ -39,4 +38,4 @@ rg -n "reasonText|interceptMessage|pattern|redirectUrl|actualUrl" \
 rg -n "liveRegion" app/src/main/kotlin/li/songe/gkd/sdp/ui/component
 ```
 
-第一条只允许命中测试说明或既有调用方，不得出现在新事件实体、事件日志或图表语义摘要；第二条不得命中秒级洞察组件。
+第一条不得命中新事件字段、事件日志或图表语义摘要；第二条不得命中秒级洞察组件。
