@@ -104,14 +104,13 @@ class AppBlockerOverlayService : LifecycleService(), SavedStateRegistryOwner {
         ) ?: SelfControlAttempt.KIND_APP_BLOCKER
         val subjectId = intent?.getStringExtra(EXTRA_SUBJECT_ID).orEmpty().ifBlank { blockedApp }
         val subjectLabel = intent?.getStringExtra(EXTRA_SUBJECT_LABEL).orEmpty().ifBlank { blockedApp }
-        val source = intent?.blockerSource()
+        val source = intent?.blockerSource() ?: InterceptionSourcePresentation.unknown()
         if (eventKind != SelfControlAttempt.KIND_APP_BLOCKER ||
             blockedApp.isBlank() ||
             eventKey.isBlank() ||
             eventKey != SelfControlElapsedPolicy.appBlockerEventKey(blockedApp) ||
             subjectId.isBlank() ||
-            subjectId != blockedApp ||
-            source == null
+            subjectId != blockedApp
         ) {
             stopSelf()
             return START_NOT_STICKY

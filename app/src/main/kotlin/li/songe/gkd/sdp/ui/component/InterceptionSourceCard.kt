@@ -62,7 +62,7 @@ data class InterceptionSourcePresentation(
                 title = "拦截来源：应用时间规则",
                 lines = listOf(
                     "规则 #${rule.id}",
-                    "目标：${rule.targetId}",
+                    "目标：${if (rule.targetType == BlockTimeRule.TARGET_TYPE_GROUP) "应用组" else "应用"} · ${rule.targetId}",
                     "时段：${rule.formatTimeRange()}",
                     "日期：${rule.formatDaysOfWeek()}",
                     "模式：${rule.formatModeDescription()}",
