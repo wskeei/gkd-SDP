@@ -126,9 +126,10 @@ class InterceptOverlayService : LifecycleService(), SavedStateRegistryOwner {
         val selectorSnapshot = intent?.selectorSnapshot(eventKind)
         val validIntent = when (eventKind) {
             SelfControlAttempt.KIND_SELECTOR_INTERCEPT ->
-                subsId > 0L &&
+                    subsId > 0L &&
                     groupKey >= 0 &&
                     selectorSnapshot != null &&
+                    selectorSnapshot.groupKey == groupKey &&
                     eventKey == selectorSnapshot.eventKey() &&
                     subjectId == selectorSnapshot.appId
             SelfControlAttempt.KIND_URL_INTERCEPT -> {

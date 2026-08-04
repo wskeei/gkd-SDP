@@ -451,7 +451,8 @@ fun SelfControlIntervalInsightCard(
                 currentPointLabel = presentation.chartPoints.firstOrNull { it.isCurrent }?.label,
                 currentPointValue = currentPointValue,
                 aggregated = presentation.selectedSeries.rawSampleCount >
-                    presentation.selectedWindow.maxChartPoints,
+                    presentation.selectedWindow.maxChartPoints ||
+                    presentation.selectedSeries.points.any { it.sampleCount > 1 },
             )
             TextButton(
                 onClick = { detailsExpanded = !detailsExpanded },
