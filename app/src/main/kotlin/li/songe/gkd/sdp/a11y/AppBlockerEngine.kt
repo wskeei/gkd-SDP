@@ -168,9 +168,9 @@ object AppBlockerEngine {
         // 判断是否应该拦截
         val decision = evaluate(packageName)
         val shouldBlock = decision is AppBlockerDecision.Block
-            val blockDecision = decision as? AppBlockerDecision.Block
-            val message = blockDecision?.message
-            val blockingRule = blockDecision?.ruleId?.let(::getRuleById)
+        val blockDecision = decision as? AppBlockerDecision.Block
+        val message = blockDecision?.message
+        val blockingRule = blockDecision?.ruleSnapshot
         sdpRuntimeFeatureCoordinator.recordDecision(
             owner = owner,
             feature = "app-blocker",

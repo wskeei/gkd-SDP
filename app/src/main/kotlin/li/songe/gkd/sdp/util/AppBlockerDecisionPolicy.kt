@@ -6,7 +6,12 @@ import java.time.LocalDateTime
 import java.time.LocalTime
 
 sealed interface AppBlockerDecision {
-    data class Block(val ruleId: Long, val message: String) : AppBlockerDecision
+    data class Block(
+        val ruleId: Long,
+        val message: String,
+        /** Immutable rule data captured in the same snapshot as the decision. */
+        val ruleSnapshot: BlockTimeRule? = null,
+    ) : AppBlockerDecision
     data object EngineDisabled : AppBlockerDecision
     data object NoMatchingTarget : AppBlockerDecision
     data object GroupDisabled : AppBlockerDecision
@@ -71,6 +76,7 @@ object AppBlockerDecisionPolicy {
             return AppBlockerDecision.Block(
                 ruleId = blockingRule.id,
                 message = blockingRule.interceptMessage,
+                ruleSnapshot = blockingRule,
             )
         }
         if (invalidIds.isNotEmpty()) return AppBlockerDecision.InvalidRule(invalidIds)

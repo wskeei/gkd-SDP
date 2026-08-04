@@ -29,9 +29,10 @@ fun SelfControlReviewChart(
         } else {
             true
         }
-        SelfControlIntervalPresentation.ChartPoint(
+        SelfControlInsightChartPoint(
             label = if (shouldShowLabel) point.label else "",
-            valueMs = point.valueMs,
+            value = point.valueMs.toDouble(),
+            sampleCount = 1,
             isCurrent = false,
         )
     }
@@ -50,8 +51,9 @@ fun SelfControlReviewChart(
             append(SelfControlIntervalPolicy.formatDurationCompact(it))
         }
     }
-    SelfControlIntervalChart(
+    SelfControlWindowChart(
         points = points,
+        metric = li.songe.gkd.sdp.util.SelfControlInsightWindowPolicy.Metric.INTERVAL,
         semanticSummary = summaryText,
         modifier = modifier
             .fillMaxWidth()

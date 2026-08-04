@@ -49,6 +49,7 @@ import li.songe.gkd.sdp.ui.component.InterceptionSourcePresentation
 import li.songe.gkd.sdp.ui.component.SelfControlElapsedCard
 import li.songe.gkd.sdp.ui.style.AppTheme
 import li.songe.gkd.sdp.util.SelfControlElapsedPolicy
+import li.songe.gkd.sdp.util.SelfControlInsightWindowPolicy
 
 class AppBlockerOverlayService : LifecycleService(), SavedStateRegistryOwner {
 
@@ -73,7 +74,9 @@ class AppBlockerOverlayService : LifecycleService(), SavedStateRegistryOwner {
     private var elapsedState by mutableStateOf<SelfControlElapsedPolicy.ElapsedState>(
         SelfControlElapsedPolicy.ElapsedState.Loading,
     )
-    private var recentCompletedIntervalsMs by mutableStateOf(emptyList<Long>())
+    private var insightSamples by mutableStateOf(emptyList<SelfControlInsightWindowPolicy.IntervalSample>())
+    private var insightAnchorAt by mutableStateOf<Long?>(null)
+    private var selectedWindow by mutableStateOf(SelfControlInsightWindowPolicy.Window.LAST_24_HOURS)
 
     private val savedStateRegistryController = SavedStateRegistryController.create(this)
     override val savedStateRegistry = savedStateRegistryController.savedStateRegistry
@@ -99,7 +102,9 @@ class AppBlockerOverlayService : LifecycleService(), SavedStateRegistryOwner {
         val subjectLabel = intent?.getStringExtra(EXTRA_SUBJECT_LABEL).orEmpty().ifBlank { blockedApp }
         val source = intent?.blockerSource()
         elapsedState = SelfControlElapsedPolicy.ElapsedState.Loading
-        recentCompletedIntervalsMs = emptyList()
+        insightSamples = emptyList()
+        insightAnchorAt = null
+        selectedWindow = SelfControlInsightWindowPolicy.Window.LAST_24_HOURS
         if (showOverlay(message, blockedApp, source)) {
             recordElapsedAttempt(
                 eventKey = eventKey,
@@ -141,13 +146,14 @@ class AppBlockerOverlayService : LifecycleService(), SavedStateRegistryOwner {
                 insight
             }
             result.onSuccess { insight ->
-                recentCompletedIntervalsMs = insight.samples.mapNotNull { it.gapMs }
+                insightSamples = insight.samples
+                insightAnchorAt = occurredAt
                 elapsedState = SelfControlElapsedPolicy.stateForAttempt(
                     insight.previousOccurredAt,
                     occurredAt,
                 )
             }.onFailure {
-                recentCompletedIntervalsMs = emptyList()
+                insightSamples = emptyList()
                 elapsedState = SelfControlElapsedPolicy.ElapsedState.Unavailable
             }
         }
@@ -168,7 +174,10 @@ class AppBlockerOverlayService : LifecycleService(), SavedStateRegistryOwner {
                     AppBlockerInterceptScreen(
                         message = message,
                         elapsedState = elapsedState,
-                        recentCompletedIntervalsMs = recentCompletedIntervalsMs,
+                        samples = insightSamples,
+                        insightAnchorAt = insightAnchorAt,
+                        selectedWindow = selectedWindow,
+                        onWindowSelected = { selectedWindow = it },
                         source = source ?: InterceptionSourcePresentation.unknown(),
                         onExit = {
                             A11yRuleEngine.performActionHome()
@@ -227,7 +236,11 @@ class AppBlockerOverlayService : LifecycleService(), SavedStateRegistryOwner {
 fun AppBlockerInterceptScreen(
     message: String,
     elapsedState: SelfControlElapsedPolicy.ElapsedState,
-    recentCompletedIntervalsMs: List<Long> = emptyList(),
+    samples: List<SelfControlInsightWindowPolicy.IntervalSample> = emptyList(),
+    insightAnchorAt: Long? = null,
+    selectedWindow: SelfControlInsightWindowPolicy.Window =
+        SelfControlInsightWindowPolicy.Window.LAST_24_HOURS,
+    onWindowSelected: (SelfControlInsightWindowPolicy.Window) -> Unit = {},
     source: InterceptionSourcePresentation = InterceptionSourcePresentation.unknown(),
     onExit: () -> Unit
 ) {
@@ -268,7 +281,10 @@ fun AppBlockerInterceptScreen(
             SelfControlElapsedCard(
                 context = SelfControlElapsedPolicy.Context.APP_OPEN_ATTEMPT,
                 state = elapsedState,
-                recentCompletedIntervalsMs = recentCompletedIntervalsMs,
+                samples = samples,
+                insightAnchorAt = insightAnchorAt,
+                selectedWindow = selectedWindow,
+                onWindowSelected = onWindowSelected,
                 modifier = Modifier.padding(top = 16.dp),
             )
 

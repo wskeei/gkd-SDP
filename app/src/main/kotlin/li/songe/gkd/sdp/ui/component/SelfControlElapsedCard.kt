@@ -17,13 +17,11 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
 import li.songe.gkd.sdp.util.SelfControlElapsedPolicy
 import li.songe.gkd.sdp.util.SelfControlInsightWindowPolicy
-import li.songe.gkd.sdp.util.SelfControlIntervalPolicy
 
 @Composable
 fun SelfControlElapsedCard(
     context: SelfControlElapsedPolicy.Context,
     state: SelfControlElapsedPolicy.ElapsedState,
-    recentCompletedIntervalsMs: List<Long> = emptyList(),
     modifier: Modifier = Modifier,
     samples: List<SelfControlInsightWindowPolicy.IntervalSample> = emptyList(),
     insightAnchorAt: Long? = null,
@@ -91,7 +89,6 @@ fun SelfControlElapsedCard(
                     RunningElapsedContent(
                         copy = copy,
                         state = state,
-                        recentCompletedIntervalsMs = recentCompletedIntervalsMs,
                         samples = samples,
                         insightAnchorAt = insightAnchorAt,
                         selectedWindow = selectedWindow,
@@ -105,16 +102,16 @@ fun SelfControlElapsedCard(
                 }
             }
             if (state !is SelfControlElapsedPolicy.ElapsedState.Running && samples.isNotEmpty()) {
-                SelfControlIntervalInsightCard(
-                    samples = samples,
-                    insightAnchorAt = insightAnchorAt ?: nowEpochMs ?: System.currentTimeMillis(),
-                    selectedWindow = selectedWindow,
-                    onWindowSelected = onWindowSelected,
-                    selectedMetric = selectedMetric,
-                    onMetricSelected = onMetricSelected,
-                    supportsUsageRatio = supportsUsageRatio,
-                    currentReference = currentReference,
-                )
+        SelfControlIntervalInsightCard(
+            samples = samples,
+            insightAnchorAt = insightAnchorAt ?: nowEpochMs ?: System.currentTimeMillis(),
+            selectedWindow = selectedWindow,
+            onWindowSelected = onWindowSelected,
+            selectedMetric = selectedMetric,
+            onMetricSelected = onMetricSelected,
+            supportsUsageRatio = supportsUsageRatio,
+            currentReference = currentReference,
+        )
             }
         }
     }
@@ -124,7 +121,6 @@ fun SelfControlElapsedCard(
 private fun RunningElapsedContent(
     copy: SelfControlElapsedPolicy.Copy,
     state: SelfControlElapsedPolicy.ElapsedState.Running,
-    recentCompletedIntervalsMs: List<Long>,
     samples: List<SelfControlInsightWindowPolicy.IntervalSample>,
     insightAnchorAt: Long?,
     selectedWindow: SelfControlInsightWindowPolicy.Window,
@@ -181,15 +177,6 @@ private fun RunningElapsedContent(
             onMetricSelected = onMetricSelected,
             supportsUsageRatio = supportsUsageRatio,
             currentReference = currentReference,
-        )
-    } else {
-        SelfControlIntervalInsightCard(
-            insight = SelfControlIntervalPolicy.overlayInsight(
-                anchorAtEpochMs = state.anchorAtEpochMs,
-                firstOccurrence = state.firstOccurrence,
-                recentCompletedIntervalsMs = recentCompletedIntervalsMs,
-                nowEpochMs = nowEpochMs,
-            ),
         )
     }
 }

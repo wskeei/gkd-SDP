@@ -183,7 +183,11 @@ class AppBlockerDecisionPolicyTest {
         val rule = rule(start = "09:00", end = "10:00").copy(isAllowMode = true)
 
         assertEquals(
-            AppBlockerDecision.Block(ruleId = rule.id, message = rule.interceptMessage),
+            AppBlockerDecision.Block(
+                ruleId = rule.id,
+                message = rule.interceptMessage,
+                ruleSnapshot = rule,
+            ),
             AppBlockerDecisionPolicy.decide(
                 packageName = "com.example.app",
                 snapshot = snapshot(rule),
@@ -198,7 +202,7 @@ class AppBlockerDecisionPolicyTest {
         val newer = rule(id = 2, createdAt = 2, message = "新")
 
         assertEquals(
-            AppBlockerDecision.Block(ruleId = 2, message = "新"),
+            AppBlockerDecision.Block(ruleId = 2, message = "新", ruleSnapshot = newer),
             AppBlockerDecisionPolicy.decide(
                 packageName = "com.example.app",
                 snapshot = snapshot(older, newer),

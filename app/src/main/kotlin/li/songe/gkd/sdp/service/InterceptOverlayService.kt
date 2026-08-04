@@ -49,6 +49,7 @@ import li.songe.gkd.sdp.ui.component.InterceptionSourcePresentation
 import li.songe.gkd.sdp.ui.style.AppTheme
 import li.songe.gkd.sdp.util.InterceptUtils
 import li.songe.gkd.sdp.util.SelfControlElapsedPolicy
+import li.songe.gkd.sdp.util.SelfControlInsightWindowPolicy
 
 class InterceptOverlayService : LifecycleService(), SavedStateRegistryOwner {
 
@@ -83,7 +84,9 @@ class InterceptOverlayService : LifecycleService(), SavedStateRegistryOwner {
     private var elapsedState by mutableStateOf<SelfControlElapsedPolicy.ElapsedState>(
         SelfControlElapsedPolicy.ElapsedState.Loading,
     )
-    private var recentCompletedIntervalsMs by mutableStateOf(emptyList<Long>())
+    private var insightSamples by mutableStateOf(emptyList<SelfControlInsightWindowPolicy.IntervalSample>())
+    private var insightAnchorAt by mutableStateOf<Long?>(null)
+    private var selectedWindow by mutableStateOf(SelfControlInsightWindowPolicy.Window.LAST_24_HOURS)
     private val mountedInterceptRecorder by lazy { MountedInterceptRecorder.fromDb() }
     
     private val savedStateRegistryController = SavedStateRegistryController.create(this)
@@ -112,7 +115,9 @@ class InterceptOverlayService : LifecycleService(), SavedStateRegistryOwner {
 
         if (subsId != -1L && groupKey != -1 && source != null) {
             elapsedState = SelfControlElapsedPolicy.ElapsedState.Loading
-            recentCompletedIntervalsMs = emptyList()
+            insightSamples = emptyList()
+            insightAnchorAt = null
+            selectedWindow = SelfControlInsightWindowPolicy.Window.LAST_24_HOURS
             if (showOverlay(subsId, groupKey, message, cooldown, eventKind, source)) {
                 val occurredAt = System.currentTimeMillis()
                 recordMountedAttempt(
@@ -161,13 +166,14 @@ class InterceptOverlayService : LifecycleService(), SavedStateRegistryOwner {
             withContext(Dispatchers.Main) {
                 val insight = result.intervalInsight
                 if (result.intervalSucceeded && insight != null) {
-                    recentCompletedIntervalsMs = insight.samples.mapNotNull { it.gapMs }
+                    insightSamples = insight.samples
+                    insightAnchorAt = occurredAt
                     elapsedState = SelfControlElapsedPolicy.stateForAttempt(
                         insight.previousOccurredAt,
                         occurredAt,
                     )
                 } else {
-                    recentCompletedIntervalsMs = emptyList()
+                    insightSamples = emptyList()
                     elapsedState = SelfControlElapsedPolicy.ElapsedState.Unavailable
                 }
             }
@@ -193,7 +199,10 @@ class InterceptOverlayService : LifecycleService(), SavedStateRegistryOwner {
                         message = message,
                         cooldown = cooldown,
                         elapsedState = elapsedState,
-                        recentCompletedIntervalsMs = recentCompletedIntervalsMs,
+                        samples = insightSamples,
+                        insightAnchorAt = insightAnchorAt,
+                        selectedWindow = selectedWindow,
+                        onWindowSelected = { selectedWindow = it },
                         source = source,
                         onContinue = {
                             if (eventKind == SelfControlAttempt.KIND_SELECTOR_INTERCEPT) {
@@ -293,7 +302,11 @@ fun InterceptScreen(
     onExit: () -> Unit,
     elapsedState: SelfControlElapsedPolicy.ElapsedState =
         SelfControlElapsedPolicy.ElapsedState.Unavailable,
-    recentCompletedIntervalsMs: List<Long> = emptyList(),
+    samples: List<SelfControlInsightWindowPolicy.IntervalSample> = emptyList(),
+    insightAnchorAt: Long? = null,
+    selectedWindow: SelfControlInsightWindowPolicy.Window =
+        SelfControlInsightWindowPolicy.Window.LAST_24_HOURS,
+    onWindowSelected: (SelfControlInsightWindowPolicy.Window) -> Unit = {},
     source: InterceptionSourcePresentation = InterceptionSourcePresentation.unknown(),
 ) {
     var timeLeft by remember { mutableIntStateOf(10) }
@@ -333,7 +346,10 @@ fun InterceptScreen(
             SelfControlElapsedCard(
                 context = SelfControlElapsedPolicy.Context.RULE_TRIGGER,
                 state = elapsedState,
-                recentCompletedIntervalsMs = recentCompletedIntervalsMs,
+                samples = samples,
+                insightAnchorAt = insightAnchorAt,
+                selectedWindow = selectedWindow,
+                onWindowSelected = onWindowSelected,
                 modifier = Modifier.padding(top = 16.dp),
             )
             Spacer(modifier = Modifier.height(48.dp))
