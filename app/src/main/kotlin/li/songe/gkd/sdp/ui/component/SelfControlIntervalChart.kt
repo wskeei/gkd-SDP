@@ -20,6 +20,8 @@ import com.patrykandpatrick.vico.core.cartesian.data.CartesianChartModelProducer
 import com.patrykandpatrick.vico.core.cartesian.data.columnSeries
 import com.patrykandpatrick.vico.core.cartesian.layer.ColumnCartesianLayer
 import li.songe.gkd.sdp.util.SelfControlIntervalPolicy
+import li.songe.gkd.sdp.util.SelfControlInsightWindowPolicy
+import li.songe.gkd.sdp.util.UsageRequestRhythmPolicy
 import li.songe.gkd.sdp.util.LogUtils
 
 /**
@@ -84,6 +86,88 @@ fun SelfControlIntervalChart(
             .height(148.dp)
             .semantics {
                 contentDescription = "$semanticSummary，纵轴单位 ${axisUnit.suffix}"
+            },
+    )
+}
+
+/** Dataset-backed chart used by request and interception overlays. */
+@Composable
+fun SelfControlWindowChart(
+    points: List<SelfControlInsightChartPoint>,
+    metric: SelfControlInsightWindowPolicy.Metric,
+    semanticSummary: String,
+    modifier: Modifier = Modifier,
+) {
+    if (points.isEmpty()) return
+
+    val intervalUnit = remember(points, metric) {
+        if (metric == SelfControlInsightWindowPolicy.Metric.INTERVAL) {
+            SelfControlIntervalPolicy.chooseAxisUnit(points.maxOf { it.value.toLong() })
+        } else {
+            SelfControlIntervalPolicy.AxisUnit.Seconds
+        }
+    }
+    val modelProducer = remember { CartesianChartModelProducer() }
+    LaunchedEffect(points, metric, intervalUnit) {
+        runCatching {
+            modelProducer.runTransaction {
+                columnSeries {
+                    series(
+                        points.map { point ->
+                            if (metric == SelfControlInsightWindowPolicy.Metric.INTERVAL) {
+                                point.value / intervalUnit.divisorMs.toDouble()
+                            } else {
+                                point.value
+                            }
+                        },
+                    )
+                }
+            }
+        }.onFailure { error ->
+            LogUtils.d("self-control insight chart model update failed", error::class.java.simpleName)
+        }
+    }
+    val visibleLabels = remember(points) {
+        val step = ((points.size + 5) / 6).coerceAtLeast(1)
+        points.indices.filter { it == 0 || it == points.lastIndex || it % step == 0 }.toSet()
+    }
+    CartesianChartHost(
+        chart = rememberCartesianChart(
+            rememberColumnCartesianLayer(
+                columnProvider = ColumnCartesianLayer.ColumnProvider.series(
+                    rememberLineComponent(
+                        color = MaterialTheme.colorScheme.primary,
+                        thickness = 14.dp,
+                    ),
+                ),
+            ),
+            startAxis = rememberStartAxis(
+                valueFormatter = { value, _, _ ->
+                    if (metric == SelfControlInsightWindowPolicy.Metric.INTERVAL) {
+                        SelfControlIntervalPolicy.formatAxisValue(
+                            (value.toDouble() * intervalUnit.divisorMs.toDouble()).toLong(),
+                            intervalUnit,
+                        )
+                    } else {
+                        "${UsageRequestRhythmPolicy.formatRatio(value.toDouble()) ?: "暂无"}×"
+                    }
+                },
+            ),
+            bottomAxis = rememberBottomAxis(
+                valueFormatter = { x, _, _ ->
+                    val index = x.toInt()
+                    if (index in visibleLabels) points.getOrNull(index)?.label.orEmpty() else ""
+                },
+            ),
+        ),
+        modelProducer = modelProducer,
+        animationSpec = null,
+        runInitialAnimation = false,
+        modifier = modifier
+            .fillMaxWidth()
+            .height(148.dp)
+            .semantics {
+                contentDescription = semanticSummary
             },
     )
 }

@@ -13,10 +13,10 @@ import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
 import li.songe.gkd.sdp.util.SelfControlElapsedPolicy
+import li.songe.gkd.sdp.util.SelfControlInsightWindowPolicy
 import li.songe.gkd.sdp.util.SelfControlIntervalPolicy
 
 @Composable
@@ -25,13 +25,22 @@ fun SelfControlElapsedCard(
     state: SelfControlElapsedPolicy.ElapsedState,
     recentCompletedIntervalsMs: List<Long> = emptyList(),
     modifier: Modifier = Modifier,
+    samples: List<SelfControlInsightWindowPolicy.IntervalSample> = emptyList(),
+    insightAnchorAt: Long? = null,
+    selectedWindow: SelfControlInsightWindowPolicy.Window =
+        SelfControlInsightWindowPolicy.Window.LAST_24_HOURS,
+    onWindowSelected: (SelfControlInsightWindowPolicy.Window) -> Unit = {},
+    selectedMetric: SelfControlInsightWindowPolicy.Metric = SelfControlInsightWindowPolicy.Metric.INTERVAL,
+    onMetricSelected: (SelfControlInsightWindowPolicy.Metric) -> Unit = {},
+    supportsUsageRatio: Boolean = false,
+    currentReference: SelfControlInsightCurrentReference? = null,
+    nowEpochMs: Long? = null,
 ) {
     val copy = remember(context) { SelfControlElapsedPolicy.copyFor(context) }
 
     Card(
         modifier = modifier
-            .fillMaxWidth()
-            .semantics(mergeDescendants = true) {},
+            .fillMaxWidth(),
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
@@ -74,8 +83,29 @@ fun SelfControlElapsedCard(
                         copy = copy,
                         state = state,
                         recentCompletedIntervalsMs = recentCompletedIntervalsMs,
+                        samples = samples,
+                        insightAnchorAt = insightAnchorAt,
+                        selectedWindow = selectedWindow,
+                        onWindowSelected = onWindowSelected,
+                        selectedMetric = selectedMetric,
+                        onMetricSelected = onMetricSelected,
+                        supportsUsageRatio = supportsUsageRatio,
+                        currentReference = currentReference,
+                        nowEpochMsOverride = nowEpochMs,
                     )
                 }
+            }
+            if (state !is SelfControlElapsedPolicy.ElapsedState.Running && samples.isNotEmpty()) {
+                SelfControlIntervalInsightCard(
+                    samples = samples,
+                    insightAnchorAt = insightAnchorAt ?: nowEpochMs ?: System.currentTimeMillis(),
+                    selectedWindow = selectedWindow,
+                    onWindowSelected = onWindowSelected,
+                    selectedMetric = selectedMetric,
+                    onMetricSelected = onMetricSelected,
+                    supportsUsageRatio = supportsUsageRatio,
+                    currentReference = currentReference,
+                )
             }
         }
     }
@@ -86,17 +116,29 @@ private fun RunningElapsedContent(
     copy: SelfControlElapsedPolicy.Copy,
     state: SelfControlElapsedPolicy.ElapsedState.Running,
     recentCompletedIntervalsMs: List<Long>,
+    samples: List<SelfControlInsightWindowPolicy.IntervalSample>,
+    insightAnchorAt: Long?,
+    selectedWindow: SelfControlInsightWindowPolicy.Window,
+    onWindowSelected: (SelfControlInsightWindowPolicy.Window) -> Unit,
+    selectedMetric: SelfControlInsightWindowPolicy.Metric,
+    onMetricSelected: (SelfControlInsightWindowPolicy.Metric) -> Unit,
+    supportsUsageRatio: Boolean,
+    currentReference: SelfControlInsightCurrentReference?,
+    nowEpochMsOverride: Long?,
 ) {
-    var nowEpochMs by remember(state.anchorAtEpochMs) {
+    var tickerNowEpochMs by remember(state.anchorAtEpochMs) {
         mutableLongStateOf(System.currentTimeMillis())
     }
 
-    LaunchedEffect(state.anchorAtEpochMs) {
-        while (true) {
-            nowEpochMs = System.currentTimeMillis()
-            delay(1_000L)
+    if (nowEpochMsOverride == null) {
+        LaunchedEffect(state.anchorAtEpochMs) {
+            while (true) {
+                tickerNowEpochMs = System.currentTimeMillis()
+                delay(1_000L)
+            }
         }
     }
+    val nowEpochMs = nowEpochMsOverride ?: tickerNowEpochMs
 
     Text(
         text = SelfControlElapsedPolicy.formatElapsed(
@@ -120,12 +162,25 @@ private fun RunningElapsedContent(
         modifier = Modifier.padding(top = 4.dp),
     )
 
-    SelfControlIntervalInsightCard(
-        insight = SelfControlIntervalPolicy.overlayInsight(
-            anchorAtEpochMs = state.anchorAtEpochMs,
-            firstOccurrence = state.firstOccurrence,
-            recentCompletedIntervalsMs = recentCompletedIntervalsMs,
-            nowEpochMs = nowEpochMs,
-        ),
-    )
+    if (samples.isNotEmpty()) {
+        SelfControlIntervalInsightCard(
+            samples = samples,
+            insightAnchorAt = insightAnchorAt ?: nowEpochMs,
+            selectedWindow = selectedWindow,
+            onWindowSelected = onWindowSelected,
+            selectedMetric = selectedMetric,
+            onMetricSelected = onMetricSelected,
+            supportsUsageRatio = supportsUsageRatio,
+            currentReference = currentReference,
+        )
+    } else {
+        SelfControlIntervalInsightCard(
+            insight = SelfControlIntervalPolicy.overlayInsight(
+                anchorAtEpochMs = state.anchorAtEpochMs,
+                firstOccurrence = state.firstOccurrence,
+                recentCompletedIntervalsMs = recentCompletedIntervalsMs,
+                nowEpochMs = nowEpochMs,
+            ),
+        )
+    }
 }
