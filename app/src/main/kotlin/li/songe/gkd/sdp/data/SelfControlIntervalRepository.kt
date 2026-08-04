@@ -137,8 +137,11 @@ class SelfControlIntervalRepository(
                 )
             }
         }
-        val usablePreviousEnd = latest?.lastUsageEndedAt?.takeIf {
+        val latestRequestIsInThePast = latest?.requestedAt?.let {
             it >= 0L && it <= insightAnchorAt
+        } == true
+        val usablePreviousEnd = latest?.lastUsageEndedAt?.takeIf {
+            latestRequestIsInThePast && it >= 0L && it <= insightAnchorAt
         }
         return UsageRequestOverlayData(
             insightAnchorAt = insightAnchorAt,

@@ -203,6 +203,29 @@ class SelfControlIntervalRepositoryTest {
     }
 
     @Test
+    fun futureDatedLatestRequestCannotProvideTheCurrentUsageGapAnchor() = runBlocking {
+        val latest = UsageRequestInsightRow(
+            id = 4L,
+            requestedAt = 40_000L,
+            requestedDurationMinutes = 30,
+            lastUsageEndedAt = 39_000L,
+            requestGapMs = 1_000L,
+        )
+        val repository = SelfControlIntervalRepository(
+            usageRecords = FakeUsageSource(latestInsight = latest),
+            attemptEvents = FakeAttemptSource(),
+        )
+
+        val data = repository.loadUsageRequestOverlayData(
+            appId = "target",
+            insightAnchorAt = 30_000L,
+        )
+
+        assertEquals(SelfControlIntervalRepository.UsageGapAnchorStatus.MissingActualEnd, data.anchorStatus)
+        assertNull(data.previousLastUsageEndedAt)
+    }
+
+    @Test
     fun recordedInterceptInsightCarriesTheFreshThirtyDayDatasetAndCurrentId() = runBlocking {
         val attempts = FakeAttemptSource(
             result = SelfControlAttempt.RecordedAttemptInsight(
