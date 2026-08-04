@@ -7,7 +7,7 @@
 | 区域 | 覆盖内容 | 测试位置 |
 | --- | --- | --- |
 | 间隔算法 | 稳定 key 配对、负值过滤、最近 5 个、平均/中位数、当前值不进入历史、超大整数 | `SelfControlIntervalPolicyTest` |
-| Room/保留 | 事件表字段、DAO 事务、90 天清理、10,000 行上限、31 → 32 schema | `SelfControlAttemptDaoContractTest`、`SelfControlAttemptEventDaoContractTest`、`32.json` |
+| Room/保留 | 事件表字段、DAO/事务契约、保留常量与 31 → 32 schema 静态覆盖；真实清理与升级需按下方设备矩阵验证 | `SelfControlAttemptDaoContractTest`、`SelfControlAttemptEventDaoContractTest`、`32.json` |
 | 数据协调 | 申请范围前驱、拦截 descriptor、标签回退、申请/拦截来源合并 | `SelfControlIntervalRepositoryTest`、`SelfControlAttemptRecordingContractTest` |
 | 弹窗 presentation | 0/1/5 历史、最多 6 柱、本次增长、平均差值、无敏感文案、超大跨度提示 | `SelfControlIntervalPresentationTest` |
 | 复盘策略 | 自然日/DST、跨范围前驱、按后一个事件归日、筛选、每日中位数、最近 10 条、比较门槛 | `DigitalSelfDisciplineReviewPolicyTest` |

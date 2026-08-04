@@ -87,12 +87,16 @@ class AppBlockerOverlayService : LifecycleService(), SavedStateRegistryOwner {
         ) ?: SelfControlAttempt.KIND_APP_BLOCKER
         val subjectId = intent?.getStringExtra(EXTRA_SUBJECT_ID).orEmpty().ifBlank { blockedApp }
         val subjectLabel = intent?.getStringExtra(EXTRA_SUBJECT_LABEL).orEmpty().ifBlank { blockedApp }
-        val occurredAt = System.currentTimeMillis()
-
         elapsedState = SelfControlElapsedPolicy.ElapsedState.Loading
         recentCompletedIntervalsMs = emptyList()
         if (showOverlay(message, blockedApp)) {
-            recordElapsedAttempt(eventKey, eventKind, subjectId, subjectLabel, occurredAt)
+            recordElapsedAttempt(
+                eventKey = eventKey,
+                eventKind = eventKind,
+                subjectId = subjectId,
+                subjectLabel = subjectLabel,
+                occurredAt = System.currentTimeMillis(),
+            )
         }
         return START_NOT_STICKY
     }
