@@ -174,4 +174,27 @@ class MountedInterceptRecorderTest {
         assertTrue(result.intervalSucceeded)
         assertEquals(1, attemptSink.descriptors.size)
     }
+
+    @Test
+    fun intervalSinkFailureDoesNotSuppressActionLog() = runBlocking {
+        val actionSink = FakeActionSink()
+        val attemptSink = FakeAttemptSink().also { it.fail = true }
+        val recorder = MountedInterceptRecorder(actionSink, attemptSink)
+        val pending = MountedInterceptRecorder.Pending(
+            recordToken = "selector-101",
+            eventKey = selectorSnapshot.eventKey(),
+            eventKind = SelfControlAttempt.KIND_SELECTOR_INTERCEPT,
+            subjectId = "demo.app",
+            subjectLabel = "确认按钮",
+            selectorSnapshot = selectorSnapshot,
+        )
+
+        val result = recorder.recordMounted(pending, mounted = true, occurredAt = 101L)
+
+        assertTrue(result.actionLogAttempted)
+        assertTrue(result.actionLogSucceeded)
+        assertTrue(result.intervalAttempted)
+        assertFalse(result.intervalSucceeded)
+        assertEquals(1, actionSink.snapshots.size)
+    }
 }
