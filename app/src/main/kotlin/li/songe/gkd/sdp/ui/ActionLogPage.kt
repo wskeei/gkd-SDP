@@ -431,6 +431,17 @@ private fun ActionLogCard(
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.secondary,
                 )
+                val outcomePresentation = ActionLogPresentation.from(actionLog)
+                Text(
+                    text = "${outcomePresentation.outcomeTitle} · ${outcomePresentation.outcomeDescription}",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = if (actionLog.outcome == ActionLog.OUTCOME_INTERCEPTED) {
+                        MaterialTheme.colorScheme.error
+                    } else {
+                        MaterialTheme.colorScheme.primary
+                    },
+                    modifier = Modifier.padding(top = 2.dp),
+                )
                 CompositionLocalProvider(LocalTextStyle provides MaterialTheme.typography.bodyMedium) {
                     val showActivityId = actionLog.showActivityId
                     if (showActivityId != null) {
@@ -481,18 +492,18 @@ private fun ActionLogCard(
                     Row(
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        val groupDesc = group?.name.toString()
+                        val groupDesc = group?.name ?: actionLog.groupNameSnapshot ?: "规则组 ${actionLog.groupKey}"
                         val textColor = LocalContentColor.current.let {
-                            if (group?.name == null) it.copy(alpha = 0.5f) else it
+                            if (group == null && actionLog.groupNameSnapshot == null) it.copy(alpha = 0.5f) else it
                         }
                         GroupNameText(
                             isGlobal = actionLog.groupType == SubsConfig.GlobalGroupType,
                             text = groupDesc,
                             color = textColor,
                         )
-                        val ruleDesc = rule?.name ?: (if ((group?.rules?.size ?: 0) > 1) {
+                        val ruleDesc = rule?.name ?: actionLog.ruleNameSnapshot ?: (if ((group?.rules?.size ?: 0) > 1) {
                             val keyDesc = actionLog.ruleKey?.let { "key=$it, " } ?: ""
-                            "${keyDesc}index=${actionLog.ruleIndex}"
+                            "${keyDesc}index=${actionLog.ruleIndex + 1}"
                         } else {
                             null
                         })
@@ -558,6 +569,32 @@ private fun ActionLogDialog(
                     }
                 }
             )
+            HorizontalDivider()
+
+            val presentation = ActionLogPresentation.from(actionLog)
+            Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
+                Text(
+                    text = presentation.outcomeTitle,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = if (actionLog.outcome == ActionLog.OUTCOME_INTERCEPTED) {
+                        MaterialTheme.colorScheme.error
+                    } else {
+                        MaterialTheme.colorScheme.primary
+                    },
+                )
+                Text(
+                    text = presentation.outcomeDescription,
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.padding(top = 4.dp),
+                )
+                presentation.ruleName?.let {
+                    Text(
+                        text = "具体规则：$it",
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.padding(top = 4.dp),
+                    )
+                }
+            }
             HorizontalDivider()
 
             if (actionLog.groupType == SubsConfig.GlobalGroupType) {

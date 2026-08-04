@@ -298,7 +298,7 @@ object UrlBlockerEngine {
     private fun showInterceptOverlay(rule: UrlBlockRule): OverlayLaunchResult {
         val intent = Intent(li.songe.gkd.sdp.app, InterceptOverlayService::class.java).apply {
             putExtra(InterceptOverlayService.EXTRA_SUBS_ID, -2L)  // URL 拦截使用特殊 ID (-2 区别于默认的 -1)
-            putExtra(InterceptOverlayService.EXTRA_GROUP_KEY, rule.id.toInt())
+            putExtra(InterceptOverlayService.EXTRA_GROUP_KEY, 0)
             putExtra(InterceptOverlayService.EXTRA_MESSAGE, rule.interceptMessage)
             putExtra(InterceptOverlayService.EXTRA_COOLDOWN, 10)
             putExtra(
@@ -314,6 +314,8 @@ object UrlBlockerEngine {
                 InterceptOverlayService.EXTRA_SUBJECT_LABEL,
                 rule.name.ifBlank { "网址规则 #${rule.id}" },
             )
+            putExtra(InterceptOverlayService.EXTRA_URL_RULE_ID, rule.id)
+            putExtra(InterceptOverlayService.EXTRA_URL_RULE_NAME, rule.name)
         }
         return selfControlOverlayLauncher.launch(intent)
     }

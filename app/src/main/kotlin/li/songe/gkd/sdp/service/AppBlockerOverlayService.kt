@@ -42,7 +42,10 @@ import li.songe.gkd.sdp.a11y.AppBlockerEngine
 import li.songe.gkd.sdp.appScope
 import li.songe.gkd.sdp.util.LogUtils
 import li.songe.gkd.sdp.data.SelfControlAttempt
+import li.songe.gkd.sdp.data.BlockTimeRule
 import li.songe.gkd.sdp.data.SelfControlIntervalRepository
+import li.songe.gkd.sdp.ui.component.InterceptionSourceCard
+import li.songe.gkd.sdp.ui.component.InterceptionSourcePresentation
 import li.songe.gkd.sdp.ui.component.SelfControlElapsedCard
 import li.songe.gkd.sdp.ui.style.AppTheme
 import li.songe.gkd.sdp.util.SelfControlElapsedPolicy
@@ -56,6 +59,13 @@ class AppBlockerOverlayService : LifecycleService(), SavedStateRegistryOwner {
         const val EXTRA_EVENT_KIND = "eventKind"
         const val EXTRA_SUBJECT_ID = "subjectId"
         const val EXTRA_SUBJECT_LABEL = "subjectLabel"
+        const val EXTRA_RULE_ID = "ruleId"
+        const val EXTRA_RULE_TARGET_TYPE = "ruleTargetType"
+        const val EXTRA_RULE_TARGET_ID = "ruleTargetId"
+        const val EXTRA_RULE_START_TIME = "ruleStartTime"
+        const val EXTRA_RULE_END_TIME = "ruleEndTime"
+        const val EXTRA_RULE_DAYS = "ruleDays"
+        const val EXTRA_RULE_ALLOW_MODE = "ruleAllowMode"
     }
 
     private val windowManager by lazy { getSystemService(WINDOW_SERVICE) as WindowManager }
@@ -87,9 +97,10 @@ class AppBlockerOverlayService : LifecycleService(), SavedStateRegistryOwner {
         ) ?: SelfControlAttempt.KIND_APP_BLOCKER
         val subjectId = intent?.getStringExtra(EXTRA_SUBJECT_ID).orEmpty().ifBlank { blockedApp }
         val subjectLabel = intent?.getStringExtra(EXTRA_SUBJECT_LABEL).orEmpty().ifBlank { blockedApp }
+        val source = intent?.blockerSource()
         elapsedState = SelfControlElapsedPolicy.ElapsedState.Loading
         recentCompletedIntervalsMs = emptyList()
-        if (showOverlay(message, blockedApp)) {
+        if (showOverlay(message, blockedApp, source)) {
             recordElapsedAttempt(
                 eventKey = eventKey,
                 eventKind = eventKind,
@@ -142,7 +153,11 @@ class AppBlockerOverlayService : LifecycleService(), SavedStateRegistryOwner {
         }
     }
 
-    private fun showOverlay(message: String, blockedApp: String): Boolean {
+    private fun showOverlay(
+        message: String,
+        blockedApp: String,
+        source: InterceptionSourcePresentation?,
+    ): Boolean {
         if (view != null) return false
 
         view = ComposeView(this).apply {
@@ -154,6 +169,7 @@ class AppBlockerOverlayService : LifecycleService(), SavedStateRegistryOwner {
                         message = message,
                         elapsedState = elapsedState,
                         recentCompletedIntervalsMs = recentCompletedIntervalsMs,
+                        source = source ?: InterceptionSourcePresentation.unknown(),
                         onExit = {
                             A11yRuleEngine.performActionHome()
                             stopSelf()
@@ -191,6 +207,20 @@ class AppBlockerOverlayService : LifecycleService(), SavedStateRegistryOwner {
         view?.let { runCatching { windowManager.removeView(it) } }
         view = null
     }
+
+    private fun Intent.blockerSource(): InterceptionSourcePresentation? {
+        if (!hasExtra(EXTRA_RULE_ID)) return null
+        val rule = BlockTimeRule(
+            id = getLongExtra(EXTRA_RULE_ID, -1L),
+            targetType = getIntExtra(EXTRA_RULE_TARGET_TYPE, BlockTimeRule.TARGET_TYPE_APP),
+            targetId = getStringExtra(EXTRA_RULE_TARGET_ID).orEmpty(),
+            startTime = getStringExtra(EXTRA_RULE_START_TIME).orEmpty(),
+            endTime = getStringExtra(EXTRA_RULE_END_TIME).orEmpty(),
+            daysOfWeek = getStringExtra(EXTRA_RULE_DAYS).orEmpty(),
+            isAllowMode = getBooleanExtra(EXTRA_RULE_ALLOW_MODE, false),
+        )
+        return InterceptionSourcePresentation.appBlocker(rule)
+    }
 }
 
 @Composable
@@ -198,6 +228,7 @@ fun AppBlockerInterceptScreen(
     message: String,
     elapsedState: SelfControlElapsedPolicy.ElapsedState,
     recentCompletedIntervalsMs: List<Long> = emptyList(),
+    source: InterceptionSourcePresentation = InterceptionSourcePresentation.unknown(),
     onExit: () -> Unit
 ) {
     var timeLeft by remember { mutableIntStateOf(10) }
@@ -229,11 +260,16 @@ fun AppBlockerInterceptScreen(
                 color = MaterialTheme.colorScheme.onBackground
             )
 
+            InterceptionSourceCard(
+                presentation = source,
+                modifier = Modifier.padding(top = 24.dp),
+            )
+
             SelfControlElapsedCard(
                 context = SelfControlElapsedPolicy.Context.APP_OPEN_ATTEMPT,
                 state = elapsedState,
                 recentCompletedIntervalsMs = recentCompletedIntervalsMs,
-                modifier = Modifier.padding(top = 24.dp),
+                modifier = Modifier.padding(top = 16.dp),
             )
 
             Spacer(modifier = Modifier.height(48.dp))

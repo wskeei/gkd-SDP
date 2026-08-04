@@ -44,6 +44,8 @@ import li.songe.gkd.sdp.data.SelectorRuleSnapshot
 import li.songe.gkd.sdp.util.LogUtils
 import li.songe.gkd.sdp.data.SelfControlAttempt
 import li.songe.gkd.sdp.ui.component.SelfControlElapsedCard
+import li.songe.gkd.sdp.ui.component.InterceptionSourceCard
+import li.songe.gkd.sdp.ui.component.InterceptionSourcePresentation
 import li.songe.gkd.sdp.ui.style.AppTheme
 import li.songe.gkd.sdp.util.InterceptUtils
 import li.songe.gkd.sdp.util.SelfControlElapsedPolicy
@@ -72,6 +74,8 @@ class InterceptOverlayService : LifecycleService(), SavedStateRegistryOwner {
         const val EXTRA_SELECTOR_RULE_NAME = "selectorRuleName"
         const val EXTRA_SELECTOR_GROUP_NAME = "selectorGroupName"
         const val EXTRA_SELECTOR_SUBS_NAME = "selectorSubsName"
+        const val EXTRA_URL_RULE_ID = "urlRuleId"
+        const val EXTRA_URL_RULE_NAME = "urlRuleName"
     }
 
     private val windowManager by lazy { getSystemService(WINDOW_SERVICE) as WindowManager }
@@ -104,11 +108,12 @@ class InterceptOverlayService : LifecycleService(), SavedStateRegistryOwner {
         val subjectId = intent?.getStringExtra(EXTRA_SUBJECT_ID).orEmpty()
         val subjectLabel = intent?.getStringExtra(EXTRA_SUBJECT_LABEL).orEmpty().ifBlank { subjectId }
         val matchedAt = intent?.getLongExtra(EXTRA_MATCHED_AT, 0L) ?: 0L
+        val source = intent?.interceptionSource(eventKind)
 
-        if (subsId != -1L && groupKey != -1) {
+        if (subsId != -1L && groupKey != -1 && source != null) {
             elapsedState = SelfControlElapsedPolicy.ElapsedState.Loading
             recentCompletedIntervalsMs = emptyList()
-            if (showOverlay(subsId, groupKey, message, cooldown, eventKind)) {
+            if (showOverlay(subsId, groupKey, message, cooldown, eventKind, source)) {
                 val occurredAt = System.currentTimeMillis()
                 recordMountedAttempt(
                     intent = intent,
@@ -175,6 +180,7 @@ class InterceptOverlayService : LifecycleService(), SavedStateRegistryOwner {
         message: String,
         cooldown: Int,
         eventKind: Int,
+        source: InterceptionSourcePresentation,
     ): Boolean {
         if (view != null) return false
 
@@ -188,8 +194,11 @@ class InterceptOverlayService : LifecycleService(), SavedStateRegistryOwner {
                         cooldown = cooldown,
                         elapsedState = elapsedState,
                         recentCompletedIntervalsMs = recentCompletedIntervalsMs,
+                        source = source,
                         onContinue = {
-                            InterceptUtils.setAllowed(subsId, groupKey, cooldown)
+                            if (eventKind == SelfControlAttempt.KIND_SELECTOR_INTERCEPT) {
+                                InterceptUtils.setAllowed(subsId, groupKey, cooldown)
+                            }
                             stopSelf()
                         },
                         onExit = {
@@ -256,6 +265,24 @@ class InterceptOverlayService : LifecycleService(), SavedStateRegistryOwner {
             matchedAt = getLongExtra(EXTRA_MATCHED_AT, 0L),
         ).takeIf { it.appId.isNotBlank() && it.groupType >= 0 && it.groupKey >= 0 && it.ruleIndex >= 0 }
     }
+
+    private fun Intent.interceptionSource(eventKind: Int): InterceptionSourcePresentation? {
+        return when (eventKind) {
+            SelfControlAttempt.KIND_SELECTOR_INTERCEPT ->
+                selectorSnapshot(eventKind)?.let(InterceptionSourcePresentation::selector)
+            SelfControlAttempt.KIND_URL_INTERCEPT -> {
+                if (!hasExtra(EXTRA_URL_RULE_ID)) {
+                    InterceptionSourcePresentation.unknown()
+                } else {
+                    InterceptionSourcePresentation.url(
+                        ruleId = getLongExtra(EXTRA_URL_RULE_ID, -1L),
+                        ruleName = getStringExtra(EXTRA_URL_RULE_NAME),
+                    )
+                }
+            }
+            else -> InterceptionSourcePresentation.unknown()
+        }
+    }
 }
 
 @Composable
@@ -267,6 +294,7 @@ fun InterceptScreen(
     elapsedState: SelfControlElapsedPolicy.ElapsedState =
         SelfControlElapsedPolicy.ElapsedState.Unavailable,
     recentCompletedIntervalsMs: List<Long> = emptyList(),
+    source: InterceptionSourcePresentation = InterceptionSourcePresentation.unknown(),
 ) {
     var timeLeft by remember { mutableIntStateOf(10) }
     
@@ -297,11 +325,16 @@ fun InterceptScreen(
                 color = MaterialTheme.colorScheme.onBackground
             )
 
+            InterceptionSourceCard(
+                presentation = source,
+                modifier = Modifier.padding(top = 24.dp),
+            )
+
             SelfControlElapsedCard(
                 context = SelfControlElapsedPolicy.Context.RULE_TRIGGER,
                 state = elapsedState,
                 recentCompletedIntervalsMs = recentCompletedIntervalsMs,
-                modifier = Modifier.padding(top = 24.dp),
+                modifier = Modifier.padding(top = 16.dp),
             )
             Spacer(modifier = Modifier.height(48.dp))
             
