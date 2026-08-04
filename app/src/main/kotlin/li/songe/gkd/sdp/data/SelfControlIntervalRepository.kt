@@ -214,22 +214,6 @@ class SelfControlIntervalRepository(
                         endAt: Long,
                     ): Flow<List<UsageGuardRecord>> = usageDao.queryByRequestedAtRange(startAt, endAt)
 
-                    override suspend fun queryInsightRows(
-                        appId: String,
-                        startAt: Long,
-                        endAt: Long,
-                    ): List<UsageRequestInsightRow> =
-                        usageDao.queryRecordsByAppAndRequestedAtRange(appId, startAt, endAt)
-                            .map { record ->
-                                UsageRequestInsightRow(
-                                    id = record.id,
-                                    requestedAt = record.requestedAt,
-                                    requestedDurationMinutes = record.requestedDurationMinutes,
-                                    lastUsageEndedAt = record.lastUsageEndedAt,
-                                    requestGapMs = record.requestGapMs,
-                                )
-                            }
-
                 },
                 attemptEvents = object : AttemptEventSource {
                     override suspend fun recordEventAndGetInsight(
