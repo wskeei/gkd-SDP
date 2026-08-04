@@ -467,7 +467,11 @@ private fun ActionLogCard(
                                 }
                             })
                         ) {
-                            Text(text = subscription?.name ?: "id=${actionLog.subsId}")
+                            Text(
+                                text = actionLog.subsNameSnapshot
+                                    ?: subscription?.name
+                                    ?: "id=${actionLog.subsId}"
+                            )
                             val lineHeightDp = LocalDensity.current.run {
                                 LocalTextStyle.current.lineHeight.toDp()
                             }
@@ -492,7 +496,9 @@ private fun ActionLogCard(
                     Row(
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        val groupDesc = group?.name ?: actionLog.groupNameSnapshot ?: "规则组 ${actionLog.groupKey}"
+                        val groupDesc = actionLog.groupNameSnapshot
+                            ?: group?.name
+                            ?: "规则组 ${actionLog.groupKey}"
                         val textColor = LocalContentColor.current.let {
                             if (group == null && actionLog.groupNameSnapshot == null) it.copy(alpha = 0.5f) else it
                         }
@@ -501,7 +507,9 @@ private fun ActionLogCard(
                             text = groupDesc,
                             color = textColor,
                         )
-                        val ruleDesc = rule?.name ?: actionLog.ruleNameSnapshot ?: (if ((group?.rules?.size ?: 0) > 1) {
+                        val ruleDesc = actionLog.ruleNameSnapshot
+                            ?: rule?.name
+                            ?: (if ((group?.rules?.size ?: 0) > 1) {
                             val keyDesc = actionLog.ruleKey?.let { "key=$it, " } ?: ""
                             "${keyDesc}index=${actionLog.ruleIndex + 1}"
                         } else {
@@ -594,6 +602,22 @@ private fun ActionLogDialog(
                         modifier = Modifier.padding(top = 4.dp),
                     )
                 }
+                Text(
+                    text = "订阅：${presentation.subscriptionName ?: "id=${actionLog.subsId}"} · v${actionLog.subsVersion}",
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.padding(top = 4.dp),
+                )
+                Text(
+                    text = "规则组：${presentation.groupName ?: "规则组 ${actionLog.groupKey}"}",
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.padding(top = 2.dp),
+                )
+                Text(
+                    text = "规则标识：groupType=${actionLog.groupType}, groupKey=${actionLog.groupKey}, " +
+                        "index=${actionLog.ruleIndex}, ${actionLog.ruleKey?.let { "key=$it" } ?: "未设置 key"}",
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.padding(top = 2.dp),
+                )
             }
             HorizontalDivider()
 

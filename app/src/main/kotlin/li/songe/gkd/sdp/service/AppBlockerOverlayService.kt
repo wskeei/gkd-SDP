@@ -78,6 +78,7 @@ class AppBlockerOverlayService : LifecycleService(), SavedStateRegistryOwner {
     private var insightSamples by mutableStateOf(emptyList<SelfControlInsightWindowPolicy.IntervalSample>())
     private var insightAnchorAt by mutableStateOf<Long?>(null)
     private var currentEventId by mutableStateOf<Long?>(null)
+    private var currentGapMs by mutableStateOf<Long?>(null)
     private var selectedWindow by mutableStateOf(SelfControlInsightWindowPolicy.Window.LAST_24_HOURS)
 
     private val savedStateRegistryController = SavedStateRegistryController.create(this)
@@ -103,10 +104,20 @@ class AppBlockerOverlayService : LifecycleService(), SavedStateRegistryOwner {
         val subjectId = intent?.getStringExtra(EXTRA_SUBJECT_ID).orEmpty().ifBlank { blockedApp }
         val subjectLabel = intent?.getStringExtra(EXTRA_SUBJECT_LABEL).orEmpty().ifBlank { blockedApp }
         val source = intent?.blockerSource()
+        if (eventKind != SelfControlAttempt.KIND_APP_BLOCKER ||
+            blockedApp.isBlank() ||
+            eventKey.isBlank() ||
+            subjectId.isBlank() ||
+            source == null
+        ) {
+            stopSelf()
+            return START_NOT_STICKY
+        }
         elapsedState = SelfControlElapsedPolicy.ElapsedState.Loading
         insightSamples = emptyList()
         insightAnchorAt = null
         currentEventId = null
+        currentGapMs = null
         selectedWindow = SelfControlInsightWindowPolicy.Window.LAST_24_HOURS
         if (showOverlay(message, blockedApp, source)) {
             recordElapsedAttempt(
@@ -152,6 +163,9 @@ class AppBlockerOverlayService : LifecycleService(), SavedStateRegistryOwner {
                 insightSamples = insight.samples
                 insightAnchorAt = occurredAt
                 currentEventId = insight.currentEventId
+                currentGapMs = insight.previousOccurredAt?.let { previous ->
+                    (occurredAt - previous).takeIf { it >= 0L }
+                }
                 elapsedState = SelfControlElapsedPolicy.stateForAttempt(
                     insight.previousOccurredAt,
                     occurredAt,
@@ -159,6 +173,7 @@ class AppBlockerOverlayService : LifecycleService(), SavedStateRegistryOwner {
             }.onFailure {
                 insightSamples = emptyList()
                 currentEventId = null
+                currentGapMs = null
                 elapsedState = SelfControlElapsedPolicy.ElapsedState.Unavailable
             }
         }
@@ -167,7 +182,7 @@ class AppBlockerOverlayService : LifecycleService(), SavedStateRegistryOwner {
     private fun showOverlay(
         message: String,
         blockedApp: String,
-        source: InterceptionSourcePresentation?,
+        source: InterceptionSourcePresentation,
     ): Boolean {
         if (view != null) return false
 
@@ -182,11 +197,12 @@ class AppBlockerOverlayService : LifecycleService(), SavedStateRegistryOwner {
                         samples = insightSamples,
                         insightAnchorAt = insightAnchorAt,
                         currentReference = currentEventId?.let {
-                            SelfControlInsightCurrentReference(gapMs = null, eventId = it)
+                            SelfControlInsightCurrentReference(gapMs = currentGapMs, eventId = it)
                         },
+                        nowEpochMs = insightAnchorAt,
                         selectedWindow = selectedWindow,
                         onWindowSelected = { selectedWindow = it },
-                        source = source ?: InterceptionSourcePresentation.unknown(),
+                        source = source,
                         onExit = {
                             A11yRuleEngine.performActionHome()
                             stopSelf()
@@ -227,13 +243,26 @@ class AppBlockerOverlayService : LifecycleService(), SavedStateRegistryOwner {
 
     private fun Intent.blockerSource(): InterceptionSourcePresentation? {
         if (!hasExtra(EXTRA_RULE_ID)) return null
+        val ruleId = getLongExtra(EXTRA_RULE_ID, -1L)
+        val targetType = getIntExtra(EXTRA_RULE_TARGET_TYPE, -1)
+        val targetId = getStringExtra(EXTRA_RULE_TARGET_ID).orEmpty()
+        val startTime = getStringExtra(EXTRA_RULE_START_TIME).orEmpty()
+        val endTime = getStringExtra(EXTRA_RULE_END_TIME).orEmpty()
+        val daysOfWeek = getStringExtra(EXTRA_RULE_DAYS).orEmpty()
+        if (ruleId < 0L ||
+            targetType !in setOf(BlockTimeRule.TARGET_TYPE_APP, BlockTimeRule.TARGET_TYPE_GROUP) ||
+            targetId.isBlank() ||
+            startTime.isBlank() ||
+            endTime.isBlank() ||
+            daysOfWeek.isBlank()
+        ) return null
         val rule = BlockTimeRule(
-            id = getLongExtra(EXTRA_RULE_ID, -1L),
-            targetType = getIntExtra(EXTRA_RULE_TARGET_TYPE, BlockTimeRule.TARGET_TYPE_APP),
-            targetId = getStringExtra(EXTRA_RULE_TARGET_ID).orEmpty(),
-            startTime = getStringExtra(EXTRA_RULE_START_TIME).orEmpty(),
-            endTime = getStringExtra(EXTRA_RULE_END_TIME).orEmpty(),
-            daysOfWeek = getStringExtra(EXTRA_RULE_DAYS).orEmpty(),
+            id = ruleId,
+            targetType = targetType,
+            targetId = targetId,
+            startTime = startTime,
+            endTime = endTime,
+            daysOfWeek = daysOfWeek,
             isAllowMode = getBooleanExtra(EXTRA_RULE_ALLOW_MODE, false),
         )
         return InterceptionSourcePresentation.appBlocker(rule)
@@ -247,6 +276,7 @@ fun AppBlockerInterceptScreen(
     samples: List<SelfControlInsightWindowPolicy.IntervalSample> = emptyList(),
     insightAnchorAt: Long? = null,
     currentReference: SelfControlInsightCurrentReference? = null,
+    nowEpochMs: Long? = null,
     selectedWindow: SelfControlInsightWindowPolicy.Window =
         SelfControlInsightWindowPolicy.Window.LAST_24_HOURS,
     onWindowSelected: (SelfControlInsightWindowPolicy.Window) -> Unit = {},
@@ -293,6 +323,7 @@ fun AppBlockerInterceptScreen(
                 samples = samples,
                 insightAnchorAt = insightAnchorAt,
                 currentReference = currentReference,
+                nowEpochMs = nowEpochMs,
                 selectedWindow = selectedWindow,
                 onWindowSelected = onWindowSelected,
                 modifier = Modifier.padding(top = 16.dp),

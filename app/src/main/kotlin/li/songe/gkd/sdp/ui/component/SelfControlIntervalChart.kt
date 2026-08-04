@@ -30,6 +30,7 @@ fun SelfControlWindowChart(
     points: List<SelfControlInsightChartPoint>,
     metric: SelfControlInsightWindowPolicy.Metric,
     semanticSummary: String,
+    currentPointLabel: String? = null,
     modifier: Modifier = Modifier,
 ) {
     if (points.isEmpty()) return
@@ -101,7 +102,10 @@ fun SelfControlWindowChart(
             .fillMaxWidth()
             .height(148.dp)
             .semantics {
-                contentDescription = semanticSummary
+                contentDescription = listOfNotNull(
+                    semanticSummary,
+                    currentPointLabel?.let { "本次所在时段：$it" },
+                ).joinToString("；")
             },
     )
 }

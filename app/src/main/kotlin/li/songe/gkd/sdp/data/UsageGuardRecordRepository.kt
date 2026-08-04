@@ -13,9 +13,7 @@ object UsageGuardRecordRepository {
         endedAt: Long,
         endReason: Int,
     ): Int = DbSet.withTransaction {
-        val dao = DbSet.usageGuardRecordDao
-        dao.markUsageEnded(id, endedAt)
-        dao.closeRecord(id, endedAt, endReason)
+        DbSet.usageGuardRecordDao.closeRecordFromActiveUse(id, endedAt, endReason)
     }
 
     suspend fun insertRequestWithGap(

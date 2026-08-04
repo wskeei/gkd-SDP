@@ -1,6 +1,6 @@
 package li.songe.gkd.sdp.service
 
-import java.util.Collections
+import java.util.LinkedHashMap
 import li.songe.gkd.sdp.data.RuleTriggerLogRepository
 import li.songe.gkd.sdp.data.SelectorRuleSnapshot
 import li.songe.gkd.sdp.data.SelfControlAttempt
@@ -42,7 +42,10 @@ class MountedInterceptRecorder(
                 SelfControlAttempt.KIND_SELECTOR_INTERCEPT ->
                     selectorSnapshot != null && selectorSnapshot.eventKey() == eventKey
 
-                SelfControlAttempt.KIND_URL_INTERCEPT -> selectorSnapshot == null
+                SelfControlAttempt.KIND_URL_INTERCEPT ->
+                    selectorSnapshot == null &&
+                        subjectId.toLongOrNull() != null &&
+                        eventKey.startsWith("url_intercept:")
                 else -> false
             }
         }
@@ -56,7 +59,11 @@ class MountedInterceptRecorder(
         val intervalInsight: SelfControlAttempt.RecordedAttemptInsight? = null,
     )
 
-    private val completedTokens = Collections.synchronizedSet(mutableSetOf<String>())
+    private val tokenLock = Any()
+    private val completedTokens = object : LinkedHashMap<String, Unit>(TOKEN_LIMIT, 0.75f, true) {
+        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, Unit>): Boolean =
+            size > TOKEN_LIMIT
+    }
 
     suspend fun recordMounted(
         pending: Pending,
@@ -64,7 +71,10 @@ class MountedInterceptRecorder(
         occurredAt: Long,
     ): Result {
         if (!mounted || !pending.isValid()) return Result(false, false, false, false)
-        if (!completedTokens.add(pending.recordToken)) return Result(false, false, false, false)
+        val isNewToken = synchronized(tokenLock) {
+            completedTokens.put(pending.recordToken, Unit) == null
+        }
+        if (!isNewToken) return Result(false, false, false, false)
 
         var actionAttempted = false
         var actionSucceeded = false
@@ -98,6 +108,8 @@ class MountedInterceptRecorder(
     }
 
     companion object {
+        private const val TOKEN_LIMIT = 1_024
+
         fun fromDb(): MountedInterceptRecorder {
             val logRepository = RuleTriggerLogRepository.fromDb()
             val intervalRepository = SelfControlIntervalRepository.fromDb()

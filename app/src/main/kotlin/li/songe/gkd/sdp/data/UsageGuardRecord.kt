@@ -92,7 +92,7 @@ data class UsageGuardRecord(
 
         @Query(
             """
-            SELECT *
+            SELECT id, requested_at, requested_duration_minutes, last_usage_ended_at, request_gap_ms
             FROM usage_guard_record
             WHERE app_id = :appId
               AND requested_at >= :startAt
@@ -100,11 +100,11 @@ data class UsageGuardRecord(
             ORDER BY requested_at ASC, id ASC
             """
         )
-        suspend fun queryRecordsByAppAndRequestedAtRange(
+        suspend fun queryInsightRowsByAppAndRequestedAtRange(
             appId: String,
             startAt: Long,
             endAt: Long,
-        ): List<UsageGuardRecord>
+        ): List<UsageRequestInsightRow>
 
         @Query("SELECT * FROM usage_guard_record ORDER BY id DESC LIMIT :limit")
         fun queryLatest(limit: Int = 100): Flow<List<UsageGuardRecord>>
@@ -118,8 +118,30 @@ data class UsageGuardRecord(
         )
         fun queryByRequestedAtRange(startAt: Long, endAt: Long): Flow<List<UsageGuardRecord>>
 
-        @Query("UPDATE usage_guard_record SET ended_at = :endedAt, end_reason = :endReason WHERE id = :id")
+        @Query(
+            "UPDATE usage_guard_record SET ended_at = :endedAt, end_reason = :endReason " +
+                "WHERE id = :id AND ended_at = 0"
+        )
         suspend fun closeRecord(id: Long, endedAt: Long, endReason: Int): Int
+
+        @Query(
+            """
+            UPDATE usage_guard_record
+            SET ended_at = :endedAt,
+                end_reason = :endReason,
+                last_usage_ended_at = CASE
+                    WHEN last_usage_ended_at IS NULL OR last_usage_ended_at <= :endedAt
+                    THEN :endedAt
+                    ELSE last_usage_ended_at
+                END
+            WHERE id = :id AND ended_at = 0
+            """
+        )
+        suspend fun closeRecordFromActiveUse(
+            id: Long,
+            endedAt: Long,
+            endReason: Int,
+        ): Int
 
         @Query(
             """

@@ -29,10 +29,15 @@ class RoomSchema33Test(unittest.TestCase):
         self.assertNotIn("outcome", {column["columnName"] for column in action_log["fields"]})
 
     def test_schema_33_contains_both_feature_shapes(self):
+        schema_32 = self.load(32)
         schema = self.load(33)
         self.assertEqual(33, schema["database"]["version"])
         self.assertTrue(schema.get("formatVersion"))
         self.assertTrue(schema["database"].get("identityHash"))
+        self.assertEqual(
+            {table["tableName"] for table in schema_32["database"]["entities"]},
+            {table["tableName"] for table in schema["database"]["entities"]},
+        )
 
         action_log = self.table(schema, "action_log")
         action_columns = {column["columnName"]: column for column in action_log["fields"]}
@@ -44,12 +49,26 @@ class RoomSchema33Test(unittest.TestCase):
             "rule_name_snapshot",
         ):
             self.assertIn(name, action_columns)
+        self.assertTrue(action_columns["outcome"]["notNull"])
         self.assertEqual("1", action_columns["outcome"]["defaultValue"])
+        for name in ("subs_name_snapshot", "group_name_snapshot", "rule_name_snapshot"):
+            self.assertFalse(action_columns[name].get("notNull", False))
 
         usage_record = self.table(schema, "usage_guard_record")
-        usage_columns = {column["columnName"] for column in usage_record["fields"]}
+        usage_column_map = {column["columnName"]: column for column in usage_record["fields"]}
+        usage_columns = set(usage_column_map)
         self.assertIn("last_usage_ended_at", usage_columns)
         self.assertIn("request_gap_ms", usage_columns)
+        self.assertFalse(usage_column_map["last_usage_ended_at"].get("notNull", False))
+        self.assertFalse(usage_column_map["request_gap_ms"].get("notNull", False))
+
+        for table_name in ("action_log", "usage_guard_record", "self_control_attempt_event"):
+            old_table = self.table(schema_32, table_name)
+            new_table = self.table(schema, table_name)
+            self.assertEqual(
+                {index["name"] for index in old_table.get("indices", [])},
+                {index["name"] for index in new_table.get("indices", [])},
+            )
 
     def test_schema_33_has_a_non_destructive_upgrade_path(self):
         source = APP_DB.read_text(encoding="utf-8")

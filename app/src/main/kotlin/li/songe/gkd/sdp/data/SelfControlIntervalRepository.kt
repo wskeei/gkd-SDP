@@ -137,15 +137,18 @@ class SelfControlIntervalRepository(
                 )
             }
         }
+        val usablePreviousEnd = latest?.lastUsageEndedAt?.takeIf {
+            it >= 0L && it <= insightAnchorAt
+        }
         return UsageRequestOverlayData(
             insightAnchorAt = insightAnchorAt,
             latestRequestedAt = latest?.requestedAt,
             anchorStatus = when {
                 latest == null -> UsageGapAnchorStatus.NoPreviousRequest
-                latest.lastUsageEndedAt != null -> UsageGapAnchorStatus.Available
+                usablePreviousEnd != null -> UsageGapAnchorStatus.Available
                 else -> UsageGapAnchorStatus.MissingActualEnd
             },
-            previousLastUsageEndedAt = latest?.lastUsageEndedAt,
+            previousLastUsageEndedAt = usablePreviousEnd,
             samples = samples,
         )
     }
@@ -219,16 +222,7 @@ class SelfControlIntervalRepository(
                         startAt: Long,
                         endAt: Long,
                     ): List<UsageRequestInsightRow> =
-                        usageDao.queryRecordsByAppAndRequestedAtRange(appId, startAt, endAt)
-                            .map { record ->
-                                UsageRequestInsightRow(
-                                    id = record.id,
-                                    requestedAt = record.requestedAt,
-                                    requestedDurationMinutes = record.requestedDurationMinutes,
-                                    lastUsageEndedAt = record.lastUsageEndedAt,
-                                    requestGapMs = record.requestGapMs,
-                                )
-                            }
+                        usageDao.queryInsightRowsByAppAndRequestedAtRange(appId, startAt, endAt)
 
                 },
                 attemptEvents = object : AttemptEventSource {

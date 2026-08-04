@@ -15,7 +15,7 @@ import org.junit.Test
 
 class UsageGuardRequestIntervalContractTest {
     @Test
-    fun overlayUsesOnlyTheSelectedAppAndAtMostFiveCompletedIntervals() = runBlocking {
+    fun overlayUsesOnlyTheSelectedAppAndUsesAllStoredGaps() = runBlocking {
         val records = listOf(
             record(1, "target", 1_000L, null),
             record(2, "target", 2_000L, 1_000L),
@@ -39,8 +39,8 @@ class UsageGuardRequestIntervalContractTest {
 
         assertEquals(7_000L, overlay.latestRequestedAt)
         assertEquals(
-            listOf(2_000L, 1_000L, 1_000L, 1_000L, 1_000L),
-            overlay.samples.mapNotNull { it.gapMs }.takeLast(5),
+            listOf(1_000L, 2_000L, 1_000L, 1_000L, 1_000L),
+            overlay.samples.mapNotNull { it.gapMs },
         )
     }
 

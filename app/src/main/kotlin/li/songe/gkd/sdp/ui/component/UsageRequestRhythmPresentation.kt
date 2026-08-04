@@ -1,9 +1,6 @@
 package li.songe.gkd.sdp.ui.component
 
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.HorizontalDivider
@@ -106,11 +103,9 @@ data class UsageRequestRhythmPresentation(
     }
 }
 
-@OptIn(ExperimentalLayoutApi::class)
 @androidx.compose.runtime.Composable
 fun UsageRequestRhythmSummary(
     presentation: UsageRequestRhythmPresentation,
-    selectedWindow: SelfControlInsightWindowPolicy.Window,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -120,33 +115,15 @@ fun UsageRequestRhythmSummary(
         verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
         HorizontalDivider()
-        Text("本次间用比", style = MaterialTheme.typography.titleSmall)
+        Text("间用比反馈", style = MaterialTheme.typography.titleSmall)
         Text(
-            text = "本次选择时长：${presentation.currentRatio?.let { "${UsageRequestRhythmPolicy.formatRatio(it)}×" } ?: "—"}",
+            text = "本次间用比：${presentation.currentRatio?.let { "${UsageRequestRhythmPolicy.formatRatio(it)}×" } ?: "—"}",
             style = MaterialTheme.typography.bodyLarge,
         )
         Text(
-            text = "距离上次结束使用：${presentation.currentGapMs?.let(SelfControlIntervalPolicy::formatDurationCompact) ?: "—"}",
+            text = "公式：${presentation.currentGapMs?.let(SelfControlIntervalPolicy::formatDurationCompact) ?: "—"} ÷ 当前申请时长",
             style = MaterialTheme.typography.bodyMedium,
         )
-        Text(
-            text = "间用比 = 未使用间隔 ÷ 本次申请时长",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        FlowRow(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp),
-        ) {
-            presentation.averageRatioByWindow.forEach { (window, average) ->
-                Text(
-                    text = "${window.label}平均：${average?.let { "${UsageRequestRhythmPolicy.formatRatio(it)}×" } ?: "—"}（${presentation.ratioSampleCountByWindow[window] ?: 0} 条）",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-        }
         presentation.comparisonText?.let {
             Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
         }

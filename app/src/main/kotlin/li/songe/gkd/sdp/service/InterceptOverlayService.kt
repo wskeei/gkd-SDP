@@ -88,6 +88,7 @@ class InterceptOverlayService : LifecycleService(), SavedStateRegistryOwner {
     private var insightSamples by mutableStateOf(emptyList<SelfControlInsightWindowPolicy.IntervalSample>())
     private var insightAnchorAt by mutableStateOf<Long?>(null)
     private var currentEventId by mutableStateOf<Long?>(null)
+    private var currentGapMs by mutableStateOf<Long?>(null)
     private var selectedWindow by mutableStateOf(SelfControlInsightWindowPolicy.Window.LAST_24_HOURS)
     private val mountedInterceptRecorder by lazy { MountedInterceptRecorder.fromDb() }
     
@@ -120,6 +121,7 @@ class InterceptOverlayService : LifecycleService(), SavedStateRegistryOwner {
             insightSamples = emptyList()
             insightAnchorAt = null
             currentEventId = null
+            currentGapMs = null
             selectedWindow = SelfControlInsightWindowPolicy.Window.LAST_24_HOURS
             if (showOverlay(subsId, groupKey, message, cooldown, eventKind, source)) {
                 val occurredAt = System.currentTimeMillis()
@@ -172,6 +174,9 @@ class InterceptOverlayService : LifecycleService(), SavedStateRegistryOwner {
                     insightSamples = insight.samples
                     insightAnchorAt = occurredAt
                     currentEventId = insight.currentEventId
+                    currentGapMs = insight.previousOccurredAt?.let { previous ->
+                        (occurredAt - previous).takeIf { it >= 0L }
+                    }
                     elapsedState = SelfControlElapsedPolicy.stateForAttempt(
                         insight.previousOccurredAt,
                         occurredAt,
@@ -179,6 +184,7 @@ class InterceptOverlayService : LifecycleService(), SavedStateRegistryOwner {
                 } else {
                     insightSamples = emptyList()
                     currentEventId = null
+                    currentGapMs = null
                     elapsedState = SelfControlElapsedPolicy.ElapsedState.Unavailable
                 }
             }
@@ -207,8 +213,9 @@ class InterceptOverlayService : LifecycleService(), SavedStateRegistryOwner {
                         samples = insightSamples,
                         insightAnchorAt = insightAnchorAt,
                         currentReference = currentEventId?.let {
-                            SelfControlInsightCurrentReference(gapMs = null, eventId = it)
+                            SelfControlInsightCurrentReference(gapMs = currentGapMs, eventId = it)
                         },
+                        nowEpochMs = insightAnchorAt,
                         selectedWindow = selectedWindow,
                         onWindowSelected = { selectedWindow = it },
                         source = source,
@@ -280,7 +287,13 @@ class InterceptOverlayService : LifecycleService(), SavedStateRegistryOwner {
             groupName = getStringExtra(EXTRA_SELECTOR_GROUP_NAME),
             subscriptionName = getStringExtra(EXTRA_SELECTOR_SUBS_NAME),
             matchedAt = getLongExtra(EXTRA_MATCHED_AT, 0L),
-        ).takeIf { it.appId.isNotBlank() && it.groupType >= 0 && it.groupKey >= 0 && it.ruleIndex >= 0 }
+        ).takeIf {
+            it.subsId > 0L &&
+                it.appId.isNotBlank() &&
+                it.groupType >= 0 &&
+                it.groupKey >= 0 &&
+                it.ruleIndex >= 0
+        }
     }
 
     private fun Intent.interceptionSource(eventKind: Int): InterceptionSourcePresentation? {
@@ -288,16 +301,15 @@ class InterceptOverlayService : LifecycleService(), SavedStateRegistryOwner {
             SelfControlAttempt.KIND_SELECTOR_INTERCEPT ->
                 selectorSnapshot(eventKind)?.let(InterceptionSourcePresentation::selector)
             SelfControlAttempt.KIND_URL_INTERCEPT -> {
-                if (!hasExtra(EXTRA_URL_RULE_ID)) {
-                    InterceptionSourcePresentation.unknown()
-                } else {
+                val ruleId = getLongExtra(EXTRA_URL_RULE_ID, -1L)
+                if (hasExtra(EXTRA_URL_RULE_ID) && ruleId >= 0L) {
                     InterceptionSourcePresentation.url(
-                        ruleId = getLongExtra(EXTRA_URL_RULE_ID, -1L),
+                        ruleId = ruleId,
                         ruleName = getStringExtra(EXTRA_URL_RULE_NAME),
                     )
-                }
+                } else null
             }
-            else -> InterceptionSourcePresentation.unknown()
+            else -> null
         }
     }
 }
@@ -313,6 +325,7 @@ fun InterceptScreen(
     samples: List<SelfControlInsightWindowPolicy.IntervalSample> = emptyList(),
     insightAnchorAt: Long? = null,
     currentReference: SelfControlInsightCurrentReference? = null,
+    nowEpochMs: Long? = null,
     selectedWindow: SelfControlInsightWindowPolicy.Window =
         SelfControlInsightWindowPolicy.Window.LAST_24_HOURS,
     onWindowSelected: (SelfControlInsightWindowPolicy.Window) -> Unit = {},
@@ -358,6 +371,7 @@ fun InterceptScreen(
                 samples = samples,
                 insightAnchorAt = insightAnchorAt,
                 currentReference = currentReference,
+                nowEpochMs = nowEpochMs,
                 selectedWindow = selectedWindow,
                 onWindowSelected = onWindowSelected,
                 modifier = Modifier.padding(top = 16.dp),

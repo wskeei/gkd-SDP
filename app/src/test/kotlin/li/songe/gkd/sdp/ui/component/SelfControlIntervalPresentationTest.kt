@@ -6,7 +6,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class SelfControlIntervalPresentationTest {
-    private val now = 10_000_000L
+    private val now = 40L * 24L * 60L * 60L * 1_000L
 
     @Test
     fun datasetPresentationDefaultsToTwentyFourHoursAndReusesAllSamplesOnRangeSwitch() {
@@ -71,5 +71,26 @@ class SelfControlIntervalPresentationTest {
         assertTrue(presentation.chartPoints.size <= 24)
         assertEquals(presentation.chartPoints.size, presentation.textRows.size)
         assertTrue(presentation.textRows.any { it.sampleCount > 1 })
+    }
+
+    @Test
+    fun currentEventIsMarkedInChartAndTextModel() {
+        val sample = SelfControlInsightWindowPolicy.IntervalSample(
+            id = 77L,
+            occurredAtEpochMs = now - 30L * 60_000L,
+            gapMs = 120L * 60_000L,
+            requestedDurationMinutes = null,
+        )
+        val presentation = SelfControlInsightPresentation.from(
+            samples = listOf(sample),
+            insightAnchorAt = now,
+            currentReference = SelfControlInsightCurrentReference(
+                gapMs = 120L * 60_000L,
+                eventId = sample.id,
+            ),
+        )
+
+        assertTrue(presentation.chartPoints.single().isCurrent)
+        assertTrue(presentation.textRows.single().isCurrent)
     }
 }

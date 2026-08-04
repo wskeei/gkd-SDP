@@ -236,4 +236,25 @@ class SelfControlIntervalRepositoryTest {
         assertEquals(1, overlay.samples.size)
         assertEquals(200L, overlay.insightAnchorAt)
     }
+
+    @Test
+    fun futureUsageEndIsUnavailableInsteadOfBecomingAZeroGap() = runBlocking {
+        val repository = SelfControlIntervalRepository(
+            usageRecords = FakeUsageSource(
+                latestInsight = UsageRequestInsightRow(
+                    id = 3L,
+                    requestedAt = 7_000L,
+                    requestedDurationMinutes = 10,
+                    lastUsageEndedAt = 8_000L,
+                    requestGapMs = null,
+                ),
+            ),
+            attemptEvents = FakeAttemptSource(),
+        )
+
+        val result = repository.loadUsageRequestOverlayData("target", 7_000L)
+
+        assertEquals(SelfControlIntervalRepository.UsageGapAnchorStatus.MissingActualEnd, result.anchorStatus)
+        assertNull(result.previousLastUsageEndedAt)
+    }
 }

@@ -38,6 +38,8 @@ object SelfControlInsightWindowPolicy {
         val sampleCount: Int,
         val averageMs: Double?,
         val averageRatio: Double?,
+        val medianMs: Double?,
+        val medianRatio: Double?,
         val minValue: Double?,
         val maxValue: Double?,
     )
@@ -92,6 +94,8 @@ object SelfControlInsightWindowPolicy {
             sampleCount = values.size,
             averageMs = if (metric == Metric.INTERVAL) average(values) else null,
             averageRatio = if (metric == Metric.USAGE_RATIO) average(values) else null,
+            medianMs = if (metric == Metric.INTERVAL) median(values) else null,
+            medianRatio = if (metric == Metric.USAGE_RATIO) median(values) else null,
             minValue = values.minOrNull(),
             maxValue = values.maxOrNull(),
         )
@@ -141,6 +145,21 @@ object SelfControlInsightWindowPolicy {
             12,
             RoundingMode.HALF_UP,
         ).toDouble().takeIf { it.isFinite() }
+    }
+
+    private fun median(values: List<Double>): Double? {
+        if (values.isEmpty()) return null
+        val sorted = values.sorted()
+        val middle = sorted.size / 2
+        val value = if (sorted.size % 2 == 1) {
+            sorted[middle]
+        } else {
+            BigDecimal.valueOf(sorted[middle - 1])
+                .add(BigDecimal.valueOf(sorted[middle]))
+                .divide(BigDecimal.valueOf(2L), 12, RoundingMode.HALF_UP)
+                .toDouble()
+        }
+        return value.takeIf { it.isFinite() }
     }
 
     private fun formatBucketLabel(

@@ -166,6 +166,49 @@ data class SelfControlInsightPresentation(
             )
         }
 
+        fun withCurrentReference(
+            base: SelfControlInsightPresentation,
+            samples: List<SelfControlInsightWindowPolicy.IntervalSample>,
+            insightAnchorAt: Long,
+            selectedWindow: SelfControlInsightWindowPolicy.Window,
+            currentReference: SelfControlInsightCurrentReference?,
+        ): SelfControlInsightPresentation {
+            val currentBucketStart = currentReference?.eventId?.let { eventId ->
+                val sample = SelfControlInsightWindowPolicy.samplesInWindow(
+                    samples = samples,
+                    nowEpochMs = insightAnchorAt,
+                    window = selectedWindow,
+                ).firstOrNull { it.id == eventId }
+                sample?.let {
+                    val start = SelfControlInsightWindowPolicy.windowStartEpochMs(
+                        insightAnchorAt,
+                        selectedWindow,
+                    )
+                    val index = ((it.occurredAtEpochMs - start).coerceAtLeast(0L) /
+                        selectedWindow.bucketMs)
+                        .coerceIn(0L, selectedWindow.maxChartPoints - 1L)
+                    start + index * selectedWindow.bucketMs
+                }
+            }
+            val chartPoints = base.chartPoints.map { point ->
+                point.copy(
+                    isCurrent = currentBucketStart != null && point.bucketStartAt == currentBucketStart,
+                )
+            }
+            val textRows = base.textRows.mapIndexed { index, row ->
+                row.copy(isCurrent = chartPoints.getOrNull(index)?.isCurrent == true)
+            }
+            return base.copy(
+                chartPoints = chartPoints,
+                textRows = textRows,
+                comparisonText = comparisonText(
+                    currentReference,
+                    base.selectedSeries,
+                    base.selectedMetric,
+                ),
+            )
+        }
+
         private fun semanticSummary(
             series: SelfControlInsightWindowPolicy.Series,
             window: SelfControlInsightWindowPolicy.Window,
@@ -179,7 +222,13 @@ data class SelfControlInsightPresentation(
                 SelfControlInsightWindowPolicy.Metric.USAGE_RATIO ->
                     formatValue(stats.averageRatio ?: 0.0, metric)
             } ?: "暂无"
-            return "${window.label}${metric.label()}平均 $average，有效样本 ${stats.sampleCount} 条，原始记录 ${series.rawSampleCount} 条。"
+            val median = when (metric) {
+                SelfControlInsightWindowPolicy.Metric.INTERVAL ->
+                    stats.medianMs?.let { SelfControlIntervalPolicy.formatDurationCompact(it.toLong()) }
+                SelfControlInsightWindowPolicy.Metric.USAGE_RATIO ->
+                    stats.medianRatio?.let { formatValue(it, metric) }
+            } ?: "暂无"
+            return "${window.label}${metric.label()}平均 $average · 中位 $median · 有效样本 ${stats.sampleCount} 条，原始记录 ${series.rawSampleCount} 条。"
         }
 
         private fun comparisonText(
@@ -244,12 +293,26 @@ fun SelfControlIntervalInsightCard(
     currentReference: SelfControlInsightCurrentReference? = null,
     modifier: Modifier = Modifier,
 ) {
-    val presentation = SelfControlInsightPresentation.from(
+    val basePresentation = remember(
+        samples,
+        insightAnchorAt,
+        selectedWindow,
+        selectedMetric,
+        supportsUsageRatio,
+    ) {
+        SelfControlInsightPresentation.from(
+            samples = samples,
+            insightAnchorAt = insightAnchorAt,
+            selectedWindow = selectedWindow,
+            selectedMetric = selectedMetric,
+            supportsUsageRatio = supportsUsageRatio,
+        )
+    }
+    val presentation = SelfControlInsightPresentation.withCurrentReference(
+        base = basePresentation,
         samples = samples,
         insightAnchorAt = insightAnchorAt,
         selectedWindow = selectedWindow,
-        selectedMetric = selectedMetric,
-        supportsUsageRatio = supportsUsageRatio,
         currentReference = currentReference,
     )
     var menuExpanded by remember(selectedWindow) { mutableStateOf(false) }
@@ -334,6 +397,7 @@ fun SelfControlIntervalInsightCard(
             }
         }
         currentReference?.let { current ->
+            val currentPoint = presentation.chartPoints.firstOrNull { it.isCurrent }
             val value = when (presentation.selectedMetric) {
                 SelfControlInsightWindowPolicy.Metric.INTERVAL -> current.gapMs?.let(SelfControlIntervalPolicy::formatDurationCompact)
                 SelfControlInsightWindowPolicy.Metric.USAGE_RATIO -> UsageRequestRhythmPolicy.ratio(
@@ -342,7 +406,13 @@ fun SelfControlIntervalInsightCard(
                 )?.let { SelfControlInsightPresentation.formatValue(it, SelfControlInsightWindowPolicy.Metric.USAGE_RATIO) }
             }
             Text(
-                text = "本次：${value ?: "暂无"}",
+                text = if (value != null) {
+                    "本次：$value"
+                } else if (currentPoint != null) {
+                    "本次所在时段：${currentPoint.label}"
+                } else {
+                    "本次：已记录，暂无可比较的间隔值"
+                },
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.primary,
             )
@@ -359,6 +429,7 @@ fun SelfControlIntervalInsightCard(
                 points = presentation.chartPoints,
                 metric = presentation.selectedMetric,
                 semanticSummary = presentation.semanticSummary,
+                currentPointLabel = presentation.chartPoints.firstOrNull { it.isCurrent }?.label,
             )
             TextButton(
                 onClick = { detailsExpanded = !detailsExpanded },

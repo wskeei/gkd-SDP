@@ -47,6 +47,7 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import li.songe.gkd.sdp.a11y.A11yRuleEngine
+import li.songe.gkd.sdp.appScope
 import li.songe.gkd.sdp.util.LogUtils
 import li.songe.gkd.sdp.a11y.UsageGuardEngine
 import li.songe.gkd.sdp.data.UsageGuardRecord
@@ -57,6 +58,8 @@ import li.songe.gkd.sdp.db.DbSet
 import li.songe.gkd.sdp.store.storeFlow
 import li.songe.gkd.sdp.ui.component.SelfControlElapsedCard
 import li.songe.gkd.sdp.ui.component.SelfControlInsightCurrentReference
+import li.songe.gkd.sdp.ui.component.UsageRequestRhythmPresentation
+import li.songe.gkd.sdp.ui.component.UsageRequestRhythmSummary
 import li.songe.gkd.sdp.ui.style.AppTheme
 import li.songe.gkd.sdp.util.SelfControlElapsedPolicy
 import li.songe.gkd.sdp.util.SelfControlInsightWindowPolicy
@@ -181,6 +184,7 @@ class UsageGuardRequestOverlayService : LifecycleService(), SavedStateRegistryOw
                         grantMode = grantMode,
                         minReasonLength = settings.usageGuardMinReasonLength,
                         elapsedState = elapsedStateFor(datasetState),
+                        rhythmData = (datasetState as? UsageRequestDatasetState.Ready)?.data,
                         samples = (datasetState as? UsageRequestDatasetState.Ready)?.data?.samples.orEmpty(),
                         insightAnchorAt = (datasetState as? UsageRequestDatasetState.Ready)?.data?.insightAnchorAt,
                         selectedWindow = selectedWindow,
@@ -203,7 +207,7 @@ class UsageGuardRequestOverlayService : LifecycleService(), SavedStateRegistryOw
                             if (!isSubmitting) {
                                 isSubmitting = true
                                 submitError = null
-                                lifecycleScope.launch {
+                                appScope.launch {
                                     val result = runCatching {
                                         withContext(Dispatchers.IO) {
                                             val now = System.currentTimeMillis()
@@ -223,13 +227,15 @@ class UsageGuardRequestOverlayService : LifecycleService(), SavedStateRegistryOw
                                             )
                                         }
                                     }
-                                    result.onSuccess {
-                                        UsageGuardReviewWidget.refreshAll(applicationContext)
-                                        UsageGuardEngine.onRequestGranted(appId)
-                                        stopSelf()
-                                    }.onFailure {
-                                        isSubmitting = false
-                                        submitError = "暂时无法保存本次申请，请稍后重试"
+                                    withContext(Dispatchers.Main) {
+                                        result.onSuccess {
+                                            UsageGuardReviewWidget.refreshAll(applicationContext)
+                                            UsageGuardEngine.onRequestGranted(appId)
+                                            stopSelf()
+                                        }.onFailure {
+                                            isSubmitting = false
+                                            submitError = "暂时无法保存本次申请，请稍后重试"
+                                        }
                                     }
                                 }
                             }
@@ -288,6 +294,7 @@ private fun UsageGuardRequestContent(
     grantMode: Int,
     minReasonLength: Int,
     elapsedState: SelfControlElapsedPolicy.ElapsedState,
+    rhythmData: SelfControlIntervalRepository.UsageRequestOverlayData?,
     samples: List<SelfControlInsightWindowPolicy.IntervalSample>,
     insightAnchorAt: Long?,
     selectedWindow: SelfControlInsightWindowPolicy.Window,
@@ -326,6 +333,12 @@ private fun UsageGuardRequestContent(
     val currentReference = SelfControlInsightCurrentReference(
         gapMs = currentGapMs,
         durationMinutes = effectiveRequestedDurationMinutes,
+    )
+    val rhythmPresentation = UsageRequestRhythmPresentation.from(
+        data = rhythmData,
+        nowEpochMs = nowEpochMs,
+        requestedDurationMinutes = effectiveRequestedDurationMinutes ?: 0,
+        selectedWindow = selectedWindow,
     )
 
     Surface(
@@ -510,6 +523,10 @@ private fun UsageGuardRequestContent(
                 supportsUsageRatio = supportsUsageRatio,
                 currentReference = currentReference,
                 nowEpochMs = nowEpochMs,
+            )
+
+            UsageRequestRhythmSummary(
+                presentation = rhythmPresentation,
             )
 
             submitError?.let {

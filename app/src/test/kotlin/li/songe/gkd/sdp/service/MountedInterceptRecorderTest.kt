@@ -118,6 +118,25 @@ class MountedInterceptRecorderTest {
     }
 
     @Test
+    fun malformedUrlIntentDescriptorWritesNothing() = runBlocking {
+        val actionSink = FakeActionSink()
+        val attemptSink = FakeAttemptSink()
+        val recorder = MountedInterceptRecorder(actionSink, attemptSink)
+        val pending = MountedInterceptRecorder.Pending(
+            recordToken = "url-invalid",
+            eventKey = "url_intercept:missing",
+            eventKind = SelfControlAttempt.KIND_URL_INTERCEPT,
+            subjectId = "not-a-rule-id",
+            subjectLabel = "网址规则",
+        )
+
+        val result = recorder.recordMounted(pending, mounted = true, occurredAt = 100L)
+
+        assertFalse(result.intervalAttempted)
+        assertTrue(attemptSink.descriptors.isEmpty())
+    }
+
+    @Test
     fun sinkFailuresAreReportedIndependently() = runBlocking {
         val actionSink = FakeActionSink().also { it.fail = true }
         val attemptSink = FakeAttemptSink()

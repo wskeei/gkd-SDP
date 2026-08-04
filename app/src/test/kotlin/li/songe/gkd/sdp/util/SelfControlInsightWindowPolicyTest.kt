@@ -80,6 +80,7 @@ class SelfControlInsightWindowPolicyTest {
 
         assertEquals(2, series.stats.sampleCount)
         assertEquals(15.0 * 60_000.0, requireNotNull(series.stats.averageMs), 0.001)
+        assertEquals(15.0 * 60_000.0, requireNotNull(series.stats.medianMs), 0.001)
         assertEquals(1, series.points.size)
         assertEquals(2, series.points.single().sampleCount)
         assertEquals(15.0 * 60_000.0, series.points.single().value, 0.001)
@@ -102,6 +103,7 @@ class SelfControlInsightWindowPolicyTest {
 
         assertEquals(2, series.stats.sampleCount)
         assertEquals(2.5, requireNotNull(series.stats.averageRatio), 0.0001)
+        assertEquals(2.5, requireNotNull(series.stats.medianRatio), 0.0001)
         assertFalse(series.points.any { it.value == 0.0 })
     }
 
