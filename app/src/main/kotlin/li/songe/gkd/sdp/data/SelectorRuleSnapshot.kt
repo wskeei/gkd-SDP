@@ -70,9 +70,9 @@ data class SelectorRuleSnapshot(
             groupKey = rule.g.group.key,
             ruleIndex = rule.index,
             ruleKey = rule.key,
-            ruleName = rule.rule.name,
-            groupName = rule.g.group.name,
-            subscriptionName = rule.rawSubs.name,
+            ruleName = normalizeLabel(rule.rule.name),
+            groupName = normalizeLabel(rule.g.group.name),
+            subscriptionName = normalizeLabel(rule.rawSubs.name),
             matchedAt = matchedAt,
         )
 

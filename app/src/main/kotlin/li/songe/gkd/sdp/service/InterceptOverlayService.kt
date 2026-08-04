@@ -308,9 +308,9 @@ class InterceptOverlayService : LifecycleService(), SavedStateRegistryOwner {
             groupKey = getIntExtra(EXTRA_SELECTOR_GROUP_KEY, -1),
             ruleIndex = getIntExtra(EXTRA_SELECTOR_RULE_INDEX, -1),
             ruleKey = ruleKey,
-            ruleName = getStringExtra(EXTRA_SELECTOR_RULE_NAME),
-            groupName = getStringExtra(EXTRA_SELECTOR_GROUP_NAME),
-            subscriptionName = getStringExtra(EXTRA_SELECTOR_SUBS_NAME),
+            ruleName = SelectorRuleSnapshot.normalizeLabel(getStringExtra(EXTRA_SELECTOR_RULE_NAME)),
+            groupName = SelectorRuleSnapshot.normalizeLabel(getStringExtra(EXTRA_SELECTOR_GROUP_NAME)),
+            subscriptionName = SelectorRuleSnapshot.normalizeLabel(getStringExtra(EXTRA_SELECTOR_SUBS_NAME)),
             matchedAt = getLongExtra(EXTRA_MATCHED_AT, 0L),
         ).takeIf {
             it.subsId > 0L &&

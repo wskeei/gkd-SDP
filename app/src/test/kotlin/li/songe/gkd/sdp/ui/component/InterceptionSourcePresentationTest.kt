@@ -45,6 +45,19 @@ class InterceptionSourcePresentationTest {
     }
 
     @Test
+    fun selectorLabelsCollapseWhitespaceBeforeDisplay() {
+        val presentation = InterceptionSourcePresentation.selector(
+            selector.copy(
+                subscriptionName = "  示例   订阅  ",
+                groupName = "  弹窗   规则  ",
+            ),
+        )
+
+        assertTrue(presentation.lines.any { it.contains("订阅：示例 订阅") })
+        assertTrue(presentation.lines.any { it.contains("规则组：弹窗 规则") })
+    }
+
+    @Test
     fun urlPresentationDoesNotExposePatternOrActualUrl() {
         val presentation = InterceptionSourcePresentation.url(
             ruleId = 4_294_967_296L,
