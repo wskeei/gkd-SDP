@@ -97,14 +97,27 @@ class UsageGuardRequestOverlayService : LifecycleService(), SavedStateRegistryOw
         lifecycleScope.launch {
             val result = runCatching {
                 withContext(Dispatchers.IO) {
-                    SelfControlIntervalRepository.fromDb().loadUsageRequestOverlay(appId)
+                    SelfControlIntervalRepository.fromDb().loadUsageRequestOverlayData(
+                        appId = appId,
+                        insightAnchorAt = System.currentTimeMillis(),
+                    )
                 }
             }
             result.onSuccess { overlay ->
-                recentCompletedIntervalsMs = overlay.recentCompletedIntervalsMs
-                elapsedState = SelfControlElapsedPolicy.stateForUsageRequest(
-                    previousRequestedAt = overlay.latestRequestedAt,
-                )
+                recentCompletedIntervalsMs = overlay.samples.mapNotNull { it.gapMs }
+                elapsedState = when (overlay.anchorStatus) {
+                    SelfControlIntervalRepository.UsageGapAnchorStatus.NoPreviousRequest ->
+                        SelfControlElapsedPolicy.ElapsedState.NoHistory
+
+                    SelfControlIntervalRepository.UsageGapAnchorStatus.Available ->
+                        SelfControlElapsedPolicy.ElapsedState.Running(
+                            anchorAtEpochMs = requireNotNull(overlay.previousLastUsageEndedAt),
+                            firstOccurrence = false,
+                        )
+
+                    SelfControlIntervalRepository.UsageGapAnchorStatus.MissingActualEnd ->
+                        SelfControlElapsedPolicy.ElapsedState.Unavailable
+                }
             }.onFailure {
                 recentCompletedIntervalsMs = emptyList()
                 elapsedState = SelfControlElapsedPolicy.ElapsedState.Unavailable

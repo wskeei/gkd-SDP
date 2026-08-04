@@ -141,7 +141,7 @@ class AppBlockerOverlayService : LifecycleService(), SavedStateRegistryOwner {
                 insight
             }
             result.onSuccess { insight ->
-                recentCompletedIntervalsMs = insight.recentCompletedIntervalsMs
+                recentCompletedIntervalsMs = insight.samples.mapNotNull { it.gapMs }
                 elapsedState = SelfControlElapsedPolicy.stateForAttempt(
                     insight.previousOccurredAt,
                     occurredAt,

@@ -161,7 +161,7 @@ class InterceptOverlayService : LifecycleService(), SavedStateRegistryOwner {
             withContext(Dispatchers.Main) {
                 val insight = result.intervalInsight
                 if (result.intervalSucceeded && insight != null) {
-                    recentCompletedIntervalsMs = insight.recentCompletedIntervalsMs
+                    recentCompletedIntervalsMs = insight.samples.mapNotNull { it.gapMs }
                     elapsedState = SelfControlElapsedPolicy.stateForAttempt(
                         insight.previousOccurredAt,
                         occurredAt,

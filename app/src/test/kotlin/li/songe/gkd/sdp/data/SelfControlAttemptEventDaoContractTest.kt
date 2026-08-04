@@ -20,6 +20,17 @@ class SelfControlAttemptEventDaoContractTest {
     }
 
     @Test
+    fun exactKeyRangeQueryAndBoundedLatestStateQueriesExist() {
+        val methods = SelfControlAttempt.SelfControlAttemptDao::class.java.declaredMethods
+            .map { it.name }
+            .toSet()
+        assertTrue(methods.contains("queryByEventKeyAndOccurredAtRange"))
+        assertTrue(methods.contains("deleteAttemptsBefore"))
+        assertTrue(methods.contains("countAttempts"))
+        assertTrue(methods.contains("deleteOldestAttempts"))
+    }
+
+    @Test
     fun appDbExposesEventDaoContract() {
         // Room's @Database annotation is not retained for runtime reflection. The
         // generated schema artifact and KSP validation cover version/migration
