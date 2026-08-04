@@ -14,6 +14,7 @@ class UsageGuardRecordDaoContractTest {
     fun intervalQueryContractsExist() {
         assertNotNull(UsageGuardRecord.UsageGuardRecordDao::queryRecentRecords)
         assertNotNull(UsageGuardRecord.UsageGuardRecordDao::getPreviousRecord)
+        assertNotNull(UsageGuardRecord.UsageGuardRecordDao::getLatestInsightRow)
     }
 
     @Test
@@ -29,6 +30,7 @@ class UsageGuardRecordDaoContractTest {
         assertTrue(methods.contains("markUsageStarted"))
         assertTrue(methods.contains("closeRecordFromActiveUse"))
         assertTrue(methods.contains("queryInsightRowsByAppAndRequestedAtRange"))
+        assertTrue(methods.contains("getLatestInsightRow"))
     }
 
     @Test

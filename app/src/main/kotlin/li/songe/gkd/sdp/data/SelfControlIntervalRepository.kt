@@ -224,6 +224,10 @@ class SelfControlIntervalRepository(
                     ): List<UsageRequestInsightRow> =
                         usageDao.queryInsightRowsByAppAndRequestedAtRange(appId, startAt, endAt)
 
+                    override suspend fun getLatestInsightRow(
+                        appId: String,
+                    ): UsageRequestInsightRow? = usageDao.getLatestInsightRow(appId)
+
                 },
                 attemptEvents = object : AttemptEventSource {
                     override suspend fun recordEventAndGetInsight(
