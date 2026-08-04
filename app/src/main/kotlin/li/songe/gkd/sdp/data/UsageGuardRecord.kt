@@ -32,8 +32,8 @@ data class UsageGuardRecord(
     @ColumnInfo(name = "expires_at") val expiresAt: Long,
     @ColumnInfo(name = "ended_at") val endedAt: Long = 0L,
     @ColumnInfo(name = "end_reason") val endReason: Int = END_REASON_ACTIVE,
-    @ColumnInfo(name = "last_usage_ended_at") val lastUsageEndedAt: Long? = null,
-    @ColumnInfo(name = "request_gap_ms") val requestGapMs: Long? = null,
+    @ColumnInfo(name = "last_usage_ended_at", defaultValue = "NULL") val lastUsageEndedAt: Long? = null,
+    @ColumnInfo(name = "request_gap_ms", defaultValue = "NULL") val requestGapMs: Long? = null,
 ) {
     companion object {
         const val END_REASON_ACTIVE = 0
