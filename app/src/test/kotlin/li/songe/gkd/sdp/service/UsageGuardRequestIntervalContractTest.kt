@@ -30,7 +30,6 @@ class UsageGuardRequestIntervalContractTest {
                 override suspend fun queryRecentRecords(appId: String, limit: Int): List<UsageGuardRecord> =
                     records.filter { it.appId == appId }.sortedByDescending { it.requestedAt }.take(limit)
 
-                override suspend fun getPreviousRecord(appId: String, requestedAt: Long, id: Long): UsageGuardRecord? = null
                 override fun queryByRequestedAtRange(startAt: Long, endAt: Long): Flow<List<UsageGuardRecord>> = emptyFlow()
             },
             attemptEvents = unusedAttemptSource(),

@@ -17,8 +17,6 @@ class SelfControlIntervalRepository(
     interface UsageRecordSource {
         suspend fun queryRecentRecords(appId: String, limit: Int): List<UsageGuardRecord>
 
-        suspend fun getPreviousRecord(appId: String, requestedAt: Long, id: Long): UsageGuardRecord?
-
         fun queryByRequestedAtRange(startAt: Long, endAt: Long): Flow<List<UsageGuardRecord>>
 
         suspend fun queryInsightRows(
@@ -182,24 +180,11 @@ class SelfControlIntervalRepository(
         val usageFlow = usageRecords
             .queryByRequestedAtRange(startAt, endAt)
             .mapLatest { records ->
-                val firstRecordByApp = records
-                    .groupBy { it.appId }
-                    .values
-                    .mapNotNull { appRecords ->
-                        appRecords.minWithOrNull(
-                            compareBy<UsageGuardRecord> { it.requestedAt }.thenBy { it.id },
-                        )
-                    }
-                val predecessors = firstRecordByApp.mapNotNull { first ->
-                    usageRecords.getPreviousRecord(
-                        appId = first.appId,
-                        requestedAt = first.requestedAt,
-                        id = first.id,
-                    )
-                }
-                (predecessors + records)
-                    .distinctBy { it.id }
-                    .sortedWith(compareBy<UsageGuardRecord> { it.appId }.thenBy { it.requestedAt }.thenBy { it.id })
+                records.sortedWith(
+                    compareBy<UsageGuardRecord> { it.appId }
+                        .thenBy { it.requestedAt }
+                        .thenBy { it.id },
+                )
             }
 
         return combine(
@@ -223,12 +208,6 @@ class SelfControlIntervalRepository(
                         appId: String,
                         limit: Int,
                     ): List<UsageGuardRecord> = usageDao.queryRecentRecords(appId, limit)
-
-                    override suspend fun getPreviousRecord(
-                        appId: String,
-                        requestedAt: Long,
-                        id: Long,
-                    ): UsageGuardRecord? = usageDao.getPreviousRecord(appId, requestedAt, id)
 
                     override fun queryByRequestedAtRange(
                         startAt: Long,

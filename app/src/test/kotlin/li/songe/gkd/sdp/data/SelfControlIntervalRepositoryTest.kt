@@ -15,7 +15,6 @@ class SelfControlIntervalRepositoryTest {
     private class FakeUsageSource(
         private val recent: List<UsageGuardRecord> = emptyList(),
         private val ranged: List<UsageGuardRecord> = emptyList(),
-        private val predecessors: Map<Pair<String, Long>, UsageGuardRecord?> = emptyMap(),
         private val insightRows: List<UsageRequestInsightRow> = emptyList(),
         private val latestInsight: UsageRequestInsightRow? = null,
     ) : SelfControlIntervalRepository.UsageRecordSource {
@@ -23,12 +22,6 @@ class SelfControlIntervalRepositoryTest {
         override suspend fun queryRecentRecords(appId: String, limit: Int): List<UsageGuardRecord> {
             return recent.filter { it.appId == appId }.take(limit)
         }
-
-        override suspend fun getPreviousRecord(
-            appId: String,
-            requestedAt: Long,
-            id: Long,
-        ): UsageGuardRecord? = predecessors[appId to id]
 
         override fun queryByRequestedAtRange(startAt: Long, endAt: Long): Flow<List<UsageGuardRecord>> {
             return flowOf(ranged.filter { it.requestedAt in startAt until endAt })
@@ -141,20 +134,18 @@ class SelfControlIntervalRepositoryTest {
     }
 
     @Test
-    fun reviewSourceAddsOneStrictPredecessorPerApp() = runBlocking {
+    fun reviewSourceKeepsOnlyTheRequestedRangeWithoutPredecessorQueries() = runBlocking {
         val current = record(2L, "target", 20_000L)
-        val previous = record(1L, "target", 10_000L)
         val repository = SelfControlIntervalRepository(
             usageRecords = FakeUsageSource(
                 ranged = listOf(current),
-                predecessors = mapOf("target" to 2L to previous),
             ),
             attemptEvents = FakeAttemptSource(),
         )
 
         val source = repository.observeReviewSource(15_000L, 25_000L).first()
 
-        assertEquals(listOf(previous, current), source.usageRecords)
+        assertEquals(listOf(current), source.usageRecords)
     }
 
     @Test
