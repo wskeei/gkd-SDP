@@ -42,7 +42,7 @@ class RuleTriggerLogRepositoryTest {
             listOf(ActionLog.OUTCOME_ACTION_EXECUTED, ActionLog.OUTCOME_INTERCEPTED),
             sink.logs.map { it.outcome },
         )
-        assertTrue(sink.logs.all { it.eventKey == snapshot.eventKey() })
+        assertTrue(sink.logs.all { it.subsId == snapshot.subsId && it.ruleKey == snapshot.ruleKey })
     }
 
     @Test

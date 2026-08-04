@@ -33,8 +33,8 @@ class UsageRequestRhythmPolicyTest {
 
     @Test
     fun ratioIsGapDividedByRequestedDuration() {
-        assertEquals(4.0, UsageRequestRhythmPolicy.ratio(120L * 60_000L, 30), 0.0001)
-        assertEquals(3.0, UsageRequestRhythmPolicy.ratio(90L * 60_000L, 30), 0.0001)
+        assertEquals(4.0, requireNotNull(UsageRequestRhythmPolicy.ratio(120L * 60_000L, 30)), 0.0001)
+        assertEquals(3.0, requireNotNull(UsageRequestRhythmPolicy.ratio(90L * 60_000L, 30)), 0.0001)
     }
 
     @Test
@@ -66,9 +66,9 @@ class UsageRequestRhythmPolicyTest {
         )
         val historyAverage = UsageRequestRhythmPolicy.averageRatio(history)
 
-        assertEquals(4.0, UsageRequestRhythmPolicy.currentRatio(120L * 60_000L, 30), 0.0001)
-        assertEquals(2.0, UsageRequestRhythmPolicy.currentRatio(120L * 60_000L, 60), 0.0001)
-        assertEquals(2.5, historyAverage, 0.0001)
+        assertEquals(4.0, requireNotNull(UsageRequestRhythmPolicy.currentRatio(120L * 60_000L, 30)), 0.0001)
+        assertEquals(2.0, requireNotNull(UsageRequestRhythmPolicy.currentRatio(120L * 60_000L, 60)), 0.0001)
+        assertEquals(2.5, requireNotNull(historyAverage), 0.0001)
     }
 
     @Test
