@@ -38,7 +38,7 @@ data class InterceptionSourcePresentation(
                 add("规则标识：groupType=${snapshot.groupType}, groupKey=${snapshot.groupKey}, " +
                     "index=${snapshot.ruleIndex}, ${snapshot.ruleKey?.let { "key=$it" } ?: "未设置 key"}")
                 add("目标应用：${snapshot.appId}")
-                snapshot.activityId?.let { add("页面：$it") }
+                SelectorRuleSnapshot.shortActivityId(snapshot.activityId)?.let { add("页面：$it") }
             }
             return InterceptionSourcePresentation(
                 title = "拦截来源：选择器规则",

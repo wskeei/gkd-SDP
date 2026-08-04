@@ -54,7 +54,10 @@ class UsageRequestRhythmPresentationTest {
     @Test
     fun missingDurationOrClockRollbackDoesNotInventRatio() {
         assertNull(UsageRequestRhythmPresentation.from(data(), now, 0).currentRatio)
-        assertNull(UsageRequestRhythmPresentation.from(data(), 9L * 60L * 60L * 1_000L, 30).currentRatio)
+        val rollback = UsageRequestRhythmPresentation.from(data(), 9L * 60L * 60L * 1_000L, 30)
+        assertNull(rollback.currentRatio)
+        assertNull(rollback.currentGapMs)
+        assertEquals(UsageRequestRhythmPresentation.Status.UNAVAILABLE, rollback.status)
         assertEquals(
             UsageRequestRhythmPresentation.Status.MISSING_ACTUAL_END,
             UsageRequestRhythmPresentation.from(data(anchor = null), now, 30).status,

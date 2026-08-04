@@ -89,6 +89,17 @@ data class SelectorRuleSnapshot(
                 normalized.substring(0, normalized.offsetByCodePoints(0, MAX_LABEL_CODE_POINTS))
             }
         }
+
+        fun shortActivityId(value: String?): String? {
+            val normalized = normalizeLabel(value) ?: return null
+            val maxCodePoints = 48
+            if (normalized.codePointCount(0, normalized.length) <= maxCodePoints) return normalized
+            val leftCodePoints = (maxCodePoints - 1) / 2
+            val rightCodePoints = maxCodePoints - 1 - leftCodePoints
+            val leftEnd = normalized.offsetByCodePoints(0, leftCodePoints)
+            val rightStart = normalized.offsetByCodePoints(0, normalized.codePointCount(0, normalized.length) - rightCodePoints)
+            return normalized.substring(0, leftEnd) + "…" + normalized.substring(rightStart)
+        }
     }
 }
 

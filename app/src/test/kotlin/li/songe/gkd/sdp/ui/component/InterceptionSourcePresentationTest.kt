@@ -58,6 +58,18 @@ class InterceptionSourcePresentationTest {
     }
 
     @Test
+    fun selectorActivityUsesACompactMiddleEllipsis() {
+        val longActivity = "demo.app." + "VeryLongActivityName".repeat(6)
+        val presentation = InterceptionSourcePresentation.selector(
+            selector.copy(activityId = longActivity),
+        )
+        val pageLine = presentation.lines.single { it.startsWith("页面：") }
+
+        assertTrue(pageLine.contains("…"))
+        assertTrue(pageLine.length < longActivity.length)
+    }
+
+    @Test
     fun urlPresentationDoesNotExposePatternOrActualUrl() {
         val presentation = InterceptionSourcePresentation.url(
             ruleId = 4_294_967_296L,

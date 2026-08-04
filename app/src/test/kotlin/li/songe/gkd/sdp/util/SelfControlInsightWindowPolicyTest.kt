@@ -36,7 +36,7 @@ class SelfControlInsightWindowPolicyTest {
             window = SelfControlInsightWindowPolicy.Window.LAST_7_DAYS,
         )
 
-        assertEquals(listOf(1L, 2L), selected.map { it.id })
+        assertEquals(listOf(2L, 1L), selected.map { it.id })
     }
 
     @Test

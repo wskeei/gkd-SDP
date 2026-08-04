@@ -65,14 +65,15 @@ data class UsageRequestRhythmPresentation(
                 SelfControlInsightWindowPolicy.Window.LAST_24_HOURS,
             cachedHistory: HistoricalStats? = null,
         ): UsageRequestRhythmPresentation {
+            val currentGap = data?.previousLastUsageEndedAt?.let {
+                UsageRequestRhythmPolicy.gapMs(it, nowEpochMs)
+            }
             val status = when {
                 data == null -> Status.UNAVAILABLE
                 data.anchorStatus == SelfControlIntervalRepository.UsageGapAnchorStatus.NoPreviousRequest -> Status.FIRST
                 data.anchorStatus == SelfControlIntervalRepository.UsageGapAnchorStatus.MissingActualEnd -> Status.MISSING_ACTUAL_END
+                currentGap == null -> Status.UNAVAILABLE
                 else -> Status.AVAILABLE
-            }
-            val currentGap = data?.previousLastUsageEndedAt?.let {
-                UsageRequestRhythmPolicy.gapMs(it, nowEpochMs)
             }
             val history = cachedHistory ?: historicalStats(data, nowEpochMs)
             val averages = history.averageRatioByWindow

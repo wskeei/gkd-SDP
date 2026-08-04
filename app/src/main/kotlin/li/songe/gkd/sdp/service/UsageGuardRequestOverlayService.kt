@@ -150,6 +150,7 @@ class UsageGuardRequestOverlayService : LifecycleService(), SavedStateRegistryOw
 
     private fun elapsedStateFor(
         state: UsageRequestDatasetState,
+        nowEpochMs: Long,
     ): SelfControlElapsedPolicy.ElapsedState = when (state) {
         UsageRequestDatasetState.Loading -> SelfControlElapsedPolicy.ElapsedState.Loading
         UsageRequestDatasetState.Unavailable -> SelfControlElapsedPolicy.ElapsedState.Unavailable
@@ -157,11 +158,17 @@ class UsageGuardRequestOverlayService : LifecycleService(), SavedStateRegistryOw
                     SelfControlIntervalRepository.UsageGapAnchorStatus.NoPreviousRequest ->
                         SelfControlElapsedPolicy.ElapsedState.NoHistory
 
-                    SelfControlIntervalRepository.UsageGapAnchorStatus.Available ->
-                        SelfControlElapsedPolicy.ElapsedState.Running(
-                            anchorAtEpochMs = requireNotNull(state.data.previousLastUsageEndedAt),
-                            firstOccurrence = false,
-                        )
+                    SelfControlIntervalRepository.UsageGapAnchorStatus.Available -> {
+                        val anchorAt = state.data.previousLastUsageEndedAt
+                        if (anchorAt == null || anchorAt > nowEpochMs) {
+                            SelfControlElapsedPolicy.ElapsedState.Unavailable
+                        } else {
+                            SelfControlElapsedPolicy.ElapsedState.Running(
+                                anchorAtEpochMs = anchorAt,
+                                firstOccurrence = false,
+                            )
+                        }
+                    }
 
                     SelfControlIntervalRepository.UsageGapAnchorStatus.MissingActualEnd ->
                         SelfControlElapsedPolicy.ElapsedState.MissingActualEnd
@@ -183,7 +190,7 @@ class UsageGuardRequestOverlayService : LifecycleService(), SavedStateRegistryOw
                         tags = tags,
                         grantMode = grantMode,
                         minReasonLength = settings.usageGuardMinReasonLength,
-                        elapsedState = elapsedStateFor(datasetState),
+                        elapsedState = elapsedStateFor(datasetState, nowEpochMs),
                         rhythmData = (datasetState as? UsageRequestDatasetState.Ready)?.data,
                         samples = (datasetState as? UsageRequestDatasetState.Ready)?.data?.samples.orEmpty(),
                         insightAnchorAt = (datasetState as? UsageRequestDatasetState.Ready)?.data?.insightAnchorAt,
@@ -254,7 +261,8 @@ class UsageGuardRequestOverlayService : LifecycleService(), SavedStateRegistryOw
             WindowManager.LayoutParams.MATCH_PARENT,
             WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
             WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or
-                WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
+                WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS or
+                WindowManager.LayoutParams.FLAG_SECURE,
             PixelFormat.TRANSLUCENT
         )
         runCatching { windowManager.addView(view, params) }.onFailure { error ->

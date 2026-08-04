@@ -117,28 +117,33 @@ class InterceptOverlayService : LifecycleService(), SavedStateRegistryOwner {
         val subjectId = intent?.getStringExtra(EXTRA_SUBJECT_ID).orEmpty()
         val subjectLabel = intent?.getStringExtra(EXTRA_SUBJECT_LABEL).orEmpty().ifBlank { subjectId }
         val matchedAt = intent?.getLongExtra(EXTRA_MATCHED_AT, 0L) ?: 0L
-        val source = intent?.interceptionSource(eventKind)
-        if (source == null) {
-            stopSelf()
-            return START_NOT_STICKY
-        }
-
+        // Attribution extras are optional for the overlay itself. A decode failure must show a
+        // safe unknown source while preserving the countdown/exit path; the recorder still rejects
+        // any descriptor that cannot prove an exact stable identity.
+        val source = intent?.interceptionSource(eventKind) ?: InterceptionSourcePresentation.unknown()
         val selectorSnapshot = intent?.selectorSnapshot(eventKind)
         val validIntent = when (eventKind) {
             SelfControlAttempt.KIND_SELECTOR_INTERCEPT ->
+                (selectorSnapshot?.let {
                     subsId > 0L &&
-                    groupKey >= 0 &&
-                    selectorSnapshot != null &&
-                    selectorSnapshot.groupKey == groupKey &&
-                    eventKey == selectorSnapshot.eventKey() &&
-                    subjectId == selectorSnapshot.appId
+                        groupKey >= 0 &&
+                        it.groupKey == groupKey &&
+                        eventKey == it.eventKey() &&
+                        subjectId == it.appId
+                } == true) || isSelectorEventIdentityValid(
+                    subsId = subsId,
+                    groupKey = groupKey,
+                    eventKey = eventKey,
+                    subjectId = subjectId,
+                )
             SelfControlAttempt.KIND_URL_INTERCEPT -> {
                 val ruleId = intent?.getLongExtra(EXTRA_URL_RULE_ID, -1L) ?: -1L
                 subsId == URL_SUBS_ID &&
                     groupKey == URL_GROUP_KEY &&
                     ruleId >= 0L &&
-                    eventKey == SelfControlElapsedPolicy.urlInterceptEventKey(ruleId) &&
-                    subjectId == ruleId.toString()
+                    intent?.hasExtra(EXTRA_URL_RULE_ID) == true &&
+                    subjectId == ruleId.toString() &&
+                    eventKey == SelfControlElapsedPolicy.urlInterceptEventKey(ruleId)
             }
             else -> false
         }
@@ -343,6 +348,22 @@ class InterceptOverlayService : LifecycleService(), SavedStateRegistryOwner {
             }
             else -> null
         }
+    }
+
+    private fun isSelectorEventIdentityValid(
+        subsId: Long,
+        groupKey: Int,
+        eventKey: String,
+        subjectId: String,
+    ): Boolean {
+        if (subsId <= 0L || groupKey < 0 || subjectId.isBlank()) return false
+        val prefix = "selector_intercept:v2:$subsId:$subjectId:"
+        if (!eventKey.startsWith(prefix)) return false
+        val parts = eventKey.removePrefix(prefix).split(':', limit = 3)
+        return parts.size == 3 &&
+            parts[0].toIntOrNull() in setOf(SubsConfig.AppGroupType, SubsConfig.GlobalGroupType) &&
+            parts[1].toIntOrNull() == groupKey &&
+            parts[2].isNotBlank()
     }
 
 }

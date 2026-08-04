@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 33,
-    "identityHash": "f3b11c71492188de5886d766ed705419",
+    "identityHash": "d7eeef9faa7eab2a0a03da728caddd03",
     "entities": [
       {
         "tableName": "subs_item",
@@ -1458,7 +1458,7 @@
       },
       {
         "tableName": "usage_guard_record",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `app_id` TEXT NOT NULL, `app_name` TEXT NOT NULL, `tag_names` TEXT NOT NULL, `reason_text` TEXT NOT NULL, `grant_mode` INTEGER NOT NULL, `requested_duration_minutes` INTEGER NOT NULL, `requested_at` INTEGER NOT NULL, `granted_at` INTEGER NOT NULL, `expires_at` INTEGER NOT NULL, `ended_at` INTEGER NOT NULL, `end_reason` INTEGER NOT NULL, `last_usage_ended_at` INTEGER, `request_gap_ms` INTEGER)",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `app_id` TEXT NOT NULL, `app_name` TEXT NOT NULL, `tag_names` TEXT NOT NULL, `reason_text` TEXT NOT NULL, `grant_mode` INTEGER NOT NULL, `requested_duration_minutes` INTEGER NOT NULL, `requested_at` INTEGER NOT NULL, `granted_at` INTEGER NOT NULL, `expires_at` INTEGER NOT NULL, `ended_at` INTEGER NOT NULL, `end_reason` INTEGER NOT NULL, `last_usage_ended_at` INTEGER DEFAULT NULL, `request_gap_ms` INTEGER DEFAULT NULL)",
         "fields": [
           {
             "fieldPath": "id",
@@ -1535,12 +1535,14 @@
           {
             "fieldPath": "lastUsageEndedAt",
             "columnName": "last_usage_ended_at",
-            "affinity": "INTEGER"
+            "affinity": "INTEGER",
+            "defaultValue": "NULL"
           },
           {
             "fieldPath": "requestGapMs",
             "columnName": "request_gap_ms",
-            "affinity": "INTEGER"
+            "affinity": "INTEGER",
+            "defaultValue": "NULL"
           }
         ],
         "primaryKey": {
@@ -1689,7 +1691,7 @@
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'f3b11c71492188de5886d766ed705419')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'd7eeef9faa7eab2a0a03da728caddd03')"
     ]
   }
 }
