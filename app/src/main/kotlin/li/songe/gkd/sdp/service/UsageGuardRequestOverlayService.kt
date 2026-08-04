@@ -50,6 +50,7 @@ import li.songe.gkd.sdp.a11y.A11yRuleEngine
 import li.songe.gkd.sdp.util.LogUtils
 import li.songe.gkd.sdp.a11y.UsageGuardEngine
 import li.songe.gkd.sdp.data.UsageGuardRecord
+import li.songe.gkd.sdp.data.UsageGuardRecordRepository
 import li.songe.gkd.sdp.data.UsageGuardTag
 import li.songe.gkd.sdp.data.SelfControlIntervalRepository
 import li.songe.gkd.sdp.db.DbSet
@@ -206,7 +207,7 @@ class UsageGuardRequestOverlayService : LifecycleService(), SavedStateRegistryOw
                                     val result = runCatching {
                                         withContext(Dispatchers.IO) {
                                             val now = System.currentTimeMillis()
-                                            DbSet.usageGuardRecordDao.insertRequestWithGap(
+                                            UsageGuardRecordRepository.insertRequestWithGap(
                                                 record = UsageGuardRecord(
                                                     appId = appId,
                                                     appName = appName,

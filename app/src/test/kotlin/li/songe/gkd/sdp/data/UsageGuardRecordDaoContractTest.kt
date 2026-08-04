@@ -27,8 +27,6 @@ class UsageGuardRecordDaoContractTest {
             .toSet()
         assertTrue(methods.contains("markUsageEnded"))
         assertTrue(methods.contains("markUsageStarted"))
-        assertTrue(methods.contains("closeRecordFromActiveUse"))
-        assertTrue(methods.contains("insertRequestWithGap"))
         assertTrue(methods.contains("queryRecordsByAppAndRequestedAtRange"))
     }
 

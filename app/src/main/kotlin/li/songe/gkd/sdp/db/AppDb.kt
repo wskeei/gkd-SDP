@@ -8,6 +8,7 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverter
 import androidx.room.TypeConverters
+import androidx.room.withTransaction
 import androidx.room.migration.AutoMigrationSpec
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
@@ -250,4 +251,6 @@ object DbSet {
     val usageGuardTagDao get() = db.usageGuardTagDao()
     val usageGuardRecordDao get() = db.usageGuardRecordDao()
     val selfControlAttemptDao get() = db.selfControlAttemptDao()
+
+    suspend fun <T> withTransaction(block: suspend () -> T): T = db.withTransaction(block)
 }

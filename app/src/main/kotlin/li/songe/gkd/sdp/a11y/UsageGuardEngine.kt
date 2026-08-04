@@ -17,6 +17,7 @@ import li.songe.gkd.sdp.app
 import li.songe.gkd.sdp.appScope
 import li.songe.gkd.sdp.data.UsageGuardAppProfile
 import li.songe.gkd.sdp.data.UsageGuardRecord
+import li.songe.gkd.sdp.data.UsageGuardRecordRepository
 import li.songe.gkd.sdp.db.DbSet
 import li.songe.gkd.sdp.service.UsageGuardCountdownOverlayService
 import li.songe.gkd.sdp.service.UsageGuardRequestOverlayService
@@ -224,7 +225,7 @@ object UsageGuardEngine {
                 if (activeRecord.id != recordId) return@withLock
 
                 val now = System.currentTimeMillis()
-                DbSet.usageGuardRecordDao.closeRecordFromActiveUse(
+                UsageGuardRecordRepository.closeRecordFromActiveUse(
                     id = activeRecord.id,
                     endedAt = now,
                     endReason = UsageGuardRecord.END_REASON_USER_TERMINATED,
@@ -324,7 +325,7 @@ object UsageGuardEngine {
             cancelExpiryWatch(packageName)
             if (!isCurrentRequest(packageName, owner, token)) return
             if (activeRecord.lastUsageEndedAt == null) {
-                DbSet.usageGuardRecordDao.closeRecordFromActiveUse(
+                UsageGuardRecordRepository.closeRecordFromActiveUse(
                     id = activeRecord.id,
                     endedAt = now,
                     endReason = UsageGuardRecord.END_REASON_EXPIRED,
@@ -394,7 +395,7 @@ object UsageGuardEngine {
         val endedAt = System.currentTimeMillis()
         when (UsageGuardUsageEndPolicy.onLeave(active.grantMode)) {
             UsageGuardUsageEndPolicy.LeaveDecision.MARK_AND_CLOSE ->
-                DbSet.usageGuardRecordDao.closeRecordFromActiveUse(
+                UsageGuardRecordRepository.closeRecordFromActiveUse(
                     id = active.id,
                     endedAt = endedAt,
                     endReason = UsageGuardRecord.END_REASON_LEFT_APP,
@@ -457,7 +458,7 @@ object UsageGuardEngine {
                 if (activeRecord.expiresAt > System.currentTimeMillis()) return@withLock
                 if (!isCurrentRequest(record.appId, owner, token)) return@withLock
 
-                DbSet.usageGuardRecordDao.closeRecordFromActiveUse(
+                UsageGuardRecordRepository.closeRecordFromActiveUse(
                     id = activeRecord.id,
                     endedAt = System.currentTimeMillis(),
                     endReason = UsageGuardRecord.END_REASON_EXPIRED,

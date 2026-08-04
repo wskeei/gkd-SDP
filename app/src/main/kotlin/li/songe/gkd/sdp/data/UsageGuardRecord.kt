@@ -144,47 +144,6 @@ data class UsageGuardRecord(
         )
         suspend fun markUsageStarted(id: Long): Int
 
-        @Transaction
-        suspend fun closeRecordFromActiveUse(
-            id: Long,
-            endedAt: Long,
-            endReason: Int,
-        ): Int {
-            markUsageEnded(id, endedAt)
-            return closeRecord(id, endedAt, endReason)
-        }
-
-        @Transaction
-        suspend fun insertRequestWithGap(
-            record: UsageGuardRecord,
-            replacedAt: Long,
-        ): Long {
-            val active = getActiveRecord(record.appId)
-            val gap = if (active != null) {
-                closeRecord(
-                    id = active.id,
-                    endedAt = replacedAt,
-                    endReason = UsageGuardRecord.END_REASON_REPLACED,
-                )
-                null
-            } else {
-                val previous = getLatestRecord(record.appId)
-                previous?.lastUsageEndedAt?.let { lastUsageEndedAt ->
-                    if (lastUsageEndedAt >= 0L && record.requestedAt >= lastUsageEndedAt) {
-                        record.requestedAt - lastUsageEndedAt
-                    } else {
-                        null
-                    }
-                }
-            }
-            return insert(
-                record.copy(
-                    lastUsageEndedAt = null,
-                    requestGapMs = gap,
-                )
-            )
-        }
-
         @Query("UPDATE usage_guard_record SET end_reason = :endReason WHERE id = :id")
         suspend fun updateEndReason(id: Long, endReason: Int): Int
     }
