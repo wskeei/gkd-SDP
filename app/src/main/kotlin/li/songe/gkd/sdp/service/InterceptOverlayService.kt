@@ -118,6 +118,10 @@ class InterceptOverlayService : LifecycleService(), SavedStateRegistryOwner {
         val subjectLabel = intent?.getStringExtra(EXTRA_SUBJECT_LABEL).orEmpty().ifBlank { subjectId }
         val matchedAt = intent?.getLongExtra(EXTRA_MATCHED_AT, 0L) ?: 0L
         val source = intent?.interceptionSource(eventKind)
+        if (source == null) {
+            stopSelf()
+            return START_NOT_STICKY
+        }
 
         val selectorSnapshot = intent?.selectorSnapshot(eventKind)
         val validIntent = when (eventKind) {
@@ -126,16 +130,14 @@ class InterceptOverlayService : LifecycleService(), SavedStateRegistryOwner {
                     groupKey >= 0 &&
                     selectorSnapshot != null &&
                     eventKey == selectorSnapshot.eventKey() &&
-                    subjectId == selectorSnapshot.appId &&
-                    source != null
+                    subjectId == selectorSnapshot.appId
             SelfControlAttempt.KIND_URL_INTERCEPT -> {
                 val ruleId = intent?.getLongExtra(EXTRA_URL_RULE_ID, -1L) ?: -1L
                 subsId == URL_SUBS_ID &&
                     groupKey == URL_GROUP_KEY &&
                     ruleId >= 0L &&
                     eventKey == SelfControlElapsedPolicy.urlInterceptEventKey(ruleId) &&
-                    subjectId == ruleId.toString() &&
-                    source != null
+                    subjectId == ruleId.toString()
             }
             else -> false
         }
