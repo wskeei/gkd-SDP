@@ -17,6 +17,7 @@ import li.songe.gkd.sdp.util.UsageRequestRhythmPolicy
 data class UsageRequestRhythmPresentation(
     val status: Status,
     val currentGapMs: Long?,
+    val requestedDurationMinutes: Int?,
     val currentRatio: Double?,
     val averageRatioByWindow: Map<SelfControlInsightWindowPolicy.Window, Double?>,
     val ratioSampleCountByWindow: Map<SelfControlInsightWindowPolicy.Window, Int>,
@@ -104,6 +105,7 @@ data class UsageRequestRhythmPresentation(
             return UsageRequestRhythmPresentation(
                 status = status,
                 currentGapMs = currentGap,
+                requestedDurationMinutes = requestedDurationMinutes.takeIf { it > 0 },
                 currentRatio = currentRatio,
                 averageRatioByWindow = averages,
                 ratioSampleCountByWindow = counts,
@@ -135,7 +137,8 @@ fun UsageRequestRhythmSummary(
             style = MaterialTheme.typography.bodyLarge,
         )
         Text(
-            text = "公式：${presentation.currentGapMs?.let(SelfControlIntervalPolicy::formatDurationCompact) ?: "—"} ÷ 当前申请时长",
+            text = "公式：${presentation.currentGapMs?.let(SelfControlIntervalPolicy::formatDurationCompact) ?: "—"} ÷ " +
+                "${presentation.requestedDurationMinutes?.let { "${it}分钟" } ?: "当前申请时长"}",
             style = MaterialTheme.typography.bodyMedium,
         )
         presentation.comparisonText?.let {
