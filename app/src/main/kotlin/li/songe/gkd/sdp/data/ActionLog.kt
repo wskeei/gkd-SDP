@@ -35,7 +35,20 @@ data class ActionLog(
     @ColumnInfo(name = "group_type", defaultValue = "2") val groupType: Int,
     @ColumnInfo(name = "rule_index") val ruleIndex: Int,
     @ColumnInfo(name = "rule_key") val ruleKey: Int? = null,
+    @ColumnInfo(name = "outcome", defaultValue = "1") val outcome: Int = OUTCOME_ACTION_EXECUTED,
+    @ColumnInfo(name = "matched_at", defaultValue = "0") val matchedAt: Long = 0L,
+    @ColumnInfo(name = "subs_name_snapshot") val subsNameSnapshot: String? = null,
+    @ColumnInfo(name = "group_name_snapshot") val groupNameSnapshot: String? = null,
+    @ColumnInfo(name = "rule_name_snapshot") val ruleNameSnapshot: String? = null,
 ) {
+
+    companion object {
+        const val OUTCOME_ACTION_EXECUTED = 1
+        const val OUTCOME_INTERCEPTED = 2
+        const val DEFAULT_OUTCOME = OUTCOME_ACTION_EXECUTED
+        const val MAX_ROWS = 500
+        const val PRUNE_EVERY_ROWS = 100
+    }
 
     val showActivityId by lazy { getShowActivityId(appId, activityId) }
 
@@ -147,3 +160,7 @@ data class ActionLog(
         ): Flow<List<DailyStat>>
     }
 }
+
+fun Int.isExecuted(): Boolean = this == ActionLog.OUTCOME_ACTION_EXECUTED
+
+fun Int.isIntercepted(): Boolean = this == ActionLog.OUTCOME_INTERCEPTED

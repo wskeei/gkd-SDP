@@ -93,7 +93,11 @@ class SelectorRuleSnapshotTest {
         assertEquals("弹窗 规则", log.groupNameSnapshot)
         assertEquals("示例 订阅", log.subsNameSnapshot)
         assertTrue(log.matchedAt == source.matchedAt)
-        assertFalse(log.containsSensitiveSelectorData())
+        assertFalse(
+            ActionLog::class.java.declaredFields.any {
+                it.name in setOf("selector", "message", "nodeText", "actualUrl")
+            }
+        )
     }
 
     @Test
