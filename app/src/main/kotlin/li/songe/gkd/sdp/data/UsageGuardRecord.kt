@@ -90,6 +90,22 @@ data class UsageGuardRecord(
             id: Long,
         ): UsageGuardRecord?
 
+        @Query(
+            """
+            SELECT *
+            FROM usage_guard_record
+            WHERE app_id = :appId
+              AND requested_at >= :startAt
+              AND requested_at <= :endAt
+            ORDER BY requested_at ASC, id ASC
+            """
+        )
+        suspend fun queryRecordsByAppAndRequestedAtRange(
+            appId: String,
+            startAt: Long,
+            endAt: Long,
+        ): List<UsageGuardRecord>
+
         @Query("SELECT * FROM usage_guard_record ORDER BY id DESC LIMIT :limit")
         fun queryLatest(limit: Int = 100): Flow<List<UsageGuardRecord>>
 
@@ -104,6 +120,70 @@ data class UsageGuardRecord(
 
         @Query("UPDATE usage_guard_record SET ended_at = :endedAt, end_reason = :endReason WHERE id = :id")
         suspend fun closeRecord(id: Long, endedAt: Long, endReason: Int): Int
+
+        @Query(
+            """
+            UPDATE usage_guard_record
+            SET last_usage_ended_at = :endedAt
+            WHERE id = :id
+              AND ended_at = 0
+              AND (
+                    last_usage_ended_at IS NULL
+                    OR last_usage_ended_at <= :endedAt
+              )
+            """
+        )
+        suspend fun markUsageEnded(id: Long, endedAt: Long): Int
+
+        @Query(
+            """
+            UPDATE usage_guard_record
+            SET last_usage_ended_at = NULL
+            WHERE id = :id AND ended_at = 0
+            """
+        )
+        suspend fun markUsageStarted(id: Long): Int
+
+        @Transaction
+        suspend fun closeRecordFromActiveUse(
+            id: Long,
+            endedAt: Long,
+            endReason: Int,
+        ): Int {
+            markUsageEnded(id, endedAt)
+            return closeRecord(id, endedAt, endReason)
+        }
+
+        @Transaction
+        suspend fun insertRequestWithGap(
+            record: UsageGuardRecord,
+            replacedAt: Long,
+        ): Long {
+            val active = getActiveRecord(record.appId)
+            val gap = if (active != null) {
+                closeRecord(
+                    id = active.id,
+                    endedAt = replacedAt,
+                    endReason = UsageGuardRecord.END_REASON_REPLACED,
+                )
+                null
+            } else {
+                val previous = getLatestRecord(record.appId)
+                previous?.lastUsageEndedAt?.let { lastUsageEndedAt ->
+                    if (lastUsageEndedAt >= 0L && record.requestedAt >= lastUsageEndedAt) {
+                        record.requestedAt - lastUsageEndedAt
+                    } else {
+                        null
+                    }
+                }
+            }
+            return insert(
+                record.copy(
+                    lastUsageEndedAt = null,
+                    requestGapMs = gap,
+                )
+            )
+        }
 
         @Query("UPDATE usage_guard_record SET end_reason = :endReason WHERE id = :id")
         suspend fun updateEndReason(id: Long, endReason: Int): Int

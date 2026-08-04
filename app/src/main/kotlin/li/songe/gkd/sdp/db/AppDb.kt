@@ -109,6 +109,7 @@ import li.songe.gkd.sdp.util.json
         AutoMigration(from = 29, to = 30),  // 添加 usage_guard_* 表
         AutoMigration(from = 30, to = 31),  // 添加 self_control_attempt 表
         AutoMigration(from = 31, to = 32),  // 添加 self_control_attempt_event 表和申请时间索引
+        AutoMigration(from = 32, to = 33),  // 添加触发结果快照和申请前未使用间隔
     ]
 )
 @TypeConverters(DbConverters::class)
