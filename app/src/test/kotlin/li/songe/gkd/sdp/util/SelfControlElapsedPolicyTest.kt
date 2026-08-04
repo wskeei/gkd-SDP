@@ -113,11 +113,13 @@ class SelfControlElapsedPolicyTest {
             SelfControlElapsedPolicy.appBlockerEventKey("com.example.video"),
         )
         assertEquals(
-            "selector_intercept:123:com.example.video:7",
+            "selector_intercept:v2:123:com.example.video:2:7:key:9",
             SelfControlElapsedPolicy.selectorInterceptEventKey(
                 subsId = 123L,
                 appId = "com.example.video",
+                groupType = 2,
                 groupKey = 7,
+                ruleIdentity = "key:9",
             ),
         )
         assertEquals(
@@ -125,8 +127,8 @@ class SelfControlElapsedPolicyTest {
             SelfControlElapsedPolicy.urlInterceptEventKey(456L),
         )
         assertTrue(
-            SelfControlElapsedPolicy.selectorInterceptEventKey(123L, "a.app", 7) !=
-                SelfControlElapsedPolicy.selectorInterceptEventKey(123L, "b.app", 7),
+            SelfControlElapsedPolicy.selectorInterceptEventKey(123L, "a.app", 2, 7, "key:9") !=
+                SelfControlElapsedPolicy.selectorInterceptEventKey(123L, "b.app", 2, 7, "key:9"),
         )
     }
 }

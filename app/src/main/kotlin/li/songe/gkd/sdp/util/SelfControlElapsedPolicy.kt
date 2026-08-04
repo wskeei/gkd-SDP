@@ -105,8 +105,14 @@ object SelfControlElapsedPolicy {
         return "app_blocker:$packageName"
     }
 
-    fun selectorInterceptEventKey(subsId: Long, appId: String, groupKey: Int): String {
-        return "selector_intercept:$subsId:$appId:$groupKey"
+    fun selectorInterceptEventKey(
+        subsId: Long,
+        appId: String,
+        groupType: Int,
+        groupKey: Int,
+        ruleIdentity: String,
+    ): String {
+        return "selector_intercept:v2:$subsId:$appId:$groupType:$groupKey:$ruleIdentity"
     }
 
     fun urlInterceptEventKey(ruleId: Long): String {

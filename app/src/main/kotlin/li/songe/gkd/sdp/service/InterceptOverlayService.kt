@@ -40,9 +40,9 @@ import kotlinx.coroutines.withContext
 import li.songe.gkd.sdp.a11y.A11yRuleEngine
 import li.songe.gkd.sdp.appScope
 import li.songe.gkd.sdp.a11y.UrlBlockerEngine
+import li.songe.gkd.sdp.data.SelectorRuleSnapshot
 import li.songe.gkd.sdp.util.LogUtils
 import li.songe.gkd.sdp.data.SelfControlAttempt
-import li.songe.gkd.sdp.data.SelfControlIntervalRepository
 import li.songe.gkd.sdp.ui.component.SelfControlElapsedCard
 import li.songe.gkd.sdp.ui.style.AppTheme
 import li.songe.gkd.sdp.util.InterceptUtils
@@ -59,6 +59,19 @@ class InterceptOverlayService : LifecycleService(), SavedStateRegistryOwner {
         const val EXTRA_EVENT_KIND = "eventKind"
         const val EXTRA_SUBJECT_ID = "subjectId"
         const val EXTRA_SUBJECT_LABEL = "subjectLabel"
+        const val EXTRA_RECORD_TOKEN = "recordToken"
+        const val EXTRA_MATCHED_AT = "matchedAt"
+        const val EXTRA_SELECTOR_SUBS_VERSION = "selectorSubsVersion"
+        const val EXTRA_SELECTOR_APP_ID = "selectorAppId"
+        const val EXTRA_SELECTOR_ACTIVITY_ID = "selectorActivityId"
+        const val EXTRA_SELECTOR_GROUP_TYPE = "selectorGroupType"
+        const val EXTRA_SELECTOR_GROUP_KEY = "selectorGroupKey"
+        const val EXTRA_SELECTOR_RULE_INDEX = "selectorRuleIndex"
+        const val EXTRA_SELECTOR_RULE_KEY_PRESENT = "selectorRuleKeyPresent"
+        const val EXTRA_SELECTOR_RULE_KEY = "selectorRuleKey"
+        const val EXTRA_SELECTOR_RULE_NAME = "selectorRuleName"
+        const val EXTRA_SELECTOR_GROUP_NAME = "selectorGroupName"
+        const val EXTRA_SELECTOR_SUBS_NAME = "selectorSubsName"
     }
 
     private val windowManager by lazy { getSystemService(WINDOW_SERVICE) as WindowManager }
@@ -67,6 +80,7 @@ class InterceptOverlayService : LifecycleService(), SavedStateRegistryOwner {
         SelfControlElapsedPolicy.ElapsedState.Loading,
     )
     private var recentCompletedIntervalsMs by mutableStateOf(emptyList<Long>())
+    private val mountedInterceptRecorder by lazy { MountedInterceptRecorder.fromDb() }
     
     private val savedStateRegistryController = SavedStateRegistryController.create(this)
     override val savedStateRegistry = savedStateRegistryController.savedStateRegistry
@@ -89,17 +103,21 @@ class InterceptOverlayService : LifecycleService(), SavedStateRegistryOwner {
         val eventKind = intent?.getIntExtra(EXTRA_EVENT_KIND, 0) ?: 0
         val subjectId = intent?.getStringExtra(EXTRA_SUBJECT_ID).orEmpty()
         val subjectLabel = intent?.getStringExtra(EXTRA_SUBJECT_LABEL).orEmpty().ifBlank { subjectId }
+        val matchedAt = intent?.getLongExtra(EXTRA_MATCHED_AT, 0L) ?: 0L
 
         if (subsId != -1L && groupKey != -1) {
             elapsedState = SelfControlElapsedPolicy.ElapsedState.Loading
             recentCompletedIntervalsMs = emptyList()
-            if (showOverlay(subsId, groupKey, message, cooldown)) {
-                recordElapsedAttempt(
+            if (showOverlay(subsId, groupKey, message, cooldown, eventKind)) {
+                val occurredAt = System.currentTimeMillis()
+                recordMountedAttempt(
+                    intent = intent,
                     eventKey = eventKey,
                     eventKind = eventKind,
                     subjectId = subjectId,
                     subjectLabel = subjectLabel,
-                    occurredAt = System.currentTimeMillis(),
+                    matchedAt = matchedAt,
+                    occurredAt = occurredAt,
                 )
             }
         } else {
@@ -108,52 +126,56 @@ class InterceptOverlayService : LifecycleService(), SavedStateRegistryOwner {
         return START_NOT_STICKY
     }
 
-    private fun recordElapsedAttempt(
+    private fun recordMountedAttempt(
+        intent: Intent?,
         eventKey: String,
         eventKind: Int,
         subjectId: String,
         subjectLabel: String,
+        matchedAt: Long,
         occurredAt: Long,
     ) {
-        if (eventKey.isBlank() || eventKind !in setOf(
-                SelfControlAttempt.KIND_SELECTOR_INTERCEPT,
-                SelfControlAttempt.KIND_URL_INTERCEPT,
-            )
-        ) {
-            elapsedState = SelfControlElapsedPolicy.ElapsedState.Unavailable
-            return
-        }
+        val selectorSnapshot = intent?.selectorSnapshot(eventKind)
+        val pending = MountedInterceptRecorder.Pending(
+            recordToken = intent?.getStringExtra(EXTRA_RECORD_TOKEN).orEmpty()
+                .ifBlank { "$eventKey:${matchedAt.takeIf { it > 0L } ?: occurredAt}" },
+            eventKey = eventKey,
+            eventKind = eventKind,
+            subjectId = subjectId,
+            subjectLabel = subjectLabel,
+            selectorSnapshot = selectorSnapshot,
+        )
         // Persist independently of the overlay lifecycle so an immediate exit cannot cancel
         // the event that was already accepted by the window manager.
-        appScope.launch {
-            val result = runCatching {
-                val insight = withContext(Dispatchers.IO) {
-                    SelfControlIntervalRepository.fromDb().recordIntercept(
-                        descriptor = SelfControlIntervalRepository.AttemptDescriptor(
-                            eventKey = eventKey,
-                            eventKind = eventKind,
-                            subjectId = subjectId,
-                            subjectLabel = subjectLabel,
-                        ),
-                        occurredAt = occurredAt,
+        appScope.launch(Dispatchers.IO) {
+            val result = mountedInterceptRecorder.recordMounted(
+                pending = pending,
+                mounted = true,
+                occurredAt = occurredAt,
+            )
+            withContext(Dispatchers.Main) {
+                val insight = result.intervalInsight
+                if (result.intervalSucceeded && insight != null) {
+                    recentCompletedIntervalsMs = insight.recentCompletedIntervalsMs
+                    elapsedState = SelfControlElapsedPolicy.stateForAttempt(
+                        insight.previousOccurredAt,
+                        occurredAt,
                     )
+                } else {
+                    recentCompletedIntervalsMs = emptyList()
+                    elapsedState = SelfControlElapsedPolicy.ElapsedState.Unavailable
                 }
-                insight
-            }
-            result.onSuccess { insight ->
-                recentCompletedIntervalsMs = insight.recentCompletedIntervalsMs
-                elapsedState = SelfControlElapsedPolicy.stateForAttempt(
-                    insight.previousOccurredAt,
-                    occurredAt,
-                )
-            }.onFailure {
-                recentCompletedIntervalsMs = emptyList()
-                elapsedState = SelfControlElapsedPolicy.ElapsedState.Unavailable
             }
         }
     }
 
-    private fun showOverlay(subsId: Long, groupKey: Int, message: String, cooldown: Int): Boolean {
+    private fun showOverlay(
+        subsId: Long,
+        groupKey: Int,
+        message: String,
+        cooldown: Int,
+        eventKind: Int,
+    ): Boolean {
         if (view != null) return false
 
         view = ComposeView(this).apply {
@@ -196,7 +218,11 @@ class InterceptOverlayService : LifecycleService(), SavedStateRegistryOwner {
             view?.let { runCatching { windowManager.removeViewImmediate(it) } }
             view = null
             LogUtils.d("selector intercept overlay mount rejected", error::class.java.simpleName)
-            UrlBlockerEngine.clearCooldown()
+            when (eventKind) {
+                SelfControlAttempt.KIND_URL_INTERCEPT -> UrlBlockerEngine.clearCooldown()
+                SelfControlAttempt.KIND_SELECTOR_INTERCEPT ->
+                    A11yRuleEngine.onInterceptOverlayMountFailed()
+            }
             stopSelf()
         }
         return mounted
@@ -206,6 +232,29 @@ class InterceptOverlayService : LifecycleService(), SavedStateRegistryOwner {
         super.onDestroy()
         view?.let { runCatching { windowManager.removeView(it) } }
         view = null
+    }
+
+    private fun Intent.selectorSnapshot(eventKind: Int): SelectorRuleSnapshot? {
+        if (eventKind != SelfControlAttempt.KIND_SELECTOR_INTERCEPT) return null
+        val ruleKey = if (getBooleanExtra(EXTRA_SELECTOR_RULE_KEY_PRESENT, false)) {
+            getIntExtra(EXTRA_SELECTOR_RULE_KEY, 0)
+        } else {
+            null
+        }
+        return SelectorRuleSnapshot(
+            subsId = getLongExtra(EXTRA_SUBS_ID, -1L),
+            subsVersion = getIntExtra(EXTRA_SELECTOR_SUBS_VERSION, 0),
+            appId = getStringExtra(EXTRA_SELECTOR_APP_ID).orEmpty(),
+            activityId = getStringExtra(EXTRA_SELECTOR_ACTIVITY_ID),
+            groupType = getIntExtra(EXTRA_SELECTOR_GROUP_TYPE, -1),
+            groupKey = getIntExtra(EXTRA_SELECTOR_GROUP_KEY, -1),
+            ruleIndex = getIntExtra(EXTRA_SELECTOR_RULE_INDEX, -1),
+            ruleKey = ruleKey,
+            ruleName = getStringExtra(EXTRA_SELECTOR_RULE_NAME),
+            groupName = getStringExtra(EXTRA_SELECTOR_GROUP_NAME),
+            subscriptionName = getStringExtra(EXTRA_SELECTOR_SUBS_NAME),
+            matchedAt = getLongExtra(EXTRA_MATCHED_AT, 0L),
+        ).takeIf { it.appId.isNotBlank() && it.groupType >= 0 && it.groupKey >= 0 && it.ruleIndex >= 0 }
     }
 }
 

@@ -22,8 +22,14 @@ class SelfControlModeParityTest {
             SelfControlElapsedPolicy.appBlockerEventKey("com.example.app"),
         )
         assertEquals(
-            "selector_intercept:12:com.example.app:7",
-            SelfControlElapsedPolicy.selectorInterceptEventKey(12L, "com.example.app", 7),
+            "selector_intercept:v2:12:com.example.app:2:7:key:9",
+            SelfControlElapsedPolicy.selectorInterceptEventKey(
+                subsId = 12L,
+                appId = "com.example.app",
+                groupType = 2,
+                groupKey = 7,
+                ruleIdentity = "key:9",
+            ),
         )
         assertEquals(
             "url_intercept:9",
