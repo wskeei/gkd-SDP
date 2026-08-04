@@ -6,7 +6,7 @@ All notable GKD-SDP changes are documented here. The format follows
 
 ## [Unreleased]
 
-## [2.0.0-beta.4] - 2026-08-04
+## [2.0.0-beta.4] - 2026-08-05
 
 This prerelease makes interception attribution and usage rhythm easier to
 understand while keeping the existing request, blocking, cooldown, and exit
