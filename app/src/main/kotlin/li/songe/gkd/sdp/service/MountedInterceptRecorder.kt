@@ -5,6 +5,7 @@ import li.songe.gkd.sdp.data.RuleTriggerLogRepository
 import li.songe.gkd.sdp.data.SelectorRuleSnapshot
 import li.songe.gkd.sdp.data.SelfControlAttempt
 import li.songe.gkd.sdp.data.SelfControlIntervalRepository
+import li.songe.gkd.sdp.util.SelfControlElapsedPolicy
 
 /**
  * Persists an accepted interception only after the overlay has actually mounted.
@@ -43,9 +44,9 @@ class MountedInterceptRecorder(
                     selectorSnapshot != null && selectorSnapshot.eventKey() == eventKey
 
                 SelfControlAttempt.KIND_URL_INTERCEPT ->
-                    selectorSnapshot == null &&
-                        subjectId.toLongOrNull() != null &&
-                        eventKey.startsWith("url_intercept:")
+                    selectorSnapshot == null && subjectId.toLongOrNull()?.let { ruleId ->
+                        eventKey == SelfControlElapsedPolicy.urlInterceptEventKey(ruleId)
+                    } == true
                 else -> false
             }
         }

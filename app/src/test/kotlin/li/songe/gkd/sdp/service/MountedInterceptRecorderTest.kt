@@ -137,6 +137,22 @@ class MountedInterceptRecorderTest {
     }
 
     @Test
+    fun urlDescriptorMustMatchItsStableRuleKey() = runBlocking {
+        val recorder = MountedInterceptRecorder(FakeActionSink(), FakeAttemptSink())
+        val pending = MountedInterceptRecorder.Pending(
+            recordToken = "url-mismatch",
+            eventKey = "url_intercept:8",
+            eventKind = SelfControlAttempt.KIND_URL_INTERCEPT,
+            subjectId = "7",
+            subjectLabel = "网址规则",
+        )
+
+        val result = recorder.recordMounted(pending, mounted = true, occurredAt = 100L)
+
+        assertFalse(result.intervalAttempted)
+    }
+
+    @Test
     fun sinkFailuresAreReportedIndependently() = runBlocking {
         val actionSink = FakeActionSink().also { it.fail = true }
         val attemptSink = FakeAttemptSink()

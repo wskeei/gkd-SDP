@@ -107,7 +107,9 @@ class AppBlockerOverlayService : LifecycleService(), SavedStateRegistryOwner {
         if (eventKind != SelfControlAttempt.KIND_APP_BLOCKER ||
             blockedApp.isBlank() ||
             eventKey.isBlank() ||
+            eventKey != SelfControlElapsedPolicy.appBlockerEventKey(blockedApp) ||
             subjectId.isBlank() ||
+            subjectId != blockedApp ||
             source == null
         ) {
             stopSelf()
