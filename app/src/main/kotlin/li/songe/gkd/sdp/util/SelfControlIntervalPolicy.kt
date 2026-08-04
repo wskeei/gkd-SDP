@@ -197,7 +197,7 @@ object SelfControlIntervalPolicy {
             roundedLong(
                 numerator = BigInteger.valueOf(sortedValues[middle - 1])
                     .add(BigInteger.valueOf(sortedValues[middle])),
-                denominator = BigInteger.TWO,
+                denominator = BigInteger.valueOf(2L),
             )
         }
     }
@@ -205,7 +205,7 @@ object SelfControlIntervalPolicy {
     /** Rounds a non-negative rational value to the nearest millisecond, half up. */
     private fun roundedLong(numerator: BigInteger, denominator: BigInteger): Long {
         val (quotient, remainder) = numerator.divideAndRemainder(denominator)
-        val rounded = if (remainder.multiply(BigInteger.TWO) >= denominator) {
+        val rounded = if (remainder.multiply(BigInteger.valueOf(2L)) >= denominator) {
             quotient.add(BigInteger.ONE)
         } else {
             quotient
