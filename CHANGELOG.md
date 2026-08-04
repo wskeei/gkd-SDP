@@ -6,23 +6,48 @@ All notable GKD-SDP changes are documented here. The format follows
 
 ## [Unreleased]
 
+## [2.0.0-beta.4] - 2026-08-04
+
+This prerelease makes interception attribution and usage rhythm easier to
+understand while keeping the existing request, blocking, cooldown, and exit
+behavior unchanged.
+
 ### Added
 
 - Show the exact selector rule and safe app/URL blocker source on mounted interception overlays.
-- Add rolling 24-hour, 7-day, and 30-day interval charts and the local “间用比” metric.
+- Record mounted selector interceptions in Home trigger history with a separate outcome.
+- Add rolling 24-hour, 7-day, and 30-day interval charts and the local “间用比” metric
+  (request gap divided by requested duration), including current-value feedback in the form.
+- Show the current interval, average, median, and sample count with readable chart summaries
+  across request, app-blocker, selector-intercept, URL-intercept, and review surfaces.
 
 ### Changed
 
 - Define usage-request gaps from the last observed end of use instead of the previous request time.
+- Keep interval samples and exact-rule attribution bounded and local, with a non-destructive
+  Room 32→33 migration and minimal projections for large datasets.
 
 ### Fixed
 
-- Record mounted selector interceptions in Home trigger history and distinguish them from executed actions.
+- Distinguish mounted interceptions from executed actions without calling the selector trigger,
+  and preserve independent failure handling for ActionLog and interval persistence.
+- Treat missing actual end times, clock rollback, future-dated rows, failed mounts, and malformed
+  attribution as unavailable rather than inventing a duration or rule source.
 
 ### Security
 
 - Store only bounded safe rule-name snapshots; exclude selectors, node text, actual URLs, patterns, and duplicate request reasons.
-- Prune exact-rule latest-state keys after 90 days and cap them at 10,000 rows.
+- Prune exact-rule latest-state keys after 90 days and cap them at 10,000 rows; action history remains capped at 500 rows.
+
+### Known limitations
+
+- Records from before this version do not have reliable actual-use end timestamps and are not
+  backfilled into the new gap definition.
+- Exact selector-rule interval samples start accumulating with this version because the new
+  stable keys cannot safely merge legacy selector intervals.
+- Force-stop, process termination, or runtime interruption can leave the actual end unknown;
+  the UI shows unavailable instead of guessing.
+- Physical-device/OEM validation is deferred until the maintainer downloads this public prerelease.
 
 ## [2.0.0-beta.3] - 2026-08-04
 
@@ -110,7 +135,8 @@ since that base rather than repeating upstream release notes.
   when the required service permission is disabled.
 - Added screenshot protection for the usage reason overlay.
 
-[Unreleased]: https://github.com/wskeei/gkd-SDP/compare/v2.0.0-beta.3...HEAD
+[Unreleased]: https://github.com/wskeei/gkd-SDP/compare/v2.0.0-beta.4...HEAD
+[2.0.0-beta.4]: https://github.com/wskeei/gkd-SDP/releases/tag/v2.0.0-beta.4
 [2.0.0-beta.3]: https://github.com/wskeei/gkd-SDP/releases/tag/v2.0.0-beta.3
 [2.0.0-beta.2]: https://github.com/wskeei/gkd-SDP/releases/tag/v2.0.0-beta.2
 [2.0.0-beta.1]: https://github.com/wskeei/gkd-SDP/releases/tag/v2.0.0-beta.1
