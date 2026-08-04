@@ -76,7 +76,7 @@ fun SelfControlIntervalChart(
             ),
             modelProducer = modelProducer,
             animationSpec = null,
-            animateIn = false,
+            runInitialAnimation = false,
             modifier = modifier
                 .fillMaxWidth()
                 .height(148.dp)
