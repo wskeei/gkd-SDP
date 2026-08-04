@@ -12,14 +12,13 @@ class RuleTriggerLogRepositoryTest {
 
         override suspend fun insertBounded(log: ActionLog): Long {
             logs += log
-            return logs.size.toLong()
-        }
-
-        override suspend fun deleteKeepLatest() {
-            pruneCount++
-            if (logs.size > ActionLog.MAX_ROWS) {
+            if (logs.size % ActionLog.PRUNE_EVERY_ROWS == 0 && logs.size > ActionLog.MAX_ROWS) {
                 logs.subList(0, logs.size - ActionLog.MAX_ROWS).clear()
+                pruneCount++
+            } else if (logs.size % ActionLog.PRUNE_EVERY_ROWS == 0) {
+                pruneCount++
             }
+            return logs.size.toLong()
         }
     }
 

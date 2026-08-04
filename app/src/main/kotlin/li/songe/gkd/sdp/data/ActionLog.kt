@@ -8,6 +8,7 @@ import androidx.room.Entity
 import androidx.room.Insert
 import androidx.room.PrimaryKey
 import androidx.room.Query
+import androidx.room.Transaction
 import androidx.room.migration.AutoMigrationSpec
 import kotlinx.coroutines.flow.Flow
 import kotlinx.serialization.Serializable
@@ -65,7 +66,16 @@ data class ActionLog(
 
 
         @Insert
-        suspend fun insert(vararg objects: ActionLog): List<Long>
+        suspend fun insertOne(log: ActionLog): Long
+
+        @Transaction
+        suspend fun insertBounded(log: ActionLog): Long {
+            val rowId = insertOne(log)
+            if (rowId > 0L && rowId % ActionLog.PRUNE_EVERY_ROWS == 0L) {
+                deleteKeepLatest()
+            }
+            return rowId
+        }
 
 
         @Query("DELETE FROM action_log WHERE subs_id IN (:subsIds)")

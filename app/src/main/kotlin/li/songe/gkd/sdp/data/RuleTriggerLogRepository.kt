@@ -13,8 +13,6 @@ class RuleTriggerLogRepository(
 ) {
     interface Sink {
         suspend fun insertBounded(log: ActionLog): Long
-
-        suspend fun deleteKeepLatest() = Unit
     }
 
     private val mutex = Mutex()
@@ -30,22 +28,14 @@ class RuleTriggerLogRepository(
     ): Long = insert(snapshot.toActionLog(ActionLog.OUTCOME_INTERCEPTED, ctime))
 
     private suspend fun insert(log: ActionLog): Long = mutex.withLock {
-        val rowId = sink.insertBounded(log)
-        if (rowId > 0L && rowId % ActionLog.PRUNE_EVERY_ROWS == 0L) {
-            sink.deleteKeepLatest()
-        }
-        rowId
+        sink.insertBounded(log)
     }
 
     private class DaoSink(
         val dao: ActionLog.ActionLogDao,
     ) : Sink {
         override suspend fun insertBounded(log: ActionLog): Long =
-            dao.insert(log).single()
-
-        override suspend fun deleteKeepLatest() {
-            dao.deleteKeepLatest()
-        }
+            dao.insertBounded(log)
     }
 
     companion object {

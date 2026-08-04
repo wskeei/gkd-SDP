@@ -131,7 +131,7 @@ data class UsageGuardRecord(
 
         @Query(
             "UPDATE usage_guard_record SET ended_at = :endedAt, end_reason = :endReason " +
-                "WHERE id = :id AND ended_at = 0"
+                "WHERE id = :id AND ended_at = 0 AND :endedAt >= 0"
         )
         suspend fun closeRecord(id: Long, endedAt: Long, endReason: Int): Int
 
@@ -145,7 +145,7 @@ data class UsageGuardRecord(
                     THEN :endedAt
                     ELSE last_usage_ended_at
                 END
-            WHERE id = :id AND ended_at = 0
+            WHERE id = :id AND ended_at = 0 AND :endedAt >= 0
             """
         )
         suspend fun closeRecordFromActiveUse(
@@ -160,6 +160,7 @@ data class UsageGuardRecord(
             SET last_usage_ended_at = :endedAt
             WHERE id = :id
               AND ended_at = 0
+              AND :endedAt >= 0
               AND (
                     last_usage_ended_at IS NULL
                     OR last_usage_ended_at <= :endedAt
