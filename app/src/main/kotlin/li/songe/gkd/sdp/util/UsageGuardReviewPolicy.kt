@@ -61,7 +61,11 @@ object UsageGuardReviewPolicy {
             return WidgetSummary(
                 title = "${periodLabel}申请 0 次",
                 metric = "保持安静",
-                hint = "${periodLabel}还没有新的使用申请。",
+                hint = if (periodLabel == "今日") {
+                    "还没有新的使用申请。"
+                } else {
+                    "${periodLabel}还没有新的使用申请。"
+                },
             )
         }
         val topAppText = summary.topApps.firstOrNull()?.let { " · 高频 ${it.label}" }.orEmpty()
