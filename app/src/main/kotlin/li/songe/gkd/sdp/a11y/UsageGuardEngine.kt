@@ -391,7 +391,6 @@ object UsageGuardEngine {
 
         val active = DbSet.usageGuardRecordDao.getActiveRecord(previousAppId) ?: return
         if (!isCurrentRequest(nextAppId, owner, token)) return
-        if (!isCurrentRequest(nextAppId, owner, token)) return
         val endedAt = System.currentTimeMillis()
         when (UsageGuardUsageEndPolicy.onLeave(active.grantMode)) {
             UsageGuardUsageEndPolicy.LeaveDecision.MARK_AND_CLOSE ->
