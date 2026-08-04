@@ -28,6 +28,10 @@ data class SelfControlAttempt(
         const val MAX_EVENT_ROWS = 10_000
         const val OVERLAY_HISTORY_LIMIT = 5
         const val RETENTION_MS = RETENTION_DAYS * 24L * 60L * 60L * 1_000L
+
+        internal fun monotonicAnchor(previousAt: Long?, currentAt: Long): Long {
+            return maxOf(previousAt ?: currentAt, currentAt)
+        }
     }
 
     data class RecordedAttemptInsight(
@@ -150,7 +154,10 @@ data class SelfControlAttempt(
                 SelfControlAttempt(
                     eventKey = event.eventKey,
                     eventKind = event.eventKind,
-                    lastOccurredAt = event.occurredAt,
+                    // A clock rollback must not move the per-key anchor backwards. The
+                    // rollback event is still retained for audit/history, but the next
+                    // valid event must be measured from the last monotonic anchor.
+                    lastOccurredAt = monotonicAnchor(previous?.lastOccurredAt, event.occurredAt),
                 ),
             )
 

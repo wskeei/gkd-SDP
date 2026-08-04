@@ -127,6 +127,7 @@ class InterceptOverlayService : LifecycleService(), SavedStateRegistryOwner {
                 (selectorSnapshot?.let {
                     subsId > 0L &&
                         groupKey >= 0 &&
+                        it.subsId == subsId &&
                         it.groupKey == groupKey &&
                         eventKey == it.eventKey() &&
                         subjectId == it.appId
