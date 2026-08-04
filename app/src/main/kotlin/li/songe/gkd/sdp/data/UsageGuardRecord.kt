@@ -10,7 +10,6 @@ import androidx.room.PrimaryKey
 import androidx.room.Query
 import kotlinx.coroutines.flow.Flow
 import li.songe.gkd.sdp.util.UsageGuardPolicy
-import li.songe.gkd.sdp.util.UsageRequestRhythmPolicy
 
 @Entity(
     tableName = "usage_guard_record",
@@ -170,10 +169,15 @@ data class UsageGuardRecord(
                 null
             } else {
                 val previous = getLatestRecord(record.appId)
-                UsageRequestRhythmPolicy.gapMs(
-                    lastUsageEndedAt = previous?.lastUsageEndedAt,
-                    requestedAt = record.requestedAt,
-                )
+                previous?.lastUsageEndedAt?.let { lastUsageEndedAt ->
+                    if (lastUsageEndedAt >= 0L &&
+                        record.requestedAt >= lastUsageEndedAt
+                    ) {
+                        record.requestedAt - lastUsageEndedAt
+                    } else {
+                        null
+                    }
+                }
             }
             return insert(
                 record.copy(
