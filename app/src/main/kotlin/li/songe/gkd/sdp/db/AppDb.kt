@@ -162,8 +162,8 @@ val MIGRATION_32_33 = object : Migration(32, 33) {
         db.execSQL("ALTER TABLE action_log ADD COLUMN subs_name_snapshot TEXT")
         db.execSQL("ALTER TABLE action_log ADD COLUMN group_name_snapshot TEXT")
         db.execSQL("ALTER TABLE action_log ADD COLUMN rule_name_snapshot TEXT")
-        db.execSQL("ALTER TABLE usage_guard_record ADD COLUMN last_usage_ended_at INTEGER")
-        db.execSQL("ALTER TABLE usage_guard_record ADD COLUMN request_gap_ms INTEGER")
+        db.execSQL("ALTER TABLE usage_guard_record ADD COLUMN last_usage_ended_at INTEGER DEFAULT NULL")
+        db.execSQL("ALTER TABLE usage_guard_record ADD COLUMN request_gap_ms INTEGER DEFAULT NULL")
     }
 }
 

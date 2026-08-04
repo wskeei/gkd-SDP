@@ -77,6 +77,8 @@ class RoomSchema33Test(unittest.TestCase):
         self.assertIn("Migration(32, 33)", source)
         self.assertIn(".addMigrations(MIGRATION_32_33)", source)
         self.assertIn("fallbackToDestructiveMigration(false)", source)
+        self.assertIn("last_usage_ended_at INTEGER DEFAULT NULL", source)
+        self.assertIn("request_gap_ms INTEGER DEFAULT NULL", source)
 
 
 if __name__ == "__main__":
