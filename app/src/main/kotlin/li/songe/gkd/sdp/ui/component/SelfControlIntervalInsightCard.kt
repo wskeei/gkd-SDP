@@ -39,6 +39,7 @@ data class SelfControlInsightChartPoint(
     val value: Double,
     val sampleCount: Int,
     val isCurrent: Boolean,
+    val bucketStartAt: Long = 0L,
 )
 
 data class SelfControlInsightTextRow(
@@ -132,6 +133,7 @@ data class SelfControlInsightPresentation(
                     value = point.value,
                     sampleCount = point.sampleCount,
                     isCurrent = currentBucketStart != null && point.bucketStartAt == currentBucketStart,
+                    bucketStartAt = point.bucketStartAt,
                 )
             }
             val textRows = chartPoints.map { point ->
@@ -406,12 +408,12 @@ fun SelfControlIntervalInsightCard(
                 )?.let { SelfControlInsightPresentation.formatValue(it, SelfControlInsightWindowPolicy.Metric.USAGE_RATIO) }
             }
             Text(
-                text = if (value != null) {
-                    "本次：$value"
-                } else if (currentPoint != null) {
-                    "本次所在时段：${currentPoint.label}"
-                } else {
-                    "本次：已记录，暂无可比较的间隔值"
+                text = when {
+                    value != null && currentPoint != null ->
+                        "本次：$value · 所在时段：${currentPoint.label}"
+                    value != null -> "本次：$value"
+                    currentPoint != null -> "本次所在时段：${currentPoint.label}"
+                    else -> "本次：已记录，暂无可比较的间隔值"
                 },
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.primary,

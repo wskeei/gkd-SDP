@@ -334,11 +334,21 @@ private fun UsageGuardRequestContent(
         gapMs = currentGapMs,
         durationMinutes = effectiveRequestedDurationMinutes,
     )
+    val rhythmHistory = remember(
+        rhythmData?.insightAnchorAt,
+        rhythmData?.samples,
+    ) {
+        UsageRequestRhythmPresentation.historicalStats(
+            data = rhythmData,
+            fallbackNowEpochMs = nowEpochMs,
+        )
+    }
     val rhythmPresentation = UsageRequestRhythmPresentation.from(
         data = rhythmData,
         nowEpochMs = nowEpochMs,
         requestedDurationMinutes = effectiveRequestedDurationMinutes ?: 0,
         selectedWindow = selectedWindow,
+        cachedHistory = rhythmHistory,
     )
 
     Surface(

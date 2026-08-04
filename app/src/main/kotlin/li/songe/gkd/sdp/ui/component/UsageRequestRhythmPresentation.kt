@@ -1,5 +1,6 @@
 package li.songe.gkd.sdp.ui.component
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -29,13 +30,39 @@ data class UsageRequestRhythmPresentation(
         UNAVAILABLE,
     }
 
+    data class HistoricalStats(
+        val averageRatioByWindow: Map<SelfControlInsightWindowPolicy.Window, Double?>,
+        val ratioSampleCountByWindow: Map<SelfControlInsightWindowPolicy.Window, Int>,
+    )
+
     companion object {
+        fun historicalStats(
+            data: SelfControlIntervalRepository.UsageRequestOverlayData?,
+            fallbackNowEpochMs: Long,
+        ): HistoricalStats {
+            val samples = data?.samples.orEmpty()
+            val anchor = data?.insightAnchorAt ?: fallbackNowEpochMs
+            val series = SelfControlInsightWindowPolicy.Window.entries.associateWith { window ->
+                SelfControlInsightWindowPolicy.aggregate(
+                    samples = samples,
+                    nowEpochMs = anchor,
+                    window = window,
+                    metric = SelfControlInsightWindowPolicy.Metric.USAGE_RATIO,
+                )
+            }
+            return HistoricalStats(
+                averageRatioByWindow = series.mapValues { it.value.stats.averageRatio },
+                ratioSampleCountByWindow = series.mapValues { it.value.stats.sampleCount },
+            )
+        }
+
         fun from(
             data: SelfControlIntervalRepository.UsageRequestOverlayData?,
             nowEpochMs: Long,
             requestedDurationMinutes: Int,
             selectedWindow: SelfControlInsightWindowPolicy.Window =
                 SelfControlInsightWindowPolicy.Window.LAST_24_HOURS,
+            cachedHistory: HistoricalStats? = null,
         ): UsageRequestRhythmPresentation {
             val status = when {
                 data == null -> Status.UNAVAILABLE
@@ -46,22 +73,9 @@ data class UsageRequestRhythmPresentation(
             val currentGap = data?.previousLastUsageEndedAt?.let {
                 UsageRequestRhythmPolicy.gapMs(it, nowEpochMs)
             }
-            val averages = SelfControlInsightWindowPolicy.Window.entries.associateWith { window ->
-                SelfControlInsightWindowPolicy.aggregate(
-                    samples = data?.samples.orEmpty(),
-                    nowEpochMs = data?.insightAnchorAt ?: nowEpochMs,
-                    window = window,
-                    metric = SelfControlInsightWindowPolicy.Metric.USAGE_RATIO,
-                ).stats.averageRatio
-            }
-            val counts = SelfControlInsightWindowPolicy.Window.entries.associateWith { window ->
-                SelfControlInsightWindowPolicy.aggregate(
-                    samples = data?.samples.orEmpty(),
-                    nowEpochMs = data?.insightAnchorAt ?: nowEpochMs,
-                    window = window,
-                    metric = SelfControlInsightWindowPolicy.Metric.USAGE_RATIO,
-                ).stats.sampleCount
-            }
+            val history = cachedHistory ?: historicalStats(data, nowEpochMs)
+            val averages = history.averageRatioByWindow
+            val counts = history.ratioSampleCountByWindow
             val currentRatio = UsageRequestRhythmPolicy.currentRatio(
                 currentGap,
                 requestedDurationMinutes,
