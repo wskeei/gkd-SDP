@@ -22,6 +22,43 @@ All notable GKD-SDP changes are documented here. The format follows
 
 - None yet.
 
+## [2.0.0-beta.3] - 2026-08-04
+
+This prerelease adds local interval feedback and review tools for the digital
+self-discipline flows while keeping the existing request, blocking, cooldown,
+and exit behavior unchanged.
+
+### Added
+
+- Show a live interval card in usage-request, app-blocker, selector-intercept,
+  and URL-intercept overlays with up to five completed intervals, a growing
+  current interval, average, median, and sample count.
+- Expand “数字自律复盘” with today/7-day/30-day ranges, request/intercept
+  filters, daily median charts, recent details, target rankings, and previous
+  period comparison when enough samples exist.
+- Add a concise home summary for today’s usage requests and intercepts.
+- Store bounded local intercept history (90 days, at most 10,000 rows) and
+  migrate Room schema 31 to 32 without copying sensitive request content.
+
+### Changed
+
+- Use stable per-app, per-selector-target, and per-URL-rule keys so intervals
+  never cross unrelated applications or rules.
+- Keep chart values available as readable text and keep all interval statistics
+  local to the device.
+
+### Fixed
+
+- Preserve the existing elapsed-time anchor and successful-mount boundaries;
+  failed or duplicate overlay starts do not create interval events.
+- Isolate interval storage, chart, and review failures from the original
+  request submission and blocking/exit paths.
+
+### Security
+
+- Interval history excludes application reasons, intercept messages, actual
+  URLs, URL patterns, page text, screenshots, device identifiers, and telemetry.
+
 ## [2.0.0-beta.2] - 2026-08-03
 
 This prerelease contains the runtime repair for digital self-discipline usage
@@ -71,6 +108,7 @@ since that base rather than repeating upstream release notes.
   when the required service permission is disabled.
 - Added screenshot protection for the usage reason overlay.
 
-[Unreleased]: https://github.com/wskeei/gkd-SDP/compare/v2.0.0-beta.2...HEAD
+[Unreleased]: https://github.com/wskeei/gkd-SDP/compare/v2.0.0-beta.3...HEAD
+[2.0.0-beta.3]: https://github.com/wskeei/gkd-SDP/releases/tag/v2.0.0-beta.3
 [2.0.0-beta.2]: https://github.com/wskeei/gkd-SDP/releases/tag/v2.0.0-beta.2
 [2.0.0-beta.1]: https://github.com/wskeei/gkd-SDP/releases/tag/v2.0.0-beta.1
