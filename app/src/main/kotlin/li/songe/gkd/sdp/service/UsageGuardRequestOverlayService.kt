@@ -45,7 +45,6 @@ import kotlinx.coroutines.withContext
 import li.songe.gkd.sdp.a11y.A11yRuleEngine
 import li.songe.gkd.sdp.util.LogUtils
 import li.songe.gkd.sdp.a11y.UsageGuardEngine
-import li.songe.gkd.sdp.data.SelfControlIntervalRepository
 import li.songe.gkd.sdp.data.UsageGuardRecord
 import li.songe.gkd.sdp.data.UsageGuardTag
 import li.songe.gkd.sdp.db.DbSet
@@ -141,25 +140,19 @@ class UsageGuardRequestOverlayService : LifecycleService(), SavedStateRegistryOw
                         onSubmit = { selectedTags, reason, requestedDurationMinutes ->
                             lifecycleScope.launch(Dispatchers.IO) {
                                 val now = System.currentTimeMillis()
-                                DbSet.usageGuardRecordDao.getActiveRecord(appId)?.let { current ->
-                                    DbSet.usageGuardRecordDao.closeRecord(
-                                        id = current.id,
-                                        endedAt = now,
-                                        endReason = UsageGuardRecord.END_REASON_REPLACED,
-                                    )
-                                }
-                                DbSet.usageGuardRecordDao.insert(
-                                    UsageGuardRecord(
-                                        appId = appId,
-                                        appName = appName,
-                                        tagNames = selectedTags,
-                                        reasonText = reason.trim(),
-                                        grantMode = grantMode,
-                                        requestedDurationMinutes = requestedDurationMinutes,
-                                        requestedAt = now,
-                                        grantedAt = now,
-                                        expiresAt = now + requestedDurationMinutes * 60_000L,
-                                    )
+                                DbSet.usageGuardRecordDao.insertRequestWithGap(
+                                    record = UsageGuardRecord(
+                                            appId = appId,
+                                            appName = appName,
+                                            tagNames = selectedTags,
+                                            reasonText = reason.trim(),
+                                            grantMode = grantMode,
+                                            requestedDurationMinutes = requestedDurationMinutes,
+                                            requestedAt = now,
+                                            grantedAt = now,
+                                            expiresAt = now + requestedDurationMinutes * 60_000L,
+                                        ),
+                                    replacedAt = now,
                                 )
                                 UsageGuardReviewWidget.refreshAll(applicationContext)
                                 UsageGuardEngine.onRequestGranted(appId)
