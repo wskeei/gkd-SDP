@@ -175,7 +175,7 @@ data class SelfControlInsightPresentation(
             if (stats.sampleCount == 0) return "${window.label}暂无${metric.label()}样本。"
             val average = when (metric) {
                 SelfControlInsightWindowPolicy.Metric.INTERVAL ->
-                    stats.averageMs?.let { SelfControlIntervalPolicy.formatDurationCompact(it) }
+                    stats.averageMs?.let { SelfControlIntervalPolicy.formatDurationCompact(it.toLong()) }
                 SelfControlInsightWindowPolicy.Metric.USAGE_RATIO ->
                     formatValue(stats.averageRatio ?: 0.0, metric)
             } ?: "暂无"
