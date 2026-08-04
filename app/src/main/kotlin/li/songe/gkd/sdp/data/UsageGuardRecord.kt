@@ -15,6 +15,7 @@ import li.songe.gkd.sdp.util.UsageGuardPolicy
     tableName = "usage_guard_record",
     indices = [
         Index(value = ["app_id", "ended_at"]),
+        Index(value = ["app_id", "requested_at"]),
     ],
 )
 data class UsageGuardRecord(
@@ -58,6 +59,34 @@ data class UsageGuardRecord(
             """
         )
         suspend fun getLatestRecord(appId: String): UsageGuardRecord?
+
+        @Query(
+            """
+            SELECT * FROM usage_guard_record
+            WHERE app_id = :appId
+            ORDER BY requested_at DESC, id DESC
+            LIMIT :limit
+            """
+        )
+        suspend fun queryRecentRecords(appId: String, limit: Int): List<UsageGuardRecord>
+
+        @Query(
+            """
+            SELECT * FROM usage_guard_record
+            WHERE app_id = :appId
+              AND (
+                requested_at < :requestedAt
+                OR (requested_at = :requestedAt AND id < :id)
+              )
+            ORDER BY requested_at DESC, id DESC
+            LIMIT 1
+            """
+        )
+        suspend fun getPreviousRecord(
+            appId: String,
+            requestedAt: Long,
+            id: Long,
+        ): UsageGuardRecord?
 
         @Query("SELECT * FROM usage_guard_record ORDER BY id DESC LIMIT :limit")
         fun queryLatest(limit: Int = 100): Flow<List<UsageGuardRecord>>

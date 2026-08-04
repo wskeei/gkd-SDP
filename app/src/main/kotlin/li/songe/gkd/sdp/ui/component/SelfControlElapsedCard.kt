@@ -17,11 +17,13 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
 import li.songe.gkd.sdp.util.SelfControlElapsedPolicy
+import li.songe.gkd.sdp.util.SelfControlIntervalPolicy
 
 @Composable
 fun SelfControlElapsedCard(
     context: SelfControlElapsedPolicy.Context,
     state: SelfControlElapsedPolicy.ElapsedState,
+    recentCompletedIntervalsMs: List<Long> = emptyList(),
     modifier: Modifier = Modifier,
 ) {
     val copy = remember(context) { SelfControlElapsedPolicy.copyFor(context) }
@@ -71,6 +73,7 @@ fun SelfControlElapsedCard(
                     RunningElapsedContent(
                         copy = copy,
                         state = state,
+                        recentCompletedIntervalsMs = recentCompletedIntervalsMs,
                     )
                 }
             }
@@ -82,6 +85,7 @@ fun SelfControlElapsedCard(
 private fun RunningElapsedContent(
     copy: SelfControlElapsedPolicy.Copy,
     state: SelfControlElapsedPolicy.ElapsedState.Running,
+    recentCompletedIntervalsMs: List<Long>,
 ) {
     var nowEpochMs by remember(state.anchorAtEpochMs) {
         mutableLongStateOf(System.currentTimeMillis())
@@ -114,5 +118,14 @@ private fun RunningElapsedContent(
         style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         modifier = Modifier.padding(top = 4.dp),
+    )
+
+    SelfControlIntervalInsightCard(
+        insight = SelfControlIntervalPolicy.overlayInsight(
+            anchorAtEpochMs = state.anchorAtEpochMs,
+            firstOccurrence = state.firstOccurrence,
+            recentCompletedIntervalsMs = recentCompletedIntervalsMs,
+            nowEpochMs = nowEpochMs,
+        ),
     )
 }

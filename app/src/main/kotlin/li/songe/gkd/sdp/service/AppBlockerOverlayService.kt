@@ -29,7 +29,6 @@ import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.LifecycleService
-import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.setViewTreeLifecycleOwner
 import androidx.savedstate.SavedStateRegistryController
 import androidx.savedstate.SavedStateRegistryOwner
@@ -40,9 +39,10 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import li.songe.gkd.sdp.a11y.A11yRuleEngine
 import li.songe.gkd.sdp.a11y.AppBlockerEngine
+import li.songe.gkd.sdp.appScope
 import li.songe.gkd.sdp.util.LogUtils
 import li.songe.gkd.sdp.data.SelfControlAttempt
-import li.songe.gkd.sdp.db.DbSet
+import li.songe.gkd.sdp.data.SelfControlIntervalRepository
 import li.songe.gkd.sdp.ui.component.SelfControlElapsedCard
 import li.songe.gkd.sdp.ui.style.AppTheme
 import li.songe.gkd.sdp.util.SelfControlElapsedPolicy
@@ -54,6 +54,8 @@ class AppBlockerOverlayService : LifecycleService(), SavedStateRegistryOwner {
         const val EXTRA_BLOCKED_APP = "blockedApp"
         const val EXTRA_EVENT_KEY = "eventKey"
         const val EXTRA_EVENT_KIND = "eventKind"
+        const val EXTRA_SUBJECT_ID = "subjectId"
+        const val EXTRA_SUBJECT_LABEL = "subjectLabel"
     }
 
     private val windowManager by lazy { getSystemService(WINDOW_SERVICE) as WindowManager }
@@ -61,6 +63,7 @@ class AppBlockerOverlayService : LifecycleService(), SavedStateRegistryOwner {
     private var elapsedState by mutableStateOf<SelfControlElapsedPolicy.ElapsedState>(
         SelfControlElapsedPolicy.ElapsedState.Loading,
     )
+    private var recentCompletedIntervalsMs by mutableStateOf(emptyList<Long>())
 
     private val savedStateRegistryController = SavedStateRegistryController.create(this)
     override val savedStateRegistry = savedStateRegistryController.savedStateRegistry
@@ -78,34 +81,63 @@ class AppBlockerOverlayService : LifecycleService(), SavedStateRegistryOwner {
         val message = intent?.getStringExtra(EXTRA_MESSAGE) ?: "这真的重要吗？"
         val blockedApp = intent?.getStringExtra(EXTRA_BLOCKED_APP).orEmpty()
         val eventKey = intent?.getStringExtra(EXTRA_EVENT_KEY).orEmpty()
-        val occurredAt = System.currentTimeMillis()
-
+        val eventKind = intent?.getIntExtra(
+            EXTRA_EVENT_KIND,
+            SelfControlAttempt.KIND_APP_BLOCKER,
+        ) ?: SelfControlAttempt.KIND_APP_BLOCKER
+        val subjectId = intent?.getStringExtra(EXTRA_SUBJECT_ID).orEmpty().ifBlank { blockedApp }
+        val subjectLabel = intent?.getStringExtra(EXTRA_SUBJECT_LABEL).orEmpty().ifBlank { blockedApp }
         elapsedState = SelfControlElapsedPolicy.ElapsedState.Loading
+        recentCompletedIntervalsMs = emptyList()
         if (showOverlay(message, blockedApp)) {
-            recordElapsedAttempt(eventKey, occurredAt)
+            recordElapsedAttempt(
+                eventKey = eventKey,
+                eventKind = eventKind,
+                subjectId = subjectId,
+                subjectLabel = subjectLabel,
+                occurredAt = System.currentTimeMillis(),
+            )
         }
         return START_NOT_STICKY
     }
 
-    private fun recordElapsedAttempt(eventKey: String, occurredAt: Long) {
-        if (eventKey.isBlank()) {
+    private fun recordElapsedAttempt(
+        eventKey: String,
+        eventKind: Int,
+        subjectId: String,
+        subjectLabel: String,
+        occurredAt: Long,
+    ) {
+        if (eventKey.isBlank() || eventKind != SelfControlAttempt.KIND_APP_BLOCKER) {
             elapsedState = SelfControlElapsedPolicy.ElapsedState.Unavailable
             return
         }
-        lifecycleScope.launch {
-            elapsedState = runCatching {
-                val previousOccurredAt = withContext(Dispatchers.IO) {
-                    DbSet.selfControlAttemptDao.recordAndGetPrevious(
-                        SelfControlAttempt(
+        // Persist independently of the overlay lifecycle: pressing an exit action immediately
+        // after the window mounts must not cancel the successful-attempt write.
+        appScope.launch {
+            val result = runCatching {
+                val insight = withContext(Dispatchers.IO) {
+                    SelfControlIntervalRepository.fromDb().recordIntercept(
+                        descriptor = SelfControlIntervalRepository.AttemptDescriptor(
                             eventKey = eventKey,
-                            eventKind = SelfControlAttempt.KIND_APP_BLOCKER,
-                            lastOccurredAt = occurredAt,
+                            eventKind = eventKind,
+                            subjectId = subjectId,
+                            subjectLabel = subjectLabel,
                         ),
+                        occurredAt = occurredAt,
                     )
                 }
-                SelfControlElapsedPolicy.stateForAttempt(previousOccurredAt, occurredAt)
-            }.getOrElse {
-                SelfControlElapsedPolicy.ElapsedState.Unavailable
+                insight
+            }
+            result.onSuccess { insight ->
+                recentCompletedIntervalsMs = insight.recentCompletedIntervalsMs
+                elapsedState = SelfControlElapsedPolicy.stateForAttempt(
+                    insight.previousOccurredAt,
+                    occurredAt,
+                )
+            }.onFailure {
+                recentCompletedIntervalsMs = emptyList()
+                elapsedState = SelfControlElapsedPolicy.ElapsedState.Unavailable
             }
         }
     }
@@ -121,6 +153,7 @@ class AppBlockerOverlayService : LifecycleService(), SavedStateRegistryOwner {
                     AppBlockerInterceptScreen(
                         message = message,
                         elapsedState = elapsedState,
+                        recentCompletedIntervalsMs = recentCompletedIntervalsMs,
                         onExit = {
                             A11yRuleEngine.performActionHome()
                             stopSelf()
@@ -164,6 +197,7 @@ class AppBlockerOverlayService : LifecycleService(), SavedStateRegistryOwner {
 fun AppBlockerInterceptScreen(
     message: String,
     elapsedState: SelfControlElapsedPolicy.ElapsedState,
+    recentCompletedIntervalsMs: List<Long> = emptyList(),
     onExit: () -> Unit
 ) {
     var timeLeft by remember { mutableIntStateOf(10) }
@@ -198,6 +232,7 @@ fun AppBlockerInterceptScreen(
             SelfControlElapsedCard(
                 context = SelfControlElapsedPolicy.Context.APP_OPEN_ATTEMPT,
                 state = elapsedState,
+                recentCompletedIntervalsMs = recentCompletedIntervalsMs,
                 modifier = Modifier.padding(top = 24.dp),
             )
 

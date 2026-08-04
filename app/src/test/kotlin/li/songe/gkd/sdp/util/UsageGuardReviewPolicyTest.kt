@@ -71,6 +71,15 @@ class UsageGuardReviewPolicyTest {
     }
 
     @Test
+    fun widgetSummaryCanLabelASelectedReviewPeriod() {
+        val summary = UsageGuardReviewPolicy.summarize(emptyList(), now = at(10), zoneId = zoneId)
+        val widget = UsageGuardReviewPolicy.widgetSummary(summary, "近 30 天")
+
+        assertEquals("近 30 天申请 0 次", widget.title)
+        assertEquals("近 30 天还没有新的使用申请。", widget.hint)
+    }
+
+    @Test
     fun manualTerminationUsesActualElapsedTimeInSummaryAndWidget() {
         val requestedAt = at(9)
         val record = UsageGuardRecord(

@@ -24,64 +24,178 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation3.runtime.NavKey
-import kotlinx.serialization.Serializable
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.catch
+import kotlinx.serialization.Serializable
 import li.songe.gkd.sdp.db.DbSet
+import li.songe.gkd.sdp.data.SelfControlIntervalRepository
 import li.songe.gkd.sdp.ui.component.PerfIcon
 import li.songe.gkd.sdp.ui.component.PerfIconButton
 import li.songe.gkd.sdp.ui.component.PerfTopAppBar
+import li.songe.gkd.sdp.ui.component.SelfControlReviewChart
+import li.songe.gkd.sdp.ui.component.DigitalSelfDisciplineReviewPresentation
 import li.songe.gkd.sdp.ui.share.BaseViewModel
 import li.songe.gkd.sdp.ui.share.LocalMainViewModel
 import li.songe.gkd.sdp.ui.style.itemPadding
 import li.songe.gkd.sdp.ui.style.scaffoldPadding
 import li.songe.gkd.sdp.ui.style.surfaceCardColors
-import li.songe.gkd.sdp.util.UsageGuardHistoryPolicy
+import li.songe.gkd.sdp.util.DigitalSelfDisciplineReviewPolicy
 import li.songe.gkd.sdp.util.UsageGuardReviewPolicy
+import li.songe.gkd.sdp.util.SelfControlIntervalPolicy
 import java.time.LocalDate
+import java.time.ZoneId
 
-enum class UsageGuardReviewRange(val label: String) {
-    Today("今日"),
-    SevenDays("近 7 天"),
+sealed interface DigitalSelfDisciplineReviewUiState {
+    data object Loading : DigitalSelfDisciplineReviewUiState
+    data class Ready(val summary: DigitalSelfDisciplineReviewPolicy.ReviewSummary) : DigitalSelfDisciplineReviewUiState
+    data class Error(val message: String) : DigitalSelfDisciplineReviewUiState
 }
 
 class UsageGuardReviewVm : BaseViewModel() {
-    private val rangeFlow = MutableStateFlow(UsageGuardReviewRange.Today)
+    private val repository by lazy { SelfControlIntervalRepository.fromDb() }
+    private val rangeFlow = MutableStateFlow(DigitalSelfDisciplineReviewPolicy.Range.Today)
+    private val reviewTypeFlow = MutableStateFlow(DigitalSelfDisciplineReviewPolicy.ReviewType.UsageRequest)
+    private val interceptFilterFlow = MutableStateFlow(DigitalSelfDisciplineReviewPolicy.InterceptKindFilter.All)
+
     val selectedRangeFlow = rangeFlow
+    val selectedReviewTypeFlow = reviewTypeFlow
+    val selectedInterceptFilterFlow = interceptFilterFlow
 
-    val summaryFlow = rangeFlow.flatMapLatest { range ->
-        val today = LocalDate.now()
-        val startDate = when (range) {
-            UsageGuardReviewRange.Today -> today
-            UsageGuardReviewRange.SevenDays -> today.minusDays(6)
+    private val todayFlow = flow {
+        var current = reviewClock()
+        emit(current)
+        while (true) {
+            delay(60_000L)
+            val next = reviewClock()
+            if (next != current) {
+                current = next
+                emit(current)
+            }
         }
-        val (startAt, _) = UsageGuardHistoryPolicy.dayRange(startDate)
-        val (_, endAt) = UsageGuardHistoryPolicy.dayRange(today)
-        DbSet.usageGuardRecordDao.queryByRequestedAtRange(startAt, endAt).map { records ->
-            UsageGuardReviewPolicy.summarize(records)
-        }
-    }.stateInit(UsageGuardReviewPolicy.summarize(emptyList()))
+    }.distinctUntilChanged().stateIn(
+        viewModelScope,
+        SharingStarted.Eagerly,
+        reviewClock(),
+    )
 
-    fun updateRange(range: UsageGuardReviewRange) {
-        rangeFlow.update { range }
+    val reviewUiStateFlow = combine(
+        rangeFlow,
+        reviewTypeFlow,
+        interceptFilterFlow,
+        todayFlow,
+    ) { range, reviewType, interceptFilter, today ->
+        ReviewSelection(range, reviewType, interceptFilter, today.date, today.zoneId)
+    }.flatMapLatest { selection ->
+        val bounds = DigitalSelfDisciplineReviewPolicy.rangeBounds(
+            selection.range,
+            selection.today,
+            selection.zoneId,
+        )
+        val previousBounds = DigitalSelfDisciplineReviewPolicy.rangeBounds(
+            selection.range,
+            selection.today.minusDays(selection.range.days),
+            selection.zoneId,
+        )
+        combine(
+            repository.observeReviewSource(bounds.startAt, bounds.endAt),
+            repository.observeReviewSource(previousBounds.startAt, previousBounds.endAt),
+        ) { current, previous ->
+            val previousSummary = DigitalSelfDisciplineReviewPolicy.summarize(
+                records = previous.usageRecords,
+                events = previous.interceptEvents,
+                bounds = previousBounds,
+                reviewType = selection.reviewType,
+                interceptFilter = selection.interceptFilter,
+            )
+            DigitalSelfDisciplineReviewPolicy.summarize(
+                records = current.usageRecords,
+                events = current.interceptEvents,
+                bounds = bounds,
+                reviewType = selection.reviewType,
+                interceptFilter = selection.interceptFilter,
+                previousSummary = previousSummary,
+            )
+        }.map { summary ->
+            DigitalSelfDisciplineReviewUiState.Ready(summary) as DigitalSelfDisciplineReviewUiState
+        }.catch { error ->
+            emit(
+                DigitalSelfDisciplineReviewUiState.Error(
+                    error.message ?: "复盘数据暂时不可用",
+                )
+            )
+        }
+    }.stateIn(
+        viewModelScope,
+        SharingStarted.Eagerly,
+        DigitalSelfDisciplineReviewUiState.Loading,
+    )
+
+    val usageGuardSummaryFlow = combine(rangeFlow, todayFlow) { range, clock -> range to clock }
+        .flatMapLatest { (range, clock) ->
+            val bounds = DigitalSelfDisciplineReviewPolicy.rangeBounds(range, clock.date, clock.zoneId)
+            DbSet.usageGuardRecordDao.queryByRequestedAtRange(bounds.startAt, bounds.endAt)
+                .map { UsageGuardReviewPolicy.summarize(it) }
+                .catch { emit(UsageGuardReviewPolicy.summarize(emptyList())) }
+        }.stateInit(UsageGuardReviewPolicy.summarize(emptyList()))
+
+    fun updateRange(range: DigitalSelfDisciplineReviewPolicy.Range) = rangeFlow.update { range }
+
+    fun updateReviewType(type: DigitalSelfDisciplineReviewPolicy.ReviewType) {
+        reviewTypeFlow.update { type }
+        if (type == DigitalSelfDisciplineReviewPolicy.ReviewType.UsageRequest) {
+            interceptFilterFlow.update { DigitalSelfDisciplineReviewPolicy.InterceptKindFilter.All }
+        }
     }
+
+    fun updateInterceptFilter(filter: DigitalSelfDisciplineReviewPolicy.InterceptKindFilter) {
+        interceptFilterFlow.update { filter }
+    }
+
+    private data class ReviewSelection(
+        val range: DigitalSelfDisciplineReviewPolicy.Range,
+        val reviewType: DigitalSelfDisciplineReviewPolicy.ReviewType,
+        val interceptFilter: DigitalSelfDisciplineReviewPolicy.InterceptKindFilter,
+        val today: LocalDate,
+        val zoneId: ZoneId,
+    )
+
+    private fun reviewClock(): ReviewClock = ReviewClock(
+        date = LocalDate.now(),
+        zoneId = ZoneId.systemDefault(),
+    )
+
+    private data class ReviewClock(
+        val date: LocalDate,
+        val zoneId: ZoneId,
+    )
 }
 
-@OptIn(ExperimentalLayoutApi::class)
+/** Same route name retained for navigation compatibility. */
 @Serializable
 data object UsageGuardReviewRoute : NavKey
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun UsageGuardReviewPage() {
     val mainVm = LocalMainViewModel.current
     val vm = viewModel<UsageGuardReviewVm>()
     val selectedRange by vm.selectedRangeFlow.collectAsState()
-    val summary by vm.summaryFlow.collectAsState()
-    val widgetSummary = UsageGuardReviewPolicy.widgetSummary(summary)
+    val selectedType by vm.selectedReviewTypeFlow.collectAsState()
+    val selectedFilter by vm.selectedInterceptFilterFlow.collectAsState()
+    val reviewState by vm.reviewUiStateFlow.collectAsState()
+    val usageSummary by vm.usageGuardSummaryFlow.collectAsState()
 
     Scaffold(
         topBar = {
@@ -100,7 +214,7 @@ fun UsageGuardReviewPage() {
             modifier = Modifier.scaffoldPadding(padding),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            item(key = "range") {
+            item(key = "filters") {
                 ElevatedCard(
                     modifier = Modifier.fillMaxWidth().itemPadding(),
                     colors = surfaceCardColors,
@@ -111,7 +225,7 @@ fun UsageGuardReviewPage() {
                     ) {
                         Text("复盘范围", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
                         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            UsageGuardReviewRange.entries.forEach { range ->
+                            DigitalSelfDisciplineReviewPolicy.Range.entries.forEach { range ->
                                 FilterChip(
                                     selected = selectedRange == range,
                                     onClick = { vm.updateRange(range) },
@@ -119,59 +233,176 @@ fun UsageGuardReviewPage() {
                                 )
                             }
                         }
-                    }
-                }
-            }
-
-            item(key = "summary") {
-                ElevatedCard(
-                    modifier = Modifier.fillMaxWidth().itemPadding(),
-                    colors = surfaceCardColors,
-                ) {
-                    Column(
-                        modifier = Modifier.padding(18.dp),
-                        verticalArrangement = Arrangement.spacedBy(14.dp),
-                    ) {
-                        Text(widgetSummary.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-                        Text(widgetSummary.metric, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.primary)
-                        Text(widgetSummary.hint, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        HorizontalDivider()
-                        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                            MetricBlock(label = "申请", value = "${summary.requestCount} 次", modifier = Modifier.weight(1f))
-                            MetricBlock(label = "时长", value = "${summary.totalRequestedMinutes} 分钟", modifier = Modifier.weight(1f))
-                            MetricBlock(label = "高风险", value = summary.riskPeriod.label, modifier = Modifier.weight(1f))
+                        Text("复盘类型", style = MaterialTheme.typography.titleSmall)
+                        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            DigitalSelfDisciplineReviewPolicy.ReviewType.entries.forEach { type ->
+                                FilterChip(
+                                    selected = selectedType == type,
+                                    onClick = { vm.updateReviewType(type) },
+                                    label = { Text(type.label) },
+                                )
+                            }
+                        }
+                        if (DigitalSelfDisciplineReviewPresentation.showInterceptFilters(selectedType)) {
+                            Text("拦截类型", style = MaterialTheme.typography.titleSmall)
+                            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                DigitalSelfDisciplineReviewPolicy.InterceptKindFilter.entries.forEach { filter ->
+                                    FilterChip(
+                                        selected = selectedFilter == filter,
+                                        onClick = { vm.updateInterceptFilter(filter) },
+                                        label = { Text(filter.label) },
+                                    )
+                                }
+                            }
                         }
                     }
                 }
             }
 
-            item(key = "apps_tags") {
-                ReviewSectionCard(title = "高频模式", subtitle = "先看你把通行证交给了谁，以及通常用什么理由说服自己。") {
-                    RankingList(title = "应用排行", items = summary.topApps.take(5), emptyText = "暂无应用记录")
-                    Spacer(modifier = Modifier.height(14.dp))
-                    RankingList(title = "标签排行", items = summary.topTags.take(5), emptyText = "暂无标签记录")
+            when (val state = reviewState) {
+                DigitalSelfDisciplineReviewUiState.Loading -> item(key = "loading") {
+                    ReviewSectionCard("正在读取复盘数据", "统计只在本机生成，不会上传。") {
+                        Text("请稍候…", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
                 }
-            }
 
-            item(key = "end_reasons") {
-                ReviewSectionCard(title = "结束状态", subtitle = "结束方式能反映这次申请是自然到时、主动离开，还是被新的申请打断。") {
-                    if (summary.endReasonCounts.isEmpty()) {
-                        Text("暂无结束状态", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    } else {
-                        summary.endReasonCounts.toList()
-                            .sortedByDescending { it.second }
-                            .forEachIndexed { index, (reason, count) ->
-                                CompactResultRow(
-                                    label = UsageGuardReviewPolicy.endReasonLabel(reason),
-                                    value = "$count 次",
-                                )
-                                if (index != summary.endReasonCounts.size - 1) {
-                                    HorizontalDivider(modifier = Modifier.padding(vertical = 10.dp))
-                                }
-                            }
+                is DigitalSelfDisciplineReviewUiState.Error -> item(key = "error") {
+                    ReviewSectionCard("暂时无法读取复盘", "原有使用申请功能仍可正常使用。") {
+                        Text(state.message, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
+
+                is DigitalSelfDisciplineReviewUiState.Ready -> {
+                    item(key = "interval_summary") {
+                        IntervalSummaryCard(state.summary)
+                    }
+                    item(key = "recent_intervals") {
+                        RecentIntervalsCard(state.summary)
+                    }
+                    item(key = "targets") {
+                        RankedTargetsCard(state.summary)
                     }
                 }
             }
+
+            item(key = "legacy_usage_summary") {
+                UsageRequestSummaryCard(usageSummary, selectedRange)
+            }
+        }
+    }
+}
+
+@Composable
+private fun IntervalSummaryCard(summary: DigitalSelfDisciplineReviewPolicy.ReviewSummary) {
+    ReviewSectionCard(
+        title = "${summary.reviewType.label}间隔",
+        subtitle = "${summary.range.label} · 事件 ${summary.eventCount} 次 · 有效间隔 ${summary.stats.sampleCount} 个",
+    ) {
+        if (summary.stats.sampleCount == 0 || summary.stats.averageMs == null || summary.stats.medianMs == null) {
+            Text("暂无已完成间隔，不把缺失数据当作 0。", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            return@ReviewSectionCard
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            MetricBlock("平均", SelfControlIntervalPolicy.formatDurationCompact(summary.stats.averageMs), Modifier.weight(1f))
+            MetricBlock("中位数", SelfControlIntervalPolicy.formatDurationCompact(summary.stats.medianMs), Modifier.weight(1f))
+            MetricBlock("范围", "${SelfControlIntervalPolicy.formatDurationCompact(summary.stats.minMs ?: 0L)}～${SelfControlIntervalPolicy.formatDurationCompact(summary.stats.maxMs ?: 0L)}", Modifier.weight(1f))
+        }
+        Spacer(Modifier.height(8.dp))
+        SelfControlReviewChart(summary)
+        if (SelfControlIntervalPolicy.hasWideSpan(summary.stats)) {
+            Text(
+                "最长间隔会影响柱高，请结合中位数阅读。",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        Text(summary.comparison.message, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    }
+}
+
+@Composable
+private fun RecentIntervalsCard(summary: DigitalSelfDisciplineReviewPolicy.ReviewSummary) {
+    ReviewSectionCard("最近明细", "最多显示最近 10 个有效间隔，便于观察时间是否正在拉长。") {
+        if (summary.recentIntervals.isEmpty()) {
+            Text("暂无明细", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            return@ReviewSectionCard
+        }
+        summary.recentIntervals.forEachIndexed { index, item ->
+            CompactResultRow(
+                label = "${index + 1}. ${item.label}",
+                value = SelfControlIntervalPolicy.formatDurationCompact(item.intervalMs),
+            )
+            if (index != summary.recentIntervals.lastIndex) HorizontalDivider(Modifier.padding(vertical = 8.dp))
+        }
+    }
+}
+
+@Composable
+private fun RankedTargetsCard(summary: DigitalSelfDisciplineReviewPolicy.ReviewSummary) {
+    ReviewSectionCard("高频目标", "按事件次数排序，帮助你看见最近最常触发的应用或规则。") {
+        if (summary.rankedTargets.isEmpty()) {
+            Text("暂无目标记录", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            return@ReviewSectionCard
+        }
+        summary.rankedTargets.forEachIndexed { index, target ->
+            CompactResultRow("${index + 1}. ${target.label}", "${target.count} 次")
+            if (index != summary.rankedTargets.lastIndex) HorizontalDivider(Modifier.padding(vertical = 8.dp))
+        }
+    }
+}
+
+@Composable
+private fun UsageRequestSummaryCard(
+    summary: UsageGuardReviewPolicy.Summary,
+    range: DigitalSelfDisciplineReviewPolicy.Range,
+) {
+    ReviewSectionCard("使用申请补充复盘 · ${range.label}", "保留原有申请记录、时长、标签和结束状态统计。") {
+        val widgetSummary = UsageGuardReviewPolicy.widgetSummary(summary, range.label)
+        Text(widgetSummary.title, style = MaterialTheme.typography.titleSmall)
+        Text(widgetSummary.metric, color = MaterialTheme.colorScheme.primary)
+        Text(widgetSummary.hint, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Spacer(Modifier.height(4.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            MetricBlock("申请", "${summary.requestCount} 次", Modifier.weight(1f))
+            MetricBlock("时长", "${summary.totalRequestedMinutes} 分钟", Modifier.weight(1f))
+            MetricBlock("高风险", summary.riskPeriod.label, Modifier.weight(1f))
+        }
+        Spacer(Modifier.height(12.dp))
+        Text("高频模式", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+        LegacyRankingList("应用排行", summary.topApps)
+        Spacer(Modifier.height(8.dp))
+        LegacyRankingList("标签排行", summary.topTags)
+        Spacer(Modifier.height(12.dp))
+        Text("结束状态", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+        if (summary.endReasonCounts.isEmpty()) {
+            Text("暂无结束状态", color = MaterialTheme.colorScheme.onSurfaceVariant)
+        } else {
+            summary.endReasonCounts.toList()
+                .sortedByDescending { it.second }
+                .forEachIndexed { index, (reason, count) ->
+                    CompactResultRow(UsageGuardReviewPolicy.endReasonLabel(reason), "$count 次")
+                    if (index != summary.endReasonCounts.size - 1) {
+                        HorizontalDivider(Modifier.padding(vertical = 8.dp))
+                    }
+                }
+        }
+    }
+}
+
+@Composable
+private fun LegacyRankingList(
+    title: String,
+    items: List<UsageGuardReviewPolicy.RankedItem>,
+) {
+    Text(title, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
+    if (items.isEmpty()) {
+        Text("暂无记录", color = MaterialTheme.colorScheme.onSurfaceVariant)
+        return
+    }
+    items.take(5).forEachIndexed { index, item ->
+        CompactResultRow("${index + 1}. ${item.label}", "${item.count} 次")
+        if (index != minOf(items.lastIndex, 4)) {
+            HorizontalDivider(Modifier.padding(vertical = 8.dp))
         }
     }
 }
@@ -192,7 +423,7 @@ private fun ReviewSectionCard(
         ) {
             Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
             Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Spacer(modifier = Modifier.height(2.dp))
+            Spacer(Modifier.height(2.dp))
             content()
         }
     }
@@ -202,29 +433,7 @@ private fun ReviewSectionCard(
 private fun MetricBlock(label: String, value: String, modifier: Modifier = Modifier) {
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Text(label, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        Text(value, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold, maxLines = 1)
-    }
-}
-
-@Composable
-private fun RankingList(
-    title: String,
-    items: List<UsageGuardReviewPolicy.RankedItem>,
-    emptyText: String,
-) {
-    Text(title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
-    if (items.isEmpty()) {
-        Text(emptyText, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        return
-    }
-    items.forEachIndexed { index, item ->
-        CompactResultRow(
-            label = "${index + 1}. ${item.label}",
-            value = "${item.count} 次",
-        )
-        if (index != items.lastIndex) {
-            HorizontalDivider(modifier = Modifier.padding(vertical = 10.dp))
-        }
+        Text(value, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold, maxLines = 2)
     }
 }
 
@@ -235,13 +444,7 @@ private fun CompactResultRow(label: String, value: String) {
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(
-            text = label,
-            modifier = Modifier.weight(1f),
-            style = MaterialTheme.typography.bodyMedium,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
+        Text(label, modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
         Text(value, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.primary)
     }
 }

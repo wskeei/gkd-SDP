@@ -210,6 +210,12 @@ object AppBlockerEngine {
                 AppBlockerOverlayService.EXTRA_EVENT_KEY,
                 SelfControlElapsedPolicy.appBlockerEventKey(packageName),
             )
+            putExtra(
+                AppBlockerOverlayService.EXTRA_EVENT_KIND,
+                li.songe.gkd.sdp.data.SelfControlAttempt.KIND_APP_BLOCKER,
+            )
+            putExtra(AppBlockerOverlayService.EXTRA_SUBJECT_ID, packageName)
+            putExtra(AppBlockerOverlayService.EXTRA_SUBJECT_LABEL, packageName)
         }
         return if (owner == null || sdpRuntimeFeatureCoordinator.isCurrent(owner)) {
             val result = selfControlOverlayLauncher.launch(intent)

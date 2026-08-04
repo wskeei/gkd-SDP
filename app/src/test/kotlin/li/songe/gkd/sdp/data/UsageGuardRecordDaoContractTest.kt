@@ -8,4 +8,10 @@ class UsageGuardRecordDaoContractTest {
     fun latestRecordForAppContractExists() {
         assertNotNull(UsageGuardRecord.UsageGuardRecordDao::getLatestRecord)
     }
+
+    @Test
+    fun intervalQueryContractsExist() {
+        assertNotNull(UsageGuardRecord.UsageGuardRecordDao::queryRecentRecords)
+        assertNotNull(UsageGuardRecord.UsageGuardRecordDao::getPreviousRecord)
+    }
 }

@@ -29,7 +29,6 @@ import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.LifecycleService
-import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.setViewTreeLifecycleOwner
 import androidx.savedstate.SavedStateRegistryController
 import androidx.savedstate.SavedStateRegistryOwner
@@ -39,10 +38,11 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import li.songe.gkd.sdp.a11y.A11yRuleEngine
+import li.songe.gkd.sdp.appScope
 import li.songe.gkd.sdp.a11y.UrlBlockerEngine
 import li.songe.gkd.sdp.util.LogUtils
 import li.songe.gkd.sdp.data.SelfControlAttempt
-import li.songe.gkd.sdp.db.DbSet
+import li.songe.gkd.sdp.data.SelfControlIntervalRepository
 import li.songe.gkd.sdp.ui.component.SelfControlElapsedCard
 import li.songe.gkd.sdp.ui.style.AppTheme
 import li.songe.gkd.sdp.util.InterceptUtils
@@ -57,6 +57,8 @@ class InterceptOverlayService : LifecycleService(), SavedStateRegistryOwner {
         const val EXTRA_COOLDOWN = "cooldown"
         const val EXTRA_EVENT_KEY = "eventKey"
         const val EXTRA_EVENT_KIND = "eventKind"
+        const val EXTRA_SUBJECT_ID = "subjectId"
+        const val EXTRA_SUBJECT_LABEL = "subjectLabel"
     }
 
     private val windowManager by lazy { getSystemService(WINDOW_SERVICE) as WindowManager }
@@ -64,6 +66,7 @@ class InterceptOverlayService : LifecycleService(), SavedStateRegistryOwner {
     private var elapsedState by mutableStateOf<SelfControlElapsedPolicy.ElapsedState>(
         SelfControlElapsedPolicy.ElapsedState.Loading,
     )
+    private var recentCompletedIntervalsMs by mutableStateOf(emptyList<Long>())
     
     private val savedStateRegistryController = SavedStateRegistryController.create(this)
     override val savedStateRegistry = savedStateRegistryController.savedStateRegistry
@@ -84,11 +87,20 @@ class InterceptOverlayService : LifecycleService(), SavedStateRegistryOwner {
         val cooldown = intent?.getIntExtra(EXTRA_COOLDOWN, 5) ?: 5
         val eventKey = intent?.getStringExtra(EXTRA_EVENT_KEY).orEmpty()
         val eventKind = intent?.getIntExtra(EXTRA_EVENT_KIND, 0) ?: 0
+        val subjectId = intent?.getStringExtra(EXTRA_SUBJECT_ID).orEmpty()
+        val subjectLabel = intent?.getStringExtra(EXTRA_SUBJECT_LABEL).orEmpty().ifBlank { subjectId }
 
         if (subsId != -1L && groupKey != -1) {
             elapsedState = SelfControlElapsedPolicy.ElapsedState.Loading
+            recentCompletedIntervalsMs = emptyList()
             if (showOverlay(subsId, groupKey, message, cooldown)) {
-                recordElapsedAttempt(eventKey, eventKind, System.currentTimeMillis())
+                recordElapsedAttempt(
+                    eventKey = eventKey,
+                    eventKind = eventKind,
+                    subjectId = subjectId,
+                    subjectLabel = subjectLabel,
+                    occurredAt = System.currentTimeMillis(),
+                )
             }
         } else {
             stopSelf()
@@ -96,7 +108,13 @@ class InterceptOverlayService : LifecycleService(), SavedStateRegistryOwner {
         return START_NOT_STICKY
     }
 
-    private fun recordElapsedAttempt(eventKey: String, eventKind: Int, occurredAt: Long) {
+    private fun recordElapsedAttempt(
+        eventKey: String,
+        eventKind: Int,
+        subjectId: String,
+        subjectLabel: String,
+        occurredAt: Long,
+    ) {
         if (eventKey.isBlank() || eventKind !in setOf(
                 SelfControlAttempt.KIND_SELECTOR_INTERCEPT,
                 SelfControlAttempt.KIND_URL_INTERCEPT,
@@ -105,20 +123,32 @@ class InterceptOverlayService : LifecycleService(), SavedStateRegistryOwner {
             elapsedState = SelfControlElapsedPolicy.ElapsedState.Unavailable
             return
         }
-        lifecycleScope.launch {
-            elapsedState = runCatching {
-                val previousOccurredAt = withContext(Dispatchers.IO) {
-                    DbSet.selfControlAttemptDao.recordAndGetPrevious(
-                        SelfControlAttempt(
+        // Persist independently of the overlay lifecycle so an immediate exit cannot cancel
+        // the event that was already accepted by the window manager.
+        appScope.launch {
+            val result = runCatching {
+                val insight = withContext(Dispatchers.IO) {
+                    SelfControlIntervalRepository.fromDb().recordIntercept(
+                        descriptor = SelfControlIntervalRepository.AttemptDescriptor(
                             eventKey = eventKey,
                             eventKind = eventKind,
-                            lastOccurredAt = occurredAt,
+                            subjectId = subjectId,
+                            subjectLabel = subjectLabel,
                         ),
+                        occurredAt = occurredAt,
                     )
                 }
-                SelfControlElapsedPolicy.stateForAttempt(previousOccurredAt, occurredAt)
-            }.getOrElse {
-                SelfControlElapsedPolicy.ElapsedState.Unavailable
+                insight
+            }
+            result.onSuccess { insight ->
+                recentCompletedIntervalsMs = insight.recentCompletedIntervalsMs
+                elapsedState = SelfControlElapsedPolicy.stateForAttempt(
+                    insight.previousOccurredAt,
+                    occurredAt,
+                )
+            }.onFailure {
+                recentCompletedIntervalsMs = emptyList()
+                elapsedState = SelfControlElapsedPolicy.ElapsedState.Unavailable
             }
         }
     }
@@ -135,6 +165,7 @@ class InterceptOverlayService : LifecycleService(), SavedStateRegistryOwner {
                         message = message,
                         cooldown = cooldown,
                         elapsedState = elapsedState,
+                        recentCompletedIntervalsMs = recentCompletedIntervalsMs,
                         onContinue = {
                             InterceptUtils.setAllowed(subsId, groupKey, cooldown)
                             stopSelf()
@@ -186,6 +217,7 @@ fun InterceptScreen(
     onExit: () -> Unit,
     elapsedState: SelfControlElapsedPolicy.ElapsedState =
         SelfControlElapsedPolicy.ElapsedState.Unavailable,
+    recentCompletedIntervalsMs: List<Long> = emptyList(),
 ) {
     var timeLeft by remember { mutableIntStateOf(10) }
     
@@ -219,6 +251,7 @@ fun InterceptScreen(
             SelfControlElapsedCard(
                 context = SelfControlElapsedPolicy.Context.RULE_TRIGGER,
                 state = elapsedState,
+                recentCompletedIntervalsMs = recentCompletedIntervalsMs,
                 modifier = Modifier.padding(top = 24.dp),
             )
             Spacer(modifier = Modifier.height(48.dp))

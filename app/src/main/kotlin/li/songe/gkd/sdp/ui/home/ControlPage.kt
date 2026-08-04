@@ -80,6 +80,7 @@ import li.songe.gkd.sdp.util.HOME_PAGE_URL
 import li.songe.gkd.sdp.util.HomeA11yServiceTogglePolicy
 import li.songe.gkd.sdp.util.ShortUrlSet
 import li.songe.gkd.sdp.util.UsageGuardReviewPolicy
+import li.songe.gkd.sdp.ui.component.DigitalSelfDisciplineReviewPresentation
 import li.songe.gkd.sdp.util.latestRecordDescFlow
 import li.songe.gkd.sdp.util.latestRecordFlow
 import li.songe.gkd.sdp.util.launchAsFn
@@ -245,10 +246,15 @@ fun useControlPage(): ScaffoldExt {
             ServerStatusCard()
 
             val usageGuardSummary by vm.usageGuardReviewSummaryFlow.collectAsState()
+            val digitalSelfDisciplineToday by vm.digitalSelfDisciplineTodaySummaryFlow.collectAsState()
             val usageGuardWidgetSummary = UsageGuardReviewPolicy.widgetSummary(usageGuardSummary)
             PageItemCard(
                 title = "数字自律复盘",
-                subtitle = "${usageGuardWidgetSummary.metric}｜${usageGuardWidgetSummary.hint}",
+                subtitle = "${DigitalSelfDisciplineReviewPresentation.homeSummary(
+                    digitalSelfDisciplineToday.requestCount,
+                    digitalSelfDisciplineToday.interceptCount,
+                )}｜" +
+                    usageGuardWidgetSummary.hint,
                 imageVector = PerfIcon.Equalizer,
                 onClickLabel = "打开数字自律复盘页面",
                 onClick = {
