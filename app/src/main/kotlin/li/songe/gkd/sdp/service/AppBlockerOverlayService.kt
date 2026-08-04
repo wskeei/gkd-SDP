@@ -47,6 +47,7 @@ import li.songe.gkd.sdp.data.SelfControlIntervalRepository
 import li.songe.gkd.sdp.ui.component.InterceptionSourceCard
 import li.songe.gkd.sdp.ui.component.InterceptionSourcePresentation
 import li.songe.gkd.sdp.ui.component.SelfControlElapsedCard
+import li.songe.gkd.sdp.ui.component.SelfControlInsightCurrentReference
 import li.songe.gkd.sdp.ui.style.AppTheme
 import li.songe.gkd.sdp.util.SelfControlElapsedPolicy
 import li.songe.gkd.sdp.util.SelfControlInsightWindowPolicy
@@ -76,6 +77,7 @@ class AppBlockerOverlayService : LifecycleService(), SavedStateRegistryOwner {
     )
     private var insightSamples by mutableStateOf(emptyList<SelfControlInsightWindowPolicy.IntervalSample>())
     private var insightAnchorAt by mutableStateOf<Long?>(null)
+    private var currentEventId by mutableStateOf<Long?>(null)
     private var selectedWindow by mutableStateOf(SelfControlInsightWindowPolicy.Window.LAST_24_HOURS)
 
     private val savedStateRegistryController = SavedStateRegistryController.create(this)
@@ -104,6 +106,7 @@ class AppBlockerOverlayService : LifecycleService(), SavedStateRegistryOwner {
         elapsedState = SelfControlElapsedPolicy.ElapsedState.Loading
         insightSamples = emptyList()
         insightAnchorAt = null
+        currentEventId = null
         selectedWindow = SelfControlInsightWindowPolicy.Window.LAST_24_HOURS
         if (showOverlay(message, blockedApp, source)) {
             recordElapsedAttempt(
@@ -148,12 +151,14 @@ class AppBlockerOverlayService : LifecycleService(), SavedStateRegistryOwner {
             result.onSuccess { insight ->
                 insightSamples = insight.samples
                 insightAnchorAt = occurredAt
+                currentEventId = insight.currentEventId
                 elapsedState = SelfControlElapsedPolicy.stateForAttempt(
                     insight.previousOccurredAt,
                     occurredAt,
                 )
             }.onFailure {
                 insightSamples = emptyList()
+                currentEventId = null
                 elapsedState = SelfControlElapsedPolicy.ElapsedState.Unavailable
             }
         }
@@ -176,6 +181,9 @@ class AppBlockerOverlayService : LifecycleService(), SavedStateRegistryOwner {
                         elapsedState = elapsedState,
                         samples = insightSamples,
                         insightAnchorAt = insightAnchorAt,
+                        currentReference = currentEventId?.let {
+                            SelfControlInsightCurrentReference(gapMs = null, eventId = it)
+                        },
                         selectedWindow = selectedWindow,
                         onWindowSelected = { selectedWindow = it },
                         source = source ?: InterceptionSourcePresentation.unknown(),
@@ -238,6 +246,7 @@ fun AppBlockerInterceptScreen(
     elapsedState: SelfControlElapsedPolicy.ElapsedState,
     samples: List<SelfControlInsightWindowPolicy.IntervalSample> = emptyList(),
     insightAnchorAt: Long? = null,
+    currentReference: SelfControlInsightCurrentReference? = null,
     selectedWindow: SelfControlInsightWindowPolicy.Window =
         SelfControlInsightWindowPolicy.Window.LAST_24_HOURS,
     onWindowSelected: (SelfControlInsightWindowPolicy.Window) -> Unit = {},
@@ -283,6 +292,7 @@ fun AppBlockerInterceptScreen(
                 state = elapsedState,
                 samples = samples,
                 insightAnchorAt = insightAnchorAt,
+                currentReference = currentReference,
                 selectedWindow = selectedWindow,
                 onWindowSelected = onWindowSelected,
                 modifier = Modifier.padding(top = 16.dp),

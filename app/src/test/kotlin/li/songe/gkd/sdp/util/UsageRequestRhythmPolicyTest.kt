@@ -55,7 +55,7 @@ class UsageRequestRhythmPolicyTest {
             ),
         )
 
-        assertEquals(2.5, average, 0.0001)
+        assertEquals(2.5, requireNotNull(average), 0.0001)
     }
 
     @Test
