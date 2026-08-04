@@ -28,6 +28,7 @@ class InterceptionSourcePresentationTest {
 
         assertTrue(presentation.lines.any { it.contains("确认按钮") })
         assertTrue(presentation.lines.any { it.contains("key=9") })
+        assertTrue(presentation.lines.any { it.contains("应用") && it.contains("key=7") })
         assertTrue(presentation.lines.any { it.contains("demo.app") })
         assertFalse(presentation.lines.any { it.contains("pattern") })
         assertFalse(presentation.lines.any { it.contains("actualUrl") })

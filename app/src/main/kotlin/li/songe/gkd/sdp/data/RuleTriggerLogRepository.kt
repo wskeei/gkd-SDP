@@ -1,6 +1,5 @@
 package li.songe.gkd.sdp.data
 
-import java.util.concurrent.atomic.AtomicInteger
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import li.songe.gkd.sdp.db.DbSet
@@ -14,10 +13,11 @@ class RuleTriggerLogRepository(
 ) {
     interface Sink {
         suspend fun insertBounded(log: ActionLog): Long
+
+        suspend fun deleteKeepLatest() = Unit
     }
 
     private val mutex = Mutex()
-    private val insertedSincePrune = AtomicInteger(0)
 
     suspend fun recordExecuted(
         snapshot: SelectorRuleSnapshot,
@@ -31,11 +31,8 @@ class RuleTriggerLogRepository(
 
     private suspend fun insert(log: ActionLog): Long = mutex.withLock {
         val rowId = sink.insertBounded(log)
-        if (insertedSincePrune.incrementAndGet() >= ActionLog.PRUNE_EVERY_ROWS) {
-            insertedSincePrune.set(0)
-            if (sink is DaoSink) {
-                sink.dao.deleteKeepLatest()
-            }
+        if (rowId > 0L && rowId % ActionLog.PRUNE_EVERY_ROWS == 0L) {
+            sink.deleteKeepLatest()
         }
         rowId
     }
@@ -45,6 +42,10 @@ class RuleTriggerLogRepository(
     ) : Sink {
         override suspend fun insertBounded(log: ActionLog): Long =
             dao.insert(log).single()
+
+        override suspend fun deleteKeepLatest() {
+            dao.deleteKeepLatest()
+        }
     }
 
     companion object {

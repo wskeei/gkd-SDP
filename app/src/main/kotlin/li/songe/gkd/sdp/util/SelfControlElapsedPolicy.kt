@@ -89,6 +89,9 @@ object SelfControlElapsedPolicy {
         previousOccurredAt: Long?,
         currentOccurredAt: Long,
     ): ElapsedState {
+        if (previousOccurredAt != null && previousOccurredAt > currentOccurredAt) {
+            return ElapsedState.Unavailable
+        }
         return ElapsedState.Running(
             anchorAtEpochMs = previousOccurredAt ?: currentOccurredAt,
             firstOccurrence = previousOccurredAt == null,

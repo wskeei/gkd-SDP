@@ -427,11 +427,31 @@ fun SelfControlIntervalInsightCard(
             )
         }
         if (presentation.chartPoints.isNotEmpty()) {
+            val currentPointValue = currentReference?.let { current ->
+                when (presentation.selectedMetric) {
+                    SelfControlInsightWindowPolicy.Metric.INTERVAL ->
+                        current.gapMs?.takeIf { it >= 0L }
+                            ?.let(SelfControlIntervalPolicy::formatDurationCompact)
+                    SelfControlInsightWindowPolicy.Metric.USAGE_RATIO ->
+                        UsageRequestRhythmPolicy.ratio(
+                            current.gapMs,
+                            current.durationMinutes ?: 0,
+                        )?.let {
+                            SelfControlInsightPresentation.formatValue(
+                                it,
+                                SelfControlInsightWindowPolicy.Metric.USAGE_RATIO,
+                            )
+                        }
+                } ?: "暂无可用值"
+            }
             SelfControlWindowChart(
                 points = presentation.chartPoints,
                 metric = presentation.selectedMetric,
                 semanticSummary = presentation.semanticSummary,
                 currentPointLabel = presentation.chartPoints.firstOrNull { it.isCurrent }?.label,
+                currentPointValue = currentPointValue,
+                aggregated = presentation.selectedSeries.rawSampleCount >
+                    presentation.selectedWindow.maxChartPoints,
             )
             TextButton(
                 onClick = { detailsExpanded = !detailsExpanded },

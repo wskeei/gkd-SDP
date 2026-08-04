@@ -31,6 +31,8 @@ fun SelfControlWindowChart(
     metric: SelfControlInsightWindowPolicy.Metric,
     semanticSummary: String,
     currentPointLabel: String? = null,
+    currentPointValue: String? = null,
+    aggregated: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     if (points.isEmpty()) return
@@ -105,6 +107,8 @@ fun SelfControlWindowChart(
                 contentDescription = listOfNotNull(
                     semanticSummary,
                     currentPointLabel?.let { "本次所在时段：$it" },
+                    currentPointValue?.let { "本次值：$it" },
+                    if (aggregated) "图表已按时间桶聚合" else "图表显示原始样本",
                 ).joinToString("；")
             },
     )

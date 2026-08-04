@@ -23,7 +23,12 @@ data class InterceptionSourcePresentation(
         fun selector(snapshot: SelectorRuleSnapshot): InterceptionSourcePresentation {
             val lines = buildList {
                 add("订阅：${snapshot.subscriptionName ?: "id=${snapshot.subsId}"} · v${snapshot.subsVersion}")
-                add("规则组：${snapshot.groupName ?: "规则组 ${snapshot.groupKey}"}")
+                val groupType = when (snapshot.groupType) {
+                    2 -> "应用"
+                    3 -> "全局"
+                    else -> "未知类型"
+                }
+                add("规则组：${snapshot.groupName ?: "规则组 ${snapshot.groupKey}"}（$groupType，key=${snapshot.groupKey}）")
                 add("具体规则：${snapshot.displayRuleIdentity()}")
                 add("规则标识：groupType=${snapshot.groupType}, groupKey=${snapshot.groupKey}, " +
                     "index=${snapshot.ruleIndex}, ${snapshot.ruleKey?.let { "key=$it" } ?: "未设置 key"}")

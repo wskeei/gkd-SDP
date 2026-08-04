@@ -550,6 +550,42 @@ private fun ActionLogDialog(
     val oldExclude = remember(subsConfig?.exclude) {
         ExcludeData.parse(subsConfig?.exclude)
     }
+    val subscriptionMap by subsMapFlow.collectAsState()
+    val currentSubscription = subscriptionMap[actionLog.subsId]
+    val currentGroup = currentSubscription?.let { subscription ->
+        if (actionLog.groupType == SubsConfig.AppGroupType) {
+            subscription.apps
+                .find { app -> app.id == actionLog.appId }
+                ?.groups
+                ?.find { group -> group.key == actionLog.groupKey }
+        } else if (actionLog.groupType == SubsConfig.GlobalGroupType) {
+            subscription.globalGroups.find { group -> group.key == actionLog.groupKey }
+        } else {
+            null
+        }
+    }
+    val currentRule = currentGroup?.rules?.let { rules ->
+        if (actionLog.ruleKey != null) {
+            rules.find { rule -> rule.key == actionLog.ruleKey }
+        } else {
+            rules.getOrNull(actionLog.ruleIndex)
+        }
+    }
+    val displaySubscriptionName = presentationName(
+        snapshot = actionLog.subsNameSnapshot,
+        current = currentSubscription?.name,
+        fallback = "id=${actionLog.subsId}",
+    )
+    val displayGroupName = presentationName(
+        snapshot = actionLog.groupNameSnapshot,
+        current = currentGroup?.name,
+        fallback = "规则组 ${actionLog.groupKey}",
+    )
+    val displayRuleName = presentationName(
+        snapshot = actionLog.ruleNameSnapshot,
+        current = currentRule?.name,
+        fallback = actionLog.ruleKey?.let { "key=$it" } ?: "index=${actionLog.ruleIndex + 1}",
+    )
 
     Dialog(onDismissRequest = onDismissRequest) {
         Card(
@@ -595,20 +631,18 @@ private fun ActionLogDialog(
                     style = MaterialTheme.typography.bodyMedium,
                     modifier = Modifier.padding(top = 4.dp),
                 )
-                presentation.ruleName?.let {
-                    Text(
-                        text = "具体规则：$it",
-                        style = MaterialTheme.typography.bodyMedium,
-                        modifier = Modifier.padding(top = 4.dp),
-                    )
-                }
                 Text(
-                    text = "订阅：${presentation.subscriptionName ?: "id=${actionLog.subsId}"} · v${actionLog.subsVersion}",
+                    text = "具体规则：$displayRuleName",
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.padding(top = 4.dp),
+                )
+                Text(
+                    text = "订阅：$displaySubscriptionName · v${actionLog.subsVersion}",
                     style = MaterialTheme.typography.bodySmall,
                     modifier = Modifier.padding(top = 4.dp),
                 )
                 Text(
-                    text = "规则组：${presentation.groupName ?: "规则组 ${actionLog.groupKey}"}",
+                    text = "规则组：$displayGroupName",
                     style = MaterialTheme.typography.bodySmall,
                     modifier = Modifier.padding(top = 2.dp),
                 )
@@ -700,6 +734,14 @@ private fun ActionLogDialog(
         }
     }
 }
+
+private fun presentationName(
+    snapshot: String?,
+    current: String?,
+    fallback: String,
+): String = snapshot?.trim().takeUnless { it.isNullOrEmpty() }
+    ?: current?.trim().takeUnless { it.isNullOrEmpty() }
+    ?: fallback
 
 @Composable
 fun ItemText(

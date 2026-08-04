@@ -99,6 +99,17 @@ class SelfControlElapsedPolicyTest {
     }
 
     @Test
+    fun genericAttemptClockRollbackIsUnavailable() {
+        assertEquals(
+            SelfControlElapsedPolicy.ElapsedState.Unavailable,
+            SelfControlElapsedPolicy.stateForAttempt(
+                previousOccurredAt = 200L,
+                currentOccurredAt = 100L,
+            ),
+        )
+    }
+
+    @Test
     fun noUsageHistoryDoesNotPretendThereWasAPreviousRequest() {
         assertEquals(
             SelfControlElapsedPolicy.ElapsedState.NoHistory,

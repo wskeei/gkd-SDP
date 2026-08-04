@@ -8,10 +8,18 @@ import org.junit.Test
 class RuleTriggerLogRepositoryTest {
     private class FakeSink : RuleTriggerLogRepository.Sink {
         val logs = mutableListOf<ActionLog>()
+        var pruneCount = 0
 
         override suspend fun insertBounded(log: ActionLog): Long {
             logs += log
             return logs.size.toLong()
+        }
+
+        override suspend fun deleteKeepLatest() {
+            pruneCount++
+            if (logs.size > ActionLog.MAX_ROWS) {
+                logs.subList(0, logs.size - ActionLog.MAX_ROWS).clear()
+            }
         }
     }
 
@@ -54,5 +62,17 @@ class RuleTriggerLogRepositoryTest {
 
         assertEquals(1, sink.logs.size)
         assertEquals(ActionLog.OUTCOME_INTERCEPTED, sink.logs.single().outcome)
+    }
+
+    @Test
+    fun sixHundredInterceptsPruneToTheNewestFiveHundredRows() = runBlocking {
+        val sink = FakeSink()
+        val repository = RuleTriggerLogRepository(sink)
+
+        repeat(600) { repository.recordIntercepted(snapshot, ctime = it.toLong()) }
+
+        assertEquals(ActionLog.MAX_ROWS, sink.logs.size)
+        assertEquals(6, sink.pruneCount)
+        assertEquals(599L, sink.logs.last().ctime)
     }
 }
