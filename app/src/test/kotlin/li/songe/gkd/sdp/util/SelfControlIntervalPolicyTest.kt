@@ -101,6 +101,14 @@ class SelfControlIntervalPolicyTest {
     }
 
     @Test
+    fun deltaAndWideSpanHandleZeroAndLongBoundaries() {
+        assertEquals(-Long.MAX_VALUE, SelfControlIntervalPolicy.deltaBetween(0L, Long.MAX_VALUE))
+        assertEquals(Long.MAX_VALUE, SelfControlIntervalPolicy.deltaBetween(Long.MAX_VALUE, 0L))
+        assertTrue(SelfControlIntervalPolicy.hasWideSpan(SelfControlIntervalPolicy.statsFor(listOf(0L, 1_000L))))
+        assertTrue(!SelfControlIntervalPolicy.hasWideSpan(SelfControlIntervalPolicy.statsFor(listOf(0L, 0L))))
+    }
+
+    @Test
     fun sampleQualityDistinguishesInsufficientAndReadyData() {
         assertEquals(
             SelfControlIntervalPolicy.SampleQuality.NoSample,

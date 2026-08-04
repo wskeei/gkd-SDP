@@ -120,7 +120,7 @@ object SelfControlIntervalPolicy {
             Comparison(
                 currentMs = currentElapsedMs,
                 averageMs = stats.averageMs,
-                deltaMs = currentElapsedMs - stats.averageMs,
+                deltaMs = deltaBetween(currentElapsedMs, stats.averageMs),
             )
         } else {
             null
@@ -180,6 +180,20 @@ object SelfControlIntervalPolicy {
         val seconds = totalSeconds % 60L
         val clock = "%02d:%02d:%02d".format(Locale.ROOT, hours, minutes, seconds)
         return if (days > 0L) "${days}天 $clock" else clock
+    }
+
+    fun hasWideSpan(stats: Stats, factor: Long = 30L): Boolean {
+        val min = stats.minMs ?: return false
+        val max = stats.maxMs ?: return false
+        if (factor <= 1L || max <= min) return false
+        return min == 0L || max / min >= factor
+    }
+
+    /** Subtracts non-negative durations without overflowing at Long.MAX_VALUE. */
+    fun deltaBetween(currentMs: Long, baselineMs: Long): Long {
+        val current = currentMs.coerceAtLeast(0L)
+        val baseline = baselineMs.coerceAtLeast(0L)
+        return if (current >= baseline) current - baseline else -(baseline - current)
     }
 
     private fun average(values: List<Long>): Long {

@@ -243,7 +243,7 @@ object DigitalSelfDisciplineReviewPolicy {
                 message = "样本不足（双方至少各需要 3 个有效间隔），暂不比较。",
             )
         }
-        val delta = current.averageMs - previous.averageMs
+        val delta = SelfControlIntervalPolicy.deltaBetween(current.averageMs, previous.averageMs)
         val message = when {
             delta > 0L -> "平均间隔比上一周期延长 ${SelfControlIntervalPolicy.formatDurationCompact(delta)}。"
             delta < 0L -> "平均间隔比上一周期缩短 ${SelfControlIntervalPolicy.formatDurationCompact(-delta)}。"

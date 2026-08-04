@@ -53,8 +53,7 @@ data class SelfControlIntervalPresentation(
             val supportingText = when {
                 history.isEmpty() -> "完成下一次申请或拦截后，这里会显示最近的间隔。"
                 stats.sampleCount == 1 -> "目前只有 1 个已完成间隔，继续记录后趋势会更稳定。"
-                stats.minMs != null && stats.maxMs != null && stats.minMs > 0L &&
-                    stats.maxMs / stats.minMs >= 30L -> "最近间隔跨度较大，平均值请结合中位数一起看。"
+                SelfControlIntervalPolicy.hasWideSpan(stats) -> "最近间隔跨度较大，平均值请结合中位数一起看。"
                 else -> "历史柱按发生顺序排列，本次柱会随时间增长。"
             }
             val semanticSummary = if (stats.sampleCount == 0 || stats.averageMs == null || stats.medianMs == null) {
