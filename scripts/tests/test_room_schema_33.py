@@ -5,6 +5,7 @@ import unittest
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 SCHEMA_DIR = ROOT / "app" / "schemas" / "li.songe.gkd.sdp.db.AppDb"
+APP_DB = ROOT / "app" / "src" / "main" / "kotlin" / "li" / "songe" / "gkd" / "sdp" / "db" / "AppDb.kt"
 
 
 class RoomSchema33Test(unittest.TestCase):
@@ -49,6 +50,14 @@ class RoomSchema33Test(unittest.TestCase):
         usage_columns = {column["columnName"] for column in usage_record["fields"]}
         self.assertIn("last_usage_ended_at", usage_columns)
         self.assertIn("request_gap_ms", usage_columns)
+
+    def test_schema_33_has_a_non_destructive_upgrade_path(self):
+        source = APP_DB.read_text(encoding="utf-8")
+        self.assertIn("version = 33", source)
+        self.assertIn("val MIGRATION_32_33", source)
+        self.assertIn("Migration(32, 33)", source)
+        self.assertIn(".addMigrations(MIGRATION_32_33)", source)
+        self.assertIn("fallbackToDestructiveMigration(false)", source)
 
 
 if __name__ == "__main__":

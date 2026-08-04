@@ -164,9 +164,12 @@ selected request duration. Overlays load one 30-day raw dataset and switch 24-ho
 7-day, or 30-day windows in memory; current request feedback is never inserted into
 historical statistics.
 
-These columns and the outcome snapshots are added by the Room 32 → 33 auto migration.
-Keep `app/schemas` in sync with Room processor output and preserve nullable legacy
-values; old records are not reconstructed as if an end event had been observed.
+These columns and the outcome snapshots are added by the explicit, non-destructive Room
+32 → 33 migration `MIGRATION_32_33`. Room 2.8.4/KSP could not process this entity graph
+reliably as an auto migration, so the SQL is kept explicit and covered by the exported
+schema/CI contract instead of weakening the upgrade path. Keep `app/schemas` in sync
+with Room processor output and preserve nullable legacy values; old records are not
+reconstructed as if an end event had been observed.
 
 ### Accessibility Guard
 
