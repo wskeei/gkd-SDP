@@ -310,7 +310,10 @@ object UrlBlockerEngine {
                 SelfControlAttempt.KIND_URL_INTERCEPT,
             )
             putExtra(InterceptOverlayService.EXTRA_SUBJECT_ID, rule.id.toString())
-            putExtra(InterceptOverlayService.EXTRA_SUBJECT_LABEL, "网址规则 #${rule.id}")
+            putExtra(
+                InterceptOverlayService.EXTRA_SUBJECT_LABEL,
+                rule.name.ifBlank { "网址规则 #${rule.id}" },
+            )
         }
         return selfControlOverlayLauncher.launch(intent)
     }
