@@ -32,6 +32,8 @@ data class UsageGuardRecord(
     @ColumnInfo(name = "expires_at") val expiresAt: Long,
     @ColumnInfo(name = "ended_at") val endedAt: Long = 0L,
     @ColumnInfo(name = "end_reason") val endReason: Int = END_REASON_ACTIVE,
+    @ColumnInfo(name = "last_usage_ended_at", defaultValue = "NULL") val lastUsageEndedAt: Long? = null,
+    @ColumnInfo(name = "request_gap_ms", defaultValue = "NULL") val requestGapMs: Long? = null,
 ) {
     companion object {
         const val END_REASON_ACTIVE = 0
@@ -88,6 +90,33 @@ data class UsageGuardRecord(
             id: Long,
         ): UsageGuardRecord?
 
+        @Query(
+            """
+            SELECT id, requested_at, requested_duration_minutes, last_usage_ended_at, request_gap_ms
+            FROM usage_guard_record
+            WHERE app_id = :appId
+              AND requested_at >= :startAt
+              AND requested_at <= :endAt
+            ORDER BY requested_at ASC, id ASC
+            """
+        )
+        suspend fun queryInsightRowsByAppAndRequestedAtRange(
+            appId: String,
+            startAt: Long,
+            endAt: Long,
+        ): List<UsageRequestInsightRow>
+
+        @Query(
+            """
+            SELECT id, requested_at, requested_duration_minutes, last_usage_ended_at, request_gap_ms
+            FROM usage_guard_record
+            WHERE app_id = :appId
+            ORDER BY requested_at DESC, id DESC
+            LIMIT 1
+            """
+        )
+        suspend fun getLatestInsightRow(appId: String): UsageRequestInsightRow?
+
         @Query("SELECT * FROM usage_guard_record ORDER BY id DESC LIMIT :limit")
         fun queryLatest(limit: Int = 100): Flow<List<UsageGuardRecord>>
 
@@ -100,8 +129,54 @@ data class UsageGuardRecord(
         )
         fun queryByRequestedAtRange(startAt: Long, endAt: Long): Flow<List<UsageGuardRecord>>
 
-        @Query("UPDATE usage_guard_record SET ended_at = :endedAt, end_reason = :endReason WHERE id = :id")
+        @Query(
+            "UPDATE usage_guard_record SET ended_at = :endedAt, end_reason = :endReason " +
+                "WHERE id = :id AND ended_at = 0 AND :endedAt >= 0"
+        )
         suspend fun closeRecord(id: Long, endedAt: Long, endReason: Int): Int
+
+        @Query(
+            """
+            UPDATE usage_guard_record
+            SET ended_at = :endedAt,
+                end_reason = :endReason,
+                last_usage_ended_at = CASE
+                    WHEN last_usage_ended_at IS NULL OR last_usage_ended_at <= :endedAt
+                    THEN :endedAt
+                    ELSE last_usage_ended_at
+                END
+            WHERE id = :id AND ended_at = 0 AND :endedAt >= 0
+            """
+        )
+        suspend fun closeRecordFromActiveUse(
+            id: Long,
+            endedAt: Long,
+            endReason: Int,
+        ): Int
+
+        @Query(
+            """
+            UPDATE usage_guard_record
+            SET last_usage_ended_at = :endedAt
+            WHERE id = :id
+              AND ended_at = 0
+              AND :endedAt >= 0
+              AND (
+                    last_usage_ended_at IS NULL
+                    OR last_usage_ended_at <= :endedAt
+              )
+            """
+        )
+        suspend fun markUsageEnded(id: Long, endedAt: Long): Int
+
+        @Query(
+            """
+            UPDATE usage_guard_record
+            SET last_usage_ended_at = NULL
+            WHERE id = :id AND ended_at = 0
+            """
+        )
+        suspend fun markUsageStarted(id: Long): Int
 
         @Query("UPDATE usage_guard_record SET end_reason = :endReason WHERE id = :id")
         suspend fun updateEndReason(id: Long, endReason: Int): Int

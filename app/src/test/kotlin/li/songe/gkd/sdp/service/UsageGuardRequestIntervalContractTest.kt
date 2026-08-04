@@ -15,31 +15,33 @@ import org.junit.Test
 
 class UsageGuardRequestIntervalContractTest {
     @Test
-    fun overlayUsesOnlyTheSelectedAppAndAtMostFiveCompletedIntervals() = runBlocking {
+    fun overlayUsesOnlyTheSelectedAppAndUsesAllStoredGaps() = runBlocking {
         val records = listOf(
-            record(1, "target", 1_000L),
-            record(2, "target", 2_000L),
-            record(3, "other", 3_000L),
-            record(4, "target", 4_000L),
-            record(5, "target", 5_000L),
-            record(6, "target", 6_000L),
-            record(7, "target", 7_000L),
+            record(1, "target", 1_000L, null),
+            record(2, "target", 2_000L, 1_000L),
+            record(3, "other", 3_000L, null),
+            record(4, "target", 4_000L, 2_000L),
+            record(5, "target", 5_000L, 1_000L),
+            record(6, "target", 6_000L, 1_000L),
+            record(7, "target", 7_000L, 1_000L),
         )
         val repository = SelfControlIntervalRepository(
             usageRecords = object : SelfControlIntervalRepository.UsageRecordSource {
                 override suspend fun queryRecentRecords(appId: String, limit: Int): List<UsageGuardRecord> =
                     records.filter { it.appId == appId }.sortedByDescending { it.requestedAt }.take(limit)
 
-                override suspend fun getPreviousRecord(appId: String, requestedAt: Long, id: Long): UsageGuardRecord? = null
                 override fun queryByRequestedAtRange(startAt: Long, endAt: Long): Flow<List<UsageGuardRecord>> = emptyFlow()
             },
             attemptEvents = unusedAttemptSource(),
         )
 
-        val overlay = repository.loadUsageRequestOverlay("target")
+        val overlay = repository.loadUsageRequestOverlayData("target", 7_000L)
 
         assertEquals(7_000L, overlay.latestRequestedAt)
-        assertEquals(listOf(1_000L, 2_000L, 1_000L, 1_000L, 1_000L), overlay.recentCompletedIntervalsMs)
+        assertEquals(
+            listOf(1_000L, 2_000L, 1_000L, 1_000L, 1_000L),
+            overlay.samples.mapNotNull { it.gapMs },
+        )
     }
 
     @Test
@@ -49,7 +51,7 @@ class UsageGuardRequestIntervalContractTest {
         assertFalse(state is SelfControlElapsedPolicy.ElapsedState.Running)
     }
 
-    private fun record(id: Long, appId: String, requestedAt: Long) = UsageGuardRecord(
+    private fun record(id: Long, appId: String, requestedAt: Long, requestGapMs: Long?) = UsageGuardRecord(
         id = id,
         appId = appId,
         appName = appId,
@@ -59,6 +61,7 @@ class UsageGuardRequestIntervalContractTest {
         requestedAt = requestedAt,
         grantedAt = requestedAt,
         expiresAt = requestedAt + 600_000L,
+        requestGapMs = requestGapMs,
     )
 
     private fun unusedAttemptSource() = object : SelfControlIntervalRepository.AttemptEventSource {

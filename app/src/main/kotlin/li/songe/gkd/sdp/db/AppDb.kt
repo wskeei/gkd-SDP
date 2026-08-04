@@ -8,7 +8,10 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverter
 import androidx.room.TypeConverters
+import androidx.room.withTransaction
 import androidx.room.migration.AutoMigrationSpec
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 import li.songe.gkd.sdp.app
 import li.songe.gkd.sdp.data.A11yEventLog
 import li.songe.gkd.sdp.data.ActionLog
@@ -44,7 +47,7 @@ import li.songe.gkd.sdp.util.dbFolder
 import li.songe.gkd.sdp.util.json
 
 @Database(
-    version = 32,
+    version = 33,
     entities = [
         SubsItem::class,
         Snapshot::class,
@@ -145,6 +148,25 @@ abstract class AppDb : RoomDatabase() {
     abstract fun selfControlAttemptDao(): SelfControlAttempt.SelfControlAttemptDao
 }
 
+/**
+ * Explicitly adds the nullable observability/rhythm columns for the 32 -> 33 upgrade.
+ *
+ * Room 2.8.4's KSP auto-migration processor cannot resolve this combination of newly added
+ * nullable columns and the existing entity graph, so keep the same non-destructive schema change
+ * explicit and executable at runtime.
+ */
+val MIGRATION_32_33 = object : Migration(32, 33) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE action_log ADD COLUMN outcome INTEGER NOT NULL DEFAULT 1")
+        db.execSQL("ALTER TABLE action_log ADD COLUMN matched_at INTEGER NOT NULL DEFAULT 0")
+        db.execSQL("ALTER TABLE action_log ADD COLUMN subs_name_snapshot TEXT")
+        db.execSQL("ALTER TABLE action_log ADD COLUMN group_name_snapshot TEXT")
+        db.execSQL("ALTER TABLE action_log ADD COLUMN rule_name_snapshot TEXT")
+        db.execSQL("ALTER TABLE usage_guard_record ADD COLUMN last_usage_ended_at INTEGER DEFAULT NULL")
+        db.execSQL("ALTER TABLE usage_guard_record ADD COLUMN request_gap_ms INTEGER DEFAULT NULL")
+    }
+}
+
 @RenameColumn(
     tableName = "subs_config",
     fromColumnName = "subs_item_id",
@@ -195,7 +217,9 @@ object DbSet {
             app,
             AppDb::class.java,
             dbFolder.resolve("gkd.db").absolutePath
-        ).fallbackToDestructiveMigration(false).build()
+        ).addMigrations(MIGRATION_32_33)
+            .fallbackToDestructiveMigration(false)
+            .build()
     }
     val subsItemDao get() = db.subsItemDao()
     val digitalSelfDisciplineLockDao get() = db.digitalSelfDisciplineLockDao()
@@ -227,4 +251,6 @@ object DbSet {
     val usageGuardTagDao get() = db.usageGuardTagDao()
     val usageGuardRecordDao get() = db.usageGuardRecordDao()
     val selfControlAttemptDao get() = db.selfControlAttemptDao()
+
+    suspend fun <T> withTransaction(block: suspend () -> T): T = db.withTransaction(block)
 }

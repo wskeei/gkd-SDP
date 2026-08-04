@@ -431,6 +431,17 @@ private fun ActionLogCard(
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.secondary,
                 )
+                val outcomePresentation = ActionLogPresentation.from(actionLog)
+                Text(
+                    text = "${outcomePresentation.outcomeTitle} · ${outcomePresentation.outcomeDescription}",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = if (actionLog.outcome == ActionLog.OUTCOME_INTERCEPTED) {
+                        MaterialTheme.colorScheme.error
+                    } else {
+                        MaterialTheme.colorScheme.primary
+                    },
+                    modifier = Modifier.padding(top = 2.dp),
+                )
                 CompositionLocalProvider(LocalTextStyle provides MaterialTheme.typography.bodyMedium) {
                     val showActivityId = actionLog.showActivityId
                     if (showActivityId != null) {
@@ -456,7 +467,11 @@ private fun ActionLogCard(
                                 }
                             })
                         ) {
-                            Text(text = subscription?.name ?: "id=${actionLog.subsId}")
+                            Text(
+                                text = actionLog.subsNameSnapshot
+                                    ?: subscription?.name
+                                    ?: "id=${actionLog.subsId}"
+                            )
                             val lineHeightDp = LocalDensity.current.run {
                                 LocalTextStyle.current.lineHeight.toDp()
                             }
@@ -481,18 +496,22 @@ private fun ActionLogCard(
                     Row(
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        val groupDesc = group?.name.toString()
+                        val groupDesc = actionLog.groupNameSnapshot
+                            ?: group?.name
+                            ?: "规则组 ${actionLog.groupKey}"
                         val textColor = LocalContentColor.current.let {
-                            if (group?.name == null) it.copy(alpha = 0.5f) else it
+                            if (group == null && actionLog.groupNameSnapshot == null) it.copy(alpha = 0.5f) else it
                         }
                         GroupNameText(
                             isGlobal = actionLog.groupType == SubsConfig.GlobalGroupType,
                             text = groupDesc,
                             color = textColor,
                         )
-                        val ruleDesc = rule?.name ?: (if ((group?.rules?.size ?: 0) > 1) {
+                        val ruleDesc = actionLog.ruleNameSnapshot
+                            ?: rule?.name
+                            ?: (if ((group?.rules?.size ?: 0) > 1) {
                             val keyDesc = actionLog.ruleKey?.let { "key=$it, " } ?: ""
-                            "${keyDesc}index=${actionLog.ruleIndex}"
+                            "${keyDesc}index=${actionLog.ruleIndex + 1}"
                         } else {
                             null
                         })
@@ -531,6 +550,42 @@ private fun ActionLogDialog(
     val oldExclude = remember(subsConfig?.exclude) {
         ExcludeData.parse(subsConfig?.exclude)
     }
+    val subscriptionMap by subsMapFlow.collectAsState()
+    val currentSubscription = subscriptionMap[actionLog.subsId]
+    val currentGroup = currentSubscription?.let { subscription ->
+        if (actionLog.groupType == SubsConfig.AppGroupType) {
+            subscription.apps
+                .find { app -> app.id == actionLog.appId }
+                ?.groups
+                ?.find { group -> group.key == actionLog.groupKey }
+        } else if (actionLog.groupType == SubsConfig.GlobalGroupType) {
+            subscription.globalGroups.find { group -> group.key == actionLog.groupKey }
+        } else {
+            null
+        }
+    }
+    val currentRule = currentGroup?.rules?.let { rules ->
+        if (actionLog.ruleKey != null) {
+            rules.find { rule -> rule.key == actionLog.ruleKey }
+        } else {
+            rules.getOrNull(actionLog.ruleIndex)
+        }
+    }
+    val displaySubscriptionName = presentationName(
+        snapshot = actionLog.subsNameSnapshot,
+        current = currentSubscription?.name,
+        fallback = "id=${actionLog.subsId}",
+    )
+    val displayGroupName = presentationName(
+        snapshot = actionLog.groupNameSnapshot,
+        current = currentGroup?.name,
+        fallback = "规则组 ${actionLog.groupKey}",
+    )
+    val displayRuleName = presentationName(
+        snapshot = actionLog.ruleNameSnapshot,
+        current = currentRule?.name,
+        fallback = actionLog.ruleKey?.let { "key=$it" } ?: "index=${actionLog.ruleIndex + 1}",
+    )
 
     Dialog(onDismissRequest = onDismissRequest) {
         Card(
@@ -558,6 +613,46 @@ private fun ActionLogDialog(
                     }
                 }
             )
+            HorizontalDivider()
+
+            val presentation = ActionLogPresentation.from(actionLog)
+            Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
+                Text(
+                    text = presentation.outcomeTitle,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = if (actionLog.outcome == ActionLog.OUTCOME_INTERCEPTED) {
+                        MaterialTheme.colorScheme.error
+                    } else {
+                        MaterialTheme.colorScheme.primary
+                    },
+                )
+                Text(
+                    text = presentation.outcomeDescription,
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.padding(top = 4.dp),
+                )
+                Text(
+                    text = "具体规则：$displayRuleName",
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.padding(top = 4.dp),
+                )
+                Text(
+                    text = "订阅：$displaySubscriptionName · v${actionLog.subsVersion}",
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.padding(top = 4.dp),
+                )
+                Text(
+                    text = "规则组：$displayGroupName",
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.padding(top = 2.dp),
+                )
+                Text(
+                    text = "规则标识：groupType=${actionLog.groupType}, groupKey=${actionLog.groupKey}, " +
+                        "index=${actionLog.ruleIndex}, ${actionLog.ruleKey?.let { "key=$it" } ?: "未设置 key"}",
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.padding(top = 2.dp),
+                )
+            }
             HorizontalDivider()
 
             if (actionLog.groupType == SubsConfig.GlobalGroupType) {
@@ -639,6 +734,14 @@ private fun ActionLogDialog(
         }
     }
 }
+
+private fun presentationName(
+    snapshot: String?,
+    current: String?,
+    fallback: String,
+): String = snapshot?.trim().takeUnless { it.isNullOrEmpty() }
+    ?: current?.trim().takeUnless { it.isNullOrEmpty() }
+    ?: fallback
 
 @Composable
 fun ItemText(

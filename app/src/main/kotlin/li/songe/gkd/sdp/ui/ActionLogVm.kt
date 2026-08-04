@@ -24,6 +24,28 @@ import li.songe.gkd.sdp.util.ActionLogStatsPolicy
 import java.time.ZoneId
 import li.songe.gkd.sdp.util.subsMapFlow
 
+data class ActionLogPresentation(
+    val outcomeTitle: String,
+    val outcomeDescription: String,
+    val subscriptionName: String?,
+    val groupName: String?,
+    val ruleName: String?,
+) {
+    companion object {
+        fun from(actionLog: ActionLog): ActionLogPresentation = ActionLogPresentation(
+            outcomeTitle = if (actionLog.outcome == ActionLog.OUTCOME_INTERCEPTED) "已拦截" else "已执行",
+            outcomeDescription = if (actionLog.outcome == ActionLog.OUTCOME_INTERCEPTED) {
+                "动作未执行：命中拦截规则后展示了拦截界面"
+            } else {
+                "动作已执行"
+            },
+            subscriptionName = actionLog.subsNameSnapshot,
+            groupName = actionLog.groupNameSnapshot,
+            ruleName = actionLog.ruleNameSnapshot,
+        )
+    }
+}
+
 class ActionLogVm(val route: ActionLogRoute) : ViewModel() {
     data class StatsUiState(
         val stats: List<DailyStat> = emptyList(),

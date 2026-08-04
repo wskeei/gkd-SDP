@@ -13,18 +13,18 @@ import kotlinx.coroutines.sync.withLock
 import li.songe.gkd.sdp.META
 import li.songe.gkd.sdp.app
 import li.songe.gkd.sdp.appScope
-import li.songe.gkd.sdp.data.ActionLog
 import li.songe.gkd.sdp.data.ActionResult
 import li.songe.gkd.sdp.data.ActivityLog
 import li.songe.gkd.sdp.data.AttrInfo
 import li.songe.gkd.sdp.data.ResetMatchType
 import li.songe.gkd.sdp.data.ResolvedRule
+import li.songe.gkd.sdp.data.RuleTriggerLogRepository
 import li.songe.gkd.sdp.data.RuleStatus
 import li.songe.gkd.sdp.data.isSystem
+import li.songe.gkd.sdp.data.toSelectorRuleSnapshot
 import li.songe.gkd.sdp.db.DbSet
 import li.songe.gkd.sdp.service.updateTopTaskAppId
 import li.songe.gkd.sdp.shizuku.safeInvokeShizuku
-import li.songe.gkd.sdp.store.actionCountFlow
 import li.songe.gkd.sdp.store.checkAppBlockMatch
 import li.songe.gkd.sdp.util.AndroidTarget
 import li.songe.gkd.sdp.util.LogUtils
@@ -281,29 +281,21 @@ fun updateSystemDefaultAppId() {
 }
 
 private val actionLogMutex = Mutex()
+private val ruleTriggerLogRepository by lazy { RuleTriggerLogRepository.fromDb() }
 fun addActionLog(
     rule: ResolvedRule,
     topActivity: TopActivity,
     target: AccessibilityNodeInfo,
     actionResult: ActionResult,
 ) = appScope.launchTry(Dispatchers.IO) {
-    val ctime = System.currentTimeMillis()
     actionLogMutex.withLock {
-        val actionLog = ActionLog(
+        val matchedAt = System.currentTimeMillis()
+        val snapshot = rule.toSelectorRuleSnapshot(
             appId = topActivity.appId,
             activityId = topActivity.activityId,
-            subsId = rule.subsItem.id,
-            subsVersion = rule.rawSubs.version,
-            groupKey = rule.g.group.key,
-            groupType = rule.g.group.groupType,
-            ruleIndex = rule.index,
-            ruleKey = rule.key,
-            ctime = ctime,
+            matchedAt = matchedAt,
         )
-        DbSet.actionLogDao.insert(actionLog)
-        if (actionCountFlow.value % 100 == 0L) {
-            DbSet.actionLogDao.deleteKeepLatest()
-        }
+        ruleTriggerLogRepository.recordExecuted(snapshot, ctime = matchedAt)
     }
     LogUtils.d(
         rule.statusText(),

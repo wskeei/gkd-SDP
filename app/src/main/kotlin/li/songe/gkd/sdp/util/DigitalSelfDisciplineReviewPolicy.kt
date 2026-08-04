@@ -10,8 +10,8 @@ import java.time.ZoneId
 /**
  * Pure aggregation rules for the Digital Self-Discipline review page.
  *
- * The input may contain one predecessor record before the selected range. An interval is
- * attributed to the date of its later event, so a range boundary never drops its first sample.
+ * Usage-request intervals are frozen on each successful record as requestGapMs. An interval is
+ * attributed to the date of that request; missing/legacy values are not converted to zero.
  */
 object DigitalSelfDisciplineReviewPolicy {
     enum class Range(val label: String, val days: Long) {
@@ -257,23 +257,16 @@ object DigitalSelfDisciplineReviewPolicy {
         bounds: RangeBounds,
     ): List<Sample> {
         return records
-            .groupBy { it.appId }
-            .values
-            .flatMap { appRecords ->
-                appRecords
-                    .sortedWith(compareBy<UsageGuardRecord> { it.requestedAt }.thenBy { it.id })
-                    .zipWithNext()
-                    .mapNotNull { (previous, current) ->
-                        if (!bounds.contains(current.requestedAt)) return@mapNotNull null
-                        val interval = current.requestedAt - previous.requestedAt
-                        if (interval < 0L) return@mapNotNull null
-                        Sample(
-                            occurredAt = current.requestedAt,
-                            intervalMs = interval,
-                            key = current.appId,
-                            label = current.appName.ifBlank { current.appId },
-                        )
-                    }
+            .filter { bounds.contains(it.requestedAt) }
+            .mapNotNull { record ->
+                record.requestGapMs?.takeIf { it >= 0L }?.let { interval ->
+                    Sample(
+                        occurredAt = record.requestedAt,
+                        intervalMs = interval,
+                        key = record.appId,
+                        label = record.appName.ifBlank { record.appId },
+                    )
+                }
             }
     }
 }

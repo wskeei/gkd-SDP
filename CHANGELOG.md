@@ -8,19 +8,21 @@ All notable GKD-SDP changes are documented here. The format follows
 
 ### Added
 
-- Continue recording fork-specific changes here before the next release.
+- Show the exact selector rule and safe app/URL blocker source on mounted interception overlays.
+- Add rolling 24-hour, 7-day, and 30-day interval charts and the local “间用比” metric.
 
 ### Changed
 
-- None yet.
+- Define usage-request gaps from the last observed end of use instead of the previous request time.
 
 ### Fixed
 
-- None yet.
+- Record mounted selector interceptions in Home trigger history and distinguish them from executed actions.
 
 ### Security
 
-- None yet.
+- Store only bounded safe rule-name snapshots; exclude selectors, node text, actual URLs, patterns, and duplicate request reasons.
+- Prune exact-rule latest-state keys after 90 days and cap them at 10,000 rows.
 
 ## [2.0.0-beta.3] - 2026-08-04
 

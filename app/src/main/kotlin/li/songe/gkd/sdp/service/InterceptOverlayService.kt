@@ -40,13 +40,18 @@ import kotlinx.coroutines.withContext
 import li.songe.gkd.sdp.a11y.A11yRuleEngine
 import li.songe.gkd.sdp.appScope
 import li.songe.gkd.sdp.a11y.UrlBlockerEngine
+import li.songe.gkd.sdp.data.SelectorRuleSnapshot
+import li.songe.gkd.sdp.data.SubsConfig
 import li.songe.gkd.sdp.util.LogUtils
 import li.songe.gkd.sdp.data.SelfControlAttempt
-import li.songe.gkd.sdp.data.SelfControlIntervalRepository
 import li.songe.gkd.sdp.ui.component.SelfControlElapsedCard
+import li.songe.gkd.sdp.ui.component.SelfControlInsightCurrentReference
+import li.songe.gkd.sdp.ui.component.InterceptionSourceCard
+import li.songe.gkd.sdp.ui.component.InterceptionSourcePresentation
 import li.songe.gkd.sdp.ui.style.AppTheme
 import li.songe.gkd.sdp.util.InterceptUtils
 import li.songe.gkd.sdp.util.SelfControlElapsedPolicy
+import li.songe.gkd.sdp.util.SelfControlInsightWindowPolicy
 
 class InterceptOverlayService : LifecycleService(), SavedStateRegistryOwner {
 
@@ -59,6 +64,23 @@ class InterceptOverlayService : LifecycleService(), SavedStateRegistryOwner {
         const val EXTRA_EVENT_KIND = "eventKind"
         const val EXTRA_SUBJECT_ID = "subjectId"
         const val EXTRA_SUBJECT_LABEL = "subjectLabel"
+        const val EXTRA_RECORD_TOKEN = "recordToken"
+        const val EXTRA_MATCHED_AT = "matchedAt"
+        const val EXTRA_SELECTOR_SUBS_VERSION = "selectorSubsVersion"
+        const val EXTRA_SELECTOR_APP_ID = "selectorAppId"
+        const val EXTRA_SELECTOR_ACTIVITY_ID = "selectorActivityId"
+        const val EXTRA_SELECTOR_GROUP_TYPE = "selectorGroupType"
+        const val EXTRA_SELECTOR_GROUP_KEY = "selectorGroupKey"
+        const val EXTRA_SELECTOR_RULE_INDEX = "selectorRuleIndex"
+        const val EXTRA_SELECTOR_RULE_KEY_PRESENT = "selectorRuleKeyPresent"
+        const val EXTRA_SELECTOR_RULE_KEY = "selectorRuleKey"
+        const val EXTRA_SELECTOR_RULE_NAME = "selectorRuleName"
+        const val EXTRA_SELECTOR_GROUP_NAME = "selectorGroupName"
+        const val EXTRA_SELECTOR_SUBS_NAME = "selectorSubsName"
+        const val EXTRA_URL_RULE_ID = "urlRuleId"
+        const val EXTRA_URL_RULE_NAME = "urlRuleName"
+        private const val URL_SUBS_ID = -2L
+        private const val URL_GROUP_KEY = 0
     }
 
     private val windowManager by lazy { getSystemService(WINDOW_SERVICE) as WindowManager }
@@ -66,7 +88,12 @@ class InterceptOverlayService : LifecycleService(), SavedStateRegistryOwner {
     private var elapsedState by mutableStateOf<SelfControlElapsedPolicy.ElapsedState>(
         SelfControlElapsedPolicy.ElapsedState.Loading,
     )
-    private var recentCompletedIntervalsMs by mutableStateOf(emptyList<Long>())
+    private var insightSamples by mutableStateOf(emptyList<SelfControlInsightWindowPolicy.IntervalSample>())
+    private var insightAnchorAt by mutableStateOf<Long?>(null)
+    private var currentEventId by mutableStateOf<Long?>(null)
+    private var currentGapMs by mutableStateOf<Long?>(null)
+    private var selectedWindow by mutableStateOf(SelfControlInsightWindowPolicy.Window.LAST_24_HOURS)
+    private val mountedInterceptRecorder by lazy { MountedInterceptRecorder.fromDb() }
     
     private val savedStateRegistryController = SavedStateRegistryController.create(this)
     override val savedStateRegistry = savedStateRegistryController.savedStateRegistry
@@ -89,17 +116,55 @@ class InterceptOverlayService : LifecycleService(), SavedStateRegistryOwner {
         val eventKind = intent?.getIntExtra(EXTRA_EVENT_KIND, 0) ?: 0
         val subjectId = intent?.getStringExtra(EXTRA_SUBJECT_ID).orEmpty()
         val subjectLabel = intent?.getStringExtra(EXTRA_SUBJECT_LABEL).orEmpty().ifBlank { subjectId }
-
-        if (subsId != -1L && groupKey != -1) {
+        val matchedAt = intent?.getLongExtra(EXTRA_MATCHED_AT, 0L) ?: 0L
+        // Attribution extras are optional for the overlay itself. A decode failure must show a
+        // safe unknown source while preserving the countdown/exit path; the recorder still rejects
+        // any descriptor that cannot prove an exact stable identity.
+        val source = intent?.interceptionSource(eventKind) ?: InterceptionSourcePresentation.unknown()
+        val selectorSnapshot = intent?.selectorSnapshot(eventKind)
+        val validIntent = when (eventKind) {
+            SelfControlAttempt.KIND_SELECTOR_INTERCEPT ->
+                (selectorSnapshot?.let {
+                    subsId > 0L &&
+                        groupKey >= 0 &&
+                        it.subsId == subsId &&
+                        it.groupKey == groupKey &&
+                        eventKey == it.eventKey() &&
+                        subjectId == it.appId
+                } == true) || isSelectorEventIdentityValid(
+                    subsId = subsId,
+                    groupKey = groupKey,
+                    eventKey = eventKey,
+                    subjectId = subjectId,
+                )
+            SelfControlAttempt.KIND_URL_INTERCEPT -> {
+                val ruleId = intent?.getLongExtra(EXTRA_URL_RULE_ID, -1L) ?: -1L
+                subsId == URL_SUBS_ID &&
+                    groupKey == URL_GROUP_KEY &&
+                    ruleId >= 0L &&
+                    intent?.hasExtra(EXTRA_URL_RULE_ID) == true &&
+                    subjectId == ruleId.toString() &&
+                    eventKey == SelfControlElapsedPolicy.urlInterceptEventKey(ruleId)
+            }
+            else -> false
+        }
+        if (validIntent) {
             elapsedState = SelfControlElapsedPolicy.ElapsedState.Loading
-            recentCompletedIntervalsMs = emptyList()
-            if (showOverlay(subsId, groupKey, message, cooldown)) {
-                recordElapsedAttempt(
+            insightSamples = emptyList()
+            insightAnchorAt = null
+            currentEventId = null
+            currentGapMs = null
+            selectedWindow = SelfControlInsightWindowPolicy.Window.LAST_24_HOURS
+            if (showOverlay(subsId, groupKey, message, cooldown, eventKind, source)) {
+                val occurredAt = System.currentTimeMillis()
+                recordMountedAttempt(
+                    intent = intent,
                     eventKey = eventKey,
                     eventKind = eventKind,
                     subjectId = subjectId,
                     subjectLabel = subjectLabel,
-                    occurredAt = System.currentTimeMillis(),
+                    matchedAt = matchedAt,
+                    occurredAt = occurredAt,
                 )
             }
         } else {
@@ -108,52 +173,64 @@ class InterceptOverlayService : LifecycleService(), SavedStateRegistryOwner {
         return START_NOT_STICKY
     }
 
-    private fun recordElapsedAttempt(
+    private fun recordMountedAttempt(
+        intent: Intent?,
         eventKey: String,
         eventKind: Int,
         subjectId: String,
         subjectLabel: String,
+        matchedAt: Long,
         occurredAt: Long,
     ) {
-        if (eventKey.isBlank() || eventKind !in setOf(
-                SelfControlAttempt.KIND_SELECTOR_INTERCEPT,
-                SelfControlAttempt.KIND_URL_INTERCEPT,
-            )
-        ) {
-            elapsedState = SelfControlElapsedPolicy.ElapsedState.Unavailable
-            return
-        }
+        val selectorSnapshot = intent?.selectorSnapshot(eventKind)
+        val pending = MountedInterceptRecorder.Pending(
+            recordToken = intent?.getStringExtra(EXTRA_RECORD_TOKEN).orEmpty()
+                .ifBlank { "$eventKey:${matchedAt.takeIf { it > 0L } ?: occurredAt}" },
+            eventKey = eventKey,
+            eventKind = eventKind,
+            subjectId = subjectId,
+            subjectLabel = subjectLabel,
+            selectorSnapshot = selectorSnapshot,
+        )
         // Persist independently of the overlay lifecycle so an immediate exit cannot cancel
         // the event that was already accepted by the window manager.
-        appScope.launch {
-            val result = runCatching {
-                val insight = withContext(Dispatchers.IO) {
-                    SelfControlIntervalRepository.fromDb().recordIntercept(
-                        descriptor = SelfControlIntervalRepository.AttemptDescriptor(
-                            eventKey = eventKey,
-                            eventKind = eventKind,
-                            subjectId = subjectId,
-                            subjectLabel = subjectLabel,
-                        ),
-                        occurredAt = occurredAt,
+        appScope.launch(Dispatchers.IO) {
+            val result = mountedInterceptRecorder.recordMounted(
+                pending = pending,
+                mounted = true,
+                occurredAt = occurredAt,
+            )
+            withContext(Dispatchers.Main) {
+                val insight = result.intervalInsight
+                if (result.intervalSucceeded && insight != null) {
+                    insightSamples = insight.samples
+                    insightAnchorAt = occurredAt
+                    currentEventId = insight.currentEventId
+                    currentGapMs = insight.previousOccurredAt?.let { previous ->
+                        (occurredAt - previous).takeIf { it >= 0L }
+                    }
+                    elapsedState = SelfControlElapsedPolicy.stateForAttempt(
+                        insight.previousOccurredAt,
+                        occurredAt,
                     )
+                } else {
+                    insightSamples = emptyList()
+                    currentEventId = null
+                    currentGapMs = null
+                    elapsedState = SelfControlElapsedPolicy.ElapsedState.Unavailable
                 }
-                insight
-            }
-            result.onSuccess { insight ->
-                recentCompletedIntervalsMs = insight.recentCompletedIntervalsMs
-                elapsedState = SelfControlElapsedPolicy.stateForAttempt(
-                    insight.previousOccurredAt,
-                    occurredAt,
-                )
-            }.onFailure {
-                recentCompletedIntervalsMs = emptyList()
-                elapsedState = SelfControlElapsedPolicy.ElapsedState.Unavailable
             }
         }
     }
 
-    private fun showOverlay(subsId: Long, groupKey: Int, message: String, cooldown: Int): Boolean {
+    private fun showOverlay(
+        subsId: Long,
+        groupKey: Int,
+        message: String,
+        cooldown: Int,
+        eventKind: Int,
+        source: InterceptionSourcePresentation,
+    ): Boolean {
         if (view != null) return false
 
         view = ComposeView(this).apply {
@@ -165,9 +242,19 @@ class InterceptOverlayService : LifecycleService(), SavedStateRegistryOwner {
                         message = message,
                         cooldown = cooldown,
                         elapsedState = elapsedState,
-                        recentCompletedIntervalsMs = recentCompletedIntervalsMs,
+                        samples = insightSamples,
+                        insightAnchorAt = insightAnchorAt,
+                        currentReference = currentEventId?.let {
+                            SelfControlInsightCurrentReference(gapMs = currentGapMs, eventId = it)
+                        },
+                        nowEpochMs = insightAnchorAt,
+                        selectedWindow = selectedWindow,
+                        onWindowSelected = { selectedWindow = it },
+                        source = source,
                         onContinue = {
-                            InterceptUtils.setAllowed(subsId, groupKey, cooldown)
+                            if (eventKind == SelfControlAttempt.KIND_SELECTOR_INTERCEPT) {
+                                InterceptUtils.setAllowed(subsId, groupKey, cooldown)
+                            }
                             stopSelf()
                         },
                         onExit = {
@@ -196,7 +283,11 @@ class InterceptOverlayService : LifecycleService(), SavedStateRegistryOwner {
             view?.let { runCatching { windowManager.removeViewImmediate(it) } }
             view = null
             LogUtils.d("selector intercept overlay mount rejected", error::class.java.simpleName)
-            UrlBlockerEngine.clearCooldown()
+            when (eventKind) {
+                SelfControlAttempt.KIND_URL_INTERCEPT -> UrlBlockerEngine.clearCooldown()
+                SelfControlAttempt.KIND_SELECTOR_INTERCEPT ->
+                    A11yRuleEngine.onInterceptOverlayMountFailed()
+            }
             stopSelf()
         }
         return mounted
@@ -207,6 +298,75 @@ class InterceptOverlayService : LifecycleService(), SavedStateRegistryOwner {
         view?.let { runCatching { windowManager.removeView(it) } }
         view = null
     }
+
+    private fun Intent.selectorSnapshot(eventKind: Int): SelectorRuleSnapshot? {
+        if (eventKind != SelfControlAttempt.KIND_SELECTOR_INTERCEPT) return null
+        val ruleKey = if (getBooleanExtra(EXTRA_SELECTOR_RULE_KEY_PRESENT, false)) {
+            getIntExtra(EXTRA_SELECTOR_RULE_KEY, 0)
+        } else {
+            null
+        }
+        return SelectorRuleSnapshot(
+            subsId = getLongExtra(EXTRA_SUBS_ID, -1L),
+            subsVersion = getIntExtra(EXTRA_SELECTOR_SUBS_VERSION, 0),
+            appId = getStringExtra(EXTRA_SELECTOR_APP_ID).orEmpty(),
+            activityId = getStringExtra(EXTRA_SELECTOR_ACTIVITY_ID),
+            groupType = getIntExtra(EXTRA_SELECTOR_GROUP_TYPE, -1),
+            groupKey = getIntExtra(EXTRA_SELECTOR_GROUP_KEY, -1),
+            ruleIndex = getIntExtra(EXTRA_SELECTOR_RULE_INDEX, -1),
+            ruleKey = ruleKey,
+            ruleName = SelectorRuleSnapshot.normalizeLabel(getStringExtra(EXTRA_SELECTOR_RULE_NAME)),
+            groupName = SelectorRuleSnapshot.normalizeLabel(getStringExtra(EXTRA_SELECTOR_GROUP_NAME)),
+            subscriptionName = SelectorRuleSnapshot.normalizeLabel(getStringExtra(EXTRA_SELECTOR_SUBS_NAME)),
+            matchedAt = getLongExtra(EXTRA_MATCHED_AT, 0L),
+        ).takeIf {
+            it.subsId > 0L &&
+                it.appId.isNotBlank() &&
+                it.groupType in setOf(SubsConfig.AppGroupType, SubsConfig.GlobalGroupType) &&
+                it.groupKey >= 0 &&
+                it.ruleIndex >= 0
+        }
+    }
+
+    private fun Intent.interceptionSource(eventKind: Int): InterceptionSourcePresentation? {
+        return when (eventKind) {
+            SelfControlAttempt.KIND_SELECTOR_INTERCEPT ->
+                selectorSnapshot(eventKind)?.let(InterceptionSourcePresentation::selector)
+            SelfControlAttempt.KIND_URL_INTERCEPT -> {
+                val ruleId = getLongExtra(EXTRA_URL_RULE_ID, -1L)
+                if (hasExtra(EXTRA_URL_RULE_ID) &&
+                    getLongExtra(EXTRA_SUBS_ID, -1L) == URL_SUBS_ID &&
+                    getIntExtra(EXTRA_GROUP_KEY, -1) == URL_GROUP_KEY &&
+                    ruleId >= 0L &&
+                    getStringExtra(EXTRA_SUBJECT_ID) == ruleId.toString() &&
+                    getStringExtra(EXTRA_EVENT_KEY) == SelfControlElapsedPolicy.urlInterceptEventKey(ruleId)
+                ) {
+                    InterceptionSourcePresentation.url(
+                        ruleId = ruleId,
+                        ruleName = getStringExtra(EXTRA_URL_RULE_NAME),
+                    )
+                } else null
+            }
+            else -> null
+        }
+    }
+
+    private fun isSelectorEventIdentityValid(
+        subsId: Long,
+        groupKey: Int,
+        eventKey: String,
+        subjectId: String,
+    ): Boolean {
+        if (subsId <= 0L || groupKey < 0 || subjectId.isBlank()) return false
+        val prefix = "selector_intercept:v2:$subsId:$subjectId:"
+        if (!eventKey.startsWith(prefix)) return false
+        val parts = eventKey.removePrefix(prefix).split(':', limit = 3)
+        return parts.size == 3 &&
+            parts[0].toIntOrNull() in setOf(SubsConfig.AppGroupType, SubsConfig.GlobalGroupType) &&
+            parts[1].toIntOrNull() == groupKey &&
+            parts[2].isNotBlank()
+    }
+
 }
 
 @Composable
@@ -217,7 +377,14 @@ fun InterceptScreen(
     onExit: () -> Unit,
     elapsedState: SelfControlElapsedPolicy.ElapsedState =
         SelfControlElapsedPolicy.ElapsedState.Unavailable,
-    recentCompletedIntervalsMs: List<Long> = emptyList(),
+    samples: List<SelfControlInsightWindowPolicy.IntervalSample> = emptyList(),
+    insightAnchorAt: Long? = null,
+    currentReference: SelfControlInsightCurrentReference? = null,
+    nowEpochMs: Long? = null,
+    selectedWindow: SelfControlInsightWindowPolicy.Window =
+        SelfControlInsightWindowPolicy.Window.LAST_24_HOURS,
+    onWindowSelected: (SelfControlInsightWindowPolicy.Window) -> Unit = {},
+    source: InterceptionSourcePresentation = InterceptionSourcePresentation.unknown(),
 ) {
     var timeLeft by remember { mutableIntStateOf(10) }
     
@@ -248,11 +415,21 @@ fun InterceptScreen(
                 color = MaterialTheme.colorScheme.onBackground
             )
 
+            InterceptionSourceCard(
+                presentation = source,
+                modifier = Modifier.padding(top = 24.dp),
+            )
+
             SelfControlElapsedCard(
                 context = SelfControlElapsedPolicy.Context.RULE_TRIGGER,
                 state = elapsedState,
-                recentCompletedIntervalsMs = recentCompletedIntervalsMs,
-                modifier = Modifier.padding(top = 24.dp),
+                samples = samples,
+                insightAnchorAt = insightAnchorAt,
+                currentReference = currentReference,
+                nowEpochMs = nowEpochMs,
+                selectedWindow = selectedWindow,
+                onWindowSelected = onWindowSelected,
+                modifier = Modifier.padding(top = 16.dp),
             )
             Spacer(modifier = Modifier.height(48.dp))
             

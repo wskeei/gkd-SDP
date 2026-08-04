@@ -295,11 +295,22 @@ fun UsageGuardReviewPage() {
 @Composable
 private fun IntervalSummaryCard(summary: DigitalSelfDisciplineReviewPolicy.ReviewSummary) {
     ReviewSectionCard(
-        title = "${summary.reviewType.label}间隔",
-        subtitle = "${summary.range.label} · 事件 ${summary.eventCount} 次 · 有效间隔 ${summary.stats.sampleCount} 个",
+        title = if (summary.reviewType == DigitalSelfDisciplineReviewPolicy.ReviewType.UsageRequest) {
+            "使用申请未使用间隔"
+        } else {
+            "拦截间隔"
+        },
+        subtitle = "${summary.range.label} · 事件 ${summary.eventCount} 次 · 有效样本 ${summary.stats.sampleCount} 个",
     ) {
         if (summary.stats.sampleCount == 0 || summary.stats.averageMs == null || summary.stats.medianMs == null) {
-            Text("暂无已完成间隔，不把缺失数据当作 0。", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(
+                if (summary.reviewType == DigitalSelfDisciplineReviewPolicy.ReviewType.UsageRequest) {
+                    "暂无有效未使用间隔；旧版本或缺失结束时间不会被当作 0。"
+                } else {
+                    "暂无已完成间隔，不把缺失数据当作 0。"
+                },
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
             return@ReviewSectionCard
         }
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -322,7 +333,14 @@ private fun IntervalSummaryCard(summary: DigitalSelfDisciplineReviewPolicy.Revie
 
 @Composable
 private fun RecentIntervalsCard(summary: DigitalSelfDisciplineReviewPolicy.ReviewSummary) {
-    ReviewSectionCard("最近明细", "最多显示最近 10 个有效间隔，便于观察时间是否正在拉长。") {
+    ReviewSectionCard(
+        "最近明细",
+        if (summary.reviewType == DigitalSelfDisciplineReviewPolicy.ReviewType.UsageRequest) {
+            "最多显示最近 10 个有效未使用间隔，口径为上次结束使用到本次申请。"
+        } else {
+            "最多显示最近 10 个有效间隔，便于观察时间是否正在拉长。"
+        },
+    ) {
         if (summary.recentIntervals.isEmpty()) {
             Text("暂无明细", color = MaterialTheme.colorScheme.onSurfaceVariant)
             return@ReviewSectionCard

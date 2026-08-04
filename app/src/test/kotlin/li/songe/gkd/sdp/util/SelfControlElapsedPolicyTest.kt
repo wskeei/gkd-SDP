@@ -61,12 +61,12 @@ class SelfControlElapsedPolicyTest {
     }
 
     @Test
-    fun usageRequestCopySaysCancelDoesNotCreateARecord() {
+    fun usageRequestCopyUsesActualEndAndDoesNotResetOnCancel() {
         val copy = SelfControlElapsedPolicy.copyFor(SelfControlElapsedPolicy.Context.USAGE_REQUEST)
 
         assertTrue(copy.supportingText.contains("取消"))
-        assertTrue(copy.supportingText.contains("延长"))
-        assertEquals("距离上次申请", copy.title)
+        assertTrue(copy.supportingText.contains("结束使用"))
+        assertEquals("距离上次结束使用", copy.title)
     }
 
     @Test
@@ -99,6 +99,17 @@ class SelfControlElapsedPolicyTest {
     }
 
     @Test
+    fun genericAttemptClockRollbackIsUnavailable() {
+        assertEquals(
+            SelfControlElapsedPolicy.ElapsedState.Unavailable,
+            SelfControlElapsedPolicy.stateForAttempt(
+                previousOccurredAt = 200L,
+                currentOccurredAt = 100L,
+            ),
+        )
+    }
+
+    @Test
     fun noUsageHistoryDoesNotPretendThereWasAPreviousRequest() {
         assertEquals(
             SelfControlElapsedPolicy.ElapsedState.NoHistory,
@@ -113,11 +124,13 @@ class SelfControlElapsedPolicyTest {
             SelfControlElapsedPolicy.appBlockerEventKey("com.example.video"),
         )
         assertEquals(
-            "selector_intercept:123:com.example.video:7",
+            "selector_intercept:v2:123:com.example.video:2:7:key:9",
             SelfControlElapsedPolicy.selectorInterceptEventKey(
                 subsId = 123L,
                 appId = "com.example.video",
+                groupType = 2,
                 groupKey = 7,
+                ruleIdentity = "key:9",
             ),
         )
         assertEquals(
@@ -125,8 +138,8 @@ class SelfControlElapsedPolicyTest {
             SelfControlElapsedPolicy.urlInterceptEventKey(456L),
         )
         assertTrue(
-            SelfControlElapsedPolicy.selectorInterceptEventKey(123L, "a.app", 7) !=
-                SelfControlElapsedPolicy.selectorInterceptEventKey(123L, "b.app", 7),
+            SelfControlElapsedPolicy.selectorInterceptEventKey(123L, "a.app", 2, 7, "key:9") !=
+                SelfControlElapsedPolicy.selectorInterceptEventKey(123L, "b.app", 2, 7, "key:9"),
         )
     }
 }

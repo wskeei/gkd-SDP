@@ -1,0 +1,81 @@
+package li.songe.gkd.sdp.util
+
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
+import org.junit.Test
+
+class UsageRequestRhythmPolicyTest {
+    @Test
+    fun gapUsesLastActualUsageEndRatherThanPreviousRequestStart() {
+        val tenAm = 10L * 60L * 60L * 1_000L
+        val noon = 12L * 60L * 60L * 1_000L
+
+        assertEquals(2L * 60L * 60L * 1_000L, UsageRequestRhythmPolicy.gapMs(tenAm, noon))
+    }
+
+    @Test
+    fun missingOrFutureAnchorProducesNoGap() {
+        assertNull(UsageRequestRhythmPolicy.gapMs(null, 100L))
+        assertNull(UsageRequestRhythmPolicy.gapMs(101L, 100L))
+        assertEquals(0L, UsageRequestRhythmPolicy.gapMs(100L, 100L))
+    }
+
+    @Test
+    fun gapDoesNotOverflowAtLongBoundary() {
+        assertEquals(
+            Long.MAX_VALUE,
+            UsageRequestRhythmPolicy.gapMs(0L, Long.MAX_VALUE),
+        )
+        assertNull(UsageRequestRhythmPolicy.gapMs(-1L, Long.MAX_VALUE))
+    }
+
+    @Test
+    fun ratioIsGapDividedByRequestedDuration() {
+        assertEquals(4.0, requireNotNull(UsageRequestRhythmPolicy.ratio(120L * 60_000L, 30)), 0.0001)
+        assertEquals(3.0, requireNotNull(UsageRequestRhythmPolicy.ratio(90L * 60_000L, 30)), 0.0001)
+    }
+
+    @Test
+    fun invalidRatioInputsAreMissingAndNeverInfinite() {
+        assertNull(UsageRequestRhythmPolicy.ratio(null, 30))
+        assertNull(UsageRequestRhythmPolicy.ratio(-1L, 30))
+        assertNull(UsageRequestRhythmPolicy.ratio(60_000L, 0))
+        assertNull(UsageRequestRhythmPolicy.ratio(60_000L, -1))
+        assertFalse(UsageRequestRhythmPolicy.ratio(Long.MAX_VALUE, 1)!!.isInfinite())
+    }
+
+    @Test
+    fun ratioAverageUsesPerRequestRatiosRatherThanSumOverSums() {
+        val average = UsageRequestRhythmPolicy.averageRatio(
+            listOf(
+                UsageRequestRhythmPolicy.Sample(gapMs = 120L * 60_000L, durationMinutes = 30),
+                UsageRequestRhythmPolicy.Sample(gapMs = 60L * 60_000L, durationMinutes = 60),
+            ),
+        )
+
+        assertEquals(2.5, requireNotNull(average), 0.0001)
+    }
+
+    @Test
+    fun currentRatioChangesWithSelectedDurationButHistoryAverageDoesNot() {
+        val history = listOf(
+            UsageRequestRhythmPolicy.Sample(gapMs = 120L * 60_000L, durationMinutes = 30),
+            UsageRequestRhythmPolicy.Sample(gapMs = 60L * 60_000L, durationMinutes = 60),
+        )
+        val historyAverage = UsageRequestRhythmPolicy.averageRatio(history)
+
+        assertEquals(4.0, requireNotNull(UsageRequestRhythmPolicy.currentRatio(120L * 60_000L, 30)), 0.0001)
+        assertEquals(2.0, requireNotNull(UsageRequestRhythmPolicy.currentRatio(120L * 60_000L, 60)), 0.0001)
+        assertEquals(2.5, requireNotNull(historyAverage), 0.0001)
+    }
+
+    @Test
+    fun ratioFormattingIsStableForUi() {
+        assertEquals("4.0", UsageRequestRhythmPolicy.formatRatio(4.0))
+        assertEquals("暂无", UsageRequestRhythmPolicy.formatRatio(null))
+        assertTrue(UsageRequestRhythmPolicy.formatRatio(1.234)!!.contains("1.23"))
+        assertEquals("10", UsageRequestRhythmPolicy.formatRatio(10.0))
+    }
+}

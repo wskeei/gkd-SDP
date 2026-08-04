@@ -20,6 +20,7 @@ import li.songe.gkd.sdp.data.GlobalRule
 import li.songe.gkd.sdp.data.RawSubscription
 import li.songe.gkd.sdp.data.ResolvedAppGroup
 import li.songe.gkd.sdp.data.ResolvedGlobalGroup
+import li.songe.gkd.sdp.data.SelectorRuleSnapshot
 import li.songe.gkd.sdp.data.SubsConfig
 import li.songe.gkd.sdp.data.SubsItem
 import li.songe.gkd.sdp.data.SubsVersion
@@ -76,15 +77,18 @@ val latestRecordDescFlow by lazy {
     ) { record, subsMap, appMap ->
         if (record == null) return@combine null
         val isAppRule = record.groupType == SubsConfig.AppGroupType
-        val groupName = if (isAppRule) {
+        val currentGroupName = if (isAppRule) {
             subsMap[record.subsId]?.apps?.find { a -> a.id == record.appId }?.groups?.find { g -> g.key == record.groupKey }?.name
         } else {
             subsMap[record.subsId]?.globalGroups?.find { g -> g.key == record.groupKey }?.name
         }
+        val groupName = SelectorRuleSnapshot.normalizeLabel(currentGroupName)
+            ?: SelectorRuleSnapshot.normalizeLabel(record.groupNameSnapshot)
+        val ruleName = SelectorRuleSnapshot.normalizeLabel(record.ruleNameSnapshot)
         val appName = appMap[record.appId]?.name
         val appShowName = appName ?: record.appId
         if (groupName != null) {
-            if (groupName.startsWith(appShowName)) {
+            val groupDesc = if (groupName.startsWith(appShowName)) {
                 groupName
             } else {
                 if (isAppRule) {
@@ -93,8 +97,9 @@ val latestRecordDescFlow by lazy {
                     "$groupName/$appShowName"
                 }
             }
+            if (ruleName != null) "$groupDesc/$ruleName" else groupDesc
         } else {
-            appShowName
+            ruleName?.let { "$appShowName/$it" } ?: appShowName
         }
     }.stateIn(appScope, SharingStarted.Eagerly, null)
 }

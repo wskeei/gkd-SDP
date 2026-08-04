@@ -17,11 +17,13 @@ import li.songe.gkd.sdp.app
 import li.songe.gkd.sdp.appScope
 import li.songe.gkd.sdp.data.UsageGuardAppProfile
 import li.songe.gkd.sdp.data.UsageGuardRecord
+import li.songe.gkd.sdp.data.UsageGuardRecordRepository
 import li.songe.gkd.sdp.db.DbSet
 import li.songe.gkd.sdp.service.UsageGuardCountdownOverlayService
 import li.songe.gkd.sdp.service.UsageGuardRequestOverlayService
 import li.songe.gkd.sdp.service.UsageGuardTimeoutOverlayService
 import li.songe.gkd.sdp.util.UsageGuardCountdownOverlayPolicy
+import li.songe.gkd.sdp.util.UsageGuardUsageEndPolicy
 import li.songe.gkd.sdp.store.storeFlow
 import li.songe.gkd.sdp.util.UsageGuardPolicy
 import li.songe.gkd.sdp.util.appInfoMapFlow
@@ -139,6 +141,16 @@ object UsageGuardEngine {
                 // runtime has already attached. Never tear down state owned by
                 // that new runtime.
                 if (sdpRuntimeFeatureCoordinator.currentOwner() != null) return@withLock
+                val disconnectedAppId = lastProtectedAppId
+                val disconnectedRecordId = disconnectedAppId?.let { appId ->
+                    DbSet.usageGuardRecordDao.getActiveRecord(appId)?.id
+                }
+                if (disconnectedRecordId != null) {
+                    // A process/runtime handoff is not proof that the user left at a known
+                    // timestamp. Invalidate a resumable candidate instead of overestimating the
+                    // next request's gap.
+                    DbSet.usageGuardRecordDao.markUsageStarted(disconnectedRecordId)
+                }
                 lastProtectedAppId = null
                 cancelExpiryWatch()
                 blockingOverlayState.clearAll()
@@ -213,7 +225,7 @@ object UsageGuardEngine {
                 if (activeRecord.id != recordId) return@withLock
 
                 val now = System.currentTimeMillis()
-                DbSet.usageGuardRecordDao.closeRecord(
+                UsageGuardRecordRepository.closeRecordFromActiveUse(
                     id = activeRecord.id,
                     endedAt = now,
                     endReason = UsageGuardRecord.END_REASON_USER_TERMINATED,
@@ -312,11 +324,19 @@ object UsageGuardEngine {
         if (activeRecord.expiresAt <= now) {
             cancelExpiryWatch(packageName)
             if (!isCurrentRequest(packageName, owner, token)) return
-            DbSet.usageGuardRecordDao.closeRecord(
-                id = activeRecord.id,
-                endedAt = now,
-                endReason = UsageGuardRecord.END_REASON_EXPIRED,
-            )
+            if (activeRecord.lastUsageEndedAt == null) {
+                UsageGuardRecordRepository.closeRecordFromActiveUse(
+                    id = activeRecord.id,
+                    endedAt = now,
+                    endReason = UsageGuardRecord.END_REASON_EXPIRED,
+                )
+            } else {
+                DbSet.usageGuardRecordDao.closeRecord(
+                    id = activeRecord.id,
+                    endedAt = now,
+                    endReason = UsageGuardRecord.END_REASON_EXPIRED,
+                )
+            }
             UsageGuardReviewWidget.refreshAll(app)
             if (!isCurrentRequest(packageName, owner, token)) return
             val result = showTimeoutOverlay(
@@ -336,6 +356,14 @@ object UsageGuardEngine {
                 blockingOverlayState.markTimeoutStarted(packageName)
             }
             return
+        }
+
+        if (
+            activeRecord.grantMode == UsageGuardPolicy.GRANT_MODE_RESUMABLE &&
+            activeRecord.lastUsageEndedAt != null
+        ) {
+            if (!isCurrentRequest(packageName, owner, token)) return
+            DbSet.usageGuardRecordDao.markUsageStarted(activeRecord.id)
         }
 
         scheduleExpiryWatch(activeRecord, owner, token)
@@ -364,14 +392,25 @@ object UsageGuardEngine {
 
         val active = DbSet.usageGuardRecordDao.getActiveRecord(previousAppId) ?: return
         if (!isCurrentRequest(nextAppId, owner, token)) return
-        if (active.grantMode != UsageGuardPolicy.GRANT_MODE_STRICT) return
-        if (!isCurrentRequest(nextAppId, owner, token)) return
+        val endedAt = System.currentTimeMillis()
+        when (UsageGuardUsageEndPolicy.onLeave(active.grantMode)) {
+            UsageGuardUsageEndPolicy.LeaveDecision.MARK_AND_CLOSE ->
+                UsageGuardRecordRepository.closeRecordFromActiveUse(
+                    id = active.id,
+                    endedAt = endedAt,
+                    endReason = UsageGuardRecord.END_REASON_LEFT_APP,
+                )
 
-        DbSet.usageGuardRecordDao.closeRecord(
-            id = active.id,
-            endedAt = System.currentTimeMillis(),
-            endReason = UsageGuardRecord.END_REASON_LEFT_APP,
-        )
+            UsageGuardUsageEndPolicy.LeaveDecision.MARK_ONLY ->
+                DbSet.usageGuardRecordDao.markUsageEnded(active.id, endedAt)
+
+            UsageGuardUsageEndPolicy.LeaveDecision.CLOSE_ONLY ->
+                DbSet.usageGuardRecordDao.closeRecord(
+                    id = active.id,
+                    endedAt = endedAt,
+                    endReason = UsageGuardRecord.END_REASON_LEFT_APP,
+                )
+        }
         UsageGuardReviewWidget.refreshAll(app)
     }
 
@@ -419,7 +458,7 @@ object UsageGuardEngine {
                 if (activeRecord.expiresAt > System.currentTimeMillis()) return@withLock
                 if (!isCurrentRequest(record.appId, owner, token)) return@withLock
 
-                DbSet.usageGuardRecordDao.closeRecord(
+                UsageGuardRecordRepository.closeRecordFromActiveUse(
                     id = activeRecord.id,
                     endedAt = System.currentTimeMillis(),
                     endReason = UsageGuardRecord.END_REASON_EXPIRED,

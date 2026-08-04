@@ -4,6 +4,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.mapLatest
 import li.songe.gkd.sdp.db.DbSet
+import li.songe.gkd.sdp.util.SelfControlInsightWindowPolicy
 import li.songe.gkd.sdp.util.SelfControlIntervalPolicy
 
 /**
@@ -16,9 +17,37 @@ class SelfControlIntervalRepository(
     interface UsageRecordSource {
         suspend fun queryRecentRecords(appId: String, limit: Int): List<UsageGuardRecord>
 
-        suspend fun getPreviousRecord(appId: String, requestedAt: Long, id: Long): UsageGuardRecord?
-
         fun queryByRequestedAtRange(startAt: Long, endAt: Long): Flow<List<UsageGuardRecord>>
+
+        suspend fun queryInsightRows(
+            appId: String,
+            startAt: Long,
+            endAt: Long,
+        ): List<UsageRequestInsightRow> = queryRecentRecords(appId, 10_000)
+            .filter { it.requestedAt in startAt..endAt }
+            .sortedWith(compareBy<UsageGuardRecord> { it.requestedAt }.thenBy { it.id })
+            .map {
+                UsageRequestInsightRow(
+                    id = it.id,
+                    requestedAt = it.requestedAt,
+                    requestedDurationMinutes = it.requestedDurationMinutes,
+                    lastUsageEndedAt = it.lastUsageEndedAt,
+                    requestGapMs = it.requestGapMs,
+                )
+            }
+
+        suspend fun getLatestInsightRow(appId: String): UsageRequestInsightRow? =
+            queryRecentRecords(appId, 10_000)
+                .maxWithOrNull(compareBy<UsageGuardRecord> { it.requestedAt }.thenBy { it.id })
+                ?.let {
+                    UsageRequestInsightRow(
+                        id = it.id,
+                        requestedAt = it.requestedAt,
+                        requestedDurationMinutes = it.requestedDurationMinutes,
+                        lastUsageEndedAt = it.lastUsageEndedAt,
+                        requestGapMs = it.requestGapMs,
+                    )
+                }
     }
 
     interface AttemptEventSource {
@@ -27,6 +56,12 @@ class SelfControlIntervalRepository(
         ): SelfControlAttempt.RecordedAttemptInsight
 
         fun queryByOccurredAtRange(startAt: Long, endAt: Long): Flow<List<SelfControlAttemptEvent>>
+
+        suspend fun queryByEventKeyAndOccurredAtRange(
+            eventKey: String,
+            startAt: Long,
+            endAt: Long,
+        ): List<SelfControlAttemptEvent> = emptyList()
     }
 
     data class AttemptDescriptor(
@@ -44,32 +79,91 @@ class SelfControlIntervalRepository(
             get() = latestRequestedAt != null
     }
 
+    enum class UsageGapAnchorStatus {
+        NoPreviousRequest,
+        Available,
+        MissingActualEnd,
+    }
+
+    data class UsageRequestOverlayData(
+        val insightAnchorAt: Long,
+        val latestRequestedAt: Long?,
+        val anchorStatus: UsageGapAnchorStatus,
+        val previousLastUsageEndedAt: Long?,
+        val samples: List<SelfControlInsightWindowPolicy.IntervalSample>,
+    )
+
+    data class InterceptOverlayData(
+        val insightAnchorAt: Long,
+        val samples: List<SelfControlInsightWindowPolicy.IntervalSample>,
+        val currentEventId: Long?,
+    )
+
     data class ReviewSource(
         val usageRecords: List<UsageGuardRecord>,
         val interceptEvents: List<SelfControlAttemptEvent>,
     )
 
     suspend fun loadUsageRequestOverlay(appId: String): UsageRequestOverlay {
-        val records = usageRecords.queryRecentRecords(
+        val data = loadUsageRequestOverlayData(
             appId = appId,
-            limit = SelfControlIntervalPolicy.DEFAULT_OVERLAY_HISTORY_LIMIT + 1,
+            insightAnchorAt = System.currentTimeMillis(),
         )
-        val events = records.map {
-            SelfControlIntervalPolicy.Event(
-                key = it.appId,
-                occurredAtEpochMs = it.requestedAt,
-                id = it.id,
-            )
-        }
         return UsageRequestOverlay(
-            latestRequestedAt = records.maxWithOrNull(
-                compareBy<UsageGuardRecord> { it.requestedAt }.thenBy { it.id },
-            )?.requestedAt,
+            latestRequestedAt = data.latestRequestedAt,
             recentCompletedIntervalsMs = SelfControlIntervalPolicy.recentCompletedIntervals(
-                intervalsMs = SelfControlIntervalPolicy.intervalsForKey(events, appId),
+                intervalsMs = data.samples.mapNotNull { it.gapMs },
             ),
         )
     }
+
+    suspend fun loadUsageRequestOverlayData(
+        appId: String,
+        insightAnchorAt: Long,
+    ): UsageRequestOverlayData {
+        val latest = usageRecords.getLatestInsightRow(appId)
+        val startAt = SelfControlInsightWindowPolicy.windowStartEpochMs(
+            nowEpochMs = insightAnchorAt,
+            window = SelfControlInsightWindowPolicy.Window.LAST_30_DAYS,
+        )
+        val rows = usageRecords.queryInsightRows(appId, startAt, insightAnchorAt)
+        val samples = rows.mapNotNull { row ->
+            row.requestGapMs?.takeIf { it >= 0L }?.let {
+                SelfControlInsightWindowPolicy.IntervalSample(
+                    id = row.id,
+                    occurredAtEpochMs = row.requestedAt,
+                    gapMs = it,
+                    requestedDurationMinutes = row.requestedDurationMinutes,
+                )
+            }
+        }
+        val latestRequestIsInThePast = latest?.requestedAt?.let {
+            it >= 0L && it <= insightAnchorAt
+        } == true
+        val usablePreviousEnd = latest?.lastUsageEndedAt?.takeIf {
+            latestRequestIsInThePast && it >= 0L && it <= insightAnchorAt
+        }
+        return UsageRequestOverlayData(
+            insightAnchorAt = insightAnchorAt,
+            latestRequestedAt = latest?.requestedAt,
+            anchorStatus = when {
+                latest == null -> UsageGapAnchorStatus.NoPreviousRequest
+                usablePreviousEnd != null -> UsageGapAnchorStatus.Available
+                else -> UsageGapAnchorStatus.MissingActualEnd
+            },
+            previousLastUsageEndedAt = usablePreviousEnd,
+            samples = samples,
+        )
+    }
+
+    fun interceptOverlayData(
+        insightAnchorAt: Long,
+        insight: SelfControlAttempt.RecordedAttemptInsight,
+    ): InterceptOverlayData = InterceptOverlayData(
+        insightAnchorAt = insightAnchorAt,
+        samples = insight.samples,
+        currentEventId = insight.currentEventId,
+    )
 
     suspend fun recordIntercept(
         descriptor: AttemptDescriptor,
@@ -92,24 +186,11 @@ class SelfControlIntervalRepository(
         val usageFlow = usageRecords
             .queryByRequestedAtRange(startAt, endAt)
             .mapLatest { records ->
-                val firstRecordByApp = records
-                    .groupBy { it.appId }
-                    .values
-                    .mapNotNull { appRecords ->
-                        appRecords.minWithOrNull(
-                            compareBy<UsageGuardRecord> { it.requestedAt }.thenBy { it.id },
-                        )
-                    }
-                val predecessors = firstRecordByApp.mapNotNull { first ->
-                    usageRecords.getPreviousRecord(
-                        appId = first.appId,
-                        requestedAt = first.requestedAt,
-                        id = first.id,
-                    )
-                }
-                (predecessors + records)
-                    .distinctBy { it.id }
-                    .sortedWith(compareBy<UsageGuardRecord> { it.appId }.thenBy { it.requestedAt }.thenBy { it.id })
+                records.sortedWith(
+                    compareBy<UsageGuardRecord> { it.appId }
+                        .thenBy { it.requestedAt }
+                        .thenBy { it.id },
+                )
             }
 
         return combine(
@@ -134,16 +215,22 @@ class SelfControlIntervalRepository(
                         limit: Int,
                     ): List<UsageGuardRecord> = usageDao.queryRecentRecords(appId, limit)
 
-                    override suspend fun getPreviousRecord(
-                        appId: String,
-                        requestedAt: Long,
-                        id: Long,
-                    ): UsageGuardRecord? = usageDao.getPreviousRecord(appId, requestedAt, id)
-
                     override fun queryByRequestedAtRange(
                         startAt: Long,
                         endAt: Long,
                     ): Flow<List<UsageGuardRecord>> = usageDao.queryByRequestedAtRange(startAt, endAt)
+
+                    override suspend fun queryInsightRows(
+                        appId: String,
+                        startAt: Long,
+                        endAt: Long,
+                    ): List<UsageRequestInsightRow> =
+                        usageDao.queryInsightRowsByAppAndRequestedAtRange(appId, startAt, endAt)
+
+                    override suspend fun getLatestInsightRow(
+                        appId: String,
+                    ): UsageRequestInsightRow? = usageDao.getLatestInsightRow(appId)
+
                 },
                 attemptEvents = object : AttemptEventSource {
                     override suspend fun recordEventAndGetInsight(
@@ -156,6 +243,13 @@ class SelfControlIntervalRepository(
                         endAt: Long,
                     ): Flow<List<SelfControlAttemptEvent>> =
                         attemptDao.queryByOccurredAtRange(startAt, endAt)
+
+                    override suspend fun queryByEventKeyAndOccurredAtRange(
+                        eventKey: String,
+                        startAt: Long,
+                        endAt: Long,
+                    ): List<SelfControlAttemptEvent> =
+                        attemptDao.queryByEventKeyAndOccurredAtRange(eventKey, startAt, endAt)
                 },
             )
         }

@@ -8,6 +8,7 @@ import androidx.room.Entity
 import androidx.room.Insert
 import androidx.room.PrimaryKey
 import androidx.room.Query
+import androidx.room.Transaction
 import androidx.room.migration.AutoMigrationSpec
 import kotlinx.coroutines.flow.Flow
 import kotlinx.serialization.Serializable
@@ -35,7 +36,20 @@ data class ActionLog(
     @ColumnInfo(name = "group_type", defaultValue = "2") val groupType: Int,
     @ColumnInfo(name = "rule_index") val ruleIndex: Int,
     @ColumnInfo(name = "rule_key") val ruleKey: Int? = null,
+    @ColumnInfo(name = "outcome", defaultValue = "1") val outcome: Int = OUTCOME_ACTION_EXECUTED,
+    @ColumnInfo(name = "matched_at", defaultValue = "0") val matchedAt: Long = 0L,
+    @ColumnInfo(name = "subs_name_snapshot") val subsNameSnapshot: String? = null,
+    @ColumnInfo(name = "group_name_snapshot") val groupNameSnapshot: String? = null,
+    @ColumnInfo(name = "rule_name_snapshot") val ruleNameSnapshot: String? = null,
 ) {
+
+    companion object {
+        const val OUTCOME_ACTION_EXECUTED = 1
+        const val OUTCOME_INTERCEPTED = 2
+        const val DEFAULT_OUTCOME = OUTCOME_ACTION_EXECUTED
+        const val MAX_ROWS = 500
+        const val PRUNE_EVERY_ROWS = 100
+    }
 
     val showActivityId by lazy { getShowActivityId(appId, activityId) }
 
@@ -52,7 +66,16 @@ data class ActionLog(
 
 
         @Insert
-        suspend fun insert(vararg objects: ActionLog): List<Long>
+        suspend fun insertOne(log: ActionLog): Long
+
+        @Transaction
+        suspend fun insertBounded(log: ActionLog): Long {
+            val rowId = insertOne(log)
+            if (rowId > 0L && rowId % ActionLog.PRUNE_EVERY_ROWS == 0L) {
+                deleteKeepLatest()
+            }
+            return rowId
+        }
 
 
         @Query("DELETE FROM action_log WHERE subs_id IN (:subsIds)")
@@ -147,3 +170,7 @@ data class ActionLog(
         ): Flow<List<DailyStat>>
     }
 }
+
+fun Int.isExecuted(): Boolean = this == ActionLog.OUTCOME_ACTION_EXECUTED
+
+fun Int.isIntercepted(): Boolean = this == ActionLog.OUTCOME_INTERCEPTED

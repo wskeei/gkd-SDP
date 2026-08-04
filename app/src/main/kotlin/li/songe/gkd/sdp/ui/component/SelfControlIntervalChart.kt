@@ -20,38 +20,54 @@ import com.patrykandpatrick.vico.core.cartesian.data.CartesianChartModelProducer
 import com.patrykandpatrick.vico.core.cartesian.data.columnSeries
 import com.patrykandpatrick.vico.core.cartesian.layer.ColumnCartesianLayer
 import li.songe.gkd.sdp.util.SelfControlIntervalPolicy
+import li.songe.gkd.sdp.util.SelfControlInsightWindowPolicy
+import li.songe.gkd.sdp.util.UsageRequestRhythmPolicy
 import li.songe.gkd.sdp.util.LogUtils
 
-/**
- * A deliberately small chart: text remains the source of truth and this chart is an
- * at-a-glance enhancement. No database work or animation is performed here.
- */
+/** Dataset-backed chart used by request and interception overlays. */
 @Composable
-fun SelfControlIntervalChart(
-    points: List<SelfControlIntervalPresentation.ChartPoint>,
+fun SelfControlWindowChart(
+    points: List<SelfControlInsightChartPoint>,
+    metric: SelfControlInsightWindowPolicy.Metric,
     semanticSummary: String,
+    currentPointLabel: String? = null,
+    currentPointValue: String? = null,
+    aggregated: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     if (points.isEmpty()) return
 
-    val axisUnit = remember(points) {
-        SelfControlIntervalPolicy.chooseAxisUnit(points.maxOf { it.valueMs })
+    val intervalUnit = remember(points, metric) {
+        if (metric == SelfControlInsightWindowPolicy.Metric.INTERVAL) {
+            SelfControlIntervalPolicy.chooseAxisUnit(points.maxOf { it.value.toLong() })
+        } else {
+            SelfControlIntervalPolicy.AxisUnit.Seconds
+        }
     }
     val modelProducer = remember { CartesianChartModelProducer() }
-    LaunchedEffect(points, axisUnit) {
+    LaunchedEffect(points, metric, intervalUnit) {
         runCatching {
             modelProducer.runTransaction {
                 columnSeries {
-                    series(points.map { point ->
-                        point.valueMs.toDouble() / axisUnit.divisorMs.toDouble()
-                    })
+                    series(
+                        points.map { point ->
+                            if (metric == SelfControlInsightWindowPolicy.Metric.INTERVAL) {
+                                point.value / intervalUnit.divisorMs.toDouble()
+                            } else {
+                                point.value
+                            }
+                        },
+                    )
                 }
             }
         }.onFailure { error ->
-            LogUtils.d("self-control interval chart model update failed", error::class.java.simpleName)
+            LogUtils.d("self-control insight chart model update failed", error::class.java.simpleName)
         }
     }
-
+    val visibleLabels = remember(points) {
+        val step = ((points.size + 5) / 6).coerceAtLeast(1)
+        points.indices.filter { it == 0 || it == points.lastIndex || it % step == 0 }.toSet()
+    }
     CartesianChartHost(
         chart = rememberCartesianChart(
             rememberColumnCartesianLayer(
@@ -59,21 +75,26 @@ fun SelfControlIntervalChart(
                     rememberLineComponent(
                         color = MaterialTheme.colorScheme.primary,
                         thickness = 14.dp,
-                    )
-                )
+                    ),
+                ),
             ),
             startAxis = rememberStartAxis(
                 valueFormatter = { value, _, _ ->
-                    SelfControlIntervalPolicy.formatAxisValue(
-                        (value.toDouble() * axisUnit.divisorMs.toDouble()).toLong(),
-                        axisUnit,
-                    )
+                    if (metric == SelfControlInsightWindowPolicy.Metric.INTERVAL) {
+                        SelfControlIntervalPolicy.formatAxisValue(
+                            (value.toDouble() * intervalUnit.divisorMs.toDouble()).toLong(),
+                            intervalUnit,
+                        )
+                    } else {
+                        "${UsageRequestRhythmPolicy.formatRatio(value.toDouble()) ?: "暂无"}×"
+                    }
                 },
             ),
             bottomAxis = rememberBottomAxis(
                 valueFormatter = { x, _, _ ->
-                    points.getOrNull(x.toInt())?.label.orEmpty()
-                }
+                    val index = x.toInt()
+                    if (index in visibleLabels) points.getOrNull(index)?.label.orEmpty() else ""
+                },
             ),
         ),
         modelProducer = modelProducer,
@@ -83,7 +104,12 @@ fun SelfControlIntervalChart(
             .fillMaxWidth()
             .height(148.dp)
             .semantics {
-                contentDescription = "$semanticSummary，纵轴单位 ${axisUnit.suffix}"
+                contentDescription = listOfNotNull(
+                    semanticSummary,
+                    currentPointLabel?.let { "本次所在时段：$it" },
+                    currentPointValue?.let { "本次值：$it" },
+                    if (aggregated) "图表已按时间桶聚合" else "图表显示原始样本",
+                ).joinToString("；")
             },
     )
 }

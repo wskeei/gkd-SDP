@@ -168,7 +168,9 @@ object AppBlockerEngine {
         // 判断是否应该拦截
         val decision = evaluate(packageName)
         val shouldBlock = decision is AppBlockerDecision.Block
-        val message = (decision as? AppBlockerDecision.Block)?.message
+        val blockDecision = decision as? AppBlockerDecision.Block
+        val message = blockDecision?.message
+        val blockingRule = blockDecision?.ruleSnapshot
         sdpRuntimeFeatureCoordinator.recordDecision(
             owner = owner,
             feature = "app-blocker",
@@ -180,7 +182,12 @@ object AppBlockerEngine {
         if (shouldBlock) {
             LogUtils.d("App blocker blocking: $packageName")
             if (owner != null && !sdpRuntimeFeatureCoordinator.isCurrent(owner)) return
-            val result = showBlockerOverlay(packageName, message ?: "这真的重要吗？", owner)
+            val result = showBlockerOverlay(
+                packageName = packageName,
+                message = message ?: "这真的重要吗？",
+                rule = blockingRule,
+                owner = owner,
+            )
             sdpRuntimeFeatureCoordinator.recordDecision(
                 owner,
                 "app-blocker",
@@ -201,6 +208,7 @@ object AppBlockerEngine {
     private fun showBlockerOverlay(
         packageName: String,
         message: String,
+        rule: BlockTimeRule?,
         owner: SdpRuntimeFeatureCoordinator.RuntimeOwner? = null,
     ): OverlayLaunchResult {
         val intent = android.content.Intent(app, AppBlockerOverlayService::class.java).apply {
@@ -216,6 +224,15 @@ object AppBlockerEngine {
             )
             putExtra(AppBlockerOverlayService.EXTRA_SUBJECT_ID, packageName)
             putExtra(AppBlockerOverlayService.EXTRA_SUBJECT_LABEL, packageName)
+            rule?.let {
+                putExtra(AppBlockerOverlayService.EXTRA_RULE_ID, it.id)
+                putExtra(AppBlockerOverlayService.EXTRA_RULE_TARGET_TYPE, it.targetType)
+                putExtra(AppBlockerOverlayService.EXTRA_RULE_TARGET_ID, it.targetId)
+                putExtra(AppBlockerOverlayService.EXTRA_RULE_START_TIME, it.startTime)
+                putExtra(AppBlockerOverlayService.EXTRA_RULE_END_TIME, it.endTime)
+                putExtra(AppBlockerOverlayService.EXTRA_RULE_DAYS, it.daysOfWeek)
+                putExtra(AppBlockerOverlayService.EXTRA_RULE_ALLOW_MODE, it.isAllowMode)
+            }
         }
         return if (owner == null || sdpRuntimeFeatureCoordinator.isCurrent(owner)) {
             val result = selfControlOverlayLauncher.launch(intent)
@@ -238,4 +255,6 @@ object AppBlockerEngine {
         cooldownMap.clear()
         sdpRuntimeFeatureCoordinator.invalidateCurrentApp("app-blocker-overlay-mount-failed")
     }
+
+    fun getRuleById(ruleId: Long): BlockTimeRule? = cachedRules.firstOrNull { it.id == ruleId }
 }

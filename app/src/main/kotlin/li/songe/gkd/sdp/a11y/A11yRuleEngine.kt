@@ -28,6 +28,7 @@ import li.songe.gkd.sdp.data.ResolvedRule
 import li.songe.gkd.sdp.data.RpcError
 import li.songe.gkd.sdp.data.RuleStatus
 import li.songe.gkd.sdp.data.SelfControlAttempt
+import li.songe.gkd.sdp.data.toSelectorRuleSnapshot
 import li.songe.gkd.sdp.db.DbSet
 import li.songe.gkd.sdp.isActivityVisible
 import li.songe.gkd.sdp.service.A11yService
@@ -42,7 +43,6 @@ import li.songe.gkd.sdp.util.AndroidTarget
 import li.songe.gkd.sdp.util.AutomatorModeOption
 import li.songe.gkd.sdp.util.InterceptUtils
 import li.songe.gkd.sdp.util.LogUtils
-import li.songe.gkd.sdp.util.SelfControlElapsedPolicy
 import li.songe.gkd.sdp.util.launchTry
 import li.songe.gkd.sdp.util.runMainPost
 import li.songe.gkd.sdp.util.showActionToast
@@ -472,6 +472,12 @@ class A11yRuleEngine(val service: A11yCommonImpl) {
                 !InterceptUtils.isAllowed(interceptConfig.subsId, interceptConfig.groupKey)
             ) {
                 if (!effective || runtimeOwner !== queryOwner) return
+                val matchedAt = System.currentTimeMillis()
+                val snapshot = rule.toSelectorRuleSnapshot(
+                    appId = rightAppId,
+                    activityId = topActivityFlow.value.activityId,
+                    matchedAt = matchedAt,
+                )
                 val intent = android.content.Intent(app, InterceptOverlayService::class.java).apply {
                     putExtra(InterceptOverlayService.EXTRA_SUBS_ID, interceptConfig.subsId)
                     putExtra(InterceptOverlayService.EXTRA_GROUP_KEY, interceptConfig.groupKey)
@@ -479,11 +485,7 @@ class A11yRuleEngine(val service: A11yCommonImpl) {
                     putExtra(InterceptOverlayService.EXTRA_COOLDOWN, interceptConfig.cooldownSeconds)
                     putExtra(
                         InterceptOverlayService.EXTRA_EVENT_KEY,
-                        SelfControlElapsedPolicy.selectorInterceptEventKey(
-                            subsId = interceptConfig.subsId,
-                            appId = rightAppId,
-                            groupKey = interceptConfig.groupKey,
-                        ),
+                        snapshot.eventKey(),
                     )
                     putExtra(
                         InterceptOverlayService.EXTRA_EVENT_KIND,
@@ -492,8 +494,21 @@ class A11yRuleEngine(val service: A11yCommonImpl) {
                     putExtra(InterceptOverlayService.EXTRA_SUBJECT_ID, rightAppId)
                     putExtra(
                         InterceptOverlayService.EXTRA_SUBJECT_LABEL,
-                        "规则组 ${interceptConfig.groupKey}",
+                        snapshot.displayRuleIdentity(),
                     )
+                    putExtra(InterceptOverlayService.EXTRA_RECORD_TOKEN, "${snapshot.eventKey()}:$matchedAt")
+                    putExtra(InterceptOverlayService.EXTRA_MATCHED_AT, matchedAt)
+                    putExtra(InterceptOverlayService.EXTRA_SELECTOR_SUBS_VERSION, snapshot.subsVersion)
+                    putExtra(InterceptOverlayService.EXTRA_SELECTOR_APP_ID, snapshot.appId)
+                    putExtra(InterceptOverlayService.EXTRA_SELECTOR_ACTIVITY_ID, snapshot.activityId)
+                    putExtra(InterceptOverlayService.EXTRA_SELECTOR_GROUP_TYPE, snapshot.groupType)
+                    putExtra(InterceptOverlayService.EXTRA_SELECTOR_GROUP_KEY, snapshot.groupKey)
+                    putExtra(InterceptOverlayService.EXTRA_SELECTOR_RULE_INDEX, snapshot.ruleIndex)
+                    putExtra(InterceptOverlayService.EXTRA_SELECTOR_RULE_KEY_PRESENT, snapshot.ruleKey != null)
+                    snapshot.ruleKey?.let { putExtra(InterceptOverlayService.EXTRA_SELECTOR_RULE_KEY, it) }
+                    putExtra(InterceptOverlayService.EXTRA_SELECTOR_RULE_NAME, snapshot.ruleName)
+                    putExtra(InterceptOverlayService.EXTRA_SELECTOR_GROUP_NAME, snapshot.groupName)
+                    putExtra(InterceptOverlayService.EXTRA_SELECTOR_SUBS_NAME, snapshot.subscriptionName)
                 }
                 val launchResult = selfControlOverlayLauncher.launch(intent)
                 LogUtils.d(
@@ -555,6 +570,10 @@ class A11yRuleEngine(val service: A11yCommonImpl) {
             val r1 = shizukuContextFlow.value.inputManager?.key(KeyEvent.KEYCODE_BACK)
             if (r1 == true) return true
             return A11yService.instance?.performGlobalAction(AccessibilityService.GLOBAL_ACTION_BACK) == true
+        }
+
+        fun onInterceptOverlayMountFailed() {
+            sdpRuntimeFeatureCoordinator.invalidateCurrentApp("selector-overlay-mount-failed")
         }
 
         fun performActionHome(): Boolean {

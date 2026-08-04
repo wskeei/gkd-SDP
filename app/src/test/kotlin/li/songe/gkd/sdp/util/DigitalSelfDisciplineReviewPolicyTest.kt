@@ -54,7 +54,7 @@ class DigitalSelfDisciplineReviewPolicyTest {
     }
 
     @Test
-    fun usageIntervalsUseTheLaterEventDateAndIncludeRangePredecessor() {
+    fun usageIntervalsUseFrozenActualEndGapAndExcludeUnknownLegacyRows() {
         val bounds = DigitalSelfDisciplineReviewPolicy.rangeBounds(
             DigitalSelfDisciplineReviewPolicy.Range.Today,
             LocalDate.of(2026, 8, 4),
@@ -62,10 +62,10 @@ class DigitalSelfDisciplineReviewPolicyTest {
         )
         val start = bounds.startAt
         val records = listOf(
-            record(1, "target", start - 10_000L),
-            record(2, "target", start + 10_000L),
-            record(3, "target", start + 40_000L),
-            record(4, "other", start + 50_000L),
+            record(1, "target", start - 10_000L, null),
+            record(2, "target", start + 10_000L, 20_000L),
+            record(3, "target", start + 40_000L, 30_000L),
+            record(4, "other", start + 50_000L, null),
         )
 
         val summary = DigitalSelfDisciplineReviewPolicy.summarize(
@@ -112,6 +112,32 @@ class DigitalSelfDisciplineReviewPolicyTest {
     }
 
     @Test
+    fun usageRequestCountAndValidGapCountAreReportedSeparately() {
+        val bounds = DigitalSelfDisciplineReviewPolicy.rangeBounds(
+            DigitalSelfDisciplineReviewPolicy.Range.Today,
+            LocalDate.of(2026, 8, 4),
+            shanghai,
+        )
+        val records = listOf(
+            record(1, "target", bounds.startAt + 1_000L, 0L),
+            record(2, "target", bounds.startAt + 2_000L, null),
+        )
+
+        val summary = DigitalSelfDisciplineReviewPolicy.summarize(
+            records = records,
+            events = emptyList(),
+            bounds = bounds,
+            reviewType = DigitalSelfDisciplineReviewPolicy.ReviewType.UsageRequest,
+            interceptFilter = DigitalSelfDisciplineReviewPolicy.InterceptKindFilter.All,
+            zoneId = shanghai,
+        )
+
+        assertEquals(2, summary.requestCount)
+        assertEquals(1, summary.stats.sampleCount)
+        assertEquals(listOf(0L), summary.intervalsMs)
+    }
+
+    @Test
     fun comparisonNeedsThreeSamplesInBothPeriods() {
         val current = SelfControlIntervalPolicy.statsFor(listOf(10L, 20L, 30L))
         val previousTooSmall = SelfControlIntervalPolicy.statsFor(listOf(10L, 20L))
@@ -124,7 +150,7 @@ class DigitalSelfDisciplineReviewPolicyTest {
         assertEquals(0L, sufficient.deltaAverageMs)
     }
 
-    private fun record(id: Long, appId: String, at: Long) = UsageGuardRecord(
+    private fun record(id: Long, appId: String, at: Long, gapMs: Long?) = UsageGuardRecord(
         id = id,
         appId = appId,
         appName = appId,
@@ -134,6 +160,7 @@ class DigitalSelfDisciplineReviewPolicyTest {
         requestedAt = at,
         grantedAt = at,
         expiresAt = at + 600_000L,
+        requestGapMs = gapMs,
     )
 
     private fun event(

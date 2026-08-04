@@ -29,9 +29,10 @@ fun SelfControlReviewChart(
         } else {
             true
         }
-        SelfControlIntervalPresentation.ChartPoint(
+        SelfControlInsightChartPoint(
             label = if (shouldShowLabel) point.label else "",
-            valueMs = point.valueMs,
+            value = point.valueMs.toDouble(),
+            sampleCount = 1,
             isCurrent = false,
         )
     }
@@ -40,7 +41,14 @@ fun SelfControlReviewChart(
         return
     }
     val summaryText = buildString {
-        append("${summary.reviewType.label}间隔图表，共 ${summary.stats.sampleCount} 个有效样本")
+        append(
+            if (summary.reviewType == DigitalSelfDisciplineReviewPolicy.ReviewType.UsageRequest) {
+                "使用申请未使用间隔图表"
+            } else {
+                "${summary.reviewType.label}间隔图表"
+            },
+        )
+        append("，共 ${summary.stats.sampleCount} 个有效样本")
         summary.stats.averageMs?.let {
             append("，平均 ")
             append(SelfControlIntervalPolicy.formatDurationCompact(it))
@@ -50,8 +58,9 @@ fun SelfControlReviewChart(
             append(SelfControlIntervalPolicy.formatDurationCompact(it))
         }
     }
-    SelfControlIntervalChart(
+    SelfControlWindowChart(
         points = points,
+        metric = li.songe.gkd.sdp.util.SelfControlInsightWindowPolicy.Metric.INTERVAL,
         semanticSummary = summaryText,
         modifier = modifier
             .fillMaxWidth()
