@@ -20,6 +20,7 @@ import com.patrykandpatrick.vico.core.cartesian.data.CartesianChartModelProducer
 import com.patrykandpatrick.vico.core.cartesian.data.columnSeries
 import com.patrykandpatrick.vico.core.cartesian.layer.ColumnCartesianLayer
 import li.songe.gkd.sdp.util.SelfControlIntervalPolicy
+import li.songe.gkd.sdp.util.LogUtils
 
 /**
  * A deliberately small chart: text remains the source of truth and this chart is an
@@ -46,6 +47,8 @@ fun SelfControlIntervalChart(
                     })
                 }
             }
+        }.onFailure { error ->
+            LogUtils.d("self-control interval chart model update failed", error::class.java.simpleName)
         }
     }
 

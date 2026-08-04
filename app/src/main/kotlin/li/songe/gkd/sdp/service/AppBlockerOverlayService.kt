@@ -29,7 +29,6 @@ import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.LifecycleService
-import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.setViewTreeLifecycleOwner
 import androidx.savedstate.SavedStateRegistryController
 import androidx.savedstate.SavedStateRegistryOwner
@@ -40,6 +39,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import li.songe.gkd.sdp.a11y.A11yRuleEngine
 import li.songe.gkd.sdp.a11y.AppBlockerEngine
+import li.songe.gkd.sdp.appScope
 import li.songe.gkd.sdp.util.LogUtils
 import li.songe.gkd.sdp.data.SelfControlAttempt
 import li.songe.gkd.sdp.data.SelfControlIntervalRepository
@@ -108,7 +108,9 @@ class AppBlockerOverlayService : LifecycleService(), SavedStateRegistryOwner {
             elapsedState = SelfControlElapsedPolicy.ElapsedState.Unavailable
             return
         }
-        lifecycleScope.launch {
+        // Persist independently of the overlay lifecycle: pressing an exit action immediately
+        // after the window mounts must not cancel the successful-attempt write.
+        appScope.launch {
             val result = runCatching {
                 val insight = withContext(Dispatchers.IO) {
                     SelfControlIntervalRepository.fromDb().recordIntercept(

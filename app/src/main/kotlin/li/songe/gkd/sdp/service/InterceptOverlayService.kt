@@ -29,7 +29,6 @@ import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.LifecycleService
-import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.setViewTreeLifecycleOwner
 import androidx.savedstate.SavedStateRegistryController
 import androidx.savedstate.SavedStateRegistryOwner
@@ -39,6 +38,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import li.songe.gkd.sdp.a11y.A11yRuleEngine
+import li.songe.gkd.sdp.appScope
 import li.songe.gkd.sdp.a11y.UrlBlockerEngine
 import li.songe.gkd.sdp.util.LogUtils
 import li.songe.gkd.sdp.data.SelfControlAttempt
@@ -123,7 +123,9 @@ class InterceptOverlayService : LifecycleService(), SavedStateRegistryOwner {
             elapsedState = SelfControlElapsedPolicy.ElapsedState.Unavailable
             return
         }
-        lifecycleScope.launch {
+        // Persist independently of the overlay lifecycle so an immediate exit cannot cancel
+        // the event that was already accepted by the window manager.
+        appScope.launch {
             val result = runCatching {
                 val insight = withContext(Dispatchers.IO) {
                     SelfControlIntervalRepository.fromDb().recordIntercept(

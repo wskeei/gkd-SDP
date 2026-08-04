@@ -1,7 +1,10 @@
 package li.songe.gkd.sdp.ui.component
 
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -54,4 +57,20 @@ fun SelfControlReviewChart(
             .fillMaxWidth()
             .height(148.dp),
     )
+    if (summary.range != DigitalSelfDisciplineReviewPolicy.Range.Today) {
+        Column(
+            modifier = Modifier.padding(top = 6.dp),
+            verticalArrangement = Arrangement.spacedBy(2.dp),
+        ) {
+            summary.dailyBuckets.forEach { bucket ->
+                Text(
+                    text = "${bucket.date}：${bucket.sampleCount} 个，平均 " +
+                        "${SelfControlIntervalPolicy.formatDurationCompact(bucket.averageMs)}，中位数 " +
+                        SelfControlIntervalPolicy.formatDurationCompact(bucket.medianMs),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+    }
 }
