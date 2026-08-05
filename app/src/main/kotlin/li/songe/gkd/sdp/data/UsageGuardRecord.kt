@@ -11,6 +11,17 @@ import androidx.room.Query
 import kotlinx.coroutines.flow.Flow
 import li.songe.gkd.sdp.util.UsageGuardPolicy
 
+data class UsageReviewRow(
+    @ColumnInfo(name = "id") val id: Long,
+    @ColumnInfo(name = "app_id") val appId: String,
+    @ColumnInfo(name = "app_name") val appName: String,
+    @ColumnInfo(name = "tag_names") val tagNames: List<String>,
+    @ColumnInfo(name = "requested_duration_minutes") val requestedDurationMinutes: Int,
+    @ColumnInfo(name = "requested_at") val requestedAt: Long,
+    @ColumnInfo(name = "end_reason") val endReason: Int,
+    @ColumnInfo(name = "request_gap_ms") val requestGapMs: Long?,
+)
+
 @Entity(
     tableName = "usage_guard_record",
     indices = [
@@ -46,6 +57,16 @@ data class UsageGuardRecord(
 
     @Dao
     interface UsageGuardRecordDao {
+        companion object {
+            const val REVIEW_ROWS_QUERY_SQL = """
+                SELECT id, app_id, app_name, tag_names, requested_duration_minutes,
+                       requested_at, end_reason, request_gap_ms
+                FROM usage_guard_record
+                WHERE requested_at >= :startAt AND requested_at < :endAt
+                ORDER BY requested_at ASC, id ASC
+            """
+        }
+
         @Insert(onConflict = OnConflictStrategy.REPLACE)
         suspend fun insert(record: UsageGuardRecord): Long
 
@@ -116,6 +137,12 @@ data class UsageGuardRecord(
             """
         )
         suspend fun getLatestInsightRow(appId: String): UsageRequestInsightRow?
+
+        @Query(REVIEW_ROWS_QUERY_SQL)
+        fun queryReviewRowsByRequestedAtRange(
+            startAt: Long,
+            endAt: Long,
+        ): Flow<List<UsageReviewRow>>
 
         @Query("SELECT * FROM usage_guard_record ORDER BY id DESC LIMIT :limit")
         fun queryLatest(limit: Int = 100): Flow<List<UsageGuardRecord>>

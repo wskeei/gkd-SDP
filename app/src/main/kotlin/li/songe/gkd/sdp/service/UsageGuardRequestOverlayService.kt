@@ -57,15 +57,13 @@ import li.songe.gkd.sdp.data.SelfControlIntervalRepository
 import li.songe.gkd.sdp.db.DbSet
 import li.songe.gkd.sdp.store.storeFlow
 import li.songe.gkd.sdp.ui.component.SelfControlElapsedCard
-import li.songe.gkd.sdp.ui.component.SelfControlInsightCurrentReference
 import li.songe.gkd.sdp.ui.component.UsageRequestRhythmPresentation
-import li.songe.gkd.sdp.ui.component.UsageRequestRhythmSummary
+import li.songe.gkd.sdp.ui.component.UsageDurationRatioFeedback
 import li.songe.gkd.sdp.ui.style.AppTheme
 import li.songe.gkd.sdp.util.SelfControlElapsedPolicy
 import li.songe.gkd.sdp.util.SelfControlInsightWindowPolicy
 import li.songe.gkd.sdp.util.UsageGuardPolicy
 import li.songe.gkd.sdp.util.UsageGuardUiStatePolicy
-import li.songe.gkd.sdp.util.UsageRequestRhythmPolicy
 import li.songe.gkd.sdp.widget.UsageGuardReviewWidget
 
 sealed interface UsageRequestDatasetState {
@@ -335,13 +333,6 @@ private fun UsageGuardRequestContent(
     } else {
         selectedDuration
     }
-    val currentGapMs = (elapsedState as? SelfControlElapsedPolicy.ElapsedState.Running)?.let {
-        UsageRequestRhythmPolicy.gapMs(it.anchorAtEpochMs, nowEpochMs)
-    }
-    val currentReference = SelfControlInsightCurrentReference(
-        gapMs = currentGapMs,
-        durationMinutes = effectiveRequestedDurationMinutes,
-    )
     val rhythmHistory = remember(
         rhythmData?.insightAnchorAt,
         rhythmData?.samples,
@@ -386,6 +377,20 @@ private fun UsageGuardRequestContent(
                 },
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.primary,
+            )
+
+            SelfControlElapsedCard(
+                context = SelfControlElapsedPolicy.Context.USAGE_REQUEST,
+                state = elapsedState,
+                samples = samples,
+                insightAnchorAt = insightAnchorAt,
+                selectedWindow = selectedWindow,
+                onWindowSelected = onWindowSelected,
+                selectedMetric = selectedMetric,
+                onMetricSelected = onMetricSelected,
+                supportsUsageRatio = supportsUsageRatio,
+                currentReference = null,
+                nowEpochMs = nowEpochMs,
             )
 
             Text("选择标签", style = MaterialTheme.typography.titleSmall)
@@ -529,21 +534,7 @@ private fun UsageGuardRequestContent(
                 )
             }
 
-            SelfControlElapsedCard(
-                context = SelfControlElapsedPolicy.Context.USAGE_REQUEST,
-                state = elapsedState,
-                samples = samples,
-                insightAnchorAt = insightAnchorAt,
-                selectedWindow = selectedWindow,
-                onWindowSelected = onWindowSelected,
-                selectedMetric = selectedMetric,
-                onMetricSelected = onMetricSelected,
-                supportsUsageRatio = supportsUsageRatio,
-                currentReference = currentReference,
-                nowEpochMs = nowEpochMs,
-            )
-
-            UsageRequestRhythmSummary(
+            UsageDurationRatioFeedback(
                 presentation = rhythmPresentation,
             )
 

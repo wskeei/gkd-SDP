@@ -81,9 +81,9 @@ class SelfControlInsightWindowPolicyTest {
         assertEquals(2, series.stats.sampleCount)
         assertEquals(15.0 * 60_000.0, requireNotNull(series.stats.averageMs), 0.001)
         assertEquals(15.0 * 60_000.0, requireNotNull(series.stats.medianMs), 0.001)
-        assertEquals(1, series.points.size)
-        assertEquals(2, series.points.single().sampleCount)
-        assertEquals(15.0 * 60_000.0, series.points.single().value, 0.001)
+        assertEquals(2, series.points.size)
+        assertTrue(series.points.all { it.sampleCount == 1 })
+        assertFalse(series.aggregationApplied)
     }
 
     @Test
@@ -102,6 +102,8 @@ class SelfControlInsightWindowPolicyTest {
         )
 
         assertEquals(2, series.stats.sampleCount)
+        assertEquals(3, series.rawSampleCount)
+        assertEquals(1, series.excludedSampleCount)
         assertEquals(2.5, requireNotNull(series.stats.averageRatio), 0.0001)
         assertEquals(2.5, requireNotNull(series.stats.medianRatio), 0.0001)
         assertFalse(series.points.any { it.value == 0.0 })
@@ -124,5 +126,133 @@ class SelfControlInsightWindowPolicyTest {
 
         assertEquals(3, series.stats.sampleCount)
         assertTrue(series.points.zipWithNext().all { (a, b) -> a.bucketStartAt <= b.bucketStartAt })
+    }
+
+    @Test
+    fun lowVolumeSamplesStayAsIndividualPointsEvenInOneBucket() {
+        val samples = (0 until 12).map { index ->
+            SelfControlInsightWindowPolicy.IntervalSample(
+                id = index.toLong() + 1,
+                occurredAtEpochMs = now - 30L * 60_000L + index,
+                gapMs = 60_000L,
+                requestedDurationMinutes = 1,
+            )
+        }
+
+        val series = SelfControlInsightWindowPolicy.aggregate(
+            samples = samples,
+            nowEpochMs = now,
+            window = SelfControlInsightWindowPolicy.Window.LAST_24_HOURS,
+            metric = SelfControlInsightWindowPolicy.Metric.INTERVAL,
+        )
+
+        assertEquals(12, series.points.size)
+        assertTrue(series.points.all { it.sampleCount == 1 })
+        assertFalse(series.aggregationApplied)
+    }
+
+    @Test
+    fun aggregationStartsOnlyAfterWindowPointLimit() {
+        val samples = (0 until 25).map { index ->
+            SelfControlInsightWindowPolicy.IntervalSample(
+                id = index.toLong() + 1,
+                occurredAtEpochMs = now - index * 10L,
+                gapMs = 60_000L,
+                requestedDurationMinutes = 1,
+            )
+        }
+
+        val series = SelfControlInsightWindowPolicy.aggregate(
+            samples = samples,
+            nowEpochMs = now,
+            window = SelfControlInsightWindowPolicy.Window.LAST_24_HOURS,
+            metric = SelfControlInsightWindowPolicy.Metric.INTERVAL,
+        )
+
+        assertTrue(series.points.size <= 24)
+        assertEquals(25, series.stats.sampleCount)
+        assertTrue(series.aggregationApplied)
+        assertEquals("按 1 小时聚合", series.aggregationLabel)
+        assertEquals(25, series.points.sumOf { it.sampleCount })
+    }
+
+    @Test
+    fun eachWindowUsesItsOwnPointLimit() {
+        val sevenDaySamples = (0 until 29).map { index ->
+            SelfControlInsightWindowPolicy.IntervalSample(
+                id = index.toLong() + 1,
+                occurredAtEpochMs = now - index * 10L,
+                gapMs = 60_000L,
+                requestedDurationMinutes = 1,
+            )
+        }
+        val thirtyDaySamples = (0 until 31).map { index ->
+            SelfControlInsightWindowPolicy.IntervalSample(
+                id = index.toLong() + 100,
+                occurredAtEpochMs = now - index * 10L,
+                gapMs = 60_000L,
+                requestedDurationMinutes = 1,
+            )
+        }
+
+        val sevenDays = SelfControlInsightWindowPolicy.aggregate(
+            sevenDaySamples,
+            now,
+            SelfControlInsightWindowPolicy.Window.LAST_7_DAYS,
+            SelfControlInsightWindowPolicy.Metric.INTERVAL,
+        )
+        val thirtyDays = SelfControlInsightWindowPolicy.aggregate(
+            thirtyDaySamples,
+            now,
+            SelfControlInsightWindowPolicy.Window.LAST_30_DAYS,
+            SelfControlInsightWindowPolicy.Metric.INTERVAL,
+        )
+
+        assertTrue(sevenDays.aggregationApplied)
+        assertEquals("按 6 小时聚合", sevenDays.aggregationLabel)
+        assertTrue(thirtyDays.aggregationApplied)
+        assertEquals("按 1 天聚合", thirtyDays.aggregationLabel)
+    }
+
+    @Test
+    fun invalidRowsDoNotTriggerAggregationOrDisappearFromCoverage() {
+        val samples = (0 until 40).map { index ->
+            SelfControlInsightWindowPolicy.IntervalSample(
+                id = index.toLong() + 1,
+                occurredAtEpochMs = now - index * 10L,
+                gapMs = if (index < 2) 60_000L else null,
+                requestedDurationMinutes = if (index < 2) 1 else null,
+            )
+        }
+
+        val series = SelfControlInsightWindowPolicy.aggregate(
+            samples,
+            now,
+            SelfControlInsightWindowPolicy.Window.LAST_24_HOURS,
+            SelfControlInsightWindowPolicy.Metric.USAGE_RATIO,
+        )
+
+        assertEquals(40, series.rawSampleCount)
+        assertEquals(2, series.stats.sampleCount)
+        assertEquals(38, series.excludedSampleCount)
+        assertEquals(2, series.points.size)
+        assertFalse(series.aggregationApplied)
+    }
+
+    @Test
+    fun sameTimestampRowsRemainStableAndCarryDistinctSourceIds() {
+        val samples = listOf(
+            SelfControlInsightWindowPolicy.IntervalSample(9L, now, 60_000L, 1),
+            SelfControlInsightWindowPolicy.IntervalSample(8L, now, 120_000L, 1),
+        )
+
+        val series = SelfControlInsightWindowPolicy.aggregate(
+            samples,
+            now,
+            SelfControlInsightWindowPolicy.Window.LAST_24_HOURS,
+            SelfControlInsightWindowPolicy.Metric.INTERVAL,
+        )
+
+        assertEquals(listOf(setOf(8L), setOf(9L)), series.points.map { it.sourceIds })
     }
 }

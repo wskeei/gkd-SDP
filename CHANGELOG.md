@@ -6,6 +6,33 @@ All notable GKD-SDP changes are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- Add a unified digital self-discipline review with overview, single-metric trends,
+  distributions, coverage counts, and recent details for request and interception data.
+
+### Changed
+
+- Keep the “其他” usage tag last, move elapsed-use history to the top of the request form,
+  and place ratio feedback beside the requested duration with a common-unit formula.
+- Render low-volume interval samples point-for-point and aggregate only after the 24/28/30
+  valid-sample limits; distinguish total records, valid samples, excluded rows, and chart points.
+
+### Fixed
+
+- Prevent missing-gap rows from disappearing from insight totals and prevent stable targets
+  from splitting into duplicate ranking bars when their display label changes.
+
+### Security
+
+- Add no persistent fields and keep request reasons, URLs, selectors, and node text out of the
+  new review projection, chart semantics, logs, and release notes.
+
+### Known limitations
+
+- Legacy rows and rows without a confirmed actual-use end remain unavailable for trusted gap
+  and ratio calculations; no historical value is backfilled.
+
 ## [2.0.0-beta.4] - 2026-08-05
 
 This prerelease makes interception attribution and usage rhythm easier to

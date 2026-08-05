@@ -2,6 +2,7 @@ package li.songe.gkd.sdp.data
 
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapLatest
 import li.songe.gkd.sdp.db.DbSet
 import li.songe.gkd.sdp.util.SelfControlInsightWindowPolicy
@@ -18,6 +19,22 @@ class SelfControlIntervalRepository(
         suspend fun queryRecentRecords(appId: String, limit: Int): List<UsageGuardRecord>
 
         fun queryByRequestedAtRange(startAt: Long, endAt: Long): Flow<List<UsageGuardRecord>>
+
+        fun queryReviewRowsByRequestedAtRange(startAt: Long, endAt: Long): Flow<List<UsageReviewRow>> =
+            queryByRequestedAtRange(startAt, endAt).map { records ->
+                records.map { record ->
+                    UsageReviewRow(
+                        id = record.id,
+                        appId = record.appId,
+                        appName = record.appName,
+                        tagNames = record.tagNames,
+                        requestedDurationMinutes = record.requestedDurationMinutes,
+                        requestedAt = record.requestedAt,
+                        endReason = record.endReason,
+                        requestGapMs = record.requestGapMs,
+                    )
+                }
+            }
 
         suspend fun queryInsightRows(
             appId: String,
@@ -100,7 +117,7 @@ class SelfControlIntervalRepository(
     )
 
     data class ReviewSource(
-        val usageRecords: List<UsageGuardRecord>,
+        val usageRows: List<UsageReviewRow>,
         val interceptEvents: List<SelfControlAttemptEvent>,
     )
 
@@ -127,15 +144,13 @@ class SelfControlIntervalRepository(
             window = SelfControlInsightWindowPolicy.Window.LAST_30_DAYS,
         )
         val rows = usageRecords.queryInsightRows(appId, startAt, insightAnchorAt)
-        val samples = rows.mapNotNull { row ->
-            row.requestGapMs?.takeIf { it >= 0L }?.let {
-                SelfControlInsightWindowPolicy.IntervalSample(
-                    id = row.id,
-                    occurredAtEpochMs = row.requestedAt,
-                    gapMs = it,
-                    requestedDurationMinutes = row.requestedDurationMinutes,
-                )
-            }
+        val samples = rows.map { row ->
+            SelfControlInsightWindowPolicy.IntervalSample(
+                id = row.id,
+                occurredAtEpochMs = row.requestedAt,
+                gapMs = row.requestGapMs?.takeIf { it >= 0L },
+                requestedDurationMinutes = row.requestedDurationMinutes,
+            )
         }
         val latestRequestIsInThePast = latest?.requestedAt?.let {
             it >= 0L && it <= insightAnchorAt
@@ -184,10 +199,10 @@ class SelfControlIntervalRepository(
 
     fun observeReviewSource(startAt: Long, endAt: Long): Flow<ReviewSource> {
         val usageFlow = usageRecords
-            .queryByRequestedAtRange(startAt, endAt)
+            .queryReviewRowsByRequestedAtRange(startAt, endAt)
             .mapLatest { records ->
                 records.sortedWith(
-                    compareBy<UsageGuardRecord> { it.appId }
+                    compareBy<UsageReviewRow> { it.appId }
                         .thenBy { it.requestedAt }
                         .thenBy { it.id },
                 )
@@ -196,9 +211,9 @@ class SelfControlIntervalRepository(
         return combine(
             usageFlow,
             attemptEvents.queryByOccurredAtRange(startAt, endAt),
-        ) { records, events ->
+        ) { rows, events ->
             ReviewSource(
-                usageRecords = records,
+                usageRows = rows,
                 interceptEvents = events,
             )
         }
@@ -219,6 +234,11 @@ class SelfControlIntervalRepository(
                         startAt: Long,
                         endAt: Long,
                     ): Flow<List<UsageGuardRecord>> = usageDao.queryByRequestedAtRange(startAt, endAt)
+
+                    override fun queryReviewRowsByRequestedAtRange(
+                        startAt: Long,
+                        endAt: Long,
+                    ): Flow<List<UsageReviewRow>> = usageDao.queryReviewRowsByRequestedAtRange(startAt, endAt)
 
                     override suspend fun queryInsightRows(
                         appId: String,

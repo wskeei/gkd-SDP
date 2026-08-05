@@ -49,6 +49,7 @@ object SelfControlInsightWindowPolicy {
         val label: String,
         val value: Double,
         val sampleCount: Int,
+        val sourceIds: Set<Long> = emptySet(),
     )
 
     data class Series(
@@ -57,6 +58,9 @@ object SelfControlInsightWindowPolicy {
         val points: List<ChartPoint>,
         val stats: Stats,
         val rawSampleCount: Int,
+        val aggregationApplied: Boolean = false,
+        val aggregationLabel: String? = null,
+        val excludedSampleCount: Int = 0,
     )
 
     fun windowStartEpochMs(nowEpochMs: Long, window: Window): Long {
@@ -89,7 +93,10 @@ object SelfControlInsightWindowPolicy {
         zoneId: ZoneId = ZoneId.systemDefault(),
     ): Series {
         val selected = samplesInWindow(samples, nowEpochMs, window)
-        val values = selected.mapNotNull { valueFor(it, metric) }
+        val valueRows = selected.mapNotNull { sample ->
+            valueFor(sample, metric)?.let { value -> sample to value }
+        }
+        val values = valueRows.map { it.second }
         val stats = Stats(
             sampleCount = values.size,
             averageMs = if (metric == Metric.INTERVAL) average(values) else null,
@@ -100,30 +107,47 @@ object SelfControlInsightWindowPolicy {
             maxValue = values.maxOrNull(),
         )
         val start = windowStartEpochMs(nowEpochMs, window)
-        val points = selected
-            .mapNotNull { sample ->
-                val value = valueFor(sample, metric) ?: return@mapNotNull null
-                val offset = (sample.occurredAtEpochMs - start).coerceAtLeast(0L)
-                val bucketIndex = (offset / window.bucketMs).coerceIn(0L, window.maxChartPoints - 1L)
-                bucketIndex to (sample to value)
-            }
-            .groupBy({ it.first }, { it.second })
-            .toSortedMap()
-            .map { (bucketIndex, rows) ->
-                val bucketStart = start + bucketIndex * window.bucketMs
+        val aggregationApplied = valueRows.size > window.maxChartPoints
+        val points = if (!aggregationApplied) {
+            valueRows.map { (sample, value) ->
                 ChartPoint(
-                    bucketStartAt = bucketStart,
-                    label = formatBucketLabel(bucketStart, window, zoneId),
-                    value = average(rows.map { it.second }) ?: 0.0,
-                    sampleCount = rows.size,
+                    bucketStartAt = sample.occurredAtEpochMs,
+                    label = formatPointLabel(sample.occurredAtEpochMs, window, zoneId),
+                    value = value,
+                    sampleCount = 1,
+                    sourceIds = setOf(sample.id),
                 )
             }
+        } else {
+            valueRows
+                .map { (sample, value) ->
+                    val offset = (sample.occurredAtEpochMs - start).coerceAtLeast(0L)
+                    val bucketIndex = (offset / window.bucketMs)
+                        .coerceIn(0L, window.maxChartPoints - 1L)
+                    bucketIndex to (sample to value)
+                }
+                .groupBy({ it.first }, { it.second })
+                .toSortedMap()
+                .map { (bucketIndex, rows) ->
+                    val bucketStart = start + bucketIndex * window.bucketMs
+                    ChartPoint(
+                        bucketStartAt = bucketStart,
+                        label = formatBucketLabel(bucketStart, window, zoneId),
+                        value = average(rows.map { it.second }) ?: 0.0,
+                        sampleCount = rows.size,
+                        sourceIds = rows.mapTo(linkedSetOf()) { it.first.id },
+                    )
+                }
+        }
         return Series(
             window = window,
             metric = metric,
             points = points,
             stats = stats,
             rawSampleCount = selected.size,
+            aggregationApplied = aggregationApplied,
+            aggregationLabel = if (aggregationApplied) window.aggregationLabel() else null,
+            excludedSampleCount = selected.size - stats.sampleCount,
         )
     }
 
@@ -173,5 +197,24 @@ object SelfControlInsightWindowPolicy {
             DateTimeFormatter.ofPattern("MM-dd HH:mm", Locale.ROOT)
         }
         return formatter.format(Instant.ofEpochMilli(bucketStartAt).atZone(zoneId))
+    }
+
+    private fun formatPointLabel(
+        occurredAtEpochMs: Long,
+        window: Window,
+        zoneId: ZoneId,
+    ): String {
+        val formatter = if (window == Window.LAST_24_HOURS) {
+            DateTimeFormatter.ofPattern("HH:mm", Locale.ROOT)
+        } else {
+            DateTimeFormatter.ofPattern("MM-dd HH:mm", Locale.ROOT)
+        }
+        return formatter.format(Instant.ofEpochMilli(occurredAtEpochMs).atZone(zoneId))
+    }
+
+    private fun Window.aggregationLabel(): String = when (this) {
+        Window.LAST_24_HOURS -> "按 1 小时聚合"
+        Window.LAST_7_DAYS -> "按 6 小时聚合"
+        Window.LAST_30_DAYS -> "按 1 天聚合"
     }
 }

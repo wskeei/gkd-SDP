@@ -164,6 +164,17 @@ selected request duration. Overlays load one 30-day raw dataset and switch 24-ho
 7-day, or 30-day windows in memory; current request feedback is never inserted into
 historical statistics.
 
+The review repository reads a minimal `UsageReviewRow` projection and keeps every row in
+the selected window, including rows whose frozen `requestGapMs` is null. Null or negative
+gaps count toward total records but never enter interval averages, ratio calculations, or
+chart values. A window with at most 24/28/30 valid samples is rendered point-for-point;
+only larger windows use the existing 1-hour/6-hour/1-day buckets. Each aggregated point
+keeps its `sourceIds`, so a current event is marked by ID rather than by a timestamp bucket.
+Ratio arithmetic remains millisecond-based while visible formulas choose a common
+seconds/minutes/hours unit. The review page derives current and previous periods through one
+unified summary/UI-state flow, with no reason text, URL, selector, or node text in the
+projection or presentation.
+
 These columns and the outcome snapshots are added by the explicit, non-destructive Room
 32 → 33 migration `MIGRATION_32_33`. Room 2.8.4/KSP could not process this entity graph
 reliably as an auto migration, so the SQL is kept explicit and covered by the exported

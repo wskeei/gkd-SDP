@@ -145,7 +145,8 @@ class SelfControlIntervalRepositoryTest {
 
         val source = repository.observeReviewSource(15_000L, 25_000L).first()
 
-        assertEquals(listOf(current), source.usageRecords)
+        assertEquals(listOf(current.id), source.usageRows.map { it.id })
+        assertTrue(source.usageRows.none { it.javaClass.declaredFields.any { field -> field.name == "reasonText" } })
     }
 
     @Test
@@ -200,6 +201,34 @@ class SelfControlIntervalRepositoryTest {
         assertEquals(null, data.previousLastUsageEndedAt)
         assertEquals(listOf(1L, 2L), data.samples.map { it.id })
         assertEquals(30, data.samples.first().requestedDurationMinutes)
+    }
+
+    @Test
+    fun usageOverlayKeepsRowsWithUnknownGapsForCoverage() = runBlocking {
+        val rows = listOf(
+            UsageRequestInsightRow(1L, 1_000L, 30, null, null),
+            UsageRequestInsightRow(2L, 2_000L, 30, 1_500L, 500L),
+            UsageRequestInsightRow(3L, 3_000L, 30, 2_500L, null),
+            UsageRequestInsightRow(4L, 4_000L, 30, 3_500L, 1_000L),
+            UsageRequestInsightRow(5L, 5_000L, 30, 4_500L, 1_000L),
+            UsageRequestInsightRow(6L, 6_000L, 30, 5_500L, 1_000L),
+        )
+        val repository = SelfControlIntervalRepository(
+            usageRecords = FakeUsageSource(
+                insightRows = rows,
+                latestInsight = rows.last(),
+            ),
+            attemptEvents = FakeAttemptSource(),
+        )
+
+        val data = repository.loadUsageRequestOverlayData(
+            appId = "target",
+            insightAnchorAt = 6_000L,
+        )
+
+        assertEquals(6, data.samples.size)
+        assertEquals(2, data.samples.count { it.gapMs == null })
+        assertEquals(listOf(500L, 1_000L, 1_000L, 1_000L), data.samples.mapNotNull { it.gapMs })
     }
 
     @Test

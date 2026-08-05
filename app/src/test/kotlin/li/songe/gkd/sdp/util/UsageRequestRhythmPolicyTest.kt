@@ -74,8 +74,39 @@ class UsageRequestRhythmPolicyTest {
     @Test
     fun ratioFormattingIsStableForUi() {
         assertEquals("4.0", UsageRequestRhythmPolicy.formatRatio(4.0))
-        assertEquals("暂无", UsageRequestRhythmPolicy.formatRatio(null))
+        assertNull(UsageRequestRhythmPolicy.formatRatio(null))
         assertTrue(UsageRequestRhythmPolicy.formatRatio(1.234)!!.contains("1.23"))
-        assertEquals("10", UsageRequestRhythmPolicy.formatRatio(10.0))
+        assertEquals("10.0", UsageRequestRhythmPolicy.formatRatio(10.0))
+        assertEquals("0.0", UsageRequestRhythmPolicy.formatRatio(0.0))
+        assertEquals("<0.01", UsageRequestRhythmPolicy.formatRatio(0.001))
+    }
+
+    @Test
+    fun formulaUsesOneCommonUnitForBothOperands() {
+        val seconds = requireNotNull(UsageRequestRhythmPolicy.formula(3_000L, 2))
+        assertEquals(UsageRequestRhythmPolicy.FormulaUnit.SECONDS, seconds.unit)
+        assertEquals(3.0, seconds.gapValue.toDouble(), 0.0001)
+        assertEquals(120.0, seconds.durationValue.toDouble(), 0.0001)
+        assertEquals(0.025, seconds.ratio, 0.000001)
+
+        val minutes = requireNotNull(UsageRequestRhythmPolicy.formula(2L * 60L * 60L * 1_000L, 30))
+        assertEquals(UsageRequestRhythmPolicy.FormulaUnit.MINUTES, minutes.unit)
+        assertEquals(120.0, minutes.gapValue.toDouble(), 0.0001)
+        assertEquals(30.0, minutes.durationValue.toDouble(), 0.0001)
+        assertEquals(4.0, minutes.ratio, 0.0001)
+
+        val hours = requireNotNull(UsageRequestRhythmPolicy.formula(3L * 60L * 60L * 1_000L, 120))
+        assertEquals(UsageRequestRhythmPolicy.FormulaUnit.HOURS, hours.unit)
+        assertEquals(3.0, hours.gapValue.toDouble(), 0.0001)
+        assertEquals(2.0, hours.durationValue.toDouble(), 0.0001)
+        assertEquals(1.5, hours.ratio, 0.0001)
+    }
+
+    @Test
+    fun formulaKeepsSmallPositiveRatiosVisible() {
+        val formula = requireNotNull(UsageRequestRhythmPolicy.formula(1_000L, 10))
+
+        assertTrue(formula.ratio > 0.0)
+        assertEquals("<0.01", UsageRequestRhythmPolicy.formatRatio(formula.ratio))
     }
 }

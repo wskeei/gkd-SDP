@@ -14,7 +14,12 @@
 | cancel/no reset | 有 anchor 后取消表单 | `UsageGuardRequestIntervalContractTest`、`UsageRequestRhythmPresentationTest` | 不插入、不关闭、不重置 anchor | 同上 |
 | 24h/7d/30d windows | 固定 now、边界内外样本 | `SelfControlInsightWindowPolicyTest`、`SelfControlIntervalPresentationTest` | 含边界、排除未来/旧样本，切换复用同一 30 天数据 | 同上 |
 | >30 point aggregation | 31+ 原始点、空桶 | `SelfControlInsightWindowPolicyTest`、`SelfControlInsightAccessibilityContractTest` | 24/28/30 桶上限、桶内平均、原始样本数保留 | 同上 |
+| 低样本逐条与边界 | 同小时 12 点、24/25、28/29、30/31 | `SelfControlInsightWindowPolicyTest` | 未超限逐条显示，超限才按 1h/6h/1d 聚合 | 同上 |
+| 总记录/有效样本/图形点 | null gap、无效 ratio、空窗口 | `SelfControlIntervalPresentationTest`、`DigitalSelfDisciplineReviewPolicyTest` | 三种数量分开显示，未纳入不伪装为 0 | 同上 |
 | 间用比 formula | gap 120m、时长 30/60、缺失/回拨 | `UsageRequestRhythmPolicyTest`、`UsageRequestRhythmPresentationTest` | 4.0×/2.0×，缺失不变成 0，当前值不进历史平均 | 同上 |
+| 跨单位公式 | 秒÷分钟、小时÷分钟、小时÷小时、小正 ratio | `UsageRequestRhythmPolicyTest`、`UsageRequestRhythmPresentationTest` | 两操作数同单位，`<0.01×` 不显示为 `0.0×` | 同上 |
+| 表单顺序与单流复盘 | 距离卡、标签、时长反馈、申请/拦截 Tab | `UsageGuardRequestLayoutContractTest`、`UsageGuardReviewStateContractTest` | 视觉与无障碍顺序一致，无重复 summary 流 | 同上 |
+| 复盘趋势与明细 | ratio/gap 单指标、排行占比、最近 10 条 | `DigitalSelfDisciplineReviewPresentationTest`、`DigitalSelfDisciplineReviewAccessibilityTest` | 文字明细与图形点一一对应，敏感字段不出现在语义 | 同上 |
 | three ratio averages | 同一数据集分别落入三个窗口 | `SelfControlInsightWindowPolicyTest`、`UsageRequestRhythmPresentationTest` | 近 24h/7d/30d 平均和有效样本数分别显示 | 同上 |
 | legacy null data | 旧 row gap/end 为 null、gap=0 | `DigitalSelfDisciplineReviewPolicyTest`、`SelfControlIntervalRepositoryTest` | null 不纳入有效样本，0 合法；显示新口径积累/未知 | 同上 |
 | review alignment | requestedAt 与 lastUsageEndedAt 不同 | `DigitalSelfDisciplineReviewPolicyTest` | 复盘使用冻结 `requestGapMs`，不再用相邻 requestedAt 配对 | 同上 |
@@ -26,7 +31,7 @@
 
 - 申请：首条、连续申请、取消、strict/resumable 离开/返回、升级迁移。
 - 拦截：selector exact 来源、URL/app 来源、重复启动/挂载失败、10 秒倒计时、HOME 回退。
-- UI：24h/7d/30d 下拉、间隔/间用比切换、长数据、360dp/大字体/TalkBack、深色主题。
+- UI：24h/7d/30d 分段控件、间隔/间用比切换、长数据、360dp/600dp/200% 字体/TalkBack、深色主题。
 - 平台：无障碍/Shizuku 两 owner、悬浮窗拒绝、系统 Back/Home/最近任务/Force stop/OEM 截图表现。
 
 ## 隐私静态检查
