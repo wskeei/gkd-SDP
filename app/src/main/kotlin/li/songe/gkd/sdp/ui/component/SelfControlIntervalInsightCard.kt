@@ -254,7 +254,7 @@ data class SelfControlInsightPresentation(
             SelfControlInsightWindowPolicy.Metric.INTERVAL ->
                 SelfControlIntervalPolicy.formatDurationCompact(value.toLong())
             SelfControlInsightWindowPolicy.Metric.USAGE_RATIO ->
-                "${UsageRequestRhythmPolicy.formatRatio(value) ?: "暂无"}×"
+                "${UsageRequestRhythmPolicy.formatRatio(value) ?: "—"}×"
         }
 
         private fun SelfControlInsightWindowPolicy.Metric.label(): String = when (this) {

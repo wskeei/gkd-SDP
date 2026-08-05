@@ -84,4 +84,35 @@ class UsageRequestRhythmPresentationTest {
         assertEquals(UsageRequestRhythmPresentation.Status.UNAVAILABLE, unavailable.status)
         assertTrue(unavailable.statusText.contains("暂时无法"))
     }
+
+    @Test
+    fun formulaPresentationUsesMatchingUnitsAndShowsRatio() {
+        val presentation = UsageRequestRhythmPresentation.from(data(), now, 30)
+
+        assertEquals(
+            "公式：120 分钟 ÷ 30 分钟 = 4.0×",
+            UsageRequestRhythmPresentation.formatFormula(presentation.currentFormula),
+        )
+    }
+
+    @Test
+    fun formulaPresentationSwitchesToSecondsForShortIntervals() {
+        val shortData = data(
+            anchor = now - 3_000L,
+            samples = listOf(
+                SelfControlInsightWindowPolicy.IntervalSample(
+                    id = 2L,
+                    occurredAtEpochMs = now - 1_000L,
+                    gapMs = 3_000L,
+                    requestedDurationMinutes = 2,
+                ),
+            ),
+        )
+        val presentation = UsageRequestRhythmPresentation.from(shortData, now, 2)
+
+        assertEquals(
+            "公式：3 秒 ÷ 120 秒 = 0.03×",
+            UsageRequestRhythmPresentation.formatFormula(presentation.currentFormula),
+        )
+    }
 }

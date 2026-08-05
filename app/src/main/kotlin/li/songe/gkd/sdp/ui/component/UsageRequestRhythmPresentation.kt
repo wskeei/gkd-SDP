@@ -11,14 +11,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import li.songe.gkd.sdp.data.SelfControlIntervalRepository
 import li.songe.gkd.sdp.util.SelfControlInsightWindowPolicy
-import li.songe.gkd.sdp.util.SelfControlIntervalPolicy
 import li.songe.gkd.sdp.util.UsageRequestRhythmPolicy
+import java.math.BigDecimal
 
 data class UsageRequestRhythmPresentation(
     val status: Status,
     val currentGapMs: Long?,
     val requestedDurationMinutes: Int?,
     val currentRatio: Double?,
+    val currentFormula: UsageRequestRhythmPolicy.Formula?,
     val averageRatioByWindow: Map<SelfControlInsightWindowPolicy.Window, Double?>,
     val ratioSampleCountByWindow: Map<SelfControlInsightWindowPolicy.Window, Int>,
     val comparisonText: String?,
@@ -82,6 +83,10 @@ data class UsageRequestRhythmPresentation(
                 currentGap,
                 requestedDurationMinutes,
             )
+            val currentFormula = UsageRequestRhythmPolicy.formula(
+                currentGap,
+                requestedDurationMinutes,
+            )
             val baseline = averages[selectedWindow]
             val comparison = if (currentRatio != null && baseline != null) {
                 val delta = currentRatio - baseline
@@ -108,6 +113,7 @@ data class UsageRequestRhythmPresentation(
                 currentGapMs = currentGap,
                 requestedDurationMinutes = requestedDurationMinutes.takeIf { it > 0 },
                 currentRatio = currentRatio,
+                currentFormula = currentFormula,
                 averageRatioByWindow = averages,
                 ratioSampleCountByWindow = counts,
                 comparisonText = comparison,
@@ -117,6 +123,17 @@ data class UsageRequestRhythmPresentation(
 
         private fun formatRatioDelta(value: Double): String =
             "${UsageRequestRhythmPolicy.formatRatio(value) ?: "暂无"}×"
+
+        fun formatFormula(formula: UsageRequestRhythmPolicy.Formula?): String {
+            if (formula == null) return "公式：—"
+            return "公式：${formatOperand(formula.gapValue)} ${formula.unit.label} ÷ " +
+                "${formatOperand(formula.durationValue)} ${formula.unit.label} = " +
+                "${UsageRequestRhythmPolicy.formatRatio(formula.ratio) ?: "—"}×"
+        }
+
+        private fun formatOperand(value: BigDecimal): String = value
+            .stripTrailingZeros()
+            .toPlainString()
     }
 }
 
@@ -137,11 +154,7 @@ fun UsageRequestRhythmSummary(
             text = "本次间用比：${presentation.currentRatio?.let { "${UsageRequestRhythmPolicy.formatRatio(it)}×" } ?: "—"}",
             style = MaterialTheme.typography.bodyLarge,
         )
-        Text(
-            text = "公式：${presentation.currentGapMs?.let(SelfControlIntervalPolicy::formatDurationCompact) ?: "—"} ÷ " +
-                "${presentation.requestedDurationMinutes?.let { "${it}分钟" } ?: "当前申请时长"}",
-            style = MaterialTheme.typography.bodyMedium,
-        )
+        Text(text = UsageRequestRhythmPresentation.formatFormula(presentation.currentFormula))
         presentation.comparisonText?.let {
             Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
         }

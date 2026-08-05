@@ -86,7 +86,7 @@ fun SelfControlWindowChart(
                             intervalUnit,
                         )
                     } else {
-                        "${UsageRequestRhythmPolicy.formatRatio(value.toDouble()) ?: "暂无"}×"
+                        "${UsageRequestRhythmPolicy.formatRatio(value.toDouble()) ?: "—"}×"
                     }
                 },
             ),
