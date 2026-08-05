@@ -2,17 +2,14 @@ package li.songe.gkd.sdp.util
 
 import li.songe.gkd.sdp.data.SelfControlAttempt
 import li.songe.gkd.sdp.data.SelfControlAttemptEvent
-import li.songe.gkd.sdp.data.UsageGuardRecord
+import li.songe.gkd.sdp.data.UsageReviewRow
+import java.math.BigDecimal
+import java.math.RoundingMode
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 
-/**
- * Pure aggregation rules for the Digital Self-Discipline review page.
- *
- * Usage-request intervals are frozen on each successful record as requestGapMs. An interval is
- * attributed to the date of that request; missing/legacy values are not converted to zero.
- */
+/** Pure aggregation rules for the Digital Self-Discipline review page. */
 object DigitalSelfDisciplineReviewPolicy {
     enum class Range(val label: String, val days: Long) {
         Today("今日", 1L),
@@ -23,6 +20,12 @@ object DigitalSelfDisciplineReviewPolicy {
     enum class ReviewType(val label: String) {
         UsageRequest("使用申请"),
         InterceptAttempt("拦截"),
+    }
+
+    enum class ReviewMetric {
+        USAGE_RATIO,
+        USAGE_GAP,
+        INTERCEPT_INTERVAL,
     }
 
     enum class InterceptKindFilter(val label: String, val eventKind: Int? = null) {
@@ -47,18 +50,26 @@ object DigitalSelfDisciplineReviewPolicy {
         fun contains(timestamp: Long): Boolean = timestamp >= startAt && timestamp < endAt
     }
 
-    data class DailyIntervalBucket(
-        val date: LocalDate,
+    data class RatioStats(
         val sampleCount: Int,
-        val medianMs: Long,
-        val averageMs: Long,
+        val average: Double?,
+        val median: Double?,
+        val min: Double?,
+        val max: Double?,
     )
 
-    data class RecentIntervalItem(
-        val occurredAt: Long,
-        val intervalMs: Long,
-        val label: String,
+    data class DataCoverage(
+        val eventCount: Int,
+        val validIntervalCount: Int,
+        val validRatioCount: Int,
+        val excludedIntervalCount: Int,
+    )
+
+    data class RankedShare(
         val key: String,
+        val label: String,
+        val count: Int,
+        val share: Double,
     )
 
     data class RankedTarget(
@@ -67,10 +78,49 @@ object DigitalSelfDisciplineReviewPolicy {
         val count: Int,
     )
 
+    data class UsageDetails(
+        val totalRequestedMinutes: Long,
+        val averageRequestedMinutes: Double?,
+        val appBreakdown: List<RankedShare>,
+        val tagBreakdown: List<RankedShare>,
+        val endReasonBreakdown: List<RankedShare>,
+        val busiestPeriod: RankedShare?,
+    )
+
+    data class DailyIntervalBucket(
+        val date: LocalDate,
+        val eventCount: Int,
+        val validIntervalCount: Int,
+        val validRatioCount: Int,
+        val averageMs: Long?,
+        val medianMs: Long?,
+        val ratioAverage: Double?,
+        val ratioMedian: Double?,
+    ) {
+        val sampleCount: Int get() = validIntervalCount
+    }
+
+    data class RecentIntervalItem(
+        val occurredAt: Long,
+        val intervalMs: Long?,
+        val label: String,
+        val key: String,
+        val requestedDurationMinutes: Int? = null,
+        val ratio: Double? = null,
+        val tagNames: List<String> = emptyList(),
+        val eventKind: Int? = null,
+        val endReason: Int? = null,
+    )
+
     data class PeriodComparison(
+        val currentEventCount: Int,
+        val previousEventCount: Int,
+        val currentMetricValue: Double?,
+        val previousMetricValue: Double?,
+        val metricDelta: Double?,
         val currentSampleCount: Int,
         val previousSampleCount: Int,
-        val deltaAverageMs: Long?,
+        val deltaAverageMs: Long? = null,
         val message: String,
     )
 
@@ -80,20 +130,39 @@ object DigitalSelfDisciplineReviewPolicy {
         val eventCount: Int,
         val requestCount: Int,
         val interceptCount: Int,
-        val intervalsMs: List<Long>,
-        val stats: SelfControlIntervalPolicy.Stats,
+        val coverage: DataCoverage,
+        val intervalStats: SelfControlIntervalPolicy.Stats,
+        val ratioStats: RatioStats?,
+        val usageDetails: UsageDetails?,
         val dailyBuckets: List<DailyIntervalBucket>,
-        val chartDates: List<LocalDate>,
+        val trendIntervals: List<RecentIntervalItem>,
         val recentIntervals: List<RecentIntervalItem>,
         val rankedTargets: List<RankedTarget>,
         val comparison: PeriodComparison,
-    )
+        val intervalsMs: List<Long>,
+    ) {
+        @Deprecated("Use intervalStats")
+        val stats: SelfControlIntervalPolicy.Stats get() = intervalStats
 
-    private data class Sample(
+        @Deprecated("Use dailyBuckets and recentIntervals")
+        val chartDates: List<LocalDate>
+            get() = dailyBuckets.map { it.date }.ifEmpty {
+                recentIntervals.asReversed().map { item ->
+                    Instant.ofEpochMilli(item.occurredAt).atZone(ZoneId.systemDefault()).toLocalDate()
+                }
+            }
+    }
+
+    private data class MetricSample(
         val occurredAt: Long,
-        val intervalMs: Long,
+        val intervalMs: Long?,
+        val ratio: Double?,
         val key: String,
         val label: String,
+        val requestedDurationMinutes: Int? = null,
+        val tagNames: List<String> = emptyList(),
+        val eventKind: Int? = null,
+        val endReason: Int? = null,
     )
 
     fun rangeBounds(
@@ -110,10 +179,10 @@ object DigitalSelfDisciplineReviewPolicy {
             zoneId = zoneId,
             startDate = startDate,
             endDateExclusive = endDateExclusive,
-            startAt = startDate.atStartOfDay(zoneId).toInstant().toEpochMilli(),
-            endAt = endDateExclusive.atStartOfDay(zoneId).toInstant().toEpochMilli(),
             previousStartDate = previousStartDate,
             previousEndDateExclusive = previousEndDateExclusive,
+            startAt = startDate.atStartOfDay(zoneId).toInstant().toEpochMilli(),
+            endAt = endDateExclusive.atStartOfDay(zoneId).toInstant().toEpochMilli(),
             previousStartAt = previousStartDate.atStartOfDay(zoneId).toInstant().toEpochMilli(),
             previousEndAt = previousEndDateExclusive.atStartOfDay(zoneId).toInstant().toEpochMilli(),
         )
@@ -123,22 +192,21 @@ object DigitalSelfDisciplineReviewPolicy {
         range: Range,
         nowEpochMs: Long,
         zoneId: ZoneId = ZoneId.systemDefault(),
-    ): RangeBounds {
-        val today = Instant.ofEpochMilli(nowEpochMs).atZone(zoneId).toLocalDate()
-        return rangeBounds(range, today, zoneId)
-    }
+    ): RangeBounds = rangeBounds(
+        range = range,
+        today = Instant.ofEpochMilli(nowEpochMs).atZone(zoneId).toLocalDate(),
+        zoneId = zoneId,
+    )
 
     fun hasCrossedDateBoundary(
         previousNow: Long,
         currentNow: Long,
         zoneId: ZoneId = ZoneId.systemDefault(),
-    ): Boolean {
-        return Instant.ofEpochMilli(previousNow).atZone(zoneId).toLocalDate() !=
-            Instant.ofEpochMilli(currentNow).atZone(zoneId).toLocalDate()
-    }
+    ): Boolean = Instant.ofEpochMilli(previousNow).atZone(zoneId).toLocalDate() !=
+        Instant.ofEpochMilli(currentNow).atZone(zoneId).toLocalDate()
 
     fun summarize(
-        records: List<UsageGuardRecord>,
+        usageRows: List<UsageReviewRow>,
         events: List<SelfControlAttemptEvent>,
         bounds: RangeBounds,
         reviewType: ReviewType,
@@ -146,127 +214,307 @@ object DigitalSelfDisciplineReviewPolicy {
         zoneId: ZoneId = bounds.zoneId,
         previousSummary: ReviewSummary? = null,
     ): ReviewSummary {
-        val currentRecords = records.filter { bounds.contains(it.requestedAt) }
+        val currentRows = usageRows.filter { bounds.contains(it.requestedAt) }
         val currentEvents = events.filter { event ->
             bounds.contains(event.occurredAt) &&
                 (interceptFilter.eventKind == null || event.eventKind == interceptFilter.eventKind)
         }
         val samples = when (reviewType) {
-            ReviewType.UsageRequest -> requestSamples(records, bounds)
-            ReviewType.InterceptAttempt -> currentEvents.mapNotNull { event ->
-                event.intervalMs?.takeIf { it >= 0L }?.let { interval ->
-                    Sample(
-                        occurredAt = event.occurredAt,
-                        intervalMs = interval,
-                        key = event.eventKey,
-                        label = event.subjectLabel.ifBlank { event.subjectId },
-                    )
-                }
-            }
-        }.sortedBy { it.occurredAt }
-        val intervals = samples.map { it.intervalMs }
-        val stats = SelfControlIntervalPolicy.statsFor(intervals)
-        val dailyBuckets = samples
-            .groupBy { Instant.ofEpochMilli(it.occurredAt).atZone(zoneId).toLocalDate() }
-            .toList()
-            .sortedBy { it.first }
-            .map { (date, daySamples) ->
-                val dayStats = SelfControlIntervalPolicy.statsFor(daySamples.map { it.intervalMs })
-                DailyIntervalBucket(
-                    date = date,
-                    sampleCount = dayStats.sampleCount,
-                    medianMs = dayStats.medianMs ?: 0L,
-                    averageMs = dayStats.averageMs ?: 0L,
+            ReviewType.UsageRequest -> currentRows.map { row ->
+                val interval = row.requestGapMs?.takeIf { it >= 0L }
+                MetricSample(
+                    occurredAt = row.requestedAt,
+                    intervalMs = interval,
+                    ratio = UsageRequestRhythmPolicy.ratio(interval, row.requestedDurationMinutes),
+                    key = row.appId,
+                    label = row.appName.ifBlank { row.appId },
+                    requestedDurationMinutes = row.requestedDurationMinutes,
+                    tagNames = row.tagNames,
+                    endReason = row.endReason,
                 )
             }
-        val recent = samples
-            .asReversed()
-            .take(10)
-            .map { RecentIntervalItem(it.occurredAt, it.intervalMs, it.label, it.key) }
-        val rankedTargets = when (reviewType) {
-            ReviewType.UsageRequest -> currentRecords
-                .groupingBy { it.appId }
-                .eachCount()
-                .map { (key, count) ->
-                    val label = currentRecords.firstOrNull { it.appId == key }?.appName
-                        ?.ifBlank { key } ?: key
-                    RankedTarget(key, label, count)
-                }
-            ReviewType.InterceptAttempt -> currentEvents
-                .groupingBy { it.eventKey }
-                .eachCount()
-                .map { (key, count) ->
-                    val event = currentEvents.firstOrNull { it.eventKey == key }
-                    RankedTarget(key, event?.subjectLabel?.ifBlank { event.subjectId } ?: key, count)
-                }
-        }.sortedWith(compareByDescending<RankedTarget> { it.count }.thenBy { it.label }).take(5)
-
-        val chartDates = if (bounds.range == Range.Today) {
-            recent.asReversed().map {
-                Instant.ofEpochMilli(it.occurredAt).atZone(zoneId).toLocalDate()
+            ReviewType.InterceptAttempt -> currentEvents.map { event ->
+                MetricSample(
+                    occurredAt = event.occurredAt,
+                    intervalMs = event.intervalMs?.takeIf { it >= 0L },
+                    ratio = null,
+                    key = event.eventKey,
+                    label = event.subjectLabel.ifBlank { event.subjectId },
+                    eventKind = event.eventKind,
+                )
             }
-        } else {
-            dailyBuckets.map { it.date }
+        }.sortedWith(compareBy<MetricSample> { it.occurredAt }.thenBy { it.key })
+
+        val intervals = samples.mapNotNull { it.intervalMs }
+        val intervalStats = SelfControlIntervalPolicy.statsFor(intervals)
+        val ratioValues = samples.mapNotNull { it.ratio }
+        val ratioStats = ratioStats(ratioValues)
+        val eventCount = when (reviewType) {
+            ReviewType.UsageRequest -> currentRows.size
+            ReviewType.InterceptAttempt -> currentEvents.size
         }
-        val comparison = previousSummary?.let { compare(stats, it.stats) }
-            ?: PeriodComparison(stats.sampleCount, 0, null, "暂无上一周期数据")
+        val coverage = DataCoverage(
+            eventCount = eventCount,
+            validIntervalCount = intervals.size,
+            validRatioCount = ratioValues.size,
+            excludedIntervalCount = eventCount - intervals.size,
+        )
+        val dailyBuckets = dailyBuckets(samples, eventCountRows = when (reviewType) {
+            ReviewType.UsageRequest -> currentRows.map { it.requestedAt }
+            ReviewType.InterceptAttempt -> currentEvents.map { it.occurredAt }
+        }, zoneId = zoneId)
+        val recentIntervals = samples.asReversed().take(10).map { sample ->
+            sample.toRecentItem()
+        }
+        val trendIntervals = samples.map { it.toRecentItem() }
+        val rankedTargets = rankShares(
+            values = samples.map { it.key to it.label },
+            denominator = eventCount,
+        ).map { RankedTarget(it.key, it.label, it.count) }
+        val usageDetails = if (reviewType == ReviewType.UsageRequest) {
+            buildUsageDetails(currentRows, samples, zoneId)
+        } else {
+            null
+        }
+        val comparison = previousSummary?.let {
+            compareSummary(
+                current = thisSummaryMetrics(eventCount, intervalStats, ratioStats, reviewType),
+                previous = thisSummaryMetrics(it.eventCount, it.intervalStats, it.ratioStats, reviewType),
+                currentEventCount = eventCount,
+                previousEventCount = it.eventCount,
+                reviewType = reviewType,
+            )
+        } ?: emptyComparison(eventCount, intervalStats, ratioStats, reviewType)
         return ReviewSummary(
             reviewType = reviewType,
             range = bounds.range,
-            eventCount = when (reviewType) {
-                ReviewType.UsageRequest -> currentRecords.size
-                ReviewType.InterceptAttempt -> currentEvents.size
-            },
-            requestCount = currentRecords.size,
+            eventCount = eventCount,
+            requestCount = currentRows.size,
             interceptCount = currentEvents.size,
-            intervalsMs = intervals,
-            stats = stats,
+            coverage = coverage,
+            intervalStats = intervalStats,
+            ratioStats = ratioStats,
+            usageDetails = usageDetails,
             dailyBuckets = dailyBuckets,
-            chartDates = chartDates,
-            recentIntervals = recent,
+            trendIntervals = trendIntervals,
+            recentIntervals = recentIntervals,
             rankedTargets = rankedTargets,
             comparison = comparison,
+            intervalsMs = intervals,
         )
     }
 
     fun compare(
         current: SelfControlIntervalPolicy.Stats,
         previous: SelfControlIntervalPolicy.Stats,
-    ): PeriodComparison {
-        if (current.sampleCount < 3 || previous.sampleCount < 3 ||
-            current.averageMs == null || previous.averageMs == null
-        ) {
-            return PeriodComparison(
-                currentSampleCount = current.sampleCount,
-                previousSampleCount = previous.sampleCount,
-                deltaAverageMs = null,
-                message = "样本不足（双方至少各需要 3 个有效间隔），暂不比较。",
-            )
-        }
-        val delta = SelfControlIntervalPolicy.deltaBetween(current.averageMs, previous.averageMs)
-        val message = when {
-            delta > 0L -> "平均间隔比上一周期延长 ${SelfControlIntervalPolicy.formatDurationCompact(delta)}。"
-            delta < 0L -> "平均间隔比上一周期缩短 ${SelfControlIntervalPolicy.formatDurationCompact(-delta)}。"
-            else -> "平均间隔与上一周期相同。"
-        }
-        return PeriodComparison(current.sampleCount, previous.sampleCount, delta, message)
+    ): PeriodComparison = compareSummary(
+        current = SummaryMetrics(current.sampleCount, current.averageMs?.toDouble(), null),
+        previous = SummaryMetrics(previous.sampleCount, previous.averageMs?.toDouble(), null),
+        currentEventCount = current.sampleCount,
+        previousEventCount = previous.sampleCount,
+        reviewType = ReviewType.InterceptAttempt,
+    )
+
+    private data class SummaryMetrics(
+        val sampleCount: Int,
+        val metricValue: Double?,
+        val intervalAverageMs: Long?,
+    )
+
+    private fun thisSummaryMetrics(
+        eventCount: Int,
+        intervalStats: SelfControlIntervalPolicy.Stats,
+        ratioStats: RatioStats?,
+        reviewType: ReviewType,
+    ): SummaryMetrics = if (reviewType == ReviewType.UsageRequest) {
+        SummaryMetrics(ratioStats?.sampleCount ?: 0, ratioStats?.average, intervalStats.averageMs)
+    } else {
+        SummaryMetrics(intervalStats.sampleCount, intervalStats.averageMs?.toDouble(), intervalStats.averageMs)
     }
 
-    private fun requestSamples(
-        records: List<UsageGuardRecord>,
-        bounds: RangeBounds,
-    ): List<Sample> {
-        return records
-            .filter { bounds.contains(it.requestedAt) }
-            .mapNotNull { record ->
-                record.requestGapMs?.takeIf { it >= 0L }?.let { interval ->
-                    Sample(
-                        occurredAt = record.requestedAt,
-                        intervalMs = interval,
-                        key = record.appId,
-                        label = record.appName.ifBlank { record.appId },
-                    )
-                }
-            }
+    private fun emptyComparison(
+        eventCount: Int,
+        intervalStats: SelfControlIntervalPolicy.Stats,
+        ratioStats: RatioStats?,
+        reviewType: ReviewType,
+    ): PeriodComparison {
+        val metrics = thisSummaryMetrics(eventCount, intervalStats, ratioStats, reviewType)
+        return PeriodComparison(
+            currentEventCount = eventCount,
+            previousEventCount = 0,
+            currentMetricValue = metrics.metricValue,
+            previousMetricValue = null,
+            metricDelta = null,
+            currentSampleCount = metrics.sampleCount,
+            previousSampleCount = 0,
+            deltaAverageMs = null,
+            message = "上一周期暂无有效样本",
+        )
     }
+
+    private fun compareSummary(
+        current: SummaryMetrics,
+        previous: SummaryMetrics,
+        currentEventCount: Int,
+        previousEventCount: Int,
+        reviewType: ReviewType,
+    ): PeriodComparison {
+        val delta = if (current.metricValue != null && previous.metricValue != null) {
+            current.metricValue - previous.metricValue
+        } else {
+            null
+        }
+        val deltaAverageMs = if (reviewType == ReviewType.InterceptAttempt &&
+            current.intervalAverageMs != null && previous.intervalAverageMs != null
+        ) {
+            SelfControlIntervalPolicy.deltaBetween(current.intervalAverageMs, previous.intervalAverageMs)
+        } else {
+            null
+        }
+        val message = when {
+            delta == null -> "上一周期暂无有效样本"
+            delta > 0.0 -> "本期平均比上一周期高 ${formatMetricDelta(delta, reviewType)}"
+            delta < 0.0 -> "本期平均比上一周期低 ${formatMetricDelta(-delta, reviewType)}"
+            else -> "本期平均与上一周期相同"
+        }
+        return PeriodComparison(
+            currentEventCount = currentEventCount,
+            previousEventCount = previousEventCount,
+            currentMetricValue = current.metricValue,
+            previousMetricValue = previous.metricValue,
+            metricDelta = delta,
+            currentSampleCount = current.sampleCount,
+            previousSampleCount = previous.sampleCount,
+            deltaAverageMs = deltaAverageMs,
+            message = message,
+        )
+    }
+
+    private fun formatMetricDelta(value: Double, reviewType: ReviewType): String = if (
+        reviewType == ReviewType.UsageRequest
+    ) {
+        "${UsageRequestRhythmPolicy.formatRatio(value) ?: "—"}×"
+    } else {
+        SelfControlIntervalPolicy.formatDurationCompact(value.toLong())
+    }
+
+    private fun dailyBuckets(
+        samples: List<MetricSample>,
+        eventCountRows: List<Long>,
+        zoneId: ZoneId,
+    ): List<DailyIntervalBucket> {
+        val dates = eventCountRows.groupingBy { Instant.ofEpochMilli(it).atZone(zoneId).toLocalDate() }
+            .eachCount()
+        val samplesByDate = samples.groupBy { Instant.ofEpochMilli(it.occurredAt).atZone(zoneId).toLocalDate() }
+        return dates.keys.sorted().map { date ->
+            val daySamples = samplesByDate[date].orEmpty()
+            val intervals = daySamples.mapNotNull { it.intervalMs }
+            val intervalStats = SelfControlIntervalPolicy.statsFor(intervals)
+            val ratios = daySamples.mapNotNull { it.ratio }
+            val dayRatioStats = ratioStats(ratios)
+            DailyIntervalBucket(
+                date = date,
+                eventCount = dates[date] ?: 0,
+                validIntervalCount = intervals.size,
+                validRatioCount = ratios.size,
+                averageMs = intervalStats.averageMs,
+                medianMs = intervalStats.medianMs,
+                ratioAverage = dayRatioStats?.average,
+                ratioMedian = dayRatioStats?.median,
+            )
+        }
+    }
+
+    private fun buildUsageDetails(
+        rows: List<UsageReviewRow>,
+        samples: List<MetricSample>,
+        zoneId: ZoneId,
+    ): UsageDetails {
+        val totalMinutes = rows.fold(0L) { total, row ->
+            total + row.requestedDurationMinutes.coerceAtLeast(0).toLong()
+        }
+        val averageMinutes = rows.map { it.requestedDurationMinutes.coerceAtLeast(0) }
+            .takeIf { it.isNotEmpty() }
+            ?.average()
+        val appBreakdown = rankShares(rows.map { it.appId to it.appName.ifBlank { it.appId } }, rows.size)
+        val tagValues = rows.flatMap { row ->
+            row.tagNames.mapNotNull { tag -> tag.trim().takeIf { it.isNotEmpty() } }
+                .map { tag -> tag to tag }
+        }
+        val tagBreakdown = rankShares(tagValues, tagValues.size)
+        val reasonValues = rows.map { row ->
+            row.endReason.toString() to endReasonLabel(row.endReason)
+        }
+        val endReasonBreakdown = rankShares(reasonValues, rows.size)
+        val periods = samples.map { sample ->
+            val hour = Instant.ofEpochMilli(sample.occurredAt).atZone(zoneId).hour
+            periodLabel(hour)
+        }
+        val busiestPeriod = rankShares(periods.map { it to it }, periods.size).firstOrNull()
+        return UsageDetails(
+            totalRequestedMinutes = totalMinutes,
+            averageRequestedMinutes = averageMinutes,
+            appBreakdown = appBreakdown,
+            tagBreakdown = tagBreakdown,
+            endReasonBreakdown = endReasonBreakdown,
+            busiestPeriod = busiestPeriod,
+        )
+    }
+
+    private fun rankShares(values: List<Pair<String, String>>, denominator: Int): List<RankedShare> {
+        if (values.isEmpty()) return emptyList()
+        return values.groupingBy { it.first to it.second }.eachCount()
+            .map { (pair, count) ->
+                RankedShare(
+                    key = pair.first,
+                    label = pair.second,
+                    count = count,
+                    share = if (denominator <= 0) 0.0 else count.toDouble() / denominator,
+                )
+            }
+            .sortedWith(compareByDescending<RankedShare> { it.count }.thenBy { it.label })
+    }
+
+    private fun ratioStats(values: List<Double>): RatioStats? {
+        if (values.isEmpty()) return null
+        val sorted = values.sorted()
+        val average = sorted.fold(BigDecimal.ZERO) { total, value ->
+            total.add(BigDecimal.valueOf(value))
+        }.divide(BigDecimal.valueOf(sorted.size.toLong()), 12, RoundingMode.HALF_UP).toDouble()
+        val middle = sorted.size / 2
+        val median = if (sorted.size % 2 == 1) sorted[middle] else {
+            (sorted[middle - 1] + sorted[middle]) / 2.0
+        }
+        return RatioStats(sorted.size, average, median, sorted.first(), sorted.last())
+    }
+
+    private fun endReasonLabel(reason: Int): String = when (reason) {
+        0 -> "进行中"
+        1 -> "到期"
+        2 -> "离开应用"
+        3 -> "被替换"
+        4 -> "返回桌面"
+        5 -> "主动结束"
+        else -> "其他结束状态"
+    }
+
+    private fun periodLabel(hour: Int): String = when (hour) {
+        in 6..10 -> "上午"
+        in 11..13 -> "午间"
+        in 14..17 -> "下午"
+        in 18..21 -> "晚间"
+        else -> "夜间"
+    }
+
+    private fun MetricSample.toRecentItem(): RecentIntervalItem = RecentIntervalItem(
+        occurredAt = occurredAt,
+        intervalMs = intervalMs,
+        label = label,
+        key = key,
+        requestedDurationMinutes = requestedDurationMinutes,
+        ratio = ratio,
+        tagNames = tagNames,
+        eventKind = eventKind,
+        endReason = endReason,
+    )
 }

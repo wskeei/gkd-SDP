@@ -72,7 +72,7 @@ class HomeVm : BaseViewModel() {
             .observeReviewSource(bounds.first, bounds.second)
             .map { source ->
                 DigitalSelfDisciplineTodaySummary(
-                    requestCount = source.usageRecords.count {
+                    requestCount = source.usageRows.count {
                         it.requestedAt >= bounds.first && it.requestedAt < bounds.second
                     },
                     interceptCount = source.interceptEvents.count {

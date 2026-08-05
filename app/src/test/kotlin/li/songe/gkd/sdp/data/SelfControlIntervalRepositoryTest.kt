@@ -145,7 +145,8 @@ class SelfControlIntervalRepositoryTest {
 
         val source = repository.observeReviewSource(15_000L, 25_000L).first()
 
-        assertEquals(listOf(current), source.usageRecords)
+        assertEquals(listOf(current.id), source.usageRows.map { it.id })
+        assertTrue(source.usageRows.none { it.javaClass.declaredFields.any { field -> field.name == "reasonText" } })
     }
 
     @Test
