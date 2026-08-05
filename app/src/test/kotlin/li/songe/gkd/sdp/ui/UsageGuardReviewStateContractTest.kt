@@ -8,7 +8,7 @@ import org.junit.Test
 class UsageGuardReviewStateContractTest {
     @Test
     fun reviewPageUsesOneStateFlowAndUnifiedSummaryOnly() {
-        val source = File("app/src/main/kotlin/li/songe/gkd/sdp/ui/UsageGuardReviewPage.kt").readText()
+        val source = sourceFile("app/src/main/kotlin/li/songe/gkd/sdp/ui/UsageGuardReviewPage.kt").readText()
 
         assertTrue(source.contains("val reviewUiStateFlow"))
         assertTrue(source.contains("selectedMetricFlow"))
@@ -20,7 +20,7 @@ class UsageGuardReviewStateContractTest {
 
     @Test
     fun reviewPageUsesAccessibleSegmentedFiltersAndAdaptiveWidth() {
-        val source = File("app/src/main/kotlin/li/songe/gkd/sdp/ui/UsageGuardReviewPage.kt").readText()
+        val source = sourceFile("app/src/main/kotlin/li/songe/gkd/sdp/ui/UsageGuardReviewPage.kt").readText()
 
         assertTrue(source.contains("SingleChoiceSegmentedButtonRow"))
         assertTrue(source.contains("SegmentedButtonDefaults.itemShape"))
@@ -37,13 +37,23 @@ class UsageGuardReviewStateContractTest {
 
     @Test
     fun trendChartExposesAxisUnitsAndAtMostSixTimeLabels() {
-        val source = File("app/src/main/kotlin/li/songe/gkd/sdp/ui/component/DigitalSelfDisciplineTrendChart.kt").readText()
-        val presentation = File("app/src/main/kotlin/li/songe/gkd/sdp/ui/component/DigitalSelfDisciplineReviewPresentation.kt").readText()
+        val source = sourceFile("app/src/main/kotlin/li/songe/gkd/sdp/ui/component/DigitalSelfDisciplineTrendChart.kt").readText()
+        val presentation = sourceFile("app/src/main/kotlin/li/songe/gkd/sdp/ui/component/DigitalSelfDisciplineReviewPresentation.kt").readText()
 
         assertTrue(source.contains("纵轴："))
         assertTrue(source.contains("最大"))
         assertTrue(source.contains("最小"))
         assertTrue(presentation.contains("fun xAxisLabels"))
         assertTrue(presentation.contains("maxLabels: Int = 6"))
+    }
+
+    private fun sourceFile(relativePath: String): File {
+        var directory = File(System.getProperty("user.dir"))
+        repeat(6) {
+            val candidate = File(directory, relativePath)
+            if (candidate.isFile) return candidate
+            directory = directory.parentFile ?: return File(relativePath)
+        }
+        return File(relativePath)
     }
 }

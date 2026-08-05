@@ -8,7 +8,7 @@ import org.junit.Test
 class UsageGuardRequestLayoutContractTest {
     @Test
     fun requestFormKeepsElapsedInsightAboveTagsAndRatioInsideDurationSection() {
-        val source = File(
+        val source = sourceFile(
             "app/src/main/kotlin/li/songe/gkd/sdp/service/UsageGuardRequestOverlayService.kt",
         ).readText()
         val form = source.substringAfter("private fun UsageGuardRequestContent(")
@@ -29,5 +29,15 @@ class UsageGuardRequestLayoutContractTest {
         assertTrue(ratio < submit)
         assertTrue(submit < cancel)
         assertFalse(form.contains("UsageRequestRhythmSummary"))
+    }
+
+    private fun sourceFile(relativePath: String): File {
+        var directory = File(System.getProperty("user.dir"))
+        repeat(6) {
+            val candidate = File(directory, relativePath)
+            if (candidate.isFile) return candidate
+            directory = directory.parentFile ?: return File(relativePath)
+        }
+        return File(relativePath)
     }
 }
