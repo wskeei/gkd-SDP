@@ -24,6 +24,7 @@ class UsageGuardRequestIntervalContractTest {
             record(5, "target", 5_000L, 1_000L),
             record(6, "target", 6_000L, 1_000L),
             record(7, "target", 7_000L, 1_000L),
+            record(8, "target", 0L, null),
         )
         val repository = SelfControlIntervalRepository(
             usageRecords = object : SelfControlIntervalRepository.UsageRecordSource {
@@ -42,6 +43,8 @@ class UsageGuardRequestIntervalContractTest {
             listOf(1_000L, 2_000L, 1_000L, 1_000L, 1_000L),
             overlay.samples.mapNotNull { it.gapMs },
         )
+        assertEquals(7, overlay.samples.size)
+        assertEquals(2, overlay.samples.count { it.gapMs == null })
     }
 
     @Test

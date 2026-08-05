@@ -127,15 +127,13 @@ class SelfControlIntervalRepository(
             window = SelfControlInsightWindowPolicy.Window.LAST_30_DAYS,
         )
         val rows = usageRecords.queryInsightRows(appId, startAt, insightAnchorAt)
-        val samples = rows.mapNotNull { row ->
-            row.requestGapMs?.takeIf { it >= 0L }?.let {
-                SelfControlInsightWindowPolicy.IntervalSample(
-                    id = row.id,
-                    occurredAtEpochMs = row.requestedAt,
-                    gapMs = it,
-                    requestedDurationMinutes = row.requestedDurationMinutes,
-                )
-            }
+        val samples = rows.map { row ->
+            SelfControlInsightWindowPolicy.IntervalSample(
+                id = row.id,
+                occurredAtEpochMs = row.requestedAt,
+                gapMs = row.requestGapMs?.takeIf { it >= 0L },
+                requestedDurationMinutes = row.requestedDurationMinutes,
+            )
         }
         val latestRequestIsInThePast = latest?.requestedAt?.let {
             it >= 0L && it <= insightAnchorAt

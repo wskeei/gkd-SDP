@@ -57,6 +57,9 @@ object SelfControlInsightWindowPolicy {
         val points: List<ChartPoint>,
         val stats: Stats,
         val rawSampleCount: Int,
+        val aggregationApplied: Boolean = false,
+        val aggregationLabel: String? = null,
+        val excludedSampleCount: Int = 0,
     )
 
     fun windowStartEpochMs(nowEpochMs: Long, window: Window): Long {
@@ -124,6 +127,7 @@ object SelfControlInsightWindowPolicy {
             points = points,
             stats = stats,
             rawSampleCount = selected.size,
+            excludedSampleCount = selected.size - stats.sampleCount,
         )
     }
 
