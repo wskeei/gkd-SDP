@@ -1,72 +1,148 @@
 package li.songe.gkd.sdp.ui
 
+import li.songe.gkd.sdp.data.UsageReviewRow
 import li.songe.gkd.sdp.ui.component.DigitalSelfDisciplineReviewPresentation
 import li.songe.gkd.sdp.util.DigitalSelfDisciplineReviewPolicy
-import li.songe.gkd.sdp.util.SelfControlIntervalPolicy
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.time.LocalDate
+import java.time.ZoneId
 
 class DigitalSelfDisciplineReviewPresentationTest {
-    @Test
-    fun summaryPresentationUsesRecentSamplesForTodayAndDailyMediansForLongRanges() {
-        val today = summary(DigitalSelfDisciplineReviewPolicy.Range.Today)
-        assertEquals(listOf("1", "2"), DigitalSelfDisciplineReviewPresentation.chartPoints(today).map { it.label })
+    private val zone = ZoneId.of("Asia/Shanghai")
 
-        val sevenDays = summary(DigitalSelfDisciplineReviewPolicy.Range.SevenDays)
-        assertEquals(
-            listOf("08-01", "08-02"),
-            DigitalSelfDisciplineReviewPresentation.chartPoints(sevenDays).map { it.label },
+    @Test
+    fun usageTrendDefaultsToRatioAndCanSwitchToGapWithoutChangingCoverage() {
+        val summary = summary(DigitalSelfDisciplineReviewPolicy.Range.Today)
+        val ratio = DigitalSelfDisciplineReviewPresentation.trend(summary)
+        val gap = DigitalSelfDisciplineReviewPresentation.trend(
+            summary,
+            DigitalSelfDisciplineReviewPolicy.ReviewMetric.USAGE_GAP,
         )
+
+        assertEquals(DigitalSelfDisciplineReviewPolicy.ReviewMetric.USAGE_RATIO, ratio.metric)
+        assertEquals(DigitalSelfDisciplineReviewPolicy.ReviewMetric.USAGE_GAP, gap.metric)
+        assertEquals(ratio.coverageText, gap.coverageText)
+        assertTrue(ratio.semanticSummary.contains("间用比"))
+        assertTrue(gap.semanticSummary.contains("未使用间隔"))
     }
 
     @Test
-    fun homeSummaryContainsBothEventTypesAndEmptyStateIsExplicit() {
+    fun interceptTrendUsesIntervalAndHasNoRatioSelectorMetric() {
+        val summary = interceptSummary()
+        val trend = DigitalSelfDisciplineReviewPresentation.trend(summary)
+
+        assertEquals(DigitalSelfDisciplineReviewPolicy.ReviewMetric.INTERCEPT_INTERVAL, trend.metric)
+        assertTrue(trend.semanticSummary.contains("拦截间隔"))
+        assertTrue(summary.ratioStats == null)
+    }
+
+    @Test
+    fun trendKeepsSinglePointsForSmallTodayDataAndAggregatesAfterTwentyFour() {
+        val small = summary(DigitalSelfDisciplineReviewPolicy.Range.Today)
+        assertEquals(2, DigitalSelfDisciplineReviewPresentation.trend(small).points.size)
+
+        val bounds = DigitalSelfDisciplineReviewPolicy.rangeBounds(
+            DigitalSelfDisciplineReviewPolicy.Range.Today,
+            LocalDate.of(2026, 8, 4),
+            zone,
+        )
+        val rows = (0 until 25).map { index ->
+            UsageReviewRow(
+                id = index.toLong() + 1,
+                appId = "app",
+                appName = "App",
+                tagNames = emptyList(),
+                requestedDurationMinutes = 30,
+                requestedAt = bounds.startAt + index * 1_000L,
+                endReason = 5,
+                requestGapMs = 60_000L,
+            )
+        }
+        val many = DigitalSelfDisciplineReviewPolicy.summarize(
+            usageRows = rows,
+            events = emptyList(),
+            bounds = bounds,
+            reviewType = DigitalSelfDisciplineReviewPolicy.ReviewType.UsageRequest,
+            interceptFilter = DigitalSelfDisciplineReviewPolicy.InterceptKindFilter.All,
+            zoneId = zone,
+        )
+        val trend = DigitalSelfDisciplineReviewPresentation.trend(many)
+        assertTrue(trend.points.size <= 24)
+        assertTrue(trend.points.any { it.sampleCount > 1 })
+    }
+
+    @Test
+    fun pagePresentationContainsCoverageAndDoesNotExposeSensitiveFields() {
+        val page = DigitalSelfDisciplineReviewPresentation.page(summary(DigitalSelfDisciplineReviewPolicy.Range.SevenDays))
+
+        assertTrue(page.coverage.text.contains("总申请"))
+        assertTrue(page.trend.semanticSummary.contains("总记录"))
+        assertTrue(page.recentRows.all { row ->
+            listOf("reasonText", "http", "pattern", "selector", "node text").none { forbidden ->
+                row.primaryText.contains(forbidden, ignoreCase = true) || row.secondaryText.contains(forbidden, ignoreCase = true)
+            }
+        })
+    }
+
+    @Test
+    fun homeSummaryAndFilterVisibilityRemainStable() {
         assertEquals("今日 2 次申请 · 3 次拦截", DigitalSelfDisciplineReviewPresentation.homeSummary(2, 3))
-        assertTrue(DigitalSelfDisciplineReviewPresentation.emptyText.contains("暂无"))
-    }
-
-    @Test
-    fun filterVisibilityOnlyShowsInterceptSubtypesOnInterceptTab() {
         assertTrue(
             DigitalSelfDisciplineReviewPresentation.showInterceptFilters(
-                DigitalSelfDisciplineReviewPolicy.ReviewType.InterceptAttempt
-            )
+                DigitalSelfDisciplineReviewPolicy.ReviewType.InterceptAttempt,
+            ),
         )
         assertTrue(
             !DigitalSelfDisciplineReviewPresentation.showInterceptFilters(
-                DigitalSelfDisciplineReviewPolicy.ReviewType.UsageRequest
-            )
+                DigitalSelfDisciplineReviewPolicy.ReviewType.UsageRequest,
+            ),
         )
     }
 
     private fun summary(range: DigitalSelfDisciplineReviewPolicy.Range): DigitalSelfDisciplineReviewPolicy.ReviewSummary {
-        val dates = if (range == DigitalSelfDisciplineReviewPolicy.Range.Today) {
-            listOf(LocalDate.of(2026, 8, 4))
-        } else {
-            listOf(LocalDate.of(2026, 8, 1), LocalDate.of(2026, 8, 2))
-        }
-        val buckets = dates.map { date ->
-            DigitalSelfDisciplineReviewPolicy.DailyIntervalBucket(date, 1, 60_000L, 60_000L)
-        }
-        val recent = listOf(
-            DigitalSelfDisciplineReviewPolicy.RecentIntervalItem(2L, 60_000L, "A", "a"),
-            DigitalSelfDisciplineReviewPolicy.RecentIntervalItem(1L, 30_000L, "A", "a"),
+        val bounds = DigitalSelfDisciplineReviewPolicy.rangeBounds(
+            range,
+            LocalDate.of(2026, 8, 4),
+            zone,
         )
-        return DigitalSelfDisciplineReviewPolicy.ReviewSummary(
+        val rows = listOf(
+            UsageReviewRow(1L, "a", "A", listOf("学习"), 30, bounds.startAt + 1_000L, 5, 120L * 60_000L),
+            UsageReviewRow(2L, "a", "A", listOf("学习"), 60, bounds.startAt + 2_000L, 5, 60L * 60_000L),
+        )
+        return DigitalSelfDisciplineReviewPolicy.summarize(
+            usageRows = rows,
+            events = emptyList(),
+            bounds = bounds,
             reviewType = DigitalSelfDisciplineReviewPolicy.ReviewType.UsageRequest,
-            range = range,
-            eventCount = 2,
-            requestCount = 2,
-            interceptCount = 0,
-            intervalsMs = listOf(30_000L, 60_000L),
-            stats = SelfControlIntervalPolicy.statsFor(listOf(30_000L, 60_000L)),
-            dailyBuckets = buckets,
-            chartDates = dates,
-            recentIntervals = recent,
-            rankedTargets = emptyList(),
-            comparison = DigitalSelfDisciplineReviewPolicy.PeriodComparison(2, 0, null, "暂无上一周期数据"),
+            interceptFilter = DigitalSelfDisciplineReviewPolicy.InterceptKindFilter.All,
+            zoneId = zone,
+        )
+    }
+
+    private fun interceptSummary(): DigitalSelfDisciplineReviewPolicy.ReviewSummary {
+        val bounds = DigitalSelfDisciplineReviewPolicy.rangeBounds(
+            DigitalSelfDisciplineReviewPolicy.Range.Today,
+            LocalDate.of(2026, 8, 4),
+            zone,
+        )
+        val event = li.songe.gkd.sdp.data.SelfControlAttemptEvent(
+            id = 1L,
+            eventKey = "app_blocker:app",
+            eventKind = li.songe.gkd.sdp.data.SelfControlAttempt.KIND_APP_BLOCKER,
+            subjectId = "app",
+            subjectLabel = "App",
+            occurredAt = bounds.startAt + 1_000L,
+            intervalMs = 60_000L,
+        )
+        return DigitalSelfDisciplineReviewPolicy.summarize(
+            usageRows = emptyList(),
+            events = listOf(event),
+            bounds = bounds,
+            reviewType = DigitalSelfDisciplineReviewPolicy.ReviewType.InterceptAttempt,
+            interceptFilter = DigitalSelfDisciplineReviewPolicy.InterceptKindFilter.All,
+            zoneId = zone,
         )
     }
 }
