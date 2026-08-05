@@ -17,12 +17,24 @@ data class UsageGuardTag(
     @ColumnInfo(name = "is_preset") val isPreset: Boolean = false,
     @ColumnInfo(name = "created_at") val createdAt: Long = System.currentTimeMillis(),
 ) {
+    companion object {
+        const val OTHER_TAG_NAME = "其他"
+        const val QUERY_ALL_SQL = """
+            SELECT * FROM usage_guard_tag
+            ORDER BY
+              CASE WHEN TRIM(name) = '其他' THEN 1 ELSE 0 END ASC,
+              is_preset DESC,
+              created_at ASC,
+              id ASC
+        """
+    }
+
     @Dao
     interface UsageGuardTagDao {
         @Insert(onConflict = OnConflictStrategy.IGNORE)
         suspend fun insert(tag: UsageGuardTag): Long
 
-        @Query("SELECT * FROM usage_guard_tag ORDER BY is_preset DESC, created_at ASC")
+        @Query(QUERY_ALL_SQL)
         fun queryAll(): Flow<List<UsageGuardTag>>
 
         @Query("DELETE FROM usage_guard_tag WHERE id = :id AND is_preset = 0")
