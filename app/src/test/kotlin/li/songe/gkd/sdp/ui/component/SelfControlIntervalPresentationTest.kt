@@ -71,6 +71,9 @@ class SelfControlIntervalPresentationTest {
         assertTrue(presentation.chartPoints.size <= 24)
         assertEquals(presentation.chartPoints.size, presentation.textRows.size)
         assertTrue(presentation.textRows.any { it.sampleCount > 1 })
+        assertTrue(presentation.semanticSummary.contains("有效样本 25 条"))
+        assertTrue(presentation.semanticSummary.contains("图形点"))
+        assertTrue(presentation.supportingText.contains("按 1 小时聚合"))
     }
 
     @Test
@@ -92,5 +95,41 @@ class SelfControlIntervalPresentationTest {
 
         assertTrue(presentation.chartPoints.single().isCurrent)
         assertTrue(presentation.textRows.single().isCurrent)
+    }
+
+    @Test
+    fun sameTimestampRowsOnlyMarkThePointContainingCurrentEvent() {
+        val samples = listOf(
+            SelfControlInsightWindowPolicy.IntervalSample(77L, now, 120L * 60_000L, null),
+            SelfControlInsightWindowPolicy.IntervalSample(78L, now, 60L * 60_000L, null),
+        )
+        val presentation = SelfControlInsightPresentation.from(
+            samples = samples,
+            insightAnchorAt = now,
+            currentReference = SelfControlInsightCurrentReference(
+                gapMs = 120L * 60_000L,
+                eventId = 77L,
+            ),
+        )
+
+        assertEquals(listOf(true, false), presentation.chartPoints.map { it.isCurrent })
+    }
+
+    @Test
+    fun coverageSummarySeparatesRawRowsFromValidPoints() {
+        val samples = (0 until 6).map { index ->
+            SelfControlInsightWindowPolicy.IntervalSample(
+                id = index.toLong() + 1,
+                occurredAtEpochMs = now - index * 60_000L,
+                gapMs = if (index < 4) 60_000L else null,
+                requestedDurationMinutes = 1,
+            )
+        }
+        val presentation = SelfControlInsightPresentation.from(samples, now)
+
+        assertTrue(presentation.semanticSummary.contains("总记录 6 条"))
+        assertTrue(presentation.semanticSummary.contains("有效样本 4 条"))
+        assertTrue(presentation.semanticSummary.contains("图形点 4 个"))
+        assertTrue(presentation.semanticSummary.contains("未纳入 2 条"))
     }
 }

@@ -110,29 +110,13 @@ data class SelfControlInsightPresentation(
                 metric = safeMetric,
                 zoneId = zoneId,
             )
-            val currentBucketStart = currentReference?.eventId?.let { eventId ->
-                val sample = SelfControlInsightWindowPolicy.samplesInWindow(
-                    samples = samples,
-                    nowEpochMs = insightAnchorAt,
-                    window = selectedWindow,
-                ).firstOrNull { it.id == eventId }
-                sample?.let {
-                    val start = SelfControlInsightWindowPolicy.windowStartEpochMs(
-                        insightAnchorAt,
-                        selectedWindow,
-                    )
-                    val index = ((it.occurredAtEpochMs - start).coerceAtLeast(0L) /
-                        selectedWindow.bucketMs)
-                        .coerceIn(0L, selectedWindow.maxChartPoints - 1L)
-                    start + index * selectedWindow.bucketMs
-                }
-            }
+            val currentEventId = currentReference?.eventId
             val chartPoints = selectedSeries.points.map { point ->
                 SelfControlInsightChartPoint(
                     label = point.label,
                     value = point.value,
                     sampleCount = point.sampleCount,
-                    isCurrent = currentBucketStart != null && point.bucketStartAt == currentBucketStart,
+                    isCurrent = currentEventId != null && point.sourceIds.contains(currentEventId),
                     bucketStartAt = point.bucketStartAt,
                 )
             }
@@ -146,13 +130,14 @@ data class SelfControlInsightPresentation(
             }
             val comparisonText = comparisonText(currentReference, selectedSeries, safeMetric)
             val semanticSummary = semanticSummary(selectedSeries, selectedWindow, safeMetric)
+            val coverageText = coverageText(selectedSeries)
             val supportingText = when {
                 selectedSeries.stats.sampleCount == 0 ->
-                    "所选范围暂无可用样本；已加载的近 30 天数据会在切换范围时继续复用。"
-                selectedSeries.points.any { it.sampleCount > 1 } ->
-                    "柱形按时间桶显示，每个桶为该桶内样本平均值；原始有效样本 ${selectedSeries.stats.sampleCount} 条。"
+                    "所选范围暂无可用样本；$coverageText；已加载的近 30 天数据会在切换范围时继续复用。"
+                selectedSeries.aggregationApplied ->
+                    "${selectedSeries.aggregationLabel}，每个时间桶显示桶内样本平均值；$coverageText。"
                 else ->
-                    "图表显示所选范围的原始样本；文字明细与图表一一对应。"
+                    "图表逐条显示所选范围的有效样本；$coverageText；文字明细与图表一一对应。"
             }
             return SelfControlInsightPresentation(
                 selectedWindow = selectedWindow,
@@ -175,26 +160,13 @@ data class SelfControlInsightPresentation(
             selectedWindow: SelfControlInsightWindowPolicy.Window,
             currentReference: SelfControlInsightCurrentReference?,
         ): SelfControlInsightPresentation {
-            val currentBucketStart = currentReference?.eventId?.let { eventId ->
-                val sample = SelfControlInsightWindowPolicy.samplesInWindow(
-                    samples = samples,
-                    nowEpochMs = insightAnchorAt,
-                    window = selectedWindow,
-                ).firstOrNull { it.id == eventId }
-                sample?.let {
-                    val start = SelfControlInsightWindowPolicy.windowStartEpochMs(
-                        insightAnchorAt,
-                        selectedWindow,
-                    )
-                    val index = ((it.occurredAtEpochMs - start).coerceAtLeast(0L) /
-                        selectedWindow.bucketMs)
-                        .coerceIn(0L, selectedWindow.maxChartPoints - 1L)
-                    start + index * selectedWindow.bucketMs
-                }
-            }
-            val chartPoints = base.chartPoints.map { point ->
+            val currentEventId = currentReference?.eventId
+            val chartPoints = base.chartPoints.mapIndexed { index, point ->
                 point.copy(
-                    isCurrent = currentBucketStart != null && point.bucketStartAt == currentBucketStart,
+                    isCurrent = currentEventId != null &&
+                        base.selectedSeries.points.getOrNull(index)
+                            ?.sourceIds
+                            ?.contains(currentEventId) == true,
                 )
             }
             val textRows = base.textRows.mapIndexed { index, row ->
@@ -217,7 +189,8 @@ data class SelfControlInsightPresentation(
             metric: SelfControlInsightWindowPolicy.Metric,
         ): String {
             val stats = series.stats
-            if (stats.sampleCount == 0) return "${window.label}暂无${metric.label()}样本。"
+            val coverage = coverageText(series)
+            if (stats.sampleCount == 0) return "${window.label}暂无${metric.label()}样本 · $coverage。"
             val average = when (metric) {
                 SelfControlInsightWindowPolicy.Metric.INTERVAL ->
                     stats.averageMs?.let { SelfControlIntervalPolicy.formatDurationCompact(it.toLong()) }
@@ -230,7 +203,16 @@ data class SelfControlInsightPresentation(
                 SelfControlInsightWindowPolicy.Metric.USAGE_RATIO ->
                     stats.medianRatio?.let { formatValue(it, metric) }
             } ?: "暂无"
-            return "${window.label}${metric.label()}平均 $average · 中位 $median · 有效样本 ${stats.sampleCount} 条，原始记录 ${series.rawSampleCount} 条。"
+            return "${window.label}${metric.label()}平均 $average · 中位 $median · $coverage。"
+        }
+
+        private fun coverageText(series: SelfControlInsightWindowPolicy.Series): String {
+            val excluded = if (series.excludedSampleCount > 0) {
+                " · 未纳入 ${series.excludedSampleCount} 条"
+            } else {
+                ""
+            }
+            return "总记录 ${series.rawSampleCount} 条 · 有效样本 ${series.stats.sampleCount} 条 · 图形点 ${series.points.size} 个$excluded"
         }
 
         private fun comparisonText(
@@ -450,9 +432,7 @@ fun SelfControlIntervalInsightCard(
                 semanticSummary = presentation.semanticSummary,
                 currentPointLabel = presentation.chartPoints.firstOrNull { it.isCurrent }?.label,
                 currentPointValue = currentPointValue,
-                aggregated = presentation.selectedSeries.rawSampleCount >
-                    presentation.selectedWindow.maxChartPoints ||
-                    presentation.selectedSeries.points.any { it.sampleCount > 1 },
+                aggregationLabel = presentation.selectedSeries.aggregationLabel,
             )
             TextButton(
                 onClick = { detailsExpanded = !detailsExpanded },
@@ -469,7 +449,7 @@ fun SelfControlIntervalInsightCard(
                 ) {
                     presentation.textRows.forEach { row ->
                         val currentLabel = if (row.isCurrent) "，本次" else ""
-                        val bucketLabel = if (row.sampleCount > 1) "，平均桶 ${row.sampleCount} 条" else ""
+                        val bucketLabel = if (row.sampleCount > 1) "，时间桶平均 ${row.sampleCount} 条" else ""
                         Text(
                             text = "${row.label}：${row.valueText}$currentLabel$bucketLabel",
                             style = MaterialTheme.typography.bodySmall,

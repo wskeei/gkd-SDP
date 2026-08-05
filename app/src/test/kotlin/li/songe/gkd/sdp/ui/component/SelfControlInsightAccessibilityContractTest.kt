@@ -23,6 +23,8 @@ class SelfControlInsightAccessibilityContractTest {
         assertTrue(presentation.chartPoints.size <= SelfControlInsightWindowPolicy.MAX_CHART_POINTS)
         assertEquals(presentation.chartPoints.size, presentation.textRows.size)
         assertTrue(presentation.semanticSummary.isNotBlank())
+        assertTrue(presentation.semanticSummary.contains("总记录"))
+        assertTrue(presentation.semanticSummary.contains("图形点"))
     }
 
     @Test
