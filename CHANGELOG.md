@@ -6,6 +6,8 @@ All notable GKD-SDP changes are documented here. The format follows
 
 ## [Unreleased]
 
+## [2.0.0-beta.5] - 2026-08-05
+
 ### Added
 
 - Add a unified digital self-discipline review with overview, single-metric trends,
@@ -162,7 +164,8 @@ since that base rather than repeating upstream release notes.
   when the required service permission is disabled.
 - Added screenshot protection for the usage reason overlay.
 
-[Unreleased]: https://github.com/wskeei/gkd-SDP/compare/v2.0.0-beta.4...HEAD
+[Unreleased]: https://github.com/wskeei/gkd-SDP/compare/v2.0.0-beta.5...HEAD
+[2.0.0-beta.5]: https://github.com/wskeei/gkd-SDP/compare/v2.0.0-beta.4...v2.0.0-beta.5
 [2.0.0-beta.4]: https://github.com/wskeei/gkd-SDP/releases/tag/v2.0.0-beta.4
 [2.0.0-beta.3]: https://github.com/wskeei/gkd-SDP/releases/tag/v2.0.0-beta.3
 [2.0.0-beta.2]: https://github.com/wskeei/gkd-SDP/releases/tag/v2.0.0-beta.2
