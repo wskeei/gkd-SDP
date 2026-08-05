@@ -2,24 +2,33 @@ package li.songe.gkd.sdp.ui.component
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import li.songe.gkd.sdp.data.SelfControlIntervalRepository
 import li.songe.gkd.sdp.util.SelfControlInsightWindowPolicy
+import li.songe.gkd.sdp.util.SelfControlIntervalPolicy
 import li.songe.gkd.sdp.util.UsageRequestRhythmPolicy
 import java.math.BigDecimal
 
 data class UsageRequestRhythmPresentation(
     val status: Status,
+    val selectedWindow: SelfControlInsightWindowPolicy.Window,
     val currentGapMs: Long?,
     val requestedDurationMinutes: Int?,
     val currentRatio: Double?,
     val currentFormula: UsageRequestRhythmPolicy.Formula?,
+    val currentRatioText: String,
+    val selectedWindowAverageText: String,
+    val equationText: String?,
+    val gapText: String,
+    val durationText: String,
     val averageRatioByWindow: Map<SelfControlInsightWindowPolicy.Window, Double?>,
     val ratioSampleCountByWindow: Map<SelfControlInsightWindowPolicy.Window, Int>,
     val comparisonText: String?,
@@ -87,6 +96,15 @@ data class UsageRequestRhythmPresentation(
                 currentGap,
                 requestedDurationMinutes,
             )
+            val currentRatioText = currentRatio?.let {
+                "${UsageRequestRhythmPolicy.formatRatio(it) ?: "—"}×"
+            } ?: "—"
+            val selectedWindowAverageText = averages[selectedWindow]?.let {
+                "${UsageRequestRhythmPolicy.formatRatio(it) ?: "—"}×"
+            } ?: "—"
+            val equationText = currentFormula?.let(::formatEquation)
+            val gapText = currentGap?.let(SelfControlIntervalPolicy::formatDurationCompact) ?: "—"
+            val durationText = requestedDurationMinutes.takeIf { it > 0 }?.let { "$it 分钟" } ?: "—"
             val baseline = averages[selectedWindow]
             val comparison = if (currentRatio != null && baseline != null) {
                 val delta = currentRatio - baseline
@@ -110,10 +128,16 @@ data class UsageRequestRhythmPresentation(
             }
             return UsageRequestRhythmPresentation(
                 status = status,
+                selectedWindow = selectedWindow,
                 currentGapMs = currentGap,
                 requestedDurationMinutes = requestedDurationMinutes.takeIf { it > 0 },
                 currentRatio = currentRatio,
                 currentFormula = currentFormula,
+                currentRatioText = currentRatioText,
+                selectedWindowAverageText = selectedWindowAverageText,
+                equationText = equationText,
+                gapText = gapText,
+                durationText = durationText,
                 averageRatioByWindow = averages,
                 ratioSampleCountByWindow = counts,
                 comparisonText = comparison,
@@ -125,8 +149,12 @@ data class UsageRequestRhythmPresentation(
             "${UsageRequestRhythmPolicy.formatRatio(value) ?: "暂无"}×"
 
         fun formatFormula(formula: UsageRequestRhythmPolicy.Formula?): String {
-            if (formula == null) return "公式：—"
-            return "公式：${formatOperand(formula.gapValue)} ${formula.unit.label} ÷ " +
+            return "公式：${formatEquation(formula)}"
+        }
+
+        private fun formatEquation(formula: UsageRequestRhythmPolicy.Formula?): String {
+            if (formula == null) return "—"
+            return "${formatOperand(formula.gapValue)} ${formula.unit.label} ÷ " +
                 "${formatOperand(formula.durationValue)} ${formula.unit.label} = " +
                 "${UsageRequestRhythmPolicy.formatRatio(formula.ratio) ?: "—"}×"
         }
@@ -137,31 +165,56 @@ data class UsageRequestRhythmPresentation(
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @androidx.compose.runtime.Composable
-fun UsageRequestRhythmSummary(
+fun UsageDurationRatioFeedback(
     presentation: UsageRequestRhythmPresentation,
     modifier: Modifier = Modifier,
 ) {
-    Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(top = 8.dp),
-        verticalArrangement = Arrangement.spacedBy(6.dp),
+    Surface(
+        modifier = modifier.fillMaxWidth(),
+        color = MaterialTheme.colorScheme.surfaceVariant,
+        shape = MaterialTheme.shapes.medium,
     ) {
-        HorizontalDivider()
-        Text("间用比反馈", style = MaterialTheme.typography.titleSmall)
-        Text(
-            text = "本次间用比：${presentation.currentRatio?.let { "${UsageRequestRhythmPolicy.formatRatio(it)}×" } ?: "—"}",
-            style = MaterialTheme.typography.bodyLarge,
-        )
-        Text(text = UsageRequestRhythmPresentation.formatFormula(presentation.currentFormula))
-        presentation.comparisonText?.let {
-            Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
+        Column(
+            modifier = Modifier.padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            Text("间用比", style = MaterialTheme.typography.titleSmall)
+            FlowRow(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                Column {
+                    Text("本次", style = MaterialTheme.typography.bodySmall)
+                    Text(presentation.currentRatioText, style = MaterialTheme.typography.titleLarge)
+                }
+                Column {
+                    Text("${presentation.selectedWindow.label}平均", style = MaterialTheme.typography.bodySmall)
+                    Text(presentation.selectedWindowAverageText, style = MaterialTheme.typography.bodyMedium)
+                }
+            }
+            FlowRow(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                Text("未使用间隔 ${presentation.gapText}", style = MaterialTheme.typography.bodyMedium)
+                Text("申请时长 ${presentation.durationText}", style = MaterialTheme.typography.bodyMedium)
+            }
+            Text(
+                text = "同单位换算：${presentation.equationText ?: "—"}",
+                style = MaterialTheme.typography.bodyMedium,
+            )
+            presentation.comparisonText?.let {
+                Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
+            }
+            Text(
+                text = presentation.statusText,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
-        Text(
-            text = presentation.statusText,
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
     }
 }
