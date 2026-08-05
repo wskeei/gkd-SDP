@@ -19,14 +19,9 @@ data class UsageGuardTag(
 ) {
     companion object {
         const val OTHER_TAG_NAME = "其他"
-        const val QUERY_ALL_SQL = """
-            SELECT * FROM usage_guard_tag
-            ORDER BY
-              CASE WHEN TRIM(name) = '其他' THEN 1 ELSE 0 END ASC,
-              is_preset DESC,
-              created_at ASC,
-              id ASC
-        """
+        const val QUERY_ALL_SQL = "SELECT * FROM usage_guard_tag " +
+            "ORDER BY CASE WHEN TRIM(name) = '" + OTHER_TAG_NAME + "' THEN 1 ELSE 0 END ASC, " +
+            "is_preset DESC, created_at ASC, id ASC"
     }
 
     @Dao

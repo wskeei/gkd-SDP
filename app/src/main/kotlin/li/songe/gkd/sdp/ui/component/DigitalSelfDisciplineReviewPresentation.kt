@@ -107,8 +107,20 @@ object DigitalSelfDisciplineReviewPresentation {
             else -> bucketByDate(rows, zoneId)
         }
         val average = metricValue(summary, safeMetric)
-        val previous = summary.comparison.previousMetricValue
-        val delta = summary.comparison.metricDelta
+        val previous = when (safeMetric) {
+            DigitalSelfDisciplineReviewPolicy.ReviewMetric.USAGE_RATIO ->
+                summary.comparison.previousRatioAverage
+            DigitalSelfDisciplineReviewPolicy.ReviewMetric.USAGE_GAP,
+            DigitalSelfDisciplineReviewPolicy.ReviewMetric.INTERCEPT_INTERVAL ->
+                summary.comparison.previousIntervalAverageMs?.toDouble()
+        }
+        val delta = when (safeMetric) {
+            DigitalSelfDisciplineReviewPolicy.ReviewMetric.USAGE_RATIO ->
+                summary.comparison.ratioDelta
+            DigitalSelfDisciplineReviewPolicy.ReviewMetric.USAGE_GAP,
+            DigitalSelfDisciplineReviewPolicy.ReviewMetric.INTERCEPT_INTERVAL ->
+                summary.comparison.intervalDeltaMs?.toDouble()
+        }
         val currentText = formatMetricValue(average, safeMetric)
         val previousText = formatMetricValue(previous, safeMetric)
         val deltaText = when {
@@ -117,9 +129,15 @@ object DigitalSelfDisciplineReviewPresentation {
             delta > 0.0 -> "+${formatMetricValue(delta, safeMetric)}"
             else -> "-${formatMetricValue(abs(delta), safeMetric)}"
         }
-        val coverageText = "有效样本 ${coverageValidCount(summary, safeMetric)} 条 / 总记录 ${summary.coverage.eventCount} 条 · 图形点 ${points.size} 个" +
-            if (summary.coverage.excludedIntervalCount > 0) {
-                " · 未纳入 ${summary.coverage.excludedIntervalCount} 条"
+        val validCount = coverageValidCount(summary, safeMetric)
+        val excludedCount = when (safeMetric) {
+            DigitalSelfDisciplineReviewPolicy.ReviewMetric.USAGE_RATIO -> summary.coverage.excludedRatioCount
+            DigitalSelfDisciplineReviewPolicy.ReviewMetric.USAGE_GAP,
+            DigitalSelfDisciplineReviewPolicy.ReviewMetric.INTERCEPT_INTERVAL -> summary.coverage.excludedIntervalCount
+        }
+        val coverageText = "有效样本 $validCount 条 / 总记录 ${summary.coverage.eventCount} 条 · 图形点 ${points.size} 个" +
+            if (excludedCount > 0) {
+                " · 未纳入 $excludedCount 条"
             } else {
                 ""
             }
@@ -170,11 +188,14 @@ object DigitalSelfDisciplineReviewPresentation {
                 "结束状态" to rankedBars(details.endReasonBreakdown),
                 "集中时段" to listOfNotNull(details.busiestPeriod).map { rankedBars(listOf(it)).first() },
             )
-        } ?: listOf("高频拦截目标" to rankedBars(summary.rankedTargets.map { DigitalSelfDisciplineReviewPolicy.RankedShare(it.key, it.label, it.count, if (summary.eventCount == 0) 0.0 else it.count.toDouble() / summary.eventCount) }))
+        } ?: listOf("高频拦截目标" to rankedBars(summary.rankedTargets))
         val recentRows = summary.recentIntervals.map { item ->
             val time = formatTime(item.occurredAt, zoneId)
             val metricText = if (summary.reviewType == DigitalSelfDisciplineReviewPolicy.ReviewType.UsageRequest) {
-                "间用比 ${formatMetricValue(item.ratio, DigitalSelfDisciplineReviewPolicy.ReviewMetric.USAGE_RATIO)} · 未使用间隔 ${formatMetricValue(item.intervalMs?.toDouble(), DigitalSelfDisciplineReviewPolicy.ReviewMetric.USAGE_GAP)} · 申请 ${item.requestedDurationMinutes ?: 0} 分钟"
+                val tags = item.tagNames.map { it.trim() }.filter { it.isNotEmpty() }
+                    .ifEmpty { listOf("—") }
+                    .joinToString("、")
+                "间用比 ${formatMetricValue(item.ratio, DigitalSelfDisciplineReviewPolicy.ReviewMetric.USAGE_RATIO)} · 未使用间隔 ${formatMetricValue(item.intervalMs?.toDouble(), DigitalSelfDisciplineReviewPolicy.ReviewMetric.USAGE_GAP)} · 申请 ${item.requestedDurationMinutes ?: 0} 分钟 · 标签：$tags · 结束状态：${endReasonLabel(item.endReason)}"
             } else {
                 "间隔 ${formatMetricValue(item.intervalMs?.toDouble(), DigitalSelfDisciplineReviewPolicy.ReviewMetric.INTERCEPT_INTERVAL)} · ${eventKindLabel(item.eventKind)}"
             }
@@ -194,6 +215,24 @@ object DigitalSelfDisciplineReviewPresentation {
 
     fun chartPoints(summary: DigitalSelfDisciplineReviewPolicy.ReviewSummary): List<ChartPoint> =
         trend(summary).points.map { ChartPoint(it.label, it.value.toLong()) }
+
+    fun formatTrendValue(
+        value: Double,
+        metric: DigitalSelfDisciplineReviewPolicy.ReviewMetric,
+    ): String = formatMetricValue(value, metric)
+
+    fun axisUnitLabel(metric: DigitalSelfDisciplineReviewPolicy.ReviewMetric): String =
+        if (metric == DigitalSelfDisciplineReviewPolicy.ReviewMetric.USAGE_RATIO) "×" else "自适应时间"
+
+    fun xAxisLabels(points: List<TrendPoint>, maxLabels: Int = 6): List<String> {
+        if (points.isEmpty()) return emptyList()
+        val count = minOf(maxLabels.coerceAtLeast(2), points.size)
+        if (count == points.size) return points.map { it.label }
+        val step = (points.lastIndex.toDouble() / (count - 1)).coerceAtLeast(1.0)
+        return (0 until count).map { index ->
+            points[(index * step).toInt().coerceAtMost(points.lastIndex)].label
+        }.distinct()
+    }
 
     fun homeSummary(requestCount: Int, interceptCount: Int): String =
         "今日 ${requestCount.coerceAtLeast(0)} 次申请 · ${interceptCount.coerceAtLeast(0)} 次拦截"
@@ -235,8 +274,8 @@ object DigitalSelfDisciplineReviewPresentation {
         )
     }
 
-    private fun rankedBars(items: List<DigitalSelfDisciplineReviewPolicy.RankedShare>): List<RankedBar> =
-        items.take(5).map { item ->
+    private fun rankedBars(items: List<DigitalSelfDisciplineReviewPolicy.RankedShare>): List<RankedBar> {
+        val visible = items.take(5).map { item ->
             RankedBar(
                 label = item.label,
                 countText = "${item.count} 次",
@@ -244,6 +283,18 @@ object DigitalSelfDisciplineReviewPresentation {
                 share = item.share.toFloat().coerceIn(0f, 1f),
             )
         }
+        val remaining = items.drop(5)
+        return if (remaining.isEmpty()) {
+            visible
+        } else {
+            visible + RankedBar(
+                label = "其他",
+                countText = "${remaining.sumOf { it.count }} 次",
+                shareText = "${(remaining.sumOf { it.share } * 100.0).let { "%.1f".format(Locale.ROOT, it) }}%",
+                share = remaining.sumOf { it.share }.toFloat().coerceIn(0f, 1f),
+            )
+        }
+    }
 
     private fun valueFor(
         item: DigitalSelfDisciplineReviewPolicy.RecentIntervalItem,
@@ -290,7 +341,7 @@ object DigitalSelfDisciplineReviewPresentation {
 
     private fun coverageText(summary: DigitalSelfDisciplineReviewPolicy.ReviewSummary): String =
         if (summary.reviewType == DigitalSelfDisciplineReviewPolicy.ReviewType.UsageRequest) {
-            "总申请 ${summary.coverage.eventCount} 条 · 有效间隔 ${summary.coverage.validIntervalCount} 条 · 有效间用比 ${summary.coverage.validRatioCount} 条 · 未纳入 ${summary.coverage.excludedIntervalCount} 条"
+            "总申请 ${summary.coverage.eventCount} 条 · 有效间隔 ${summary.coverage.validIntervalCount} 条 · 有效间用比 ${summary.coverage.validRatioCount} 条 · 未纳入间隔 ${summary.coverage.excludedIntervalCount} 条 · 未纳入间用比 ${summary.coverage.excludedRatioCount} 条"
         } else {
             "总拦截 ${summary.coverage.eventCount} 条 · 已完成间隔 ${summary.coverage.validIntervalCount} 条 · 首次或未完成 ${summary.coverage.excludedIntervalCount} 条"
         }
@@ -304,5 +355,16 @@ object DigitalSelfDisciplineReviewPresentation {
         2 -> "选择器拦截"
         3 -> "网址拦截"
         else -> "拦截"
+    }
+
+    private fun endReasonLabel(reason: Int?): String = when (reason) {
+        0 -> "进行中"
+        1 -> "到期"
+        2 -> "离开应用"
+        3 -> "被替换"
+        4 -> "返回桌面"
+        5 -> "主动结束"
+        null -> "未知"
+        else -> "其他结束状态"
     }
 }

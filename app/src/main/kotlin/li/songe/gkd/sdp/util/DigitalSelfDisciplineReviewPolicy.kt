@@ -63,6 +63,7 @@ object DigitalSelfDisciplineReviewPolicy {
         val validIntervalCount: Int,
         val validRatioCount: Int,
         val excludedIntervalCount: Int,
+        val excludedRatioCount: Int,
     )
 
     data class RankedShare(
@@ -70,12 +71,6 @@ object DigitalSelfDisciplineReviewPolicy {
         val label: String,
         val count: Int,
         val share: Double,
-    )
-
-    data class RankedTarget(
-        val key: String,
-        val label: String,
-        val count: Int,
     )
 
     data class UsageDetails(
@@ -121,6 +116,12 @@ object DigitalSelfDisciplineReviewPolicy {
         val currentSampleCount: Int,
         val previousSampleCount: Int,
         val deltaAverageMs: Long? = null,
+        val currentIntervalAverageMs: Long? = null,
+        val previousIntervalAverageMs: Long? = null,
+        val intervalDeltaMs: Long? = null,
+        val currentRatioAverage: Double? = null,
+        val previousRatioAverage: Double? = null,
+        val ratioDelta: Double? = null,
         val message: String,
     )
 
@@ -137,21 +138,9 @@ object DigitalSelfDisciplineReviewPolicy {
         val dailyBuckets: List<DailyIntervalBucket>,
         val trendIntervals: List<RecentIntervalItem>,
         val recentIntervals: List<RecentIntervalItem>,
-        val rankedTargets: List<RankedTarget>,
+        val rankedTargets: List<RankedShare>,
         val comparison: PeriodComparison,
-        val intervalsMs: List<Long>,
-    ) {
-        @Deprecated("Use intervalStats")
-        val stats: SelfControlIntervalPolicy.Stats get() = intervalStats
-
-        @Deprecated("Use dailyBuckets and recentIntervals")
-        val chartDates: List<LocalDate>
-            get() = dailyBuckets.map { it.date }.ifEmpty {
-                recentIntervals.asReversed().map { item ->
-                    Instant.ofEpochMilli(item.occurredAt).atZone(ZoneId.systemDefault()).toLocalDate()
-                }
-            }
-    }
+    )
 
     private data class MetricSample(
         val occurredAt: Long,
@@ -258,6 +247,7 @@ object DigitalSelfDisciplineReviewPolicy {
             validIntervalCount = intervals.size,
             validRatioCount = ratioValues.size,
             excludedIntervalCount = eventCount - intervals.size,
+            excludedRatioCount = eventCount - ratioValues.size,
         )
         val dailyBuckets = dailyBuckets(samples, eventCountRows = when (reviewType) {
             ReviewType.UsageRequest -> currentRows.map { it.requestedAt }
@@ -270,7 +260,7 @@ object DigitalSelfDisciplineReviewPolicy {
         val rankedTargets = rankShares(
             values = samples.map { it.key to it.label },
             denominator = eventCount,
-        ).map { RankedTarget(it.key, it.label, it.count) }
+        )
         val usageDetails = if (reviewType == ReviewType.UsageRequest) {
             buildUsageDetails(currentRows, samples, zoneId)
         } else {
@@ -300,7 +290,6 @@ object DigitalSelfDisciplineReviewPolicy {
             recentIntervals = recentIntervals,
             rankedTargets = rankedTargets,
             comparison = comparison,
-            intervalsMs = intervals,
         )
     }
 
@@ -308,8 +297,18 @@ object DigitalSelfDisciplineReviewPolicy {
         current: SelfControlIntervalPolicy.Stats,
         previous: SelfControlIntervalPolicy.Stats,
     ): PeriodComparison = compareSummary(
-        current = SummaryMetrics(current.sampleCount, current.averageMs?.toDouble(), null),
-        previous = SummaryMetrics(previous.sampleCount, previous.averageMs?.toDouble(), null),
+        current = SummaryMetrics(
+            sampleCount = current.sampleCount,
+            metricValue = current.averageMs?.toDouble(),
+            intervalAverageMs = current.averageMs,
+            ratioAverage = null,
+        ),
+        previous = SummaryMetrics(
+            sampleCount = previous.sampleCount,
+            metricValue = previous.averageMs?.toDouble(),
+            intervalAverageMs = previous.averageMs,
+            ratioAverage = null,
+        ),
         currentEventCount = current.sampleCount,
         previousEventCount = previous.sampleCount,
         reviewType = ReviewType.InterceptAttempt,
@@ -319,6 +318,7 @@ object DigitalSelfDisciplineReviewPolicy {
         val sampleCount: Int,
         val metricValue: Double?,
         val intervalAverageMs: Long?,
+        val ratioAverage: Double?,
     )
 
     private fun thisSummaryMetrics(
@@ -327,9 +327,19 @@ object DigitalSelfDisciplineReviewPolicy {
         ratioStats: RatioStats?,
         reviewType: ReviewType,
     ): SummaryMetrics = if (reviewType == ReviewType.UsageRequest) {
-        SummaryMetrics(ratioStats?.sampleCount ?: 0, ratioStats?.average, intervalStats.averageMs)
+        SummaryMetrics(
+            sampleCount = ratioStats?.sampleCount ?: 0,
+            metricValue = ratioStats?.average,
+            intervalAverageMs = intervalStats.averageMs,
+            ratioAverage = ratioStats?.average,
+        )
     } else {
-        SummaryMetrics(intervalStats.sampleCount, intervalStats.averageMs?.toDouble(), intervalStats.averageMs)
+        SummaryMetrics(
+            sampleCount = intervalStats.sampleCount,
+            metricValue = intervalStats.averageMs?.toDouble(),
+            intervalAverageMs = intervalStats.averageMs,
+            ratioAverage = null,
+        )
     }
 
     private fun emptyComparison(
@@ -348,6 +358,8 @@ object DigitalSelfDisciplineReviewPolicy {
             currentSampleCount = metrics.sampleCount,
             previousSampleCount = 0,
             deltaAverageMs = null,
+            currentIntervalAverageMs = metrics.intervalAverageMs,
+            currentRatioAverage = metrics.ratioAverage,
             message = "上一周期暂无有效样本",
         )
     }
@@ -371,6 +383,16 @@ object DigitalSelfDisciplineReviewPolicy {
         } else {
             null
         }
+        val intervalDeltaMs = if (current.intervalAverageMs != null && previous.intervalAverageMs != null) {
+            SelfControlIntervalPolicy.deltaBetween(current.intervalAverageMs, previous.intervalAverageMs)
+        } else {
+            null
+        }
+        val ratioDelta = if (current.ratioAverage != null && previous.ratioAverage != null) {
+            current.ratioAverage - previous.ratioAverage
+        } else {
+            null
+        }
         val message = when {
             delta == null -> "上一周期暂无有效样本"
             delta > 0.0 -> "本期平均比上一周期高 ${formatMetricDelta(delta, reviewType)}"
@@ -386,6 +408,12 @@ object DigitalSelfDisciplineReviewPolicy {
             currentSampleCount = current.sampleCount,
             previousSampleCount = previous.sampleCount,
             deltaAverageMs = deltaAverageMs,
+            currentIntervalAverageMs = current.intervalAverageMs,
+            previousIntervalAverageMs = previous.intervalAverageMs,
+            intervalDeltaMs = intervalDeltaMs,
+            currentRatioAverage = current.ratioAverage,
+            previousRatioAverage = previous.ratioAverage,
+            ratioDelta = ratioDelta,
             message = message,
         )
     }
@@ -463,11 +491,16 @@ object DigitalSelfDisciplineReviewPolicy {
 
     private fun rankShares(values: List<Pair<String, String>>, denominator: Int): List<RankedShare> {
         if (values.isEmpty()) return emptyList()
-        return values.groupingBy { it.first to it.second }.eachCount()
-            .map { (pair, count) ->
+        return values.groupBy { it.first }
+            .map { (key, keyedValues) ->
+                val label = keyedValues.map { it.second.trim() }
+                    .filter { it.isNotEmpty() }
+                    .minOrNull()
+                    ?: key
+                val count = keyedValues.size
                 RankedShare(
-                    key = pair.first,
-                    label = pair.second,
+                    key = key,
+                    label = label,
                     count = count,
                     share = if (denominator <= 0) 0.0 else count.toDouble() / denominator,
                 )

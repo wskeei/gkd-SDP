@@ -15,22 +15,26 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.PrimaryTabRow
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation3.runtime.NavKey
@@ -46,8 +50,10 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.serialization.Serializable
-import li.songe.gkd.sdp.data.SelfControlIntervalRepository
+import li.songe.gkd.sdp.data.SelfControlAttempt
+import li.songe.gkd.sdp.data.SelfControlAttemptEvent
 import li.songe.gkd.sdp.data.UsageReviewRow
+import li.songe.gkd.sdp.data.SelfControlIntervalRepository
 import li.songe.gkd.sdp.ui.component.DigitalSelfDisciplineReviewPresentation
 import li.songe.gkd.sdp.ui.component.DigitalSelfDisciplineTrendChart
 import li.songe.gkd.sdp.ui.component.PerfIcon
@@ -203,11 +209,12 @@ fun UsageGuardReviewPage() {
     ) { padding ->
         LazyColumn(
             modifier = Modifier.scaffoldPadding(padding),
+            horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             item(key = "filters") {
                 ElevatedCard(
-                    modifier = Modifier.fillMaxWidth().itemPadding(),
+                    modifier = Modifier.fillMaxWidth().widthIn(max = 840.dp).itemPadding(),
                     colors = surfaceCardColors,
                 ) {
                     Column(
@@ -222,19 +229,29 @@ fun UsageGuardReviewPage() {
                                         selectedTab = index
                                         vm.updateReviewType(type)
                                     },
+                                    modifier = Modifier
+                                        .minimumInteractiveComponentSize()
+                                        .semantics { stateDescription = if (selectedTab == index) "已选择" else "未选择" },
                                     text = { Text(type.label) },
                                 )
                             }
                         }
                         Text("复盘范围", style = MaterialTheme.typography.titleSmall)
-                        FlowRow(
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            verticalArrangement = Arrangement.spacedBy(8.dp),
-                        ) {
+                        SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
                             DigitalSelfDisciplineReviewPolicy.Range.entries.forEach { range ->
-                                FilterChip(
+                                SegmentedButton(
                                     selected = selectedRange == range,
                                     onClick = { vm.updateRange(range) },
+                                    shape = SegmentedButtonDefaults.itemShape(
+                                        index = range.ordinal,
+                                        count = DigitalSelfDisciplineReviewPolicy.Range.entries.size,
+                                    ),
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .minimumInteractiveComponentSize()
+                                        .semantics {
+                                            stateDescription = if (selectedRange == range) "${range.label}，已选择" else "${range.label}，未选择"
+                                        },
                                     label = { Text(range.label) },
                                 )
                             }
@@ -249,6 +266,11 @@ fun UsageGuardReviewPage() {
                                     FilterChip(
                                         selected = selectedFilter == filter,
                                         onClick = { vm.updateInterceptFilter(filter) },
+                                        modifier = Modifier
+                                            .minimumInteractiveComponentSize()
+                                            .semantics {
+                                                stateDescription = if (selectedFilter == filter) "${filter.label}，已选择" else "${filter.label}，未选择"
+                                            },
                                         label = { Text(filter.label) },
                                     )
                                 }
@@ -274,15 +296,29 @@ fun UsageGuardReviewPage() {
                     item(key = "trend") {
                         ReviewSectionCard("趋势 · ${page.trend.metricLabel}", "本期与上一周期保持同一口径") {
                             if (selectedType == DigitalSelfDisciplineReviewPolicy.ReviewType.UsageRequest) {
-                                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                    FilterChip(
+                                SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+                                    SegmentedButton(
                                         selected = selectedMetric == DigitalSelfDisciplineReviewPolicy.ReviewMetric.USAGE_RATIO,
                                         onClick = { vm.updateMetric(DigitalSelfDisciplineReviewPolicy.ReviewMetric.USAGE_RATIO) },
+                                        shape = SegmentedButtonDefaults.itemShape(index = 0, count = 2),
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .minimumInteractiveComponentSize()
+                                            .semantics {
+                                                stateDescription = if (selectedMetric == DigitalSelfDisciplineReviewPolicy.ReviewMetric.USAGE_RATIO) "间用比，已选择" else "间用比，未选择"
+                                            },
                                         label = { Text("间用比") },
                                     )
-                                    FilterChip(
+                                    SegmentedButton(
                                         selected = selectedMetric == DigitalSelfDisciplineReviewPolicy.ReviewMetric.USAGE_GAP,
                                         onClick = { vm.updateMetric(DigitalSelfDisciplineReviewPolicy.ReviewMetric.USAGE_GAP) },
+                                        shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2),
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .minimumInteractiveComponentSize()
+                                            .semantics {
+                                                stateDescription = if (selectedMetric == DigitalSelfDisciplineReviewPolicy.ReviewMetric.USAGE_GAP) "未使用间隔，已选择" else "未使用间隔，未选择"
+                                            },
                                         label = { Text("未使用间隔") },
                                     )
                                 }
@@ -310,14 +346,20 @@ private fun OverviewCard(page: DigitalSelfDisciplineReviewPresentation.PagePrese
             if (compact) {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     page.overview.chunked(2).forEach { row ->
-                        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        ) {
                             row.forEach { card -> MetricBlock(card.label, card.value, Modifier.weight(1f)) }
                             if (row.size == 1) MetricBlock("", "", Modifier.weight(1f))
                         }
                     }
                 }
             } else {
-                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
                     page.overview.forEach { card -> MetricBlock(card.label, card.value, Modifier.weight(1f)) }
                 }
             }
@@ -373,7 +415,7 @@ private fun ReviewSectionCard(
     content: @Composable () -> Unit,
 ) {
     ElevatedCard(
-        modifier = Modifier.fillMaxWidth().itemPadding(),
+        modifier = Modifier.fillMaxWidth().widthIn(max = 840.dp).itemPadding(),
         colors = surfaceCardColors,
     ) {
         Column(
@@ -397,12 +439,83 @@ private fun MetricBlock(label: String, value: String, modifier: Modifier = Modif
 
 @Preview(showBackground = true, widthDp = 360)
 @Composable
-private fun UsageGuardReviewPagePreviewCompact() {
-    AppTheme { Text("数字自律复盘 · 申请空态", modifier = Modifier.padding(16.dp)) }
+private fun UsageGuardReviewPagePreviewUsageData() {
+    AppTheme { ReviewPreviewContent(previewSummary(DigitalSelfDisciplineReviewPolicy.ReviewType.UsageRequest, hasData = true)) }
 }
 
-@Preview(showBackground = true, widthDp = 600, fontScale = 2f)
+@Preview(showBackground = true, widthDp = 360)
 @Composable
-private fun UsageGuardReviewPagePreviewWide() {
-    AppTheme { Text("数字自律复盘 · 复盘筛选与趋势", modifier = Modifier.padding(16.dp)) }
+private fun UsageGuardReviewPagePreviewUsageEmpty() {
+    AppTheme { ReviewPreviewContent(previewSummary(DigitalSelfDisciplineReviewPolicy.ReviewType.UsageRequest, hasData = false)) }
+}
+
+@Preview(showBackground = true, widthDp = 600)
+@Composable
+private fun UsageGuardReviewPagePreviewInterceptData() {
+    AppTheme { ReviewPreviewContent(previewSummary(DigitalSelfDisciplineReviewPolicy.ReviewType.InterceptAttempt, hasData = true)) }
+}
+
+@Preview(showBackground = true, widthDp = 600, fontScale = 2f, uiMode = android.content.res.Configuration.UI_MODE_NIGHT_YES)
+@Composable
+private fun UsageGuardReviewPagePreviewWideDarkLargeText() {
+    AppTheme(invertedTheme = true) {
+        ReviewPreviewContent(previewSummary(DigitalSelfDisciplineReviewPolicy.ReviewType.UsageRequest, hasData = true))
+    }
+}
+
+@Composable
+private fun ReviewPreviewContent(summary: DigitalSelfDisciplineReviewPolicy.ReviewSummary) {
+    val page = DigitalSelfDisciplineReviewPresentation.page(summary)
+    LazyColumn(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        item { OverviewCard(page) }
+        item {
+            ReviewSectionCard("趋势 · ${page.trend.metricLabel}", "合成数据预览") {
+                DigitalSelfDisciplineTrendChart(page.trend)
+            }
+        }
+        page.distributions.forEach { (title, bars) ->
+            item { ReviewRankedBarList(title, bars) }
+        }
+        item { RecentRowsCard(page.recentRows) }
+    }
+}
+
+private fun previewSummary(
+    type: DigitalSelfDisciplineReviewPolicy.ReviewType,
+    hasData: Boolean,
+): DigitalSelfDisciplineReviewPolicy.ReviewSummary {
+    val zone = ZoneId.of("Asia/Shanghai")
+    val bounds = DigitalSelfDisciplineReviewPolicy.rangeBounds(
+        DigitalSelfDisciplineReviewPolicy.Range.Today,
+        LocalDate.of(2026, 8, 4),
+        zone,
+    )
+    val rows = if (type == DigitalSelfDisciplineReviewPolicy.ReviewType.UsageRequest && hasData) {
+        listOf(
+            UsageReviewRow(1L, "demo.reader", "阅读应用", listOf("学习"), 30, bounds.startAt + 1_000L, 5, 90L * 60_000L),
+            UsageReviewRow(2L, "demo.reader", "阅读应用", listOf("学习", "其他"), 45, bounds.startAt + 2_000L, 1, 150L * 60_000L),
+        )
+    } else {
+        emptyList()
+    }
+    val events = if (type == DigitalSelfDisciplineReviewPolicy.ReviewType.InterceptAttempt && hasData) {
+        listOf(
+            SelfControlAttemptEvent(1L, "demo.rule", SelfControlAttempt.KIND_SELECTOR_INTERCEPT, "demo.rule", "示例规则", bounds.startAt + 1_000L, 30L * 60_000L),
+            SelfControlAttemptEvent(2L, "demo.rule", SelfControlAttempt.KIND_SELECTOR_INTERCEPT, "demo.rule", "示例规则", bounds.startAt + 2_000L, 45L * 60_000L),
+        )
+    } else {
+        emptyList()
+    }
+    return DigitalSelfDisciplineReviewPolicy.summarize(
+        usageRows = rows,
+        events = events,
+        bounds = bounds,
+        reviewType = type,
+        interceptFilter = DigitalSelfDisciplineReviewPolicy.InterceptKindFilter.All,
+        zoneId = zone,
+    )
 }

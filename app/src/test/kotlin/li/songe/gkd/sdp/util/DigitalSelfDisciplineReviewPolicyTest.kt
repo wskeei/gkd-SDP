@@ -76,6 +76,7 @@ class DigitalSelfDisciplineReviewPolicyTest {
         assertEquals(6, summary.coverage.validIntervalCount)
         assertEquals(6, summary.coverage.validRatioCount)
         assertEquals(2, summary.coverage.excludedIntervalCount)
+        assertEquals(2, summary.coverage.excludedRatioCount)
         assertEquals(2.5, requireNotNull(summary.ratioStats).average!!, 0.0001)
         assertEquals(8, summary.recentIntervals.size)
         assertTrue(summary.usageDetails!!.tagBreakdown.isNotEmpty())
@@ -129,8 +130,79 @@ class DigitalSelfDisciplineReviewPolicyTest {
         assertEquals(1, summary.coverage.validIntervalCount)
         assertEquals(0, summary.coverage.validRatioCount)
         assertNull(summary.ratioStats)
-        assertEquals(listOf(1_000L), summary.intervalsMs)
+        assertEquals(1, summary.intervalStats.sampleCount)
+        assertEquals(1_000L, summary.intervalStats.averageMs)
         assertTrue(summary.dailyBuckets.all { it.eventCount > 0 })
+    }
+
+    @Test
+    fun nonPositiveDurationIsExcludedFromRatioButNotIntervalCoverage() {
+        val bounds = DigitalSelfDisciplineReviewPolicy.rangeBounds(
+            DigitalSelfDisciplineReviewPolicy.Range.Today,
+            LocalDate.of(2026, 8, 4),
+            shanghai,
+        )
+        val rows = listOf(
+            row(1L, "app", bounds.startAt + 1_000L, 60_000L, 30),
+            row(2L, "app", bounds.startAt + 2_000L, 60_000L, 0),
+            row(3L, "app", bounds.startAt + 3_000L, 60_000L, -5),
+        )
+        val summary = DigitalSelfDisciplineReviewPolicy.summarize(
+            usageRows = rows,
+            events = emptyList(),
+            bounds = bounds,
+            reviewType = DigitalSelfDisciplineReviewPolicy.ReviewType.UsageRequest,
+            interceptFilter = DigitalSelfDisciplineReviewPolicy.InterceptKindFilter.All,
+            zoneId = shanghai,
+        )
+
+        assertEquals(3, summary.coverage.eventCount)
+        assertEquals(3, summary.coverage.validIntervalCount)
+        assertEquals(1, summary.coverage.validRatioCount)
+        assertEquals(0, summary.coverage.excludedIntervalCount)
+        assertEquals(2, summary.coverage.excludedRatioCount)
+    }
+
+    @Test
+    fun rankingsMergeLabelsByStableKeyAndChooseDeterministicLabel() {
+        val bounds = DigitalSelfDisciplineReviewPolicy.rangeBounds(
+            DigitalSelfDisciplineReviewPolicy.Range.Today,
+            LocalDate.of(2026, 8, 4),
+            shanghai,
+        )
+        val rows = listOf(
+            row(1L, "same.app", bounds.startAt + 1_000L, 60_000L, 30).copy(appName = "Z 名称"),
+            row(2L, "same.app", bounds.startAt + 2_000L, 60_000L, 30).copy(appName = "A 名称"),
+        )
+        val usage = DigitalSelfDisciplineReviewPolicy.summarize(
+            usageRows = rows,
+            events = emptyList(),
+            bounds = bounds,
+            reviewType = DigitalSelfDisciplineReviewPolicy.ReviewType.UsageRequest,
+            interceptFilter = DigitalSelfDisciplineReviewPolicy.InterceptKindFilter.All,
+            zoneId = shanghai,
+        )
+        assertEquals(1, usage.usageDetails!!.appBreakdown.size)
+        assertEquals(2, usage.usageDetails.appBreakdown.single().count)
+        assertEquals("A 名称", usage.usageDetails.appBreakdown.single().label)
+
+        val events = listOf(
+            event(1L, "stable-rule", SelfControlAttempt.KIND_SELECTOR_INTERCEPT, bounds.startAt + 1_000L, 1_000L)
+                .copy(subjectLabel = "Z 规则"),
+            event(2L, "stable-rule", SelfControlAttempt.KIND_SELECTOR_INTERCEPT, bounds.startAt + 2_000L, 1_000L)
+                .copy(subjectLabel = "A 规则"),
+        )
+        val intercept = DigitalSelfDisciplineReviewPolicy.summarize(
+            usageRows = emptyList(),
+            events = events,
+            bounds = bounds,
+            reviewType = DigitalSelfDisciplineReviewPolicy.ReviewType.InterceptAttempt,
+            interceptFilter = DigitalSelfDisciplineReviewPolicy.InterceptKindFilter.All,
+            zoneId = shanghai,
+        )
+        assertEquals(1, intercept.rankedTargets.size)
+        assertEquals(2, intercept.rankedTargets.single().count)
+        assertEquals("A 规则", intercept.rankedTargets.single().label)
     }
 
     @Test
@@ -143,6 +215,7 @@ class DigitalSelfDisciplineReviewPolicyTest {
         assertEquals(2, comparison.currentSampleCount)
         assertEquals(2, comparison.previousSampleCount)
         assertEquals(-20.0, comparison.metricDelta!!, 0.0001)
+        assertEquals(-20L, comparison.deltaAverageMs)
         assertTrue(comparison.message.contains("低"))
     }
 

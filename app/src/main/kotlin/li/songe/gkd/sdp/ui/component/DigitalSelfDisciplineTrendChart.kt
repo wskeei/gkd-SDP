@@ -54,6 +54,29 @@ fun DigitalSelfDisciplineTrendChart(
             )
         } else {
             val primary = MaterialTheme.colorScheme.primary
+            val minValue = presentation.points.minOf { it.value }
+            val maxValue = presentation.points.maxOf { it.value }
+            val axisUnit = DigitalSelfDisciplineReviewPresentation.axisUnitLabel(presentation.metric)
+            Text(
+                text = "纵轴：${presentation.metricLabel}（$axisUnit） · 时间轴最多显示 6 个标签",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                Text(
+                    text = "最大 ${DigitalSelfDisciplineReviewPresentation.formatTrendValue(maxValue, presentation.metric)}",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Text(
+                    text = "最小 ${DigitalSelfDisciplineReviewPresentation.formatTrendValue(minValue, presentation.metric)}",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
             Canvas(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -83,6 +106,19 @@ fun DigitalSelfDisciplineTrendChart(
                     drawPath(path, color = primary, style = Stroke(width = 3f))
                 }
                 coords.forEach { drawCircle(color = primary, radius = 5f, center = it) }
+            }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                DigitalSelfDisciplineReviewPresentation.xAxisLabels(presentation.points).forEach { label ->
+                    Text(
+                        text = label,
+                        modifier = Modifier.weight(1f),
+                        maxLines = 1,
+                        style = MaterialTheme.typography.labelSmall,
+                    )
+                }
             }
             TextButton(
                 onClick = { detailsExpanded = !detailsExpanded },

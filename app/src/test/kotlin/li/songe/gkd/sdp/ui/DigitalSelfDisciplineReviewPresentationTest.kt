@@ -39,6 +39,52 @@ class DigitalSelfDisciplineReviewPresentationTest {
     }
 
     @Test
+    fun gapTrendUsesGapComparisonInsteadOfRatioComparison() {
+        val currentBounds = DigitalSelfDisciplineReviewPolicy.rangeBounds(
+            DigitalSelfDisciplineReviewPolicy.Range.Today,
+            LocalDate.of(2026, 8, 4),
+            zone,
+        )
+        val previousBounds = DigitalSelfDisciplineReviewPolicy.rangeBounds(
+            DigitalSelfDisciplineReviewPolicy.Range.Today,
+            LocalDate.of(2026, 8, 3),
+            zone,
+        )
+        val previous = DigitalSelfDisciplineReviewPolicy.summarize(
+            usageRows = listOf(
+                UsageReviewRow(10L, "old", "Old", emptyList(), 10, previousBounds.startAt + 1_000L, 5, 30L * 60_000L),
+            ),
+            events = emptyList(),
+            bounds = previousBounds,
+            reviewType = DigitalSelfDisciplineReviewPolicy.ReviewType.UsageRequest,
+            interceptFilter = DigitalSelfDisciplineReviewPolicy.InterceptKindFilter.All,
+            zoneId = zone,
+        )
+        val current = DigitalSelfDisciplineReviewPolicy.summarize(
+            usageRows = listOf(
+                UsageReviewRow(11L, "new", "New", emptyList(), 30, currentBounds.startAt + 1_000L, 5, 120L * 60_000L),
+                UsageReviewRow(12L, "new", "New", emptyList(), 60, currentBounds.startAt + 2_000L, 5, 60L * 60_000L),
+            ),
+            events = emptyList(),
+            bounds = currentBounds,
+            reviewType = DigitalSelfDisciplineReviewPolicy.ReviewType.UsageRequest,
+            interceptFilter = DigitalSelfDisciplineReviewPolicy.InterceptKindFilter.All,
+            zoneId = zone,
+            previousSummary = previous,
+        )
+
+        val gap = DigitalSelfDisciplineReviewPresentation.trend(
+            current,
+            DigitalSelfDisciplineReviewPolicy.ReviewMetric.USAGE_GAP,
+            zone,
+        )
+
+        assertTrue(gap.previousAverageText.contains("30分"))
+        assertTrue(gap.deltaText.contains("1小时"))
+        assertTrue(!gap.previousAverageText.contains("×"))
+    }
+
+    @Test
     fun trendKeepsSinglePointsForSmallTodayDataAndAggregatesAfterTwentyFour() {
         val small = summary(DigitalSelfDisciplineReviewPolicy.Range.Today)
         assertEquals(2, DigitalSelfDisciplineReviewPresentation.trend(small).points.size)
@@ -79,6 +125,8 @@ class DigitalSelfDisciplineReviewPresentationTest {
 
         assertTrue(page.coverage.text.contains("总申请"))
         assertTrue(page.trend.semanticSummary.contains("总记录"))
+        assertTrue(page.recentRows.first().secondaryText.contains("标签：学习"))
+        assertTrue(page.recentRows.first().secondaryText.contains("结束状态：主动结束"))
         assertTrue(page.recentRows.all { row ->
             listOf("reasonText", "http", "pattern", "selector", "node text").none { forbidden ->
                 row.primaryText.contains(forbidden, ignoreCase = true) || row.secondaryText.contains(forbidden, ignoreCase = true)
