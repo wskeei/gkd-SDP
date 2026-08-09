@@ -128,6 +128,12 @@ An approved usage request is persisted as a `UsageGuardRecord`. Its
 `reasonText` remains the source of truth for the active countdown reminder;
 the overlay must not keep an independently editable reason.
 
+The usage-request form is a focusable `TYPE_APPLICATION_OVERLAY`. Its window
+keeps `FLAG_SECURE`, uses `SOFT_INPUT_ADJUST_RESIZE`, excludes
+`FLAG_LAYOUT_NO_LIMITS` and `FLAG_ALT_FOCUSABLE_IM`, consumes the Compose IME
+inset in its single vertical scroll container, and relocates the focused
+request input after IME visibility changes.
+
 The countdown service renders remaining time and reason in one movable
 `TYPE_APPLICATION_OVERLAY` window. That window uses `FLAG_SECURE`, so neither
 field should be readable in screenshots, screen recording, or non-secure

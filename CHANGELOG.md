@@ -6,6 +6,15 @@ All notable GKD-SDP changes are documented here. The format follows
 
 ## [Unreleased]
 
+### Fixed
+
+- Keep the active usage-request input visible above the software keyboard and
+  preserve scrolling across tag, reason, and custom-duration editors.
+
+### Security
+
+- Preserve `FLAG_SECURE` while making the request overlay resize for the IME.
+
 ## [2.0.0-beta.5] - 2026-08-05
 
 ### Added
