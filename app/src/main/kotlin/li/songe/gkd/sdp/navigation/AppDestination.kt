@@ -3,8 +3,9 @@ package li.songe.gkd.sdp.navigation
 import androidx.navigation3.runtime.NavKey
 import li.songe.gkd.sdp.ui.ActionLogRoute
 import li.songe.gkd.sdp.ui.AdvancedPageRoute
-import li.songe.gkd.sdp.ui.AuthA11yRoute
+import li.songe.gkd.sdp.ui.AppOpsAllowRoute
 import li.songe.gkd.sdp.ui.FocusLockRoute
+import li.songe.gkd.sdp.ui.SnapshotPageRoute
 import li.songe.gkd.sdp.ui.UsageGuardReviewRoute
 import li.songe.gkd.sdp.ui.UsageGuardRoute
 import li.songe.gkd.sdp.ui.home.HomeRoute
@@ -20,6 +21,9 @@ enum class AppDestination {
     SETTINGS,
     SETTINGS_CAPABILITIES,
     SETTINGS_PRIVACY_DATA,
+    LEGACY_ADVANCED,
+    LEGACY_SNAPSHOT,
+    LEGACY_APP_OPS,
     USAGE_GUARD,
     USAGE_REVIEW,
     ACTION_LOG,
@@ -39,8 +43,11 @@ fun AppDestination.toNavKey(): NavKey = when (this) {
     -> HomeRoute
 
     AppDestination.SELF_CONTROL -> FocusLockRoute
-    AppDestination.SETTINGS_CAPABILITIES -> AuthA11yRoute
+    AppDestination.SETTINGS_CAPABILITIES -> AppOpsAllowRoute
     AppDestination.SETTINGS_PRIVACY_DATA -> AdvancedPageRoute
+    AppDestination.LEGACY_ADVANCED -> AdvancedPageRoute
+    AppDestination.LEGACY_SNAPSHOT -> SnapshotPageRoute
+    AppDestination.LEGACY_APP_OPS -> AppOpsAllowRoute
     AppDestination.USAGE_GUARD -> UsageGuardRoute
     AppDestination.USAGE_REVIEW -> UsageGuardReviewRoute
     AppDestination.ACTION_LOG -> ActionLogRoute()

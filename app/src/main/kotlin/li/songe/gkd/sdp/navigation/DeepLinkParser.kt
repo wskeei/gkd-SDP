@@ -49,9 +49,9 @@ object DeepLinkParser {
         path == "/" && query == "tab=2" -> AppDestination.RULES_APPS
         path == "/" && query == "tab=3" -> AppDestination.SETTINGS
         path == "/0" && query == null -> AppDestination.OVERVIEW
-        path == "/1" && query == null -> AppDestination.SETTINGS_PRIVACY_DATA
-        path == "/2" && query == null -> AppDestination.SETTINGS_PRIVACY_DATA
-        path == "/3" && query == null -> AppDestination.SETTINGS_CAPABILITIES
+        path == "/1" && query == null -> AppDestination.LEGACY_ADVANCED
+        path == "/2" && query == null -> AppDestination.LEGACY_SNAPSHOT
+        path == "/3" && query == null -> AppDestination.LEGACY_APP_OPS
         path == "/4" && query == null -> AppDestination.SELF_CONTROL
         else -> null
     }
