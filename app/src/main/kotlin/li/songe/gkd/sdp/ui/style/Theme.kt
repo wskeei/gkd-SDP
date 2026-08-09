@@ -128,6 +128,7 @@ fun AppTheme(
     }
     CompositionLocalProvider(
         LocalContext provides localizedContext,
+        LocalActivity provides activity,
         LocalConfiguration provides localizedConfiguration,
         LocalDensity provides scaledDensity,
         LocalDarkTheme provides darkTheme,
