@@ -35,6 +35,14 @@ internal data class PendingDataMutationManifest(
 )
 
 class PendingDataCleanupException : IllegalStateException("pending_data_cleanup")
+class PendingDataRecoveryException : IllegalStateException("pending_data_recovery")
+
+@Volatile
+private var pendingDataRecoveryBlocked = false
+
+fun requirePendingDataRecoveryComplete() {
+    if (pendingDataRecoveryBlocked) throw PendingDataRecoveryException()
+}
 
 internal object PendingDataCleanupPolicy {
     fun cleanup(
@@ -79,7 +87,12 @@ suspend fun retryPendingDataCleanup(): Boolean = withContext(Dispatchers.IO) {
                 )
         }
     }
-    candidates.all { candidate -> recoverPendingMutation(candidate) }
+    var allRecovered = true
+    candidates.forEach { candidate ->
+        if (!recoverPendingMutation(candidate)) allRecovered = false
+    }
+    pendingDataRecoveryBlocked = !allRecovered
+    allRecovered
 }
 
 private suspend fun recoverPendingMutation(directory: File): Boolean {
@@ -93,6 +106,9 @@ private suspend fun recoverPendingMutation(directory: File): Boolean {
         manifest.ids.isEmpty() ||
         manifest.phase !in setOf(PENDING_PHASE_STAGED, PENDING_PHASE_COMMITTED)
     ) return false
+    if (manifest.phase == PENDING_PHASE_COMMITTED) {
+        return deleteDirectory(directory)
+    }
 
     return runCatching {
         when (manifest.kind) {
@@ -111,13 +127,12 @@ private suspend fun recoverSubscriptionUpsert(
     if (manifest.ids.size != 1) return false
     val id = manifest.ids.single()
     val current = DbSet.subsItemDao.queryById(id)
-    val committed = current != null && when {
-        manifest.expectedSubsItem != null -> current == manifest.expectedSubsItem
-        manifest.expectedMtime != null &&
-            manifest.requiredPreviousMtime == null -> current.mtime == manifest.expectedMtime
-        manifest.expectedMtime != null -> current.mtime == manifest.expectedMtime
-        else -> false
-    }
+    val expectedMtime = manifest.expectedMtime ?: manifest.expectedSubsItem?.mtime
+    val committed = current != null && expectedMtime != null && (
+        current.mtime == expectedMtime ||
+            (current.mtime > expectedMtime && manifest.requiredPreviousMtime
+                ?.let { current.mtime > it } != false)
+        )
     val target = subsFolder.resolve("$id.json")
     val stagedNew = directory.resolve("new.json")
     if (committed) {

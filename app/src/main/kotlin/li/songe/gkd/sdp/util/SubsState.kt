@@ -388,6 +388,7 @@ private fun refreshRawSubsList(items: List<SubsItem>): Boolean {
 fun initSubsState() {
     subsItemsFlow.value
     appScope.launchTry(Dispatchers.IO) {
+        requirePendingDataRecoveryComplete()
         updateSubsMutex.withStateLock {
             val items = DbSet.subsItemDao.queryAll()
             refreshRawSubsList(items)
@@ -481,6 +482,7 @@ private suspend fun updateSubs(subsEntry: SubsEntry): RawSubscription? {
 }
 
 fun checkSubsUpdate(showToast: Boolean = false) = appScope.launchTry(Dispatchers.IO) {
+    requirePendingDataRecoveryComplete()
     if (!checkSubsUpdateMutex.tryLock()) return@launchTry
     try {
         if (subsEntriesFlow.value.any { !it.subsItem.isLocal } && !NetworkUtils.isAvailable()) {

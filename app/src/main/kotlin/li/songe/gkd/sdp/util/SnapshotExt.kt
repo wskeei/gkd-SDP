@@ -36,12 +36,16 @@ import kotlin.math.min
 object SnapshotExt {
 
     private fun snapshotParentPath(id: Long) = snapshotFolder.resolve(id.toString())
-    fun snapshotFile(id: Long) = snapshotParentPath(id).resolve("${id}.json")
+    fun snapshotFile(id: Long): File {
+        requirePendingDataRecoveryComplete()
+        return snapshotParentPath(id).resolve("${id}.json")
+    }
     private fun minSnapshotFile(id: Long): File {
         return snapshotParentPath(id).resolve("${id}.min.json")
     }
 
     suspend fun getMinSnapshot(id: Long): JsonObject {
+        requirePendingDataRecoveryComplete()
         val f = minSnapshotFile(id)
         if (!f.exists()) {
             val text = withContext(Dispatchers.IO) { snapshotFile(id).readText() }
@@ -65,13 +69,17 @@ object SnapshotExt {
         }
     }
 
-    fun screenshotFile(id: Long) = snapshotParentPath(id).resolve("${id}.png")
+    fun screenshotFile(id: Long): File {
+        requirePendingDataRecoveryComplete()
+        return snapshotParentPath(id).resolve("${id}.png")
+    }
 
     suspend fun snapshotZipFile(
         snapshotId: Long,
         appId: String? = null,
         activityId: String? = null
     ): File {
+        requirePendingDataRecoveryComplete()
         val filename = if (appId != null) {
             val name =
                 appInfoMapFlow.value[appId]?.name?.filterNot { c -> c in "\\/:*?\"<>|" || c <= ' ' }
@@ -105,6 +113,7 @@ object SnapshotExt {
 
     suspend fun deleteSnapshots(snapshots: Collection<Snapshot>): Int {
         if (snapshots.isEmpty()) return 0
+        requirePendingDataRecoveryComplete()
         val uniqueSnapshots = snapshots.distinctBy(Snapshot::id)
         return BackupDataMutationBarrier.withMutation {
             val stagingFolder = requireNotNull(snapshotFolder.parentFile).resolve(
@@ -116,25 +125,28 @@ object SnapshotExt {
                 ids = uniqueSnapshots.map(Snapshot::id),
             )
             try {
-                val deleted = DbSet.withTransaction {
-                    withContext(Dispatchers.IO) {
-                        stagingFolder.mkdirs()
-                        writePendingDataMutationManifest(stagingFolder, manifest)
-                        uniqueSnapshots.forEach { snapshot ->
-                            val source = snapshotParentPath(snapshot.id)
-                            if (source.exists()) {
-                                moveSnapshotDirectory(source, stagingFolder.resolve(snapshot.id.toString()))
+                val deleted = withContext(NonCancellable) {
+                    val result = DbSet.withTransaction {
+                        withContext(Dispatchers.IO) {
+                            stagingFolder.mkdirs()
+                            writePendingDataMutationManifest(stagingFolder, manifest)
+                            uniqueSnapshots.forEach { snapshot ->
+                                val source = snapshotParentPath(snapshot.id)
+                                if (source.exists()) {
+                                    moveSnapshotDirectory(source, stagingFolder.resolve(snapshot.id.toString()))
+                                }
                             }
                         }
+                        DbSet.snapshotDao.delete(*uniqueSnapshots.toTypedArray())
                     }
-                    DbSet.snapshotDao.delete(*uniqueSnapshots.toTypedArray())
-                }
-                transactionCommitted = true
-                withContext(Dispatchers.IO) {
-                    writePendingDataMutationManifest(
-                        stagingFolder,
-                        manifest.copy(phase = PENDING_PHASE_COMMITTED),
-                    )
+                    transactionCommitted = true
+                    withContext(Dispatchers.IO) {
+                        writePendingDataMutationManifest(
+                            stagingFolder,
+                            manifest.copy(phase = PENDING_PHASE_COMMITTED),
+                        )
+                    }
+                    result
                 }
                 withContext(Dispatchers.IO) {
                     requirePendingDataCleanup(stagingFolder)
@@ -262,6 +274,7 @@ object SnapshotExt {
     }
     private val captureLoading = MutableStateFlow(false)
     suspend fun captureSnapshot(forcedCropStatusBar: Boolean = false): ComplexSnapshot {
+        requirePendingDataRecoveryComplete()
         if (A11yRuleEngine.instance == null) {
             throw RpcError("服务不可用，请先授权")
         }

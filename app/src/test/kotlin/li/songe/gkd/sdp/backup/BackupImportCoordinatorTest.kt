@@ -182,6 +182,32 @@ class BackupImportCoordinatorTest {
     }
 
     @Test
+    fun `post commit cancellation does not restore twice after recovery clears journal`() = runBlocking {
+        val target = FakeImportTarget(payload("old")).apply {
+            cancelDuringReconcile = true
+        }
+        val journal = RecordingJournal()
+        val coordinator = coordinator(target, journal)
+        val prepared = coordinator.prepare(
+            encryptedPayload(payload("new")),
+            "correct-password".toCharArray(),
+        ) as BackupResult.Success<PreparedBackupImport>
+
+        val apply = async { coordinator.apply(prepared.value, confirmed = true) }
+        target.reconcileStarted.await()
+        apply.cancel()
+        target.continueReconcile.complete(Unit)
+        runCatching { apply.await() }
+
+        assertEquals("old", target.current.objects.single().content.decodeToString())
+        assertEquals(1, target.events.count { it == "restore" })
+        assertTrue(journal.cleared)
+        target.current = payload("after-recovery")
+        coordinator.recoverInterruptedImport()
+        assertEquals("after-recovery", target.current.objects.single().content.decodeToString())
+    }
+
+    @Test
     fun `apply rejects a stale preview without journaling or modifying newer data`() = runBlocking {
         val target = FakeImportTarget(payload("old"))
         val journal = RecordingJournal()
@@ -330,8 +356,11 @@ class BackupImportCoordinatorTest {
         var reconcileFailuresRemaining = 0
         var restoreFailuresRemaining = 0
         var restoreChecksCancellation = false
+        var cancelDuringReconcile = false
         val replaceStarted = CompletableDeferred<Unit>()
         val continueReplace = CompletableDeferred<Unit>()
+        val reconcileStarted = CompletableDeferred<Unit>()
+        val continueReconcile = CompletableDeferred<Unit>()
         val events = mutableListOf<String>()
 
         override suspend fun <T> withExclusiveMutation(
@@ -396,6 +425,12 @@ class BackupImportCoordinatorTest {
 
         override suspend fun reconcileRuntime() {
             events += "reconcile"
+            if (cancelDuringReconcile) {
+                cancelDuringReconcile = false
+                reconcileStarted.complete(Unit)
+                continueReconcile.await()
+                currentCoroutineContext().ensureActive()
+            }
             if (reconcileFailuresRemaining > 0) {
                 reconcileFailuresRemaining -= 1
                 error("synthetic reconcile failure")

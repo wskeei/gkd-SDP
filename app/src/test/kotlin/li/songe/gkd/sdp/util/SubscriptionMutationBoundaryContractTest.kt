@@ -28,6 +28,7 @@ class SubscriptionMutationBoundaryContractTest {
         assertTrue(repository.contains("expectedCurrentMtime"))
         assertTrue(repository.contains("queryById(subsId)"))
         assertTrue(repository.contains("updateMtime(subsId, now) == 1"))
+        assertTrue(repository.contains("requirePendingDataRecoveryComplete()"))
         assertTrue(state.contains("suspend fun updateSubscription("))
         assertTrue(state.contains("suspend fun deleteSubscription("))
         assertFalse(state.substringAfter("suspend fun updateSubscription(").substringBefore("suspend fun deleteSubscription(").contains("appScope.launch"))
@@ -37,6 +38,7 @@ class SubscriptionMutationBoundaryContractTest {
         assertTrue(httpService.contains("appScope.launchTry(Dispatchers.IO)"))
         assertFalse(httpService.contains("scope.launchTry(Dispatchers.IO) {\n                    deleteSubscription"))
         assertTrue(state.contains("expectedCurrentMtime = subsEntry.subsItem.mtime"))
+        assertTrue(state.contains("requirePendingDataRecoveryComplete()"))
     }
 
     private fun sourceFile(relativePath: String): File {

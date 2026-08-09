@@ -37,6 +37,14 @@ private class ImportRecoveryException(
     cause: Throwable,
 ) : RuntimeException(cause)
 
+private class ReconciledImportCancellation(
+    val original: CancellationException,
+) : CancellationException(original.message) {
+    init {
+        initCause(original)
+    }
+}
+
 interface BackupImportTarget {
     suspend fun <T> withExclusiveMutation(
         block: suspend () -> T,
@@ -181,6 +189,7 @@ class BackupImportCoordinator(
                 },
             )
         } catch (error: CancellationException) {
+            if (error is ReconciledImportCancellation) throw error.original
             val previousState = cancellationRollbackState
             if (previousState != null) {
                 withContext(NonCancellable) {
@@ -271,7 +280,9 @@ class BackupImportCoordinator(
                 val journalCleared = reconciled && runCatching { journal.clear() }.isSuccess
                 restored && reconciled && journalCleared
             }
-            if (error is CancellationException && recoveryCompleted) throw error
+            if (error is CancellationException && recoveryCompleted) {
+                throw ReconciledImportCancellation(error)
+            }
             throw ImportRecoveryException(recoveryCompleted, error)
         }
     }

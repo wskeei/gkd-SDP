@@ -15,13 +15,18 @@ import java.nio.file.AtomicMoveNotSupportedException
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
 import java.util.UUID
+import java.util.concurrent.atomic.AtomicLong
 
 object SubscriptionMutationRepository {
+    private val lastMutationMtime = AtomicLong(0)
+
     suspend fun upsert(
         subscription: RawSubscription,
         subsItem: SubsItem? = null,
         expectedCurrentMtime: Long? = null,
-    ): RawSubscription = BackupDataMutationBarrier.withMutation {
+    ): RawSubscription {
+        requirePendingDataRecoveryComplete()
+        return BackupDataMutationBarrier.withMutation {
         updateSubsMutex.withStateLock {
             val nextSubscription = normalizeSubscription(subscription)
             val subsId = nextSubscription.id
@@ -34,14 +39,21 @@ object SubscriptionMutationRepository {
             var previousStaged = false
             var targetReplaced = false
             var transactionCommitted = false
-            val now = System.currentTimeMillis()
+            val currentBefore = DbSet.subsItemDao.queryById(subsId)
+            if (subsItem == null) {
+                check(currentBefore != null) { "订阅已不存在" }
+                expectedCurrentMtime?.let { expected ->
+                    check(currentBefore.mtime == expected) { "订阅已发生变化" }
+                }
+            }
+            val now = nextMutationMtime(currentBefore?.mtime)
             val targetExisted = targetFile.exists()
             val manifest = PendingDataMutationManifest(
                 kind = PENDING_KIND_SUBSCRIPTION_UPSERT,
                 ids = listOf(subsId),
                 targetExisted = targetExisted,
                 expectedMtime = if (subsItem == null) now else null,
-                requiredPreviousMtime = expectedCurrentMtime,
+                requiredPreviousMtime = currentBefore?.mtime,
                 expectedSubsItem = subsItem?.copy(mtime = now),
             )
             try {
@@ -53,38 +65,41 @@ object SubscriptionMutationRepository {
                         json.encodeToString(nextSubscription),
                     )
                 }
-                DbSet.withTransaction {
-                    cleanupSubsConfig(subsId, nextSubscription)
-                    if (subsItem == null) {
-                        val current = DbSet.subsItemDao.queryById(subsId)
-                        check(current != null) { "订阅已不存在" }
-                        expectedCurrentMtime?.let { expected ->
-                            check(current.mtime == expected) { "订阅已发生变化" }
+                withContext(NonCancellable) {
+                    val result = DbSet.withTransaction {
+                        cleanupSubsConfig(subsId, nextSubscription)
+                        if (subsItem == null) {
+                            val current = DbSet.subsItemDao.queryById(subsId)
+                            check(current != null) { "订阅已不存在" }
+                            expectedCurrentMtime?.let { expected ->
+                                check(current.mtime == expected) { "订阅已发生变化" }
+                            }
+                            check(DbSet.subsItemDao.updateMtime(subsId, now) == 1) {
+                                "订阅已不存在"
+                            }
+                        } else {
+                            DbSet.subsItemDao.insert(subsItem.copy(mtime = now))
                         }
-                        check(DbSet.subsItemDao.updateMtime(subsId, now) == 1) {
-                            "订阅已不存在"
+                        withContext(Dispatchers.IO) {
+                            if (targetFile.exists()) {
+                                moveSubscriptionFile(targetFile, stagedPreviousFile)
+                                previousStaged = true
+                            }
+                            moveSubscriptionFile(stagedNewFile, targetFile)
+                            targetReplaced = true
                         }
-                    } else {
-                        DbSet.subsItemDao.insert(subsItem.copy(mtime = now))
                     }
+                    transactionCommitted = true
                     withContext(Dispatchers.IO) {
-                        if (targetFile.exists()) {
-                            moveSubscriptionFile(targetFile, stagedPreviousFile)
-                            previousStaged = true
-                        }
-                        moveSubscriptionFile(stagedNewFile, targetFile)
-                        targetReplaced = true
+                        writePendingDataMutationManifest(
+                            stagingFolder,
+                            manifest.copy(phase = PENDING_PHASE_COMMITTED),
+                        )
                     }
+                    subsMapFlow.update { current -> current + (subsId to nextSubscription) }
+                    subsLoadErrorsFlow.update { current -> current - subsId }
+                    result
                 }
-                transactionCommitted = true
-                withContext(Dispatchers.IO) {
-                    writePendingDataMutationManifest(
-                        stagingFolder,
-                        manifest.copy(phase = PENDING_PHASE_COMMITTED),
-                    )
-                }
-                subsMapFlow.update { current -> current + (subsId to nextSubscription) }
-                subsLoadErrorsFlow.update { current -> current - subsId }
                 withContext(Dispatchers.IO) {
                     requirePendingDataCleanup(stagingFolder)
                 }
@@ -109,10 +124,12 @@ object SubscriptionMutationRepository {
             }
         }
     }
+    }
 
     suspend fun delete(vararg subsIds: Long): Int {
         val uniqueIds = subsIds.distinct().toLongArray()
         if (uniqueIds.isEmpty()) return 0
+        requirePendingDataRecoveryComplete()
         return BackupDataMutationBarrier.withMutation {
             updateSubsMutex.withStateLock {
                 val stagingFolder = subsFolder.resolve(
@@ -125,36 +142,39 @@ object SubscriptionMutationRepository {
                     ids = uniqueIds.toList(),
                 )
                 try {
-                    val deleted = DbSet.withTransaction {
-                        withContext(Dispatchers.IO) {
-                            stagingFolder.mkdirs()
-                            writePendingDataMutationManifest(stagingFolder, manifest)
-                            uniqueIds.forEach { subsId ->
-                                val source = subsFolder.resolve("$subsId.json")
-                                if (source.exists()) {
-                                    moveSubscriptionFile(
-                                        source,
-                                        stagingFolder.resolve("$subsId.json"),
-                                    )
-                                    stagedIds += subsId
+                    val deleted = withContext(NonCancellable) {
+                        val result = DbSet.withTransaction {
+                            withContext(Dispatchers.IO) {
+                                stagingFolder.mkdirs()
+                                writePendingDataMutationManifest(stagingFolder, manifest)
+                                uniqueIds.forEach { subsId ->
+                                    val source = subsFolder.resolve("$subsId.json")
+                                    if (source.exists()) {
+                                        moveSubscriptionFile(
+                                            source,
+                                            stagingFolder.resolve("$subsId.json"),
+                                        )
+                                        stagedIds += subsId
+                                    }
                                 }
                             }
+                            val deleteSize = DbSet.subsItemDao.deleteById(*uniqueIds)
+                            DbSet.subsConfigDao.deleteBySubsId(*uniqueIds)
+                            DbSet.appConfigDao.deleteBySubsId(*uniqueIds)
+                            DbSet.categoryConfigDao.deleteBySubsId(*uniqueIds)
+                            DbSet.actionLogDao.deleteBySubsId(*uniqueIds)
+                            deleteSize
                         }
-                        val deleteSize = DbSet.subsItemDao.deleteById(*uniqueIds)
-                        DbSet.subsConfigDao.deleteBySubsId(*uniqueIds)
-                        DbSet.appConfigDao.deleteBySubsId(*uniqueIds)
-                        DbSet.categoryConfigDao.deleteBySubsId(*uniqueIds)
-                        DbSet.actionLogDao.deleteBySubsId(*uniqueIds)
-                        deleteSize
+                        transactionCommitted = true
+                        withContext(Dispatchers.IO) {
+                            writePendingDataMutationManifest(
+                                stagingFolder,
+                                manifest.copy(phase = PENDING_PHASE_COMMITTED),
+                            )
+                        }
+                        subsMapFlow.update { current -> current - uniqueIds.toSet() }
+                        result
                     }
-                    transactionCommitted = true
-                    withContext(Dispatchers.IO) {
-                        writePendingDataMutationManifest(
-                            stagingFolder,
-                            manifest.copy(phase = PENDING_PHASE_COMMITTED),
-                        )
-                    }
-                    subsMapFlow.update { current -> current - uniqueIds.toSet() }
                     withContext(Dispatchers.IO) {
                         requirePendingDataCleanup(stagingFolder)
                     }
@@ -191,6 +211,18 @@ object SubscriptionMutationRepository {
             )
         } else {
             subscription
+        }
+    }
+
+    private fun nextMutationMtime(previous: Long?): Long {
+        val wallClock = System.currentTimeMillis()
+        val floor = previous?.let {
+            check(it < Long.MAX_VALUE) { "订阅时间溢出" }
+            it + 1
+        } ?: wallClock
+        return lastMutationMtime.updateAndGet { last ->
+            check(last < Long.MAX_VALUE) { "订阅时间溢出" }
+            maxOf(floor, last + 1)
         }
     }
 

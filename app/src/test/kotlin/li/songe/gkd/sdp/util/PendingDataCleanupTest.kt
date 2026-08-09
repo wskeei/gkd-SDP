@@ -57,8 +57,14 @@ class PendingDataCleanupTest {
         assertTrue(startup.indexOf("retryPendingDataCleanup()") < startup.indexOf("initStore()"))
         assertTrue(cleanup.contains("PENDING_MUTATION_MANIFEST"))
         assertTrue(cleanup.contains("queryById(id)"))
+        assertTrue(cleanup.contains("manifest.phase == PENDING_PHASE_COMMITTED"))
+        assertTrue(cleanup.contains("candidates.forEach"))
+        assertFalse(cleanup.contains("candidates.all(::recoverPendingMutation)"))
         assertTrue(subscription.contains("writePendingDataMutationManifest"))
+        assertTrue(subscription.contains("withContext(NonCancellable)"))
+        assertTrue(subscription.contains("nextMutationMtime"))
         assertTrue(snapshot.contains("writePendingDataMutationManifest"))
+        assertTrue(snapshot.contains("withContext(NonCancellable)"))
     }
 
     private fun sourceFile(relativePath: String): File {

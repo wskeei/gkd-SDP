@@ -16,6 +16,7 @@ import li.songe.gkd.sdp.store.snapshotNormalStoreTexts
 import li.songe.gkd.sdp.store.writeFileAtomically
 import li.songe.gkd.sdp.util.initSubsState
 import li.songe.gkd.sdp.util.json
+import li.songe.gkd.sdp.util.requirePendingDataRecoveryComplete
 import li.songe.gkd.sdp.util.snapshotFolder
 import li.songe.gkd.sdp.util.subsFolder
 import li.songe.gkd.sdp.util.subsMapFlow
@@ -36,6 +37,7 @@ class AppBackupRepository : BackupExportSource, BackupImportTarget {
         }
 
     override suspend fun collect(categoryIds: Set<String>): BackupPayload {
+        requirePendingDataRecoveryComplete()
         return BackupDataMutationBarrier.withConsistentDataSnapshot {
             DbSet.withRawTransaction { database ->
                 collectConsistent(categoryIds, database)
