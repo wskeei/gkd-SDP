@@ -66,6 +66,13 @@ import li.songe.gkd.sdp.util.UsageGuardPolicy
 import li.songe.gkd.sdp.util.UsageGuardUiStatePolicy
 import li.songe.gkd.sdp.widget.UsageGuardReviewWidget
 
+internal val USAGE_GUARD_REQUEST_OVERLAY_FLAGS =
+    WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or
+        WindowManager.LayoutParams.FLAG_SECURE
+
+internal val USAGE_GUARD_REQUEST_OVERLAY_SOFT_INPUT_MODE =
+    WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE
+
 sealed interface UsageRequestDatasetState {
     data object Loading : UsageRequestDatasetState
     data class Ready(val data: SelfControlIntervalRepository.UsageRequestOverlayData) : UsageRequestDatasetState
@@ -258,11 +265,11 @@ class UsageGuardRequestOverlayService : LifecycleService(), SavedStateRegistryOw
             WindowManager.LayoutParams.MATCH_PARENT,
             WindowManager.LayoutParams.MATCH_PARENT,
             WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
-            WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or
-                WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS or
-                WindowManager.LayoutParams.FLAG_SECURE,
-            PixelFormat.TRANSLUCENT
-        )
+            USAGE_GUARD_REQUEST_OVERLAY_FLAGS,
+            PixelFormat.TRANSLUCENT,
+        ).apply {
+            softInputMode = USAGE_GUARD_REQUEST_OVERLAY_SOFT_INPUT_MODE
+        }
         runCatching { windowManager.addView(view, params) }.onFailure { error ->
             view?.let { runCatching { windowManager.removeViewImmediate(it) } }
             view = null
