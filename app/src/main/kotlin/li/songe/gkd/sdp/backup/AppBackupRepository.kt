@@ -4,6 +4,7 @@ import android.content.ContentValues
 import android.database.Cursor
 import android.database.sqlite.SQLiteDatabase
 import androidx.sqlite.db.SupportSQLiteDatabase
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.decodeFromString
@@ -30,19 +31,49 @@ class AppBackupRepository : BackupExportSource, BackupImportTarget {
     override suspend fun <T> withExclusiveMutation(
         block: suspend () -> T,
         afterCommit: suspend (T) -> Unit,
-    ): T =
-        BackupDataMutationBarrier.withConsistentDataSnapshot {
-            val result = DbSet.withTransaction { block() }
+    ): T = BackupDataMutationBarrier.withConsistentDataSnapshot {
+        var blockCompleted = false
+        var completedResult: Any? = null
+        val result = try {
+            DbSet.withTransaction {
+                block().also { value ->
+                    completedResult = value
+                    blockCompleted = true
+                }
+            }
+        } catch (error: CancellationException) {
+            if (!blockCompleted) throw error
+            @Suppress("UNCHECKED_CAST")
+            val committedResult = completedResult as T
             withContext(NonCancellable) {
                 BackupDataMutationBarrier.commitPendingDataReplacements()
+                afterCommit(committedResult)
             }
-            afterCommit(result)
-            result
+            throw error
         }
+        withContext(NonCancellable) {
+            BackupDataMutationBarrier.commitPendingDataReplacements()
+            afterCommit(result)
+        }
+        result
+    }
 
     override suspend fun <T> withRecoveryMutation(block: suspend () -> T): T =
         BackupDataMutationBarrier.withConsistentDataSnapshot {
-            val result = DbSet.withTransaction { block() }
+            var blockCompleted = false
+            val result = try {
+                DbSet.withTransaction {
+                    block().also {
+                        blockCompleted = true
+                    }
+                }
+            } catch (error: CancellationException) {
+                if (!blockCompleted) throw error
+                withContext(NonCancellable) {
+                    BackupDataMutationBarrier.commitPendingDataReplacements()
+                }
+                throw error
+            }
             withContext(NonCancellable) {
                 BackupDataMutationBarrier.commitPendingDataReplacements()
             }
@@ -50,8 +81,8 @@ class AppBackupRepository : BackupExportSource, BackupImportTarget {
         }
 
     override suspend fun collect(categoryIds: Set<String>): BackupPayload {
-        requirePendingDataRecoveryComplete()
         return BackupDataMutationBarrier.withConsistentDataSnapshot {
+            requirePendingDataRecoveryComplete()
             DbSet.withRawTransaction { database ->
                 collectConsistent(categoryIds, database)
             }

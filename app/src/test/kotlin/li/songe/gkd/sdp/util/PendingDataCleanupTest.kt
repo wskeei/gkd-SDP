@@ -86,6 +86,8 @@ class PendingDataCleanupTest {
         assertTrue(snapshot.contains("withContext(NonCancellable)"))
         assertTrue(snapshot.contains("blockPendingDataRecovery()"))
         assertTrue(snapshot.contains("requirePendingDataCleanup(stagingFolder)"))
+        assertTrue(snapshot.contains("snapshotDao.queryById(snapshot.id)"))
+        assertTrue(snapshot.contains("snapshotRecoveryToken(it)"))
     }
 
     private fun sourceFile(relativePath: String): File {

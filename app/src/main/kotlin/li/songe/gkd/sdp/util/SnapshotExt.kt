@@ -113,41 +113,55 @@ object SnapshotExt {
 
     suspend fun deleteSnapshots(snapshots: Collection<Snapshot>): Int {
         if (snapshots.isEmpty()) return 0
-        requirePendingDataRecoveryComplete()
         val uniqueSnapshots = snapshots.distinctBy(Snapshot::id)
         return BackupDataMutationBarrier.withMutation {
+            requirePendingDataRecoveryComplete()
             val stagingFolder = requireNotNull(snapshotFolder.parentFile).resolve(
                 "$SNAPSHOT_DELETE_STAGING_PREFIX${UUID.randomUUID()}",
             )
             var transactionCommitted = false
-            val manifest = PendingDataMutationManifest(
-                kind = PENDING_KIND_SNAPSHOT_DELETE,
-                ids = uniqueSnapshots.map(Snapshot::id),
-                requiredPreviousSnapshotTokens = uniqueSnapshots.associate {
-                    it.id to snapshotRecoveryToken(it)
-                },
-            )
+            var manifest: PendingDataMutationManifest? = null
             try {
                 val deleted = withContext(NonCancellable) {
                     val result = DbSet.withTransaction {
-                        withContext(Dispatchers.IO) {
-                            stagingFolder.mkdirs()
-                            writePendingDataMutationManifest(stagingFolder, manifest)
-                            uniqueSnapshots.forEach { snapshot ->
-                                val source = snapshotParentPath(snapshot.id)
-                                if (source.exists()) {
-                                    moveSnapshotDirectory(source, stagingFolder.resolve(snapshot.id.toString()))
+                        val actualSnapshots = uniqueSnapshots.mapNotNull { snapshot ->
+                            DbSet.snapshotDao.queryById(snapshot.id)
+                        }
+                        if (actualSnapshots.isEmpty()) {
+                            0
+                        } else {
+                            val currentManifest = PendingDataMutationManifest(
+                                kind = PENDING_KIND_SNAPSHOT_DELETE,
+                                ids = actualSnapshots.map(Snapshot::id),
+                                requiredPreviousSnapshotTokens = actualSnapshots.associate {
+                                    it.id to snapshotRecoveryToken(it)
+                                },
+                            )
+                            manifest = currentManifest
+                            withContext(Dispatchers.IO) {
+                                stagingFolder.mkdirs()
+                                writePendingDataMutationManifest(stagingFolder, currentManifest)
+                                actualSnapshots.forEach { snapshot ->
+                                    val source = snapshotParentPath(snapshot.id)
+                                    if (source.exists()) {
+                                        moveSnapshotDirectory(
+                                            source,
+                                            stagingFolder.resolve(snapshot.id.toString()),
+                                        )
+                                    }
                                 }
                             }
+                            DbSet.snapshotDao.delete(*actualSnapshots.toTypedArray())
                         }
-                        DbSet.snapshotDao.delete(*uniqueSnapshots.toTypedArray())
                     }
                     transactionCommitted = true
-                    withContext(Dispatchers.IO) {
-                        writePendingDataMutationManifest(
-                            stagingFolder,
-                            manifest.copy(phase = PENDING_PHASE_COMMITTED),
-                        )
+                    manifest?.let { currentManifest ->
+                        withContext(Dispatchers.IO) {
+                            writePendingDataMutationManifest(
+                                stagingFolder,
+                                currentManifest.copy(phase = PENDING_PHASE_COMMITTED),
+                            )
+                        }
                     }
                     result
                 }
@@ -355,6 +369,7 @@ object SnapshotExt {
 
             val (bitmap, currentStatus) = screenResult // 拆开(图片+状态)
             BackupDataMutationBarrier.withMutation {
+                requirePendingDataRecoveryComplete()
                 try {
                     DbSet.withTransaction {
                         withContext(Dispatchers.IO) {

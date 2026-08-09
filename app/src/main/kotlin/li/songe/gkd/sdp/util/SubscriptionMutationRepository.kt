@@ -25,8 +25,8 @@ object SubscriptionMutationRepository {
         subsItem: SubsItem? = null,
         expectedCurrentMtime: Long? = null,
     ): RawSubscription {
-        requirePendingDataRecoveryComplete()
         return BackupDataMutationBarrier.withMutation {
+        requirePendingDataRecoveryComplete()
         updateSubsMutex.withStateLock {
             val nextSubscription = normalizeSubscription(subscription)
             val subsId = nextSubscription.id
@@ -134,8 +134,8 @@ object SubscriptionMutationRepository {
     suspend fun delete(vararg subsIds: Long): Int {
         val uniqueIds = subsIds.distinct().toLongArray()
         if (uniqueIds.isEmpty()) return 0
-        requirePendingDataRecoveryComplete()
         return BackupDataMutationBarrier.withMutation {
+            requirePendingDataRecoveryComplete()
             updateSubsMutex.withStateLock {
                 val stagingFolder = subsFolder.resolve(
                     "$SUBSCRIPTION_MUTATION_STAGING_PREFIX${UUID.randomUUID()}",

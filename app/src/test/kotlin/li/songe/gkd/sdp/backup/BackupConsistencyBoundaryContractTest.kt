@@ -67,14 +67,25 @@ class BackupConsistencyBoundaryContractTest {
         val journal = sourceFile(
             "app/src/main/kotlin/li/songe/gkd/sdp/backup/BackupImportJournal.kt",
         ).readText()
+        val appDb = sourceFile("app/src/main/kotlin/li/songe/gkd/sdp/db/AppDb.kt").readText()
+        val gatedDao = sourceFile(
+            "app/src/main/kotlin/li/songe/gkd/sdp/backup/GatedRoomDao.kt",
+        ).readText()
 
         assertTrue(coordinator.contains("BackupImportPhase.ROLLED_BACK"))
+        assertTrue(coordinator.contains("journal.write(commitRecord.copy(phase = BackupImportPhase.COMMITTED))"))
         assertTrue(coordinator.contains("withRecoveryMutation"))
         assertTrue(coordinator.contains("withContext(NonCancellable)"))
-        assertTrue(coordinator.contains("finalizeRollback"))
+        assertTrue(coordinator.contains("persistRollbackTerminal"))
         assertTrue(journal.contains("suspend fun clear(): Boolean"))
         assertTrue(journal.contains("BackupImportRecoveryBlockedException"))
         assertTrue(journal.contains("withBackupImportRecoveryContext"))
+        assertTrue(journal.contains("if (!file.isFile) return null"))
+        assertFalse(journal.contains("getOrNull()"))
+        assertTrue(appDb.contains("withBackupDataMutationGate"))
+        assertTrue(appDb.contains("gateRoomDao"))
+        assertTrue(gatedDao.contains("withBackupDataMutationGate"))
+        assertTrue(gatedDao.contains("startCoroutine"))
     }
 
     private fun sourceFile(relativePath: String): File {

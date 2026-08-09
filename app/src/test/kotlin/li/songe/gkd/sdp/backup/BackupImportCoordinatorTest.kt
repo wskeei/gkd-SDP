@@ -1,5 +1,6 @@
 package li.songe.gkd.sdp.backup
 
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.async
 import kotlinx.coroutines.currentCoroutineContext
@@ -160,7 +161,7 @@ class BackupImportCoordinatorTest {
             pauseAfterReplace = true
             restoreChecksCancellation = true
         }
-        val journal = RecordingJournal()
+        val journal = RecordingJournal().apply { requireActiveWrite = true }
         val coordinator = coordinator(target, journal)
         val prepared = coordinator.prepare(
             encryptedPayload(payload("new")),
@@ -176,6 +177,7 @@ class BackupImportCoordinatorTest {
         assertEquals("old", target.current.objects.single().content.decodeToString())
         assertTrue(target.events.contains("restore"))
         assertTrue(journal.cleared)
+        assertEquals(BackupImportPhase.ROLLED_BACK, journal.writes.last().phase)
         target.current = payload("new-history")
         coordinator.recoverInterruptedImport()
         assertEquals("new-history", target.current.objects.single().content.decodeToString())
@@ -225,6 +227,45 @@ class BackupImportCoordinatorTest {
         } finally {
             unblockBackupImportRecovery()
         }
+    }
+
+    @Test
+    fun `transaction return cancellation sees durable rollback terminal`() = runBlocking {
+        val target = FakeImportTarget(payload("old")).apply {
+            failAfterReplace = true
+            cancelAfterMutationReturn = true
+        }
+        val journal = RecordingJournal()
+        val coordinator = coordinator(target, journal)
+        val prepared = coordinator.prepare(
+            encryptedPayload(payload("new")),
+            "correct-password".toCharArray(),
+        ) as BackupResult.Success<PreparedBackupImport>
+
+        runCatching { coordinator.apply(prepared.value, confirmed = true) }
+
+        assertEquals("old", target.current.objects.single().content.decodeToString())
+        assertEquals(BackupImportPhase.ROLLED_BACK, journal.writes.last().phase)
+        assertTrue(journal.cleared)
+    }
+
+    @Test
+    fun `commit return cancellation runs post commit callback before propagating`() = runBlocking {
+        val target = FakeImportTarget(payload("old")).apply {
+            cancelAfterMutationReturn = true
+        }
+        val journal = RecordingJournal()
+        val coordinator = coordinator(target, journal)
+        val prepared = coordinator.prepare(
+            encryptedPayload(payload("new")),
+            "correct-password".toCharArray(),
+        ) as BackupResult.Success<PreparedBackupImport>
+
+        runCatching { coordinator.apply(prepared.value, confirmed = true) }
+
+        assertEquals("new", target.current.objects.single().content.decodeToString())
+        assertEquals(BackupImportPhase.COMMITTED, journal.writes.last().phase)
+        assertTrue(journal.cleared)
     }
 
     @Test
@@ -403,6 +444,7 @@ class BackupImportCoordinatorTest {
         var restoreFailuresRemaining = 0
         var restoreChecksCancellation = false
         var cancelDuringReconcile = false
+        var cancelAfterMutationReturn = false
         val replaceStarted = CompletableDeferred<Unit>()
         val continueReplace = CompletableDeferred<Unit>()
         val reconcileStarted = CompletableDeferred<Unit>()
@@ -412,8 +454,15 @@ class BackupImportCoordinatorTest {
         override suspend fun <T> withExclusiveMutation(
             block: suspend () -> T,
             afterCommit: suspend (T) -> Unit,
-        ): T = mutationMutex.withLock {
-            block().also { afterCommit(it) }
+        ): T {
+            val result = mutationMutex.withLock { block() }
+            if (cancelAfterMutationReturn) {
+                kotlinx.coroutines.withContext(kotlinx.coroutines.NonCancellable) {
+                    afterCommit(result)
+                }
+                throw CancellationException("transaction-return")
+            }
+            return result.also { afterCommit(it) }
         }
 
         suspend fun writeHistory(payload: BackupPayload) = mutationMutex.withLock {
@@ -489,10 +538,12 @@ class BackupImportCoordinatorTest {
         var current: BackupImportJournalRecord? = null
         var cleared = false
         var clearResult = true
+        var requireActiveWrite = false
 
         override suspend fun read(): BackupImportJournalRecord? = current
 
         override suspend fun write(record: BackupImportJournalRecord) {
+            if (requireActiveWrite) currentCoroutineContext().ensureActive()
             current = record
             writes += record
         }

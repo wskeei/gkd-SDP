@@ -13,6 +13,8 @@ import androidx.room.migration.AutoMigrationSpec
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import li.songe.gkd.sdp.app
+import li.songe.gkd.sdp.backup.gateRoomDao
+import li.songe.gkd.sdp.backup.withBackupDataMutationGate
 import li.songe.gkd.sdp.data.A11yEventLog
 import li.songe.gkd.sdp.data.ActionLog
 import li.songe.gkd.sdp.data.ActivityLog
@@ -221,42 +223,45 @@ object DbSet {
             .fallbackToDestructiveMigration(false)
             .build()
     }
-    val subsItemDao get() = db.subsItemDao()
-    val digitalSelfDisciplineLockDao get() = db.digitalSelfDisciplineLockDao()
-    val subsConfigDao get() = db.subsConfigDao()
-    val snapshotDao get() = db.snapshotDao()
-    val actionLogDao get() = db.actionLogDao()
-    val categoryConfigDao get() = db.categoryConfigDao()
-    val activityLogDao get() = db.activityLogDao()
-    val appConfigDao get() = db.appConfigDao()
-    val appVisitLogDao get() = db.appVisitLogDao()
-    val a11yEventLogDao get() = db.a11yEventLogDao()
-    val focusLockDao get() = db.focusLockDao()
-    val interceptConfigDao get() = db.interceptConfigDao()
-    val constraintConfigDao get() = db.constraintConfigDao()
-    val urlBlockRuleDao get() = db.urlBlockRuleDao()
-    val browserConfigDao get() = db.browserConfigDao()
-    val focusRuleDao get() = db.focusRuleDao()
-    val focusSessionDao get() = db.focusSessionDao()
-    val appGroupDao get() = db.appGroupDao()
-    val blockTimeRuleDao get() = db.blockTimeRuleDao()
-    val appBlockerLockDao get() = db.appBlockerLockDao()
-    val wechatContactDao get() = db.wechatContactDao()
-    val appInstallLogDao get() = db.appInstallLogDao()
-    val monitoredAppDao get() = db.monitoredAppDao()
-    val urlRuleGroupDao get() = db.urlRuleGroupDao()
-    val urlTimeRuleDao get() = db.urlTimeRuleDao()
-    val urlBlockerLockDao get() = db.urlBlockerLockDao()
-    val usageGuardAppProfileDao get() = db.usageGuardAppProfileDao()
-    val usageGuardTagDao get() = db.usageGuardTagDao()
-    val usageGuardRecordDao get() = db.usageGuardRecordDao()
-    val selfControlAttemptDao get() = db.selfControlAttemptDao()
+    val subsItemDao get() = gateRoomDao(db.subsItemDao())
+    val digitalSelfDisciplineLockDao get() = gateRoomDao(db.digitalSelfDisciplineLockDao())
+    val subsConfigDao get() = gateRoomDao(db.subsConfigDao())
+    val snapshotDao get() = gateRoomDao(db.snapshotDao())
+    val actionLogDao get() = gateRoomDao(db.actionLogDao())
+    val categoryConfigDao get() = gateRoomDao(db.categoryConfigDao())
+    val activityLogDao get() = gateRoomDao(db.activityLogDao())
+    val appConfigDao get() = gateRoomDao(db.appConfigDao())
+    val appVisitLogDao get() = gateRoomDao(db.appVisitLogDao())
+    val a11yEventLogDao get() = gateRoomDao(db.a11yEventLogDao())
+    val focusLockDao get() = gateRoomDao(db.focusLockDao())
+    val interceptConfigDao get() = gateRoomDao(db.interceptConfigDao())
+    val constraintConfigDao get() = gateRoomDao(db.constraintConfigDao())
+    val urlBlockRuleDao get() = gateRoomDao(db.urlBlockRuleDao())
+    val browserConfigDao get() = gateRoomDao(db.browserConfigDao())
+    val focusRuleDao get() = gateRoomDao(db.focusRuleDao())
+    val focusSessionDao get() = gateRoomDao(db.focusSessionDao())
+    val appGroupDao get() = gateRoomDao(db.appGroupDao())
+    val blockTimeRuleDao get() = gateRoomDao(db.blockTimeRuleDao())
+    val appBlockerLockDao get() = gateRoomDao(db.appBlockerLockDao())
+    val wechatContactDao get() = gateRoomDao(db.wechatContactDao())
+    val appInstallLogDao get() = gateRoomDao(db.appInstallLogDao())
+    val monitoredAppDao get() = gateRoomDao(db.monitoredAppDao())
+    val urlRuleGroupDao get() = gateRoomDao(db.urlRuleGroupDao())
+    val urlTimeRuleDao get() = gateRoomDao(db.urlTimeRuleDao())
+    val urlBlockerLockDao get() = gateRoomDao(db.urlBlockerLockDao())
+    val usageGuardAppProfileDao get() = gateRoomDao(db.usageGuardAppProfileDao())
+    val usageGuardTagDao get() = gateRoomDao(db.usageGuardTagDao())
+    val usageGuardRecordDao get() = gateRoomDao(db.usageGuardRecordDao())
+    val selfControlAttemptDao get() = gateRoomDao(db.selfControlAttemptDao())
 
-    suspend fun <T> withTransaction(block: suspend () -> T): T = db.withTransaction(block)
+    suspend fun <T> withTransaction(block: suspend () -> T): T =
+        withBackupDataMutationGate { db.withTransaction(block) }
 
     suspend fun <T> withRawTransaction(
         block: suspend (SupportSQLiteDatabase) -> T,
-    ): T = db.withTransaction {
-        block(db.openHelper.writableDatabase)
+    ): T = withBackupDataMutationGate {
+        db.withTransaction {
+            block(db.openHelper.writableDatabase)
+        }
     }
 }
