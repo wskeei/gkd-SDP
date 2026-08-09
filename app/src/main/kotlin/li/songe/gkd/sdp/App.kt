@@ -26,6 +26,7 @@ import androidx.core.content.ContextCompat
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.Serializable
 import li.songe.gkd.sdp.a11y.initA11yFeat
 import li.songe.gkd.sdp.data.CrashData
@@ -42,6 +43,7 @@ import li.songe.gkd.sdp.service.initA11yWhiteAppList
 import li.songe.gkd.sdp.shizuku.initShizuku
 import li.songe.gkd.sdp.store.initStore
 import li.songe.gkd.sdp.util.AndroidTarget
+import li.songe.gkd.sdp.util.BackupUtils
 import li.songe.gkd.sdp.util.LogUtils
 import li.songe.gkd.sdp.util.PKG_FLAGS
 import li.songe.gkd.sdp.util.REPOSITORY_URL
@@ -247,6 +249,9 @@ class App : Application() {
             }
         }
         initToast()
+        runBlocking(Dispatchers.IO) {
+            BackupUtils.recoverInterruptedImport()
+        }
         initStore()
         initChannel()
         initAppState()

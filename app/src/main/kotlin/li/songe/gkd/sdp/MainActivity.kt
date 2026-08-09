@@ -247,6 +247,13 @@ class MainActivity : ComponentActivity() {
         return u
     }
 
+    suspend fun createFile(contentType: String, filename: String): Uri? =
+        launcher.launchForResult(Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
+            addCategory(Intent.CATEGORY_OPENABLE)
+            type = contentType
+            putExtra(Intent.EXTRA_TITLE, filename)
+        }).data?.data
+
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
         enableEdgeToEdge()

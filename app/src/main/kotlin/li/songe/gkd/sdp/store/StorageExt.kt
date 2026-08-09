@@ -14,8 +14,10 @@ import li.songe.gkd.sdp.util.json
 import li.songe.gkd.sdp.util.privateStoreFolder
 import li.songe.gkd.sdp.util.storeFolder
 import java.io.File
+import java.nio.file.AtomicMoveNotSupportedException
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
+import java.util.concurrent.ConcurrentHashMap
 
 
 private fun readStoreText(
@@ -28,19 +30,34 @@ private fun readStoreText(
     }
 }
 
-private fun writeStoreText(file: File, text: String) {
+private val normalStoreRegistry = ConcurrentHashMap<String, MutableStoreStateFlow<*>>()
+
+fun writeFileAtomically(file: File, bytes: ByteArray) {
+    file.parentFile?.mkdirs()
     val tempFile = File("${file.absolutePath}.tmp")
     tempFile.outputStream().use {
-        it.write(text.toByteArray(Charsets.UTF_8))
+        it.write(bytes)
+        it.flush()
         it.fd.sync()
     }
-    Files.move(
-        tempFile.toPath(),
-        file.toPath(),
-        StandardCopyOption.REPLACE_EXISTING,
-        StandardCopyOption.ATOMIC_MOVE
-    )
+    try {
+        Files.move(
+            tempFile.toPath(),
+            file.toPath(),
+            StandardCopyOption.REPLACE_EXISTING,
+            StandardCopyOption.ATOMIC_MOVE,
+        )
+    } catch (_: AtomicMoveNotSupportedException) {
+        Files.move(
+            tempFile.toPath(),
+            file.toPath(),
+            StandardCopyOption.REPLACE_EXISTING,
+        )
+    }
 }
+
+fun writeTextAtomically(file: File, text: String) =
+    writeFileAtomically(file, text.toByteArray(Charsets.UTF_8))
 
 @OptIn(ExperimentalForInheritanceCoroutinesApi::class)
 class MutableStoreStateFlow<T>(
@@ -71,7 +88,7 @@ fun <T> createTextFlow(
     scope.launch {
         stateFlow.drop(1).conflate().debounce(debounceMillis).collect {
             withContext(Dispatchers.IO) {
-                writeStoreText(file, encode(it))
+                writeTextAtomically(file, encode(it))
             }
         }
     }
@@ -80,8 +97,41 @@ fun <T> createTextFlow(
         decode = decode,
         encode = encode,
         stateFlow = stateFlow,
-    )
+    ).also { flow ->
+        if (!private) normalStoreRegistry[filename] = flow
+    }
 }
+
+fun snapshotNormalStoreTexts(): Map<String, String> = buildMap {
+    storeFolder.listFiles().orEmpty()
+        .filter { it.isFile && !it.name.endsWith(".tmp") }
+        .sortedBy(File::getName)
+        .forEach { file -> put(file.name, file.readText()) }
+    normalStoreRegistry.toSortedMap().forEach { (filename, flow) ->
+        put(filename, flow.encodeSelf())
+    }
+}
+
+fun replaceNormalStoreTexts(values: Map<String, String>) {
+    require(values.keys.all(::isSafeStoreFilename))
+    storeFolder.listFiles().orEmpty()
+        .filter(File::isFile)
+        .forEach(File::delete)
+    values.toSortedMap().forEach { (filename, text) ->
+        writeTextAtomically(storeFolder.resolve(filename), text)
+    }
+    normalStoreRegistry.forEach { (filename, flow) ->
+        flow.updateByDecode(values[filename])
+    }
+}
+
+private fun isSafeStoreFilename(filename: String): Boolean =
+    filename.isNotBlank() &&
+        filename.length <= 120 &&
+        filename.none { it == '/' || it == '\\' || it == '\u0000' } &&
+        filename != "." &&
+        filename != ".." &&
+        !filename.endsWith(".tmp")
 
 inline fun <reified T> createAnyFlow(
     key: String,

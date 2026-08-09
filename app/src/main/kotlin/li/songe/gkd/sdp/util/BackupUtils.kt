@@ -1,136 +1,106 @@
 package li.songe.gkd.sdp.util
 
 import android.net.Uri
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.withContext
-import kotlinx.serialization.Serializable
-import li.songe.gkd.sdp.data.AppConfig
-import li.songe.gkd.sdp.data.CategoryConfig
-import li.songe.gkd.sdp.data.RawSubscription
-import li.songe.gkd.sdp.data.SubsConfig
-import li.songe.gkd.sdp.data.SubsItem
-import li.songe.gkd.sdp.db.DbSet
-import li.songe.gkd.sdp.store.a11yScopeAppListFlow
-import li.songe.gkd.sdp.store.actionCountFlow
-import li.songe.gkd.sdp.store.blockA11yAppListFlow
-import li.songe.gkd.sdp.store.blockMatchAppListFlow
-import li.songe.gkd.sdp.store.storeFlow
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.flow.MutableStateFlow
+import li.songe.gkd.sdp.backup.AppBackupRepository
+import li.songe.gkd.sdp.backup.BackupCatalog
+import li.songe.gkd.sdp.backup.BackupErrorCode
+import li.songe.gkd.sdp.backup.BackupExportCoordinator
+import li.songe.gkd.sdp.backup.BackupExportSummary
+import li.songe.gkd.sdp.backup.BackupFormatV2
+import li.songe.gkd.sdp.backup.BackupImportCoordinator
+import li.songe.gkd.sdp.backup.BackupResult
+import li.songe.gkd.sdp.backup.BackupSourceFormat
+import li.songe.gkd.sdp.backup.FileBackupImportJournal
+import li.songe.gkd.sdp.backup.LegacyBackupImporter
+import li.songe.gkd.sdp.backup.PreparedBackupImport
 import java.io.File
 
-@Serializable
-private data class DbData(
-    val subsItems: List<SubsItem>?,
-    val subsConfigs: List<SubsConfig>?,
-    val categoryConfigs: List<CategoryConfig>?,
-    val appConfigs: List<AppConfig>?,
-)
-
 object BackupUtils {
-    private val backupStoreFlowList
-        get() = listOf(
-            storeFlow,
-            actionCountFlow,
-            blockMatchAppListFlow,
-            blockA11yAppListFlow,
-            a11yScopeAppListFlow,
+    private const val MAX_ENCRYPTED_BACKUP_BYTES = 65L * 1024L * 1024L
+    private val repository by lazy { AppBackupRepository() }
+    private val exportCoordinator by lazy {
+        BackupExportCoordinator(
+            source = repository,
+            tempDirectoryFactory = ::createGkdTempDir,
         )
-
-    suspend fun exportBackUpData(): File {
-        val tempDir = createGkdTempDir()
-        tempDir.resolve("store").run {
-            mkdir()
-            backupStoreFlowList.forEach { storeFlow ->
-                resolve(storeFlow.filename).writeText(storeFlow.encodeSelf())
-            }
-        }
-        tempDir.resolve("db.json").writeText(
-            json.encodeToString(
-                DbData(
-                    subsItems = DbSet.subsItemDao.queryAll(),
-                    subsConfigs = DbSet.subsConfigDao.queryAll(),
-                    categoryConfigs = DbSet.categoryConfigDao.queryAll(),
-                    appConfigs = DbSet.appConfigDao.queryAll(),
-                )
-            )
+    }
+    private val importCoordinator by lazy {
+        BackupImportCoordinator(
+            target = repository,
+            journal = FileBackupImportJournal(
+                privateStoreFolder.resolve("backup-import-journal.json"),
+            ),
+            tempDirectoryFactory = ::createGkdTempDir,
         )
-        tempDir.resolve("subscription").run {
-            mkdir()
-            subsMapFlow.value.values.forEach { subs ->
-                resolve("${subs.id}.json").writeText(json.encodeToString(subs))
-            }
-        }
-        val file = sharedDir.resolve("gkd-backup-${System.currentTimeMillis()}.zip")
-        ZipUtils.zipFiles(tempDir.listFiles()!!.filterNotNull(), file)
-        tempDir.deleteRecursively()
-        return file
     }
 
+    val defaultCategoryIds: Set<String>
+        get() = BackupCatalog.defaultCategoryIds
+
+    val pendingImportUriFlow = MutableStateFlow<Uri?>(null)
+
     suspend fun importBackUpData(uri: Uri) {
-        toast("导入备份中...")
-        val tempDir = createGkdTempDir()
-        val zipFile = tempDir.resolve("file.zip")
-        UriUtils.copyUriToFile(
-            uri = uri,
-            target = zipFile,
-            maxBytes = ZipUtils.ArchiveLimits().maxArchiveBytes,
+        pendingImportUriFlow.value = uri
+        toast("已选择备份，请在“设置 → 备份恢复”输入密码并确认导入")
+    }
+
+    suspend fun exportBackUpData(
+        categoryIds: Set<String>,
+        password: CharArray,
+    ): BackupResult<BackupExportSummary> {
+        val outputFile = sharedDir.resolve(
+            "gkd-sdp-backup-v2-${System.currentTimeMillis()}.gkdbak",
         )
-        val unzipDir = tempDir.resolve("unzip")
-        try {
-            ZipUtils.unzipFile(zipFile, unzipDir)
-            zipFile.delete()
-        } catch (e: Exception) {
-            LogUtils.d("importBackUpData.unzipFile", e)
-            toast("解压失败，非法备份文件")
-            tempDir.deleteRecursively()
-            return
-        }
-        backupStoreFlowList.forEach { storeFlow ->
-            val file = unzipDir.resolve("store/${storeFlow.filename}")
-            if (file.exists() && file.isFile) {
-                try {
-                    storeFlow.updateByDecode(file.readText())
-                } catch (e: Exception) {
-                    LogUtils.d("importBackUpData.updateByDecode", storeFlow.filename, e)
+        return exportCoordinator.export(categoryIds, password, outputFile)
+    }
+
+    suspend fun prepareImport(
+        uri: Uri,
+        password: CharArray,
+    ): BackupResult<PreparedBackupImport> {
+        val tempDirectory = createGkdTempDir()
+        var encryptedBytes: ByteArray? = null
+        return try {
+            val encryptedFile = tempDirectory.resolve("backup.gkdbak")
+            UriUtils.copyUriToFile(
+                uri = uri,
+                target = encryptedFile,
+                maxBytes = MAX_ENCRYPTED_BACKUP_BYTES,
+            )
+            encryptedBytes = encryptedFile.readBytes()
+            val bytes = requireNotNull(encryptedBytes)
+            if (!BackupFormatV2.hasMagic(bytes) && LegacyBackupImporter.looksLikeArchive(bytes)) {
+                when (val legacy = LegacyBackupImporter.read(encryptedFile)) {
+                    is BackupResult.Failure -> legacy
+                    is BackupResult.Success -> importCoordinator.preparePayload(
+                        payload = legacy.value,
+                        sourceFormat = BackupSourceFormat.LEGACY_V1,
+                    )
                 }
+            } else {
+                importCoordinator.prepare(bytes, password)
             }
+        } catch (error: CancellationException) {
+            password.fill('\u0000')
+            throw error
+        } catch (_: Throwable) {
+            password.fill('\u0000')
+            BackupResult.Failure(BackupErrorCode.INVALID_PAYLOAD)
+        } finally {
+            encryptedBytes?.fill(0)
+            password.fill('\u0000')
+            tempDirectory.deleteRecursively()
         }
-        val dbFile = unzipDir.resolve("db.json")
-        if (dbFile.exists() && dbFile.isFile) {
-            val dbData = withContext(Dispatchers.Default) {
-                json.decodeFromString<DbData>(dbFile.readText())
-            }
-            if (!dbData.subsItems.isNullOrEmpty()) {
-                DbSet.subsItemDao.insertOrIgnore(*dbData.subsItems.toTypedArray())
-            }
-            if (!dbData.subsConfigs.isNullOrEmpty()) {
-                DbSet.subsConfigDao.insertOrIgnore(*dbData.subsConfigs.toTypedArray())
-            }
-            if (!dbData.categoryConfigs.isNullOrEmpty()) {
-                DbSet.categoryConfigDao.insertOrIgnore(*dbData.categoryConfigs.toTypedArray())
-            }
-            if (!dbData.appConfigs.isNullOrEmpty()) {
-                DbSet.appConfigDao.insertOrIgnore(*dbData.appConfigs.toTypedArray())
-            }
-        }
-        val subsDir = unzipDir.resolve("subscription")
-        if (subsDir.exists() && subsDir.isDirectory) {
-            (subsDir.listFiles {
-                it.isFile && it.name.endsWith(".json")
-            } ?: emptyArray()).filterNotNull().forEach { file ->
-                try {
-                    val subs = withContext(Dispatchers.Default) {
-                        json.decodeFromString<RawSubscription>(file.readText())
-                    }
-                    updateSubscription(subs)
-                } catch (e: Exception) {
-                    LogUtils.d("importBackUpData.saveSubs", file.name, e)
-                }
-            }
-        }
-        toast("导入成功")
-        tempDir.deleteRecursively()
-        delay(1000)
-        checkSubsUpdate(false)
+    }
+
+    suspend fun applyImport(
+        prepared: PreparedBackupImport,
+        confirmed: Boolean,
+    ): BackupResult<Unit> = importCoordinator.apply(prepared, confirmed)
+
+    suspend fun recoverInterruptedImport() {
+        importCoordinator.recoverInterruptedImport()
     }
 }

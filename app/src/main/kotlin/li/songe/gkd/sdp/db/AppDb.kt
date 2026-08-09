@@ -253,4 +253,10 @@ object DbSet {
     val selfControlAttemptDao get() = db.selfControlAttemptDao()
 
     suspend fun <T> withTransaction(block: suspend () -> T): T = db.withTransaction(block)
+
+    suspend fun <T> withRawTransaction(
+        block: suspend (SupportSQLiteDatabase) -> T,
+    ): T = db.withTransaction {
+        block(db.openHelper.writableDatabase)
+    }
 }

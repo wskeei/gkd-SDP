@@ -50,6 +50,20 @@ object UriUtils {
         }
     }
 
+    fun copyFileToUri(source: File, target: Uri): Long {
+        require(source.isFile)
+        try {
+            return app.contentResolver.openOutputStream(target, "w")?.use { output ->
+                source.inputStream().buffered().use { input ->
+                    input.copyTo(output).also { output.flush() }
+                }
+            } ?: throw FileNotFoundException("uri_output_unavailable")
+        } catch (error: Throwable) {
+            runCatching { app.contentResolver.delete(target, null, null) }
+            throw error
+        }
+    }
+
     private fun moveAtomically(source: File, target: File) {
         try {
             Files.move(
