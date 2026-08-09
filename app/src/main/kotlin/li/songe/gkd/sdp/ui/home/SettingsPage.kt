@@ -33,7 +33,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -140,10 +140,10 @@ private data class BackupWorkflowState(
 fun useSettingsPage(): ScaffoldExt {
     val mainVm = LocalMainViewModel.current
     val context = LocalActivity.current as MainActivity
-    val store by storeFlow.collectAsState()
+    val store by storeFlow.collectAsStateWithLifecycle()
     val vm = viewModel<HomeVm>()
     val backupScope = rememberCoroutineScope()
-    val pendingImportUri by BackupUtils.pendingImportUriFlow.collectAsState()
+    val pendingImportUri by BackupUtils.pendingImportUriFlow.collectAsStateWithLifecycle()
     var backupWorkflow by remember { mutableStateOf<BackupWorkflowState?>(null) }
 
     LaunchedEffect(pendingImportUri) {
@@ -350,7 +350,7 @@ fun useSettingsPage(): ScaffoldExt {
     if (showA11yBlockDlg) {
         BlockA11yDialog(onDismissRequest = { showA11yBlockDlg = false })
     }
-    if (vm.showBackupDlgFlow.collectAsState().value) {
+    if (vm.showBackupDlgFlow.collectAsStateWithLifecycle().value) {
         TextListDialog(
             onDismiss = { vm.showBackupDlgFlow.value = false },
             textList = listOf(
@@ -800,7 +800,7 @@ fun useSettingsPage(): ScaffoldExt {
                     TextSwitch(
                         title = "轨迹提示",
                         subtitle = "显示触发位置信息",
-                        checked = TrackService.isRunning.collectAsState().value,
+                        checked = TrackService.isRunning.collectAsStateWithLifecycle().value,
                         onCheckedChange = vm.viewModelScope.launchAsFn<Boolean> {
                             if (it) {
                                 mainVm.dialogFlow.waitResult(
@@ -820,7 +820,7 @@ fun useSettingsPage(): ScaffoldExt {
                 }
             }
 
-            val subsStatus by vm.subsStatusFlow.collectAsState()
+            val subsStatus by vm.subsStatusFlow.collectAsStateWithLifecycle()
             TextSwitch(
                 title = "通知文案",
                 subtitle = if (store.useCustomNotifText) {
@@ -858,7 +858,7 @@ fun useSettingsPage(): ScaffoldExt {
             val lazyOn = remember {
                 storeFlow.mapState(scope) { it.enableBlockA11yAppList }.debounce(300)
                     .stateIn(scope, SharingStarted.Eagerly, store.enableBlockA11yAppList)
-            }.collectAsState()
+            }.collectAsStateWithLifecycle()
             AnimatedVisibility(visible = lazyOn.value) {
                 Text(
                     modifier = Modifier
@@ -872,7 +872,7 @@ fun useSettingsPage(): ScaffoldExt {
             TextSwitch(
                 title = "局部关闭",
                 subtitle = "白名单内关闭服务",
-                checked = store.enableBlockA11yAppList && shizukuContextFlow.collectAsState().value.ok,
+                checked = store.enableBlockA11yAppList && shizukuContextFlow.collectAsStateWithLifecycle().value.ok,
                 onCheckedChange = vm.viewModelScope.launchAsFn<Boolean> {
                     if (it) {
                         showA11yBlockDlg = true
@@ -938,8 +938,8 @@ fun useSettingsPage(): ScaffoldExt {
                 color = MaterialTheme.colorScheme.primary,
             )
 
-            val summary by ruleSummaryFlow.collectAsState()
-            val constraints by FocusLockUtils.allConstraintsFlow.collectAsState()
+            val summary by ruleSummaryFlow.collectAsStateWithLifecycle()
+            val constraints by FocusLockUtils.allConstraintsFlow.collectAsStateWithLifecycle()
             val activeLockCount = remember(summary, constraints) {
                 val now = System.currentTimeMillis()
                 val activeConstraints = constraints.filter { it.lockEndTime > now }
@@ -1024,9 +1024,9 @@ private fun backupErrorText(code: BackupErrorCode): String = when (code) {
 @Composable
 private fun BlockA11yDialog(onDismissRequest: () -> Unit) = FullscreenDialog(onDismissRequest) {
     val mainVm = LocalMainViewModel.current
-    val statusRunning by StatusService.isRunning.collectAsState()
-    val shizukuContext by shizukuContextFlow.collectAsState()
-    val ignoreBatteryOptimizations by ignoreBatteryOptimizationsState.stateFlow.collectAsState()
+    val statusRunning by StatusService.isRunning.collectAsStateWithLifecycle()
+    val shizukuContext by shizukuContextFlow.collectAsStateWithLifecycle()
+    val ignoreBatteryOptimizations by ignoreBatteryOptimizationsState.stateFlow.collectAsStateWithLifecycle()
     val context = LocalActivity.current as MainActivity
     Scaffold(
         topBar = {

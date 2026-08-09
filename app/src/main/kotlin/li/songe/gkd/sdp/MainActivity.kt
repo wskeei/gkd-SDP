@@ -33,7 +33,7 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -342,7 +342,7 @@ class MainActivity : ComponentActivity() {
                                     slideOutHorizontally(targetOffsetX = { it })
                         },
                     )
-                    if (!mainVm.termsAcceptedFlow.collectAsState().value) {
+                    if (!mainVm.termsAcceptedFlow.collectAsStateWithLifecycle().value) {
                         TermsAcceptDialog()
                     } else {
                         UiAutomationAlreadyRegisteredDlg()
@@ -446,10 +446,10 @@ fun syncFixState() {
 
 @Composable
 private fun ShizukuErrorDialog(stateFlow: MutableStateFlow<Throwable?>) {
-    val state = stateFlow.collectAsState().value
+    val state = stateFlow.collectAsStateWithLifecycle().value
     if (state != null) {
         val errorText = remember(state) { DiagnosticLogger.userMessage(state) }
-        val appInfoCache = appInfoMapFlow.collectAsState().value
+        val appInfoCache = appInfoMapFlow.collectAsStateWithLifecycle().value
         val installed = appInfoCache.contains(shizukuAppId)
         AlertDialog(
             onDismissRequest = { stateFlow.value = null },
@@ -528,13 +528,13 @@ val accessRestrictedSettingsShowFlow = MutableStateFlow(false)
 
 @Composable
 fun AccessRestrictedSettingsDlg() {
-    val a11yRunning by A11yService.isRunning.collectAsState()
+    val a11yRunning by A11yService.isRunning.collectAsStateWithLifecycle()
     LaunchedEffect(a11yRunning) {
         if (a11yRunning) {
             accessRestrictedSettingsShowFlow.value = false
         }
     }
-    val accessRestrictedSettingsShow by accessRestrictedSettingsShowFlow.collectAsState()
+    val accessRestrictedSettingsShow by accessRestrictedSettingsShowFlow.collectAsStateWithLifecycle()
     val mainVm = LocalMainViewModel.current
     val isA11yPage = mainVm.topRoute is AuthA11yRoute
     LaunchedEffect(isA11yPage, accessRestrictedSettingsShow) {
@@ -575,7 +575,7 @@ fun AccessRestrictedSettingsDlg() {
 
 @Composable
 fun UiAutomationAlreadyRegisteredDlg() {
-    if (automationRegisteredExceptionFlow.collectAsState().value != null) {
+    if (automationRegisteredExceptionFlow.collectAsStateWithLifecycle().value != null) {
         AlertDialog(
             onDismissRequest = {
                 automationRegisteredExceptionFlow.value = null

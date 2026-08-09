@@ -9,7 +9,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -84,12 +84,12 @@ class InputSubsLinkOption {
 
     @Composable
     fun ContentDialog() {
-        val show by showFlow.collectAsState()
+        val show by showFlow.collectAsStateWithLifecycle()
         if (show) {
             val mainVm = LocalMainViewModel.current
-            val value by valueFlow.collectAsState()
-            val initValue by initValueFlow.collectAsState()
-            val authorizedOrigins by CleartextOriginAuthorizations.originsFlow.collectAsState()
+            val value by valueFlow.collectAsStateWithLifecycle()
+            val initValue by initValueFlow.collectAsStateWithLifecycle()
+            val authorizedOrigins by CleartextOriginAuthorizations.originsFlow.collectAsStateWithLifecycle()
             val cleartextOrigin = CleartextOriginPolicy.canonicalOrigin(value)
             val needsCleartextAuthorization = cleartextOrigin != null &&
                 cleartextOrigin !in authorizedOrigins

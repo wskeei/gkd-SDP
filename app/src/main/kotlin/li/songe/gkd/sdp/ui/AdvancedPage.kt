@@ -31,7 +31,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -102,7 +102,7 @@ fun AdvancedPage() {
     val context = LocalActivity.current as MainActivity
     val mainVm = LocalMainViewModel.current
     val vm = viewModel<AdvancedVm>()
-    val store by storeFlow.collectAsState()
+    val store by storeFlow.collectAsStateWithLifecycle()
 
     var showEditPortDlg by vm.showEditPortDlgFlow.asMutableState()
     if (showEditPortDlg) {
@@ -179,7 +179,7 @@ fun AdvancedPage() {
         AlertDialog(
             title = { Text(text = "授权状态") },
             text = {
-                val states = shizukuContextFlow.collectAsState().value.states
+                val states = shizukuContextFlow.collectAsStateWithLifecycle().value.states
                 Column {
                     states.forEach { (name, value) ->
                         Text(
@@ -338,7 +338,7 @@ fun AdvancedPage() {
                     contentDescription = "Shizuku 状态",
                 )
             }
-            val shizukuGranted by shizukuGrantedState.stateFlow.collectAsState()
+            val shizukuGranted by shizukuGrantedState.stateFlow.collectAsStateWithLifecycle()
             AnimatedVisibility(store.enableShizuku && !shizukuGranted) {
                 AuthCard(
                     title = "未授权",
@@ -356,7 +356,7 @@ fun AdvancedPage() {
                 onSuffixClick = { mainVm.navigateWebPage(ShortUrlSet.URL14) },
                 checked = store.enableShizuku,
                 suffixIcon = {
-                    if (updateBinderMutex.state.collectAsState().value) {
+                    if (updateBinderMutex.state.collectAsStateWithLifecycle().value) {
                         CircularProgressIndicator(
                             modifier = Modifier
                                 .size(20.dp),
@@ -369,10 +369,10 @@ fun AdvancedPage() {
                 onClick = null,
             )
 
-            val server by HttpService.httpServerFlow.collectAsState()
+            val server by HttpService.httpServerFlow.collectAsStateWithLifecycle()
             val httpServerRunning = server != null
-            val localNetworkIps by HttpService.localNetworkIpsFlow.collectAsState()
-            val remoteSession by HttpService.remoteSessionStateFlow.collectAsState()
+            val localNetworkIps by HttpService.localNetworkIpsFlow.collectAsStateWithLifecycle()
+            val remoteSession by HttpService.remoteSessionStateFlow.collectAsStateWithLifecycle()
 
             Text(
                 text = "HTTP",
@@ -510,7 +510,7 @@ fun AdvancedPage() {
                             }
                         }
                     )
-                    val cleartextOrigins by CleartextOriginAuthorizations.originsFlow.collectAsState()
+                    val cleartextOrigins by CleartextOriginAuthorizations.originsFlow.collectAsStateWithLifecycle()
                     if (cleartextOrigins.isNotEmpty()) {
                         Text(
                             text = "已授权明文来源",
@@ -545,7 +545,7 @@ fun AdvancedPage() {
             )
 
             if (!AndroidTarget.R) {
-                val screenshotRunning by ScreenshotService.isRunning.collectAsState()
+                val screenshotRunning by ScreenshotService.isRunning.collectAsStateWithLifecycle()
                 TextSwitch(
                     title = "截屏服务",
                     subtitle = "生成快照需要获取屏幕截图",
@@ -570,7 +570,7 @@ fun AdvancedPage() {
             TextSwitch(
                 title = "快照按钮",
                 subtitle = "显示按钮点击保存快照",
-                checked = ButtonService.isRunning.collectAsState().value,
+                checked = ButtonService.isRunning.collectAsStateWithLifecycle().value,
                 onCheckedChange = vm.viewModelScope.launchAsFn<Boolean> {
                     if (it) {
                         requiredPermission(context, foregroundServiceSpecialUseState)
@@ -672,7 +672,7 @@ fun AdvancedPage() {
             TextSwitch(
                 title = "界面服务",
                 subtitle = "显示当前界面信息",
-                checked = ActivityService.isRunning.collectAsState().value,
+                checked = ActivityService.isRunning.collectAsStateWithLifecycle().value,
                 onCheckedChange = vm.viewModelScope.launchAsFn<Boolean> {
                     if (it) {
                         requiredPermission(context, foregroundServiceSpecialUseState)
@@ -694,7 +694,7 @@ fun AdvancedPage() {
             TextSwitch(
                 title = "事件服务",
                 subtitle = "显示无障碍事件",
-                checked = EventService.isRunning.collectAsState().value,
+                checked = EventService.isRunning.collectAsStateWithLifecycle().value,
                 onCheckedChange = vm.viewModelScope.launchAsFn<Boolean> {
                     if (it) {
                         requiredPermission(context, foregroundServiceSpecialUseState)

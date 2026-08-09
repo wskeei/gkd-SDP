@@ -18,7 +18,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -65,11 +65,11 @@ fun SubsItemCard(
     val vm = viewModel<HomeVm>()
     val subsLoadError by remember(subsItem.id) {
         subsLoadErrorsFlow.mapState(vm.viewModelScope) { it[subsItem.id] }
-    }.collectAsState()
+    }.collectAsStateWithLifecycle()
     val subsRefreshError by remember(subsItem.id) {
         subsRefreshErrorsFlow.mapState(vm.viewModelScope) { it[subsItem.id] }
-    }.collectAsState()
-    val subsRefreshing by updateSubsMutex.state.collectAsState()
+    }.collectAsStateWithLifecycle()
+    val subsRefreshing by updateSubsMutex.state.collectAsStateWithLifecycle()
     val dragged by interactionSource.collectIsDraggedAsState()
     val onClick = {
         if (!dragged) {

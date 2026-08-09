@@ -17,7 +17,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -66,8 +66,8 @@ fun SubsCategoryPage(@Suppress("unused") route: SubsCategoryRoute) {
     val mainVm = LocalMainViewModel.current
 
     val vm = viewModel { SubsCategoryVm(route) }
-    val subs = vm.subsRawFlow.collectAsState().value
-    val categoryConfigMap = vm.categoryConfigMapFlow.collectAsState().value
+    val subs = vm.subsRawFlow.collectAsStateWithLifecycle().value
+    val categoryConfigMap = vm.categoryConfigMapFlow.collectAsStateWithLifecycle().value
 
     val categories = subs.categories
 
@@ -127,7 +127,7 @@ fun SubsCategoryPage(@Suppress("unused") route: SubsCategoryRoute) {
         }
     }
 
-    if (vm.showAddCategoryFlow.collectAsState().value) {
+    if (vm.showAddCategoryFlow.collectAsStateWithLifecycle().value) {
         UpsertCategoryDialog(
             subs = subs,
             category = null,

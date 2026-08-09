@@ -12,7 +12,7 @@ import androidx.compose.material3.TopAppBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.ReadOnlyComposable
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -32,7 +32,7 @@ import li.songe.gkd.sdp.util.subsMapFlow
 @Composable
 fun useSubs(subsId: Long?): RawSubscription? {
     val scope = rememberCoroutineScope()
-    return remember(subsId) { subsMapFlow.mapState(scope) { it[subsId] } }.collectAsState().value
+    return remember(subsId) { subsMapFlow.mapState(scope) { it[subsId] } }.collectAsStateWithLifecycle().value
 }
 
 @Composable
@@ -68,7 +68,7 @@ fun Modifier.autoFocus(immediateFocus: Boolean = false): Modifier {
 
 @Composable
 private fun getCompatStateValue(v: Any?): Any? = when (v) {
-    is StateFlow<*> -> v.collectAsState().value
+    is StateFlow<*> -> v.collectAsStateWithLifecycle().value
     is androidx.compose.runtime.State<*> -> v.value
     else -> v
 }

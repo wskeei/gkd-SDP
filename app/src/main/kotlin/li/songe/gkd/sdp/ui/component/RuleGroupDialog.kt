@@ -19,7 +19,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -60,7 +60,7 @@ fun RuleGroupDialog(
     val mainVm = LocalMainViewModel.current
     val interceptConfig by remember(subs.id, appId, group.key) {
         DbSet.interceptConfigDao.getFlow(subs.id, appId ?: "", group.key)
-    }.collectAsState(initial = null)
+    }.collectAsStateWithLifecycle(initialValue = null)
     val scope = rememberCoroutineScope()
 
     AlertDialog(

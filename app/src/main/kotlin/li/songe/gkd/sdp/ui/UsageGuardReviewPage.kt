@@ -23,7 +23,7 @@ import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
@@ -188,11 +188,11 @@ data object UsageGuardReviewRoute : NavKey
 fun UsageGuardReviewPage() {
     val mainVm = LocalMainViewModel.current
     val vm = viewModel<UsageGuardReviewVm>()
-    val selectedRange by vm.selectedRangeFlow.collectAsState()
-    val selectedType by vm.selectedReviewTypeFlow.collectAsState()
-    val selectedFilter by vm.selectedInterceptFilterFlow.collectAsState()
-    val selectedMetric by vm.selectedMetricFlow.collectAsState()
-    val reviewState by vm.reviewUiStateFlow.collectAsState()
+    val selectedRange by vm.selectedRangeFlow.collectAsStateWithLifecycle()
+    val selectedType by vm.selectedReviewTypeFlow.collectAsStateWithLifecycle()
+    val selectedFilter by vm.selectedInterceptFilterFlow.collectAsStateWithLifecycle()
+    val selectedMetric by vm.selectedMetricFlow.collectAsStateWithLifecycle()
+    val reviewState by vm.reviewUiStateFlow.collectAsStateWithLifecycle()
     var selectedTab by remember(selectedType) {
         mutableIntStateOf(if (selectedType == DigitalSelfDisciplineReviewPolicy.ReviewType.UsageRequest) 0 else 1)
     }

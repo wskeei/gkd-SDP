@@ -13,7 +13,7 @@ import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -33,7 +33,7 @@ fun MultiTextField(
     indicatorSize: Int? = null,
     placeholderText: String? = null,
 ) {
-    val text by textFlow.collectAsState()
+    val text by textFlow.collectAsStateWithLifecycle()
     Box(modifier = modifier) {
         val textColors = TextFieldDefaults.colors(
             focusedIndicatorColor = Color.Transparent,
@@ -75,7 +75,7 @@ fun MultiTextField(
 
 private fun Modifier.optimizedImePadding() = composed {
     val context = LocalActivity.current as MainActivity
-    if (context.imePlayingFlow.collectAsState().value) {
+    if (context.imePlayingFlow.collectAsStateWithLifecycle().value) {
         this
     } else {
         imePadding()

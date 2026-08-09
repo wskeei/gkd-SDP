@@ -6,7 +6,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -77,7 +77,7 @@ fun EditBlockAppListPage() {
         MultiTextField(
             modifier = Modifier.scaffoldPadding(contentPadding),
             textFlow = vm.textFlow,
-            indicatorSize = vm.indicatorSizeFlow.collectAsState().value
+            indicatorSize = vm.indicatorSizeFlow.collectAsStateWithLifecycle().value
         )
     }
 }

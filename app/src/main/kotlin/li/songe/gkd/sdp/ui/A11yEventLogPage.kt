@@ -23,7 +23,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
@@ -83,7 +83,7 @@ fun A11yEventLogPage() {
     val mainVm = context.mainVm
     val vm = viewModel<A11yEventLogVm>()
 
-    val logCount by vm.logCountFlow.collectAsState()
+    val logCount by vm.logCountFlow.collectAsStateWithLifecycle()
     val list = vm.pagingDataFlow.collectAsLazyPagingItems()
     val (scrollBehavior, listState) = useListScrollState(vm.resetKey, list.itemCount > 0)
 
@@ -151,7 +151,7 @@ fun A11yEventLogPage() {
         }
     }
 
-    vm.showEventLogFlow.collectAsState().value?.let { eventLog ->
+    vm.showEventLogFlow.collectAsStateWithLifecycle().value?.let { eventLog ->
         val onDismissRequest = { vm.showEventLogFlow.value = null }
         val dark = LocalDarkTheme.current
         val eventText = remember(dark) {

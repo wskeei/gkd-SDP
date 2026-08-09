@@ -30,7 +30,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -66,6 +66,7 @@ import li.songe.gkd.sdp.store.storeFlow
 import li.songe.gkd.sdp.ui.component.SelfControlElapsedCard
 import li.songe.gkd.sdp.ui.component.UsageRequestRhythmPresentation
 import li.songe.gkd.sdp.ui.component.UsageDurationRatioFeedback
+import li.songe.gkd.sdp.ui.share.ServiceOverlayLifecycleOwner
 import li.songe.gkd.sdp.ui.style.AppTheme
 import li.songe.gkd.sdp.util.SelfControlElapsedPolicy
 import li.songe.gkd.sdp.util.SelfControlInsightWindowPolicy
@@ -88,6 +89,7 @@ sealed interface UsageRequestDatasetState {
 
 class UsageGuardRequestOverlayService : LifecycleService(), SavedStateRegistryOwner {
     private val windowManager by lazy { getSystemService(WINDOW_SERVICE) as WindowManager }
+    private val overlayLifecycleOwner = ServiceOverlayLifecycleOwner()
     private var view: ComposeView? = null
 
     private val savedStateRegistryController = SavedStateRegistryController.create(this)
@@ -191,12 +193,12 @@ class UsageGuardRequestOverlayService : LifecycleService(), SavedStateRegistryOw
         if (view != null) return false
 
         view = ComposeView(this).apply {
-            setViewTreeLifecycleOwner(this@UsageGuardRequestOverlayService)
+            setViewTreeLifecycleOwner(overlayLifecycleOwner)
             setViewTreeSavedStateRegistryOwner(this@UsageGuardRequestOverlayService)
             setContent {
                 AppTheme {
-                    val tags by DbSet.usageGuardTagDao.queryAll().collectAsState(initial = emptyList())
-                    val settings by storeFlow.collectAsState()
+                    val tags by DbSet.usageGuardTagDao.queryAll().collectAsStateWithLifecycle(initialValue = emptyList())
+                    val settings by storeFlow.collectAsStateWithLifecycle()
                     UsageGuardRequestContent(
                         appName = appName,
                         tags = tags,
@@ -277,8 +279,12 @@ class UsageGuardRequestOverlayService : LifecycleService(), SavedStateRegistryOw
         ).apply {
             softInputMode = USAGE_GUARD_REQUEST_OVERLAY_SOFT_INPUT_MODE
         }
-        runCatching { windowManager.addView(view, params) }.onFailure { error ->
+        runCatching {
+            windowManager.addView(view, params)
+            overlayLifecycleOwner.onViewAdded()
+        }.onFailure { error ->
             view?.let { runCatching { windowManager.removeViewImmediate(it) } }
+            overlayLifecycleOwner.onViewRemoved()
             view = null
             LogUtils.d("usage guard request overlay mount rejected", error::class.java.simpleName)
             UsageGuardEngine.onOverlayMountFailed("request", appId)
@@ -300,6 +306,7 @@ class UsageGuardRequestOverlayService : LifecycleService(), SavedStateRegistryOw
     override fun onDestroy() {
         super.onDestroy()
         tickerJob?.cancel()
+        overlayLifecycleOwner.onViewRemoved()
         view?.let { runCatching { windowManager.removeView(it) } }
         view = null
         UsageGuardEngine.onRequestOverlayStopped(appId.ifBlank { null })

@@ -17,7 +17,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -76,14 +76,14 @@ fun SubsAppGroupListPage(route: SubsAppGroupListRoute) {
 
     val mainVm = LocalMainViewModel.current
     val vm = viewModel { SubsAppGroupListVm(route) }
-    val subs = vm.subsFlow.collectAsState().value
-    val subsConfigs by vm.subsConfigsFlow.collectAsState()
-    val categoryConfigs by vm.categoryConfigsFlow.collectAsState()
-    val app by vm.subsAppFlow.collectAsState()
+    val subs = vm.subsFlow.collectAsStateWithLifecycle().value
+    val subsConfigs by vm.subsConfigsFlow.collectAsStateWithLifecycle()
+    val categoryConfigs by vm.categoryConfigsFlow.collectAsStateWithLifecycle()
+    val app by vm.subsAppFlow.collectAsStateWithLifecycle()
 
     val editable = subsItemId < 0
-    val isSelectedMode = vm.isSelectedModeFlow.collectAsState().value
-    val selectedDataSet = vm.selectedDataSetFlow.collectAsState().value
+    val isSelectedMode = vm.isSelectedModeFlow.collectAsStateWithLifecycle().value
+    val selectedDataSet = vm.selectedDataSetFlow.collectAsStateWithLifecycle().value
     LaunchedEffect(key1 = isSelectedMode) {
         if (!isSelectedMode) {
             vm.selectedDataSetFlow.value = emptySet()

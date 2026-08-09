@@ -40,7 +40,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
@@ -184,7 +184,7 @@ fun ActionLogPage(route: ActionLogRoute) {
             })
     }, content = { contentPadding ->
         Column(modifier = Modifier.scaffoldPadding(contentPadding)) {
-            val selectedTab by vm.selectedTabIndex.collectAsState()
+            val selectedTab by vm.selectedTabIndex.collectAsStateWithLifecycle()
             PrimaryTabRow(
                 selectedTabIndex = selectedTab,
                 modifier = Modifier.fillMaxWidth(),
@@ -243,7 +243,7 @@ fun ActionLogPage(route: ActionLogRoute) {
         }
     })
 
-    vm.showActionLogFlow.collectAsState().value?.let {
+    vm.showActionLogFlow.collectAsStateWithLifecycle().value?.let {
         ActionLogDialog(
             vm = vm,
             actionLog = it,
@@ -256,7 +256,7 @@ fun ActionLogPage(route: ActionLogRoute) {
 
 @Composable
 private fun ActionLogStatsView(vm: ActionLogVm) {
-    val statsUiState by vm.statsUiStateFlow.collectAsState()
+    val statsUiState by vm.statsUiStateFlow.collectAsStateWithLifecycle()
     if (!statsUiState.hasAnyStats) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             EmptyText(text = "暂无统计数据")
@@ -361,7 +361,7 @@ private fun ActionLogCard(
     val lastActionLog = lastItem?.first
     val isDiffApp = actionLog.appId != lastActionLog?.appId
     val verticalPadding = if (i == 0) 0.dp else if (isDiffApp) 12.dp else 8.dp
-    val subsIdToRaw by subsMapFlow.collectAsState()
+    val subsIdToRaw by subsMapFlow.collectAsStateWithLifecycle()
     val subscription = subsIdToRaw[actionLog.subsId]
     Column(
         modifier = modifier
@@ -545,12 +545,12 @@ private fun ActionLogDialog(
         } else {
             DbSet.subsConfigDao.queryGlobalGroupTypeConfig(actionLog.subsId, actionLog.groupKey)
         }).stateIn(vm.viewModelScope, SharingStarted.Eagerly, null)
-    }.collectAsState().value
+    }.collectAsStateWithLifecycle().value
 
     val oldExclude = remember(subsConfig?.exclude) {
         ExcludeData.parse(subsConfig?.exclude)
     }
-    val subscriptionMap by subsMapFlow.collectAsState()
+    val subscriptionMap by subsMapFlow.collectAsStateWithLifecycle()
     val currentSubscription = subscriptionMap[actionLog.subsId]
     val currentGroup = currentSubscription?.let { subscription ->
         if (actionLog.groupType == SubsConfig.AppGroupType) {
@@ -658,7 +658,7 @@ private fun ActionLogDialog(
             if (actionLog.groupType == SubsConfig.GlobalGroupType) {
                 val subs = remember(actionLog.subsId) {
                     subsMapFlow.mapState(scope) { it[actionLog.subsId] }
-                }.collectAsState().value
+                }.collectAsStateWithLifecycle().value
                 val group = subs?.globalGroups?.find { g -> g.key == actionLog.groupKey }
                 val appChecked = if (group != null) {
                     getGlobalGroupChecked(

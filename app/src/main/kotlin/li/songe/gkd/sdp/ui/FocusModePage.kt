@@ -35,7 +35,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -73,12 +73,12 @@ data object FocusModeRoute : NavKey
 fun FocusModePage() {
     val mainVm = LocalMainViewModel.current
     val vm = viewModel<FocusModeVm>()
-    val allRules by vm.allRulesFlow.collectAsState()
+    val allRules by vm.allRulesFlow.collectAsStateWithLifecycle()
     val quickStartRules = remember(allRules) { allRules.filter { it.isQuickStart } }
     val scheduledRules = remember(allRules) { allRules.filterNot { it.isQuickStart } }
-    val activeSession by vm.activeSessionFlow.collectAsState()
-    val isActive by vm.isActiveFlow.collectAsState()
-    val currentWhitelist by vm.currentWhitelistFlow.collectAsState()
+    val activeSession by vm.activeSessionFlow.collectAsStateWithLifecycle()
+    val isActive by vm.isActiveFlow.collectAsStateWithLifecycle()
+    val currentWhitelist by vm.currentWhitelistFlow.collectAsStateWithLifecycle()
 
     var showQuickStartSheet by remember { mutableStateOf(false) }
     var showRuleEditorSheet by remember { mutableStateOf(false) }
@@ -956,7 +956,7 @@ private fun WhitelistPickerDialog(
     onConfirm: (List<String>) -> Unit
 ) {
     var selectedApps by remember { mutableStateOf(currentWhitelist.toSet()) }
-    val appInfoMap by appInfoMapFlow.collectAsState()
+    val appInfoMap by appInfoMapFlow.collectAsStateWithLifecycle()
     val vm = viewModel<FocusModeVm>()
 
     AlertDialog(

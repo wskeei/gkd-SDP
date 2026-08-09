@@ -28,7 +28,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -94,19 +94,19 @@ fun useAppListPage(): ScaffoldExt {
     val context = LocalActivity.current as MainActivity
 
     val vm = viewModel<HomeVm>()
-    val appInfos by vm.appInfosFlow.collectAsState()
-    val searchStr by vm.searchStrFlow.collectAsState()
-    val ruleSummary by ruleSummaryFlow.collectAsState()
+    val appInfos by vm.appInfosFlow.collectAsStateWithLifecycle()
+    val searchStr by vm.searchStrFlow.collectAsStateWithLifecycle()
+    val ruleSummary by ruleSummaryFlow.collectAsStateWithLifecycle()
 
     val globalDesc = if (ruleSummary.globalGroups.isNotEmpty()) {
         "${ruleSummary.globalGroups.size}全局"
     } else {
         null
     }
-    val showSearchBar by vm.showSearchBarFlow.collectAsState()
-    val refreshing by updateAppMutex.state.collectAsState()
+    val showSearchBar by vm.showSearchBarFlow.collectAsStateWithLifecycle()
+    val refreshing by updateAppMutex.state.collectAsStateWithLifecycle()
     val pullToRefreshState = rememberPullToRefreshState()
-    val editWhiteListMode by vm.editWhiteListModeFlow.collectAsState()
+    val editWhiteListMode by vm.editWhiteListModeFlow.collectAsStateWithLifecycle()
     val scrollKey = rememberSaveable { mutableIntStateOf(0) }
     val (scrollBehavior, listState) = useListScrollState(scrollKey)
     LaunchedEffect(null) {
@@ -182,7 +182,7 @@ fun useAppListPage(): ScaffoldExt {
                     }
                 }
             }, actions = {
-                if (appListAuthAbnormalFlow.collectAsState().value) {
+                if (appListAuthAbnormalFlow.collectAsStateWithLifecycle().value) {
                     CompositionLocalProvider(LocalContentColor provides MaterialTheme.colorScheme.error) {
                         PerfIconButton(
                             imageVector = PerfIcon.WarningAmber,
@@ -286,7 +286,7 @@ fun useAppListPage(): ScaffoldExt {
             )
         }
     ) { contentPadding ->
-        val canQueryPkg by canQueryPkgState.stateFlow.collectAsState()
+        val canQueryPkg by canQueryPkgState.stateFlow.collectAsStateWithLifecycle()
         PullToRefreshBox(
             modifier = Modifier.padding(contentPadding),
             state = pullToRefreshState,
@@ -335,7 +335,7 @@ fun useAppListPage(): ScaffoldExt {
                 item(ListPlaceholder.KEY, ListPlaceholder.TYPE) {
                     Spacer(modifier = Modifier.height(EmptyHeight))
                     if (appInfos.isEmpty() && searchStr.isNotEmpty()) {
-                        EmptyText(text = if (vm.appFilter.showAllAppFlow.collectAsState().value) "暂无搜索结果" else "暂无搜索结果，或修改筛选")
+                        EmptyText(text = if (vm.appFilter.showAllAppFlow.collectAsStateWithLifecycle().value) "暂无搜索结果" else "暂无搜索结果，或修改筛选")
                         Spacer(modifier = Modifier.height(EmptyHeight / 2))
                     }
                 }
@@ -352,8 +352,8 @@ private fun AppItemCard(
     val mainVm = LocalMainViewModel.current
     val context = LocalActivity.current as MainActivity
     val vm = viewModel<HomeVm>()
-    val editWhiteListMode = vm.editWhiteListModeFlow.collectAsState().value
-    val inWhiteList = blockMatchAppListFlow.collectAsState().value.contains(appInfo.id)
+    val editWhiteListMode = vm.editWhiteListModeFlow.collectAsStateWithLifecycle().value
+    val inWhiteList = blockMatchAppListFlow.collectAsStateWithLifecycle().value.contains(appInfo.id)
     Row(
         modifier = Modifier
             .clickable(

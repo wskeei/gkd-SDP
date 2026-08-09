@@ -21,7 +21,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
@@ -88,9 +88,9 @@ fun AppConfigPage(route: AppConfigRoute) {
     val mainVm = LocalMainViewModel.current
     val vm = viewModel { AppConfigVm(route) }
 
-    val ruleSortType by vm.ruleSortTypeFlow.collectAsState()
-    val groupSize by vm.groupSizeFlow.collectAsState()
-    val firstLoading by vm.firstLoadingFlow.collectAsState()
+    val ruleSortType by vm.ruleSortTypeFlow.collectAsStateWithLifecycle()
+    val groupSize by vm.groupSizeFlow.collectAsStateWithLifecycle()
+    val firstLoading by vm.firstLoadingFlow.collectAsStateWithLifecycle()
     val resetKey = rememberSaveable { mutableIntStateOf(0) }
     val (scrollBehavior, listState) = useListScrollState(
         resetKey,
@@ -119,8 +119,8 @@ fun AppConfigPage(route: AppConfigRoute) {
         }
     }
 
-    val isSelectedMode = vm.isSelectedModeFlow.collectAsState().value
-    val selectedDataSet = vm.selectedDataSetFlow.collectAsState().value
+    val isSelectedMode = vm.isSelectedModeFlow.collectAsStateWithLifecycle().value
+    val selectedDataSet = vm.selectedDataSetFlow.collectAsStateWithLifecycle().value
     LaunchedEffect(key1 = isSelectedMode) {
         if (!isSelectedMode) {
             vm.selectedDataSetFlow.value = emptySet()
@@ -277,10 +277,10 @@ fun AppConfigPage(route: AppConfigRoute) {
             )
         },
     ) { contentPadding ->
-        val globalSubsConfigs by vm.globalSubsConfigsFlow.collectAsState()
-        val categoryConfigs by vm.categoryConfigsFlow.collectAsState()
-        val appSubsConfigs by vm.appSubsConfigsFlow.collectAsState()
-        val subsPairs by vm.subsPairsFlow.collectAsState()
+        val globalSubsConfigs by vm.globalSubsConfigsFlow.collectAsStateWithLifecycle()
+        val categoryConfigs by vm.categoryConfigsFlow.collectAsStateWithLifecycle()
+        val appSubsConfigs by vm.appSubsConfigsFlow.collectAsStateWithLifecycle()
+        val subsPairs by vm.subsPairsFlow.collectAsStateWithLifecycle()
         LazyColumn(
             modifier = Modifier.scaffoldPadding(contentPadding),
             state = listState,
@@ -378,7 +378,7 @@ fun AppConfigPage(route: AppConfigRoute) {
             item(ListPlaceholder.KEY, ListPlaceholder.TYPE) {
                 Spacer(modifier = Modifier.height(EmptyHeight))
                 if (groupSize == 0 && !firstLoading) {
-                    EmptyText(text = if (vm.showDisabledRuleFlow.collectAsState().value) "暂无数据" else "暂无数据，或修改筛选")
+                    EmptyText(text = if (vm.showDisabledRuleFlow.collectAsStateWithLifecycle().value) "暂无数据" else "暂无数据，或修改筛选")
                 }
             }
         }

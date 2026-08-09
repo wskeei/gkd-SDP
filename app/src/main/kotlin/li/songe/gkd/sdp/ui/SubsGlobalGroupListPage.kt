@@ -17,7 +17,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -70,14 +70,14 @@ fun SubsGlobalGroupListPage(route: SubsGlobalGroupListRoute) {
 
     val mainVm = LocalMainViewModel.current
     val vm = viewModel { SubsGlobalGroupListVm(route) }
-    val subs = vm.subsRawFlow.collectAsState().value
-    val subsConfigs by vm.subsConfigsFlow.collectAsState()
+    val subs = vm.subsRawFlow.collectAsStateWithLifecycle().value
+    val subsConfigs by vm.subsConfigsFlow.collectAsStateWithLifecycle()
 
     val editable = subsItemId < 0
     val globalGroups = subs.globalGroups
 
-    val isSelectedMode = vm.isSelectedModeFlow.collectAsState().value
-    val selectedDataSet = vm.selectedDataSetFlow.collectAsState().value
+    val isSelectedMode = vm.isSelectedModeFlow.collectAsStateWithLifecycle().value
+    val selectedDataSet = vm.selectedDataSetFlow.collectAsStateWithLifecycle().value
     LaunchedEffect(key1 = isSelectedMode) {
         if (!isSelectedMode) {
             vm.selectedDataSetFlow.value = emptySet()

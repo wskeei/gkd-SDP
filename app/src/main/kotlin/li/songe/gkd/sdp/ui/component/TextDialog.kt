@@ -5,7 +5,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.remember
 import kotlinx.coroutines.flow.MutableStateFlow
 import li.songe.gkd.sdp.util.openUri
@@ -15,7 +15,7 @@ import li.songe.gkd.sdp.util.throttle
 fun TextDialog(
     textFlow: MutableStateFlow<String?>
 ) {
-    val text = textFlow.collectAsState().value
+    val text = textFlow.collectAsStateWithLifecycle().value
     if (text != null) {
         val isUri = remember(text) { URLUtil.isNetworkUrl(text) }
         val onDismissRequest = {

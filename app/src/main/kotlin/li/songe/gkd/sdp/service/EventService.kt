@@ -24,7 +24,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
@@ -94,7 +94,7 @@ class EventService : OverlayWindowService(positionKey = "event") {
                     .padding(4.dp)
             ) {
                 ClosableTitle(
-                    title = if (A11yService.isRunning.collectAsState().value || uiAutomationFlow.collectAsState().value != null) "事件服务" else "事件服务(无权限)"
+                    title = if (A11yService.isRunning.collectAsStateWithLifecycle().value || uiAutomationFlow.collectAsStateWithLifecycle().value != null) "事件服务" else "事件服务(无权限)"
                 )
                 val textStyle = MaterialTheme.typography.labelSmall
                 val numCharWidth = measureNumberTextWidth(textStyle)

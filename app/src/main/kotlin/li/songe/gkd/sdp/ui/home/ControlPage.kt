@@ -24,7 +24,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -126,11 +126,11 @@ fun useControlPage(): ScaffoldExt {
                 )
             })
         }) { contentPadding ->
-        val store by storeFlow.collectAsState()
+        val store by storeFlow.collectAsStateWithLifecycle()
 
-        val a11yRunning by A11yService.isRunning.collectAsState()
-        val manageRunning by StatusService.isRunning.collectAsState()
-        val writeSecureSettings by writeSecureSettingsState.stateFlow.collectAsState()
+        val a11yRunning by A11yService.isRunning.collectAsStateWithLifecycle()
+        val manageRunning by StatusService.isRunning.collectAsStateWithLifecycle()
+        val writeSecureSettings by writeSecureSettingsState.stateFlow.collectAsStateWithLifecycle()
 
         Column(
             modifier = Modifier
@@ -139,7 +139,7 @@ fun useControlPage(): ScaffoldExt {
                 .padding(horizontal = itemHorizontalPadding),
             verticalArrangement = Arrangement.spacedBy(itemHorizontalPadding / 2)
         ) {
-            if (appOpsRestrictedFlow.collectAsState().value) {
+            if (appOpsRestrictedFlow.collectAsStateWithLifecycle().value) {
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -169,16 +169,16 @@ fun useControlPage(): ScaffoldExt {
                     }
                 }
             }
-            if (store.useA11y || actualA11yScopeAppList.contains(topAppIdFlow.collectAsState().value)) {
+            if (store.useA11y || actualA11yScopeAppList.contains(topAppIdFlow.collectAsStateWithLifecycle().value)) {
                 PageSwitchItemCard(
                     imageVector = PerfIcon.Memory,
                     title = "服务状态",
                     subtitle = if (a11yRunning) {
                         "无障碍正在运行"
-                    } else if (mainVm.a11yServiceEnabledFlow.collectAsState().value) {
+                    } else if (mainVm.a11yServiceEnabledFlow.collectAsStateWithLifecycle().value) {
                         "无障碍发生故障"
                     } else if (writeSecureSettings) {
-                        if (store.enableAutomator && a11yPartDisabledFlow.collectAsState().value) {
+                        if (store.enableAutomator && a11yPartDisabledFlow.collectAsStateWithLifecycle().value) {
                             "无障碍局部关闭"
                         } else {
                             "无障碍已关闭"
@@ -207,18 +207,18 @@ fun useControlPage(): ScaffoldExt {
                 PageSwitchItemCard(
                     imageVector = PerfIcon.Memory,
                     title = "服务状态",
-                    subtitle = if (uiAutomationFlow.collectAsState().value != null) {
+                    subtitle = if (uiAutomationFlow.collectAsStateWithLifecycle().value != null) {
                         "自动化正在运行"
-                    } else if (!shizukuContextFlow.collectAsState().value.ok) {
+                    } else if (!shizukuContextFlow.collectAsStateWithLifecycle().value.ok) {
                         "自动化未授权"
                     } else {
-                        if (store.enableAutomator && a11yPartDisabledFlow.collectAsState().value) {
+                        if (store.enableAutomator && a11yPartDisabledFlow.collectAsStateWithLifecycle().value) {
                             "自动化局部关闭"
                         } else {
                             "自动化已关闭"
                         }
                     },
-                    checked = uiAutomationFlow.collectAsState().value != null,
+                    checked = uiAutomationFlow.collectAsStateWithLifecycle().value != null,
                     onCheckedChange = vm.viewModelScope.launchAsFn(Dispatchers.IO) { newEnabled ->
                         if (newEnabled) {
                             mainVm.guardShizukuContext()
@@ -248,8 +248,8 @@ fun useControlPage(): ScaffoldExt {
             )
 
             ServerStatusCard()
-            if (HttpService.isRunning.collectAsState().value) {
-                val remoteSession by HttpService.remoteSessionStateFlow.collectAsState()
+            if (HttpService.isRunning.collectAsStateWithLifecycle().value) {
+                val remoteSession by HttpService.remoteSessionStateFlow.collectAsStateWithLifecycle()
                 PageItemCard(
                     title = "本地 Inspector",
                     subtitle = if (remoteSession.mode == RemoteListenMode.LOCAL_ONLY) {
@@ -268,8 +268,8 @@ fun useControlPage(): ScaffoldExt {
                 )
             }
 
-            val usageGuardSummary by vm.usageGuardReviewSummaryFlow.collectAsState()
-            val digitalSelfDisciplineToday by vm.digitalSelfDisciplineTodaySummaryFlow.collectAsState()
+            val usageGuardSummary by vm.usageGuardReviewSummaryFlow.collectAsStateWithLifecycle()
+            val digitalSelfDisciplineToday by vm.digitalSelfDisciplineTodaySummaryFlow.collectAsStateWithLifecycle()
             val usageGuardWidgetSummary = UsageGuardReviewPolicy.widgetSummary(usageGuardSummary)
             PageItemCard(
                 title = "数字自律复盘",
@@ -294,7 +294,7 @@ fun useControlPage(): ScaffoldExt {
                     mainVm.navigatePage(ActionLogRoute())
                 })
 
-            if (ActivityService.isRunning.collectAsState().value) {
+            if (ActivityService.isRunning.collectAsStateWithLifecycle().value) {
                 PageItemCard(
                     title = "界面日志",
                     subtitle = "记录打开的应用及界面",
@@ -488,7 +488,7 @@ private fun ServerStatusCard() {
                     text = "数据概览",
                     style = MaterialTheme.typography.bodyLarge,
                 )
-                val usedSubsItemCount by vm.usedSubsItemCountFlow.collectAsState()
+                val usedSubsItemCount by vm.usedSubsItemCountFlow.collectAsStateWithLifecycle()
                 AnimatedVisibility(usedSubsItemCount > 0) {
                     Text(
                         text = "已开启 $usedSubsItemCount 条订阅",
@@ -503,7 +503,7 @@ private fun ServerStatusCard() {
                 .fillMaxWidth()
                 .padding(horizontal = itemVerticalPadding)
         ) {
-            val subsStatus by vm.subsStatusFlow.collectAsState()
+            val subsStatus by vm.subsStatusFlow.collectAsStateWithLifecycle()
             AnimatedVisibility(subsStatus.isNotEmpty()) {
                 Text(
                     modifier = Modifier.padding(horizontal = 8.dp),
@@ -513,7 +513,7 @@ private fun ServerStatusCard() {
                 )
             }
 
-            val latestRecordDesc by latestRecordDescFlow.collectAsState()
+            val latestRecordDesc by latestRecordDescFlow.collectAsStateWithLifecycle()
             if (latestRecordDesc != null) {
                 Row(
                     modifier = Modifier
@@ -537,7 +537,7 @@ private fun ServerStatusCard() {
                         GroupNameText(
                             modifier = Modifier.fillMaxWidth(),
                             preText = "最近触发: ",
-                            isGlobal = latestRecordFlow.collectAsState().value?.groupType == SubsConfig.GlobalGroupType,
+                            isGlobal = latestRecordFlow.collectAsStateWithLifecycle().value?.groupType == SubsConfig.GlobalGroupType,
                             text = latestRecordDesc ?: "",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.primary,

@@ -16,7 +16,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -63,7 +63,7 @@ fun AppTheme(
             DisplayPreferenceUiPolicy.resolve(storeFlow.value, systemLanguageTag),
         )
     }
-    val displayPreferences by displayPreferencesFlow.collectAsState()
+    val displayPreferences by displayPreferencesFlow.collectAsStateWithLifecycle()
     val systemInDarkTheme = isSystemInDarkTheme()
     val darkTheme = (displayPreferences.enableDarkTheme ?: systemInDarkTheme).let {
         if (invertedTheme) !it else it

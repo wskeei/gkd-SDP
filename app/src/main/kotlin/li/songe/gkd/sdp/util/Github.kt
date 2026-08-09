@@ -8,7 +8,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -200,7 +200,7 @@ suspend fun uploadFileToGithub(
 @Composable
 fun EditGithubCookieDlg() {
     val mainVm = LocalMainViewModel.current
-    val showEditCookieDlg by mainVm.showEditCookieDlgFlow.collectAsState()
+    val showEditCookieDlg by mainVm.showEditCookieDlgFlow.collectAsStateWithLifecycle()
     if (showEditCookieDlg) {
         var value by remember {
             mutableStateOf(mainVm.githubCookieFlow.value)

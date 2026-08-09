@@ -6,7 +6,7 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -79,7 +79,7 @@ class UploadOptions(
 
     @Composable
     fun ShowDialog() {
-        when (val status = statusFlow.collectAsState().value) {
+        when (val status = statusFlow.collectAsStateWithLifecycle().value) {
             null -> {}
             is LoadStatus.Loading -> {
                 AlertDialog(

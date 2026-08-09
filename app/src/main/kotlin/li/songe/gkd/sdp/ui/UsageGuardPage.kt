@@ -34,7 +34,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -96,13 +96,13 @@ data object UsageGuardRoute : NavKey
 fun UsageGuardPage() {
     val mainVm = LocalMainViewModel.current
     val vm = viewModel<UsageGuardVm>()
-    val settings by storeFlow.collectAsState()
-    val appProfiles by vm.appProfilesFlow.collectAsState()
-    val tags by vm.tagsFlow.collectAsState()
-    val history by vm.historyFlow.collectAsState()
-    val groupedApps by vm.selectedAppSectionsFlow.collectAsState()
-    val durationOptions by vm.durationOptionsFlow.collectAsState()
-    val appInfoMap by appInfoMapFlow.collectAsState()
+    val settings by storeFlow.collectAsStateWithLifecycle()
+    val appProfiles by vm.appProfilesFlow.collectAsStateWithLifecycle()
+    val tags by vm.tagsFlow.collectAsStateWithLifecycle()
+    val history by vm.historyFlow.collectAsStateWithLifecycle()
+    val groupedApps by vm.selectedAppSectionsFlow.collectAsStateWithLifecycle()
+    val durationOptions by vm.durationOptionsFlow.collectAsStateWithLifecycle()
+    val appInfoMap by appInfoMapFlow.collectAsStateWithLifecycle()
     val context = LocalContext.current
 
     val selectedTargetApps = remember(appProfiles) {

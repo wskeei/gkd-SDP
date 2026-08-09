@@ -26,7 +26,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -96,7 +96,7 @@ fun AboutPage() {
     val context = LocalActivity.current as MainActivity
     val mainVm = LocalMainViewModel.current
     val vm = viewModel<AboutVm>()
-    val store by storeFlow.collectAsState()
+    val store by storeFlow.collectAsStateWithLifecycle()
 
     var showInfoDlg by vm.showInfoDlgFlow.asMutableState()
     if (showInfoDlg) {
@@ -326,7 +326,7 @@ fun AboutPage() {
                         text = "检查更新",
                         style = MaterialTheme.typography.bodyLarge,
                     )
-                    RotatingLoadingIcon(loading = mainVm.updateStatus.checkUpdatingFlow.collectAsState().value)
+                    RotatingLoadingIcon(loading = mainVm.updateStatus.checkUpdatingFlow.collectAsStateWithLifecycle().value)
                 }
             }
             Spacer(modifier = Modifier.height(EmptyHeight))

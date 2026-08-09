@@ -39,7 +39,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -81,9 +81,9 @@ data object AppBlockerRoute : NavKey
 fun AppBlockerPage() {
     val mainVm = LocalMainViewModel.current
     val vm = viewModel<AppBlockerVm>()
-    val allGroups by vm.allGroupsFlow.collectAsState()
-    val allRules by vm.allRulesFlow.collectAsState()
-    val globalLock by vm.globalLockFlow.collectAsState()
+    val allGroups by vm.allGroupsFlow.collectAsStateWithLifecycle()
+    val allRules by vm.allRulesFlow.collectAsStateWithLifecycle()
+    val globalLock by vm.globalLockFlow.collectAsStateWithLifecycle()
 
     var showGlobalLockSheet by remember { mutableStateOf(false) }
     var showGroupLockSheet by remember { mutableStateOf(false) }

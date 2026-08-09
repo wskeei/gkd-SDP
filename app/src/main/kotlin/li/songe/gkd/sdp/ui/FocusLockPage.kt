@@ -35,7 +35,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -84,12 +84,12 @@ data object FocusLockRoute : NavKey
 fun FocusLockPage() {
     val mainVm = LocalMainViewModel.current
     val vm = viewModel<FocusLockVm>()
-    val subStates by vm.subStatesFlow.collectAsState()
-    val expandedSubs by vm.expandedSubs.collectAsState()
-    val expandedApps by vm.expandedApps.collectAsState()
+    val subStates by vm.subStatesFlow.collectAsStateWithLifecycle()
+    val expandedSubs by vm.expandedSubs.collectAsStateWithLifecycle()
+    val expandedApps by vm.expandedApps.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val activity = LocalActivity.current as MainActivity
-    val settings by storeFlow.collectAsState()
+    val settings by storeFlow.collectAsStateWithLifecycle()
 
     val lockSheetState = rememberModalBottomSheetState()
     val pauseSheetState = rememberModalBottomSheetState()
@@ -119,10 +119,10 @@ fun FocusLockPage() {
             )
         }
     ) { padding ->
-        val urlBlockerEnabled by UrlBlockerEngine.enabledFlow.collectAsState()
-        val focusModeActive by FocusModeEngine.isActiveFlow.collectAsState()
-        val appBlockerRules by AppBlockerEngine.enabledRulesFlow.collectAsState()
-        val appBlockerGroups by AppBlockerEngine.enabledGroupsFlow.collectAsState()
+        val urlBlockerEnabled by UrlBlockerEngine.enabledFlow.collectAsStateWithLifecycle()
+        val focusModeActive by FocusModeEngine.isActiveFlow.collectAsStateWithLifecycle()
+        val appBlockerRules by AppBlockerEngine.enabledRulesFlow.collectAsStateWithLifecycle()
+        val appBlockerGroups by AppBlockerEngine.enabledGroupsFlow.collectAsStateWithLifecycle()
 
         LazyColumn(modifier = Modifier.scaffoldPadding(padding)) {
             item(key = "self_control_runtime_status") {
@@ -524,8 +524,8 @@ fun FocusLockPage() {
 @Composable
 fun SelfControlRuntimeStatusCard() {
     val context = LocalContext.current
-    val runtime by sdpRuntimeFeatureCoordinator.statusFlow.collectAsState()
-    val overlayPermission by canDrawOverlaysState.stateFlow.collectAsState()
+    val runtime by sdpRuntimeFeatureCoordinator.statusFlow.collectAsStateWithLifecycle()
+    val overlayPermission by canDrawOverlaysState.stateFlow.collectAsStateWithLifecycle()
     val readiness = li.songe.gkd.sdp.util.SelfControlRuntimeReadiness.evaluate(
         mode = runtime.mode,
         connected = runtime.connected,
