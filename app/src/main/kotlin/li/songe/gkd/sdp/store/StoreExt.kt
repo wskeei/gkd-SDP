@@ -74,6 +74,7 @@ fun checkAppBlockMatch(appId: String): Boolean {
 fun initStore() = appScope.launchTry(Dispatchers.IO) {
     // preload
     storeFlow.value
+    initDisplayPreferenceBackup()
     actionCountFlow.value
     blockMatchAppListFlow.value
     blockA11yAppListFlow.value

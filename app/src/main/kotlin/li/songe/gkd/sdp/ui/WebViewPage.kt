@@ -33,7 +33,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.net.toUri
 import androidx.navigation3.runtime.NavKey
-import io.ktor.client.call.body
 import io.ktor.client.request.get
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
@@ -41,10 +40,12 @@ import io.ktor.http.isSuccess
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.decodeFromString
 import li.songe.gkd.sdp.META
 import li.songe.gkd.sdp.MainActivity
 import li.songe.gkd.sdp.remote.WebNavigationDecision
 import li.songe.gkd.sdp.remote.WebOriginPolicy
+import li.songe.gkd.sdp.remote.readBoundedBody
 import li.songe.gkd.sdp.ui.component.PerfIcon
 import li.songe.gkd.sdp.ui.component.PerfIconButton
 import li.songe.gkd.sdp.ui.component.PerfTopAppBar
@@ -57,6 +58,7 @@ import li.songe.gkd.sdp.util.LogUtils
 import li.songe.gkd.sdp.util.client
 import li.songe.gkd.sdp.util.copyText
 import li.songe.gkd.sdp.util.openUri
+import li.songe.gkd.sdp.util.json
 import li.songe.gkd.sdp.util.throttle
 import java.net.URI
 
@@ -217,7 +219,8 @@ private val chromeVersion by lazy {
 
 private const val DOC_CONFIG_URL =
     "https://registry.npmmirror.com/@gkd-kit/docs/latest/files/_config.json"
-private const val MAX_DOCUMENT_BYTES = 4L * 1024L * 1024L
+private const val MAX_DOC_CONFIG_BYTES = 256 * 1024
+private const val MAX_DOCUMENT_BYTES = 4 * 1024 * 1024
 
 @Serializable
 private data class DocConfig(
@@ -282,7 +285,12 @@ private class GkdWebViewClient(
     }
 
     private suspend fun loadMirroredDocument(uri: Uri): WebResourceResponse? {
-        val config = client.get(DOC_CONFIG_URL).body<DocConfig>()
+        val configResponse = client.get(DOC_CONFIG_URL)
+        if (!configResponse.status.isSuccess()) return null
+        val configBytes = configResponse.readBoundedBody(MAX_DOC_CONFIG_BYTES) ?: return null
+        val config = runCatching {
+            json.decodeFromString<DocConfig>(configBytes.decodeToString())
+        }.getOrNull() ?: return null
         val path = uri.path?.takeIf(String::isNotEmpty) ?: "/"
         val mappedPath = config.htmlUrlMap[path] ?: return null
         val target = runCatching { URI(config.mirrorBaseUrl).resolve(mappedPath).toString() }
@@ -293,8 +301,7 @@ private class GkdWebViewClient(
         if (!response.status.isSuccess()) return null
         val contentType = response.contentType()
         if (contentType?.withoutParameters() != ContentType.Text.Html) return null
-        val content = response.body<ByteArray>()
-        if (content.size > MAX_DOCUMENT_BYTES) return null
+        val content = response.readBoundedBody(MAX_DOCUMENT_BYTES) ?: return null
         return WebResourceResponse("text/html", "UTF-8", content.inputStream()).apply {
             responseHeaders = mapOf(
                 "Content-Security-Policy" to "default-src 'self'; script-src 'self'; style-src 'self'; object-src 'none'; frame-ancestors 'none'",

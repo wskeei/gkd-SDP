@@ -100,6 +100,10 @@ object BackupUtils {
         confirmed: Boolean,
     ): BackupResult<Unit> = importCoordinator.apply(prepared, confirmed)
 
+    suspend fun refreshImportPreview(
+        prepared: PreparedBackupImport,
+    ): BackupResult<PreparedBackupImport> = importCoordinator.refreshPreview(prepared)
+
     suspend fun recoverInterruptedImport() {
         importCoordinator.recoverInterruptedImport()
     }

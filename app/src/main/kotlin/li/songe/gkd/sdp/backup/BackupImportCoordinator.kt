@@ -1,6 +1,8 @@
 package li.songe.gkd.sdp.backup
 
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import java.io.File
 
 data class BackupConflictPreview(
@@ -17,7 +19,7 @@ enum class BackupSourceFormat {
 
 data class PreparedBackupImport(
     val payload: BackupPayload,
-    val previousState: BackupPayload,
+    val previewStateHash: String,
     val conflicts: List<BackupConflictPreview>,
     val sourceFormat: BackupSourceFormat,
 )
@@ -41,6 +43,8 @@ class BackupImportCoordinator(
     private val crypto: BackupCrypto = BackupCrypto(),
     private val tempDirectoryFactory: () -> File,
 ) {
+    private val importMutex = Mutex()
+
     suspend fun prepare(
         encryptedBytes: ByteArray,
         password: CharArray,
@@ -75,37 +79,47 @@ class BackupImportCoordinator(
     suspend fun preparePayload(
         payload: BackupPayload,
         sourceFormat: BackupSourceFormat,
-    ): BackupResult<PreparedBackupImport> = try {
-        if (!target.validateReferences(payload)) {
-            BackupResult.Failure(BackupErrorCode.REFERENCE_MISMATCH)
-        } else {
-            val categoryIds = payload.manifest.categoryIds.toSet()
-            val previousState = target.capture(categoryIds)
-            val conflicts = target.preview(previousState, payload)
+    ): BackupResult<PreparedBackupImport> = importMutex.withLock {
+        preparePayloadUnlocked(payload, sourceFormat)
+    }
+
+    suspend fun refreshPreview(
+        prepared: PreparedBackupImport,
+    ): BackupResult<PreparedBackupImport> = importMutex.withLock {
+        try {
+            val currentState = target.capture(prepared.payload.manifest.categoryIds.toSet())
             BackupResult.Success(
-                PreparedBackupImport(
-                    payload = payload,
-                    previousState = previousState,
-                    conflicts = conflicts,
-                    sourceFormat = sourceFormat,
+                prepared.copy(
+                    previewStateHash = currentState.payloadHash,
+                    conflicts = target.preview(currentState, prepared.payload),
                 ),
             )
+        } catch (error: CancellationException) {
+            throw error
+        } catch (_: Throwable) {
+            BackupResult.Failure(BackupErrorCode.INVALID_PAYLOAD)
         }
-    } catch (error: CancellationException) {
-        throw error
-    } catch (_: Throwable) {
-        BackupResult.Failure(BackupErrorCode.INVALID_PAYLOAD)
     }
 
     suspend fun apply(
         prepared: PreparedBackupImport,
         confirmed: Boolean,
-    ): BackupResult<Unit> {
+    ): BackupResult<Unit> = importMutex.withLock {
         if (!confirmed) return BackupResult.Failure(BackupErrorCode.IMPORT_NOT_CONFIRMED)
+        val currentState = try {
+            target.capture(prepared.payload.manifest.categoryIds.toSet())
+        } catch (error: CancellationException) {
+            throw error
+        } catch (_: Throwable) {
+            return BackupResult.Failure(BackupErrorCode.IMPORT_FAILED)
+        }
+        if (currentState.payloadHash != prepared.previewStateHash) {
+            return BackupResult.Failure(BackupErrorCode.IMPORT_PREVIEW_STALE)
+        }
         val baseRecord = BackupImportJournalRecord(
             phase = BackupImportPhase.PREPARED,
             payloadHash = prepared.payload.payloadHash,
-            previousState = prepared.previousState,
+            previousState = currentState,
         )
         return try {
             journal.write(baseRecord)
@@ -116,15 +130,15 @@ class BackupImportCoordinator(
             journal.clear()
             BackupResult.Success(Unit)
         } catch (error: CancellationException) {
-            rollbackAfterFailure(prepared.previousState)
+            rollbackAfterFailure(currentState)
             throw error
         } catch (_: Throwable) {
-            rollbackAfterFailure(prepared.previousState)
+            rollbackAfterFailure(currentState)
             BackupResult.Failure(BackupErrorCode.IMPORT_FAILED)
         }
     }
 
-    suspend fun recoverInterruptedImport() {
+    suspend fun recoverInterruptedImport(): Unit = importMutex.withLock {
         val record = journal.read() ?: return
         when (record.phase) {
             BackupImportPhase.PREPARED -> journal.clear()
@@ -137,6 +151,29 @@ class BackupImportCoordinator(
                 journal.clear()
             }
         }
+    }
+
+    private suspend fun preparePayloadUnlocked(
+        payload: BackupPayload,
+        sourceFormat: BackupSourceFormat,
+    ): BackupResult<PreparedBackupImport> = try {
+        if (!target.validateReferences(payload)) {
+            BackupResult.Failure(BackupErrorCode.REFERENCE_MISMATCH)
+        } else {
+            val currentState = target.capture(payload.manifest.categoryIds.toSet())
+            BackupResult.Success(
+                PreparedBackupImport(
+                    payload = payload,
+                    previewStateHash = currentState.payloadHash,
+                    conflicts = target.preview(currentState, payload),
+                    sourceFormat = sourceFormat,
+                ),
+            )
+        }
+    } catch (error: CancellationException) {
+        throw error
+    } catch (_: Throwable) {
+        BackupResult.Failure(BackupErrorCode.INVALID_PAYLOAD)
     }
 
     private suspend fun rollbackAfterFailure(previousState: BackupPayload) {

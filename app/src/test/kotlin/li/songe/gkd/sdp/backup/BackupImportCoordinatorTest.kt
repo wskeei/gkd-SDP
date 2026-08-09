@@ -103,6 +103,53 @@ class BackupImportCoordinatorTest {
     }
 
     @Test
+    fun `apply rejects a stale preview without journaling or modifying newer data`() = runBlocking {
+        val target = FakeImportTarget(payload("old"))
+        val journal = RecordingJournal()
+        val coordinator = coordinator(target, journal)
+        val prepared = coordinator.prepare(
+            encryptedPayload(payload("new")),
+            "correct-password".toCharArray(),
+        ) as BackupResult.Success<PreparedBackupImport>
+        target.current = payload("intervening")
+        target.events.clear()
+
+        val result = coordinator.apply(prepared.value, confirmed = true)
+
+        assertEquals(
+            BackupErrorCode.IMPORT_PREVIEW_STALE,
+            (result as BackupResult.Failure).code,
+        )
+        assertEquals("intervening", target.current.objects.single().content.decodeToString())
+        assertEquals(listOf("capture"), target.events)
+        assertTrue(journal.writes.isEmpty())
+    }
+
+    @Test
+    fun `refreshed preview rolls back to the latest state when apply fails`() = runBlocking {
+        val target = FakeImportTarget(payload("old"))
+        val journal = RecordingJournal()
+        val coordinator = coordinator(target, journal)
+        val prepared = coordinator.prepare(
+            encryptedPayload(payload("new")),
+            "correct-password".toCharArray(),
+        ) as BackupResult.Success<PreparedBackupImport>
+        target.current = payload("intervening")
+
+        val refreshed = coordinator.refreshPreview(prepared.value)
+            as BackupResult.Success<PreparedBackupImport>
+        target.failAfterReplace = true
+        val result = coordinator.apply(refreshed.value, confirmed = true)
+
+        assertEquals(BackupErrorCode.IMPORT_FAILED, (result as BackupResult.Failure).code)
+        assertEquals("intervening", target.current.objects.single().content.decodeToString())
+        assertEquals(
+            "intervening",
+            journal.writes.first().previousState.objects.single().content.decodeToString(),
+        )
+    }
+
+    @Test
     fun `startup rolls back applying journal before interface can open`() = runBlocking {
         val original = payload("old")
         val target = FakeImportTarget(payload("partially-applied"))

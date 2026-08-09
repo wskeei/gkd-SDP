@@ -45,6 +45,18 @@ class AndroidBackupRulesContractTest {
         assertTrue(rules(transfer, "exclude").isEmpty())
     }
 
+    @Test
+    fun `allowlisted files are produced and restored by the application`() {
+        val source = sourceFile(
+            "app/src/main/kotlin/li/songe/gkd/sdp/store/DisplayPreferenceBackup.kt",
+        ).readText()
+
+        expectedIncludes.forEach { (_, path) ->
+            assertTrue(source.contains(path.substringAfterLast('/')))
+        }
+        assertTrue(source.contains("initDisplayPreferenceBackup"))
+    }
+
     private val expectedIncludes = setOf(
         "file" to "store/app_theme.json",
         "file" to "store/display_density.json",

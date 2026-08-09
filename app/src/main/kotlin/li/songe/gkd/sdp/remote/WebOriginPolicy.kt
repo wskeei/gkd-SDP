@@ -9,6 +9,29 @@ enum class WebNavigationDecision {
     BLOCK,
 }
 
+enum class SemanticDeepLinkTarget {
+    OVERVIEW,
+    SELF_CONTROL,
+    SETTINGS,
+    USAGE_GUARD,
+    USAGE_REVIEW,
+    ACTION_LOG,
+    RULE_SUBSCRIPTIONS,
+    RULE_APPS,
+}
+
+enum class LegacyDeepLinkTarget {
+    OVERVIEW,
+    SUBSCRIPTIONS,
+    APPS,
+    SETTINGS,
+    ADVANCED,
+    SNAPSHOT,
+    APP_OPS,
+    SELF_CONTROL,
+    WECHAT_SCANNER,
+}
+
 object WebOriginPolicy {
     private const val DOCUMENT_HOST = "gkd.li"
     private const val MIRROR_HOST = "registry.npmmirror.com"
@@ -47,26 +70,70 @@ object WebOriginPolicy {
         if (
             !uri.scheme.equals("gkd", ignoreCase = true) ||
             uri.rawUserInfo != null ||
-            uri.rawFragment != null
+            uri.rawFragment != null ||
+            uri.port != -1
         ) return false
-        val host = uri.host?.lowercase() ?: return false
-        val path = uri.path.orEmpty().ifEmpty { "/" }
-        val semantic = when (host) {
-            "overview", "self-control", "settings", "usage-guard", "usage-review",
-            "action-log" -> path == "/" && uri.rawQuery == null
-            "rules" -> path in setOf("/subscriptions", "/apps") && uri.rawQuery == null
-            else -> false
-        }
-        if (semantic) return true
+        if (semanticDeepLinkTarget(uri) != null) return true
         // Removed by the semantic navigation migration in Task 11; kept only for 2.2.0 upgrades.
-        return when (host) {
-            "page" -> {
-                val tab = uri.rawQuery?.substringAfter("tab=", missingDelimiterValue = "")
-                (path in setOf("/", "/0", "/1", "/2", "/3", "/4") && uri.rawQuery == null) ||
-                    (path == "/" && tab in setOf("0", "1", "2", "3"))
+        return legacyDeepLinkTarget(uri) != null
+    }
+
+    fun semanticDeepLinkTarget(url: String): SemanticDeepLinkTarget? =
+        runCatching { URI(url) }.getOrNull()?.let(::semanticDeepLinkTarget)
+
+    fun legacyDeepLinkTarget(url: String): LegacyDeepLinkTarget? =
+        runCatching { URI(url) }.getOrNull()?.let(::legacyDeepLinkTarget)
+
+    private fun semanticDeepLinkTarget(uri: URI): SemanticDeepLinkTarget? {
+        if (
+            !uri.scheme.equals("gkd", ignoreCase = true) ||
+            uri.rawUserInfo != null ||
+            uri.rawFragment != null ||
+            uri.rawQuery != null ||
+            uri.port != -1
+        ) return null
+        val path = uri.path.orEmpty().ifEmpty { "/" }
+        return when (uri.host?.lowercase()) {
+            "overview" -> SemanticDeepLinkTarget.OVERVIEW.takeIf { path == "/" }
+            "self-control" -> SemanticDeepLinkTarget.SELF_CONTROL.takeIf { path == "/" }
+            "settings" -> SemanticDeepLinkTarget.SETTINGS.takeIf { path == "/" }
+            "usage-guard" -> SemanticDeepLinkTarget.USAGE_GUARD.takeIf { path == "/" }
+            "usage-review" -> SemanticDeepLinkTarget.USAGE_REVIEW.takeIf { path == "/" }
+            "action-log" -> SemanticDeepLinkTarget.ACTION_LOG.takeIf { path == "/" }
+            "rules" -> when (path) {
+                "/subscriptions" -> SemanticDeepLinkTarget.RULE_SUBSCRIPTIONS
+                "/apps" -> SemanticDeepLinkTarget.RULE_APPS
+                else -> null
             }
-            "invoke" -> path == "/1" && uri.rawQuery == null
-            else -> false
+            else -> null
+        }
+    }
+
+    private fun legacyDeepLinkTarget(uri: URI): LegacyDeepLinkTarget? {
+        if (
+            !uri.scheme.equals("gkd", ignoreCase = true) ||
+            uri.rawUserInfo != null ||
+            uri.rawFragment != null ||
+            uri.port != -1
+        ) return null
+        val path = uri.path.orEmpty().ifEmpty { "/" }
+        return when (uri.host?.lowercase()) {
+            "page" -> when {
+                path == "/" && uri.rawQuery == null -> LegacyDeepLinkTarget.OVERVIEW
+                path == "/" && uri.rawQuery == "tab=0" -> LegacyDeepLinkTarget.OVERVIEW
+                path == "/" && uri.rawQuery == "tab=1" -> LegacyDeepLinkTarget.SUBSCRIPTIONS
+                path == "/" && uri.rawQuery == "tab=2" -> LegacyDeepLinkTarget.APPS
+                path == "/" && uri.rawQuery == "tab=3" -> LegacyDeepLinkTarget.SETTINGS
+                path == "/0" && uri.rawQuery == null -> LegacyDeepLinkTarget.OVERVIEW
+                path == "/1" && uri.rawQuery == null -> LegacyDeepLinkTarget.ADVANCED
+                path == "/2" && uri.rawQuery == null -> LegacyDeepLinkTarget.SNAPSHOT
+                path == "/3" && uri.rawQuery == null -> LegacyDeepLinkTarget.APP_OPS
+                path == "/4" && uri.rawQuery == null -> LegacyDeepLinkTarget.SELF_CONTROL
+                else -> null
+            }
+            "invoke" -> LegacyDeepLinkTarget.WECHAT_SCANNER
+                .takeIf { path == "/1" && uri.rawQuery == null }
+            else -> null
         }
     }
 

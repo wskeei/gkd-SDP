@@ -117,8 +117,8 @@ import li.songe.gkd.sdp.util.UriUtils
 
 private enum class BackupWorkflowStage {
     EXPORT_CATEGORIES,
-    EXPORT_PASSWORD,
     EXPORT_SUMMARY,
+    EXPORT_PASSWORD,
     IMPORT_PASSWORD,
     IMPORT_PREVIEW,
 }
@@ -379,9 +379,9 @@ fun useSettingsPage(): ScaffoldExt {
         val passwordValid = workflow.password.codePointCount(0, workflow.password.length) >= 12
         val confirmEnabled = !workflow.busy && when (workflow.stage) {
             BackupWorkflowStage.EXPORT_CATEGORIES -> workflow.selectedCategoryIds.isNotEmpty()
+            BackupWorkflowStage.EXPORT_SUMMARY -> true
             BackupWorkflowStage.EXPORT_PASSWORD -> passwordValid &&
                 workflow.password == workflow.repeatedPassword
-            BackupWorkflowStage.EXPORT_SUMMARY -> true
             BackupWorkflowStage.IMPORT_PASSWORD ->
                 (passwordValid || workflow.password.isEmpty()) && workflow.sourceUri != null
             BackupWorkflowStage.IMPORT_PREVIEW -> workflow.preparedImport != null
@@ -396,8 +396,8 @@ fun useSettingsPage(): ScaffoldExt {
                 Text(
                     when (workflow.stage) {
                         BackupWorkflowStage.EXPORT_CATEGORIES -> "选择备份内容"
-                        BackupWorkflowStage.EXPORT_PASSWORD -> "设置备份密码"
                         BackupWorkflowStage.EXPORT_SUMMARY -> "确认导出清单"
+                        BackupWorkflowStage.EXPORT_PASSWORD -> "设置备份密码"
                         BackupWorkflowStage.IMPORT_PASSWORD -> "输入备份密码"
                         BackupWorkflowStage.IMPORT_PREVIEW -> "确认导入影响"
                     },
@@ -485,7 +485,7 @@ fun useSettingsPage(): ScaffoldExt {
                                 Text("• ${backupCategoryTitle(categoryId)}")
                             }
                             Text("格式：GKDSDPBK2 / PBKDF2-SHA256 / AES-256-GCM")
-                            Text("预计大小：不超过 65 MiB；实际大小在生成后由系统文件选择器显示。")
+                            Text("预计大小：不超过 65 MiB；实际大小由系统文件选择器显示。")
                             Text("不会包含诊断日志、崩溃文件、缓存、支持包、私有 Store、会话令牌、密钥或命令脚本。")
                         }
                         BackupWorkflowStage.IMPORT_PREVIEW -> {
@@ -526,119 +526,171 @@ fun useSettingsPage(): ScaffoldExt {
                         when (workflow.stage) {
                             BackupWorkflowStage.EXPORT_CATEGORIES -> {
                                 backupWorkflow = workflow.copy(
+                                    stage = BackupWorkflowStage.EXPORT_SUMMARY,
+                                )
+                            }
+                            BackupWorkflowStage.EXPORT_SUMMARY -> {
+                                backupWorkflow = workflow.copy(
                                     stage = BackupWorkflowStage.EXPORT_PASSWORD,
                                 )
                             }
                             BackupWorkflowStage.EXPORT_PASSWORD -> {
-                                backupWorkflow = workflow.copy(
-                                    stage = BackupWorkflowStage.EXPORT_SUMMARY,
-                                )
-                            }
-                            BackupWorkflowStage.EXPORT_SUMMARY -> backupScope.launch {
-                                val filename = "gkd-sdp-backup-v2-${System.currentTimeMillis()}.gkdbak"
-                                val targetUri = context.createFile(
-                                    contentType = "application/octet-stream",
-                                    filename = filename,
-                                ) ?: return@launch
+                                val selectedCategoryIds = workflow.selectedCategoryIds
                                 val password = workflow.password.toCharArray()
-                                backupWorkflow = workflow.copy(
-                                    password = "",
-                                    repeatedPassword = "",
+                                backupWorkflow = BackupWorkflowState(
+                                    stage = BackupWorkflowStage.EXPORT_PASSWORD,
+                                    selectedCategoryIds = selectedCategoryIds,
                                     busy = true,
-                                    errorText = null,
                                 )
-                                val result = withContext(Dispatchers.IO) {
-                                    BackupUtils.exportBackUpData(
-                                        workflow.selectedCategoryIds,
-                                        password,
-                                    )
-                                }
-                                when (result) {
-                                    is BackupResult.Success -> {
-                                        val file = result.value.file
-                                        val copied = runCatching {
-                                            withContext(Dispatchers.IO) {
-                                                UriUtils.copyFileToUri(file, targetUri)
+                                backupScope.launch {
+                                    try {
+                                        val filename =
+                                            "gkd-sdp-backup-v2-${System.currentTimeMillis()}.gkdbak"
+                                        val targetUri = context.createFile(
+                                            contentType = "application/octet-stream",
+                                            filename = filename,
+                                        )
+                                        if (targetUri == null) {
+                                            backupWorkflow = BackupWorkflowState(
+                                                stage = BackupWorkflowStage.EXPORT_PASSWORD,
+                                                selectedCategoryIds = selectedCategoryIds,
+                                                errorText = "未选择保存位置，请重新输入密码后导出",
+                                            )
+                                            return@launch
+                                        }
+                                        val result = withContext(Dispatchers.IO) {
+                                            BackupUtils.exportBackUpData(
+                                                selectedCategoryIds,
+                                                password,
+                                            )
+                                        }
+                                        when (result) {
+                                            is BackupResult.Success -> {
+                                                val file = result.value.file
+                                                val copied = runCatching {
+                                                    withContext(Dispatchers.IO) {
+                                                        UriUtils.copyFileToUri(file, targetUri)
+                                                    }
+                                                }
+                                                file.delete()
+                                                if (copied.isSuccess) {
+                                                    backupWorkflow = null
+                                                    toast("加密备份已保存")
+                                                } else {
+                                                    backupWorkflow = BackupWorkflowState(
+                                                        stage = BackupWorkflowStage.EXPORT_PASSWORD,
+                                                        selectedCategoryIds = selectedCategoryIds,
+                                                        errorText = "写入目标文件失败，请重新输入密码并选择保存位置",
+                                                    )
+                                                }
+                                            }
+                                            is BackupResult.Failure -> {
+                                                runCatching {
+                                                    context.contentResolver.delete(
+                                                        targetUri,
+                                                        null,
+                                                        null,
+                                                    )
+                                                }
+                                                backupWorkflow = BackupWorkflowState(
+                                                    stage = BackupWorkflowStage.EXPORT_PASSWORD,
+                                                    selectedCategoryIds = selectedCategoryIds,
+                                                    errorText = backupErrorText(result.code),
+                                                )
                                             }
                                         }
-                                        file.delete()
-                                        if (copied.isSuccess) {
-                                            backupWorkflow = null
-                                            toast("加密备份已保存")
-                                        } else {
-                                            backupWorkflow = workflow.copy(
-                                                password = "",
-                                                repeatedPassword = "",
-                                                busy = false,
-                                                errorText = "写入目标文件失败，请重新选择保存位置",
+                                    } finally {
+                                        password.fill('\u0000')
+                                    }
+                                }
+                            }
+                            BackupWorkflowStage.IMPORT_PASSWORD -> {
+                                val sourceUri = requireNotNull(workflow.sourceUri)
+                                val password = workflow.password.toCharArray()
+                                backupWorkflow = BackupWorkflowState(
+                                    stage = BackupWorkflowStage.IMPORT_PASSWORD,
+                                    sourceUri = sourceUri,
+                                    busy = true,
+                                )
+                                backupScope.launch {
+                                    val result = try {
+                                        withContext(Dispatchers.IO) {
+                                            BackupUtils.prepareImport(sourceUri, password)
+                                        }
+                                    } finally {
+                                        password.fill('\u0000')
+                                    }
+                                    when (result) {
+                                        is BackupResult.Success -> {
+                                            BackupUtils.pendingImportUriFlow.value = null
+                                            backupWorkflow = BackupWorkflowState(
+                                                stage = BackupWorkflowStage.IMPORT_PREVIEW,
+                                                sourceUri = sourceUri,
+                                                preparedImport = result.value,
+                                            )
+                                        }
+                                        is BackupResult.Failure -> {
+                                            backupWorkflow = BackupWorkflowState(
+                                                stage = BackupWorkflowStage.IMPORT_PASSWORD,
+                                                sourceUri = sourceUri,
+                                                errorText = backupErrorText(result.code),
                                             )
                                         }
                                     }
-                                    is BackupResult.Failure -> {
-                                        runCatching {
-                                            context.contentResolver.delete(targetUri, null, null)
-                                        }
-                                        backupWorkflow = workflow.copy(
-                                            password = "",
-                                            repeatedPassword = "",
-                                            busy = false,
-                                            errorText = backupErrorText(result.code),
-                                        )
-                                    }
                                 }
                             }
-                            BackupWorkflowStage.IMPORT_PASSWORD -> backupScope.launch {
-                                val password = workflow.password.toCharArray()
-                                backupWorkflow = workflow.copy(
-                                    password = "",
-                                    busy = true,
-                                    errorText = null,
-                                )
-                                val result = withContext(Dispatchers.IO) {
-                                    BackupUtils.prepareImport(
-                                        requireNotNull(workflow.sourceUri),
-                                        password,
-                                    )
-                                }
-                                when (result) {
-                                    is BackupResult.Success -> {
-                                        BackupUtils.pendingImportUriFlow.value = null
-                                        backupWorkflow = workflow.copy(
-                                            stage = BackupWorkflowStage.IMPORT_PREVIEW,
-                                            password = "",
-                                            preparedImport = result.value,
-                                            busy = false,
-                                            errorText = null,
-                                        )
-                                    }
-                                    is BackupResult.Failure -> {
-                                        backupWorkflow = workflow.copy(
-                                            password = "",
-                                            busy = false,
-                                            errorText = backupErrorText(result.code),
-                                        )
-                                    }
-                                }
-                            }
-                            BackupWorkflowStage.IMPORT_PREVIEW -> backupScope.launch {
+                            BackupWorkflowStage.IMPORT_PREVIEW -> {
+                                val preparedImport = requireNotNull(workflow.preparedImport)
+                                val sourceUri = workflow.sourceUri
                                 backupWorkflow = workflow.copy(busy = true, errorText = null)
-                                val result = withContext(Dispatchers.IO) {
-                                    BackupUtils.applyImport(
-                                        requireNotNull(workflow.preparedImport),
-                                        confirmed = true,
-                                    )
-                                }
-                                when (result) {
-                                    is BackupResult.Success -> {
-                                        backupWorkflow = null
-                                        BackupUtils.pendingImportUriFlow.value = null
-                                        toast("备份导入完成")
+                                backupScope.launch {
+                                    val refreshed = withContext(Dispatchers.IO) {
+                                        BackupUtils.refreshImportPreview(preparedImport)
                                     }
-                                    is BackupResult.Failure -> {
-                                        backupWorkflow = workflow.copy(
-                                            busy = false,
-                                            errorText = backupErrorText(result.code),
+                                    if (refreshed is BackupResult.Failure) {
+                                        backupWorkflow = BackupWorkflowState(
+                                            stage = BackupWorkflowStage.IMPORT_PREVIEW,
+                                            sourceUri = sourceUri,
+                                            preparedImport = preparedImport,
+                                            errorText = backupErrorText(refreshed.code),
                                         )
+                                        return@launch
+                                    }
+                                    val refreshedImport =
+                                        (refreshed as BackupResult.Success).value
+                                    if (
+                                        refreshedImport.previewStateHash !=
+                                        preparedImport.previewStateHash ||
+                                        refreshedImport.conflicts != preparedImport.conflicts
+                                    ) {
+                                        backupWorkflow = BackupWorkflowState(
+                                            stage = BackupWorkflowStage.IMPORT_PREVIEW,
+                                            sourceUri = sourceUri,
+                                            preparedImport = refreshedImport,
+                                            errorText = "当前数据已变化，冲突预览已刷新，请再次确认导入",
+                                        )
+                                        return@launch
+                                    }
+                                    val result = withContext(Dispatchers.IO) {
+                                        BackupUtils.applyImport(
+                                            refreshedImport,
+                                            confirmed = true,
+                                        )
+                                    }
+                                    when (result) {
+                                        is BackupResult.Success -> {
+                                            backupWorkflow = null
+                                            BackupUtils.pendingImportUriFlow.value = null
+                                            toast("备份导入完成")
+                                        }
+                                        is BackupResult.Failure -> {
+                                            backupWorkflow = BackupWorkflowState(
+                                                stage = BackupWorkflowStage.IMPORT_PREVIEW,
+                                                sourceUri = sourceUri,
+                                                preparedImport = refreshedImport,
+                                                errorText = backupErrorText(result.code),
+                                            )
+                                        }
                                     }
                                 }
                             }
@@ -647,9 +699,9 @@ fun useSettingsPage(): ScaffoldExt {
                 ) {
                     Text(
                         when (workflow.stage) {
-                            BackupWorkflowStage.EXPORT_CATEGORIES -> "下一步"
-                            BackupWorkflowStage.EXPORT_PASSWORD -> "查看清单"
-                            BackupWorkflowStage.EXPORT_SUMMARY -> "选择位置并导出"
+                            BackupWorkflowStage.EXPORT_CATEGORIES -> "查看清单"
+                            BackupWorkflowStage.EXPORT_SUMMARY -> "设置密码"
+                            BackupWorkflowStage.EXPORT_PASSWORD -> "选择位置并导出"
                             BackupWorkflowStage.IMPORT_PASSWORD -> "解密并预览"
                             BackupWorkflowStage.IMPORT_PREVIEW -> "确认替换并导入"
                         },
@@ -943,6 +995,7 @@ private fun backupErrorText(code: BackupErrorCode): String = when (code) {
     BackupErrorCode.MALFORMED_HEADER,
     BackupErrorCode.INVALID_PAYLOAD -> "备份校验失败，文件可能已损坏"
     BackupErrorCode.IMPORT_NOT_CONFIRMED -> "导入尚未确认"
+    BackupErrorCode.IMPORT_PREVIEW_STALE -> "当前数据已变化，请刷新冲突预览后再次确认"
     BackupErrorCode.IMPORT_FAILED -> "导入失败，原数据已恢复"
     BackupErrorCode.CRYPTO_FAILURE -> "加密处理失败"
 }
