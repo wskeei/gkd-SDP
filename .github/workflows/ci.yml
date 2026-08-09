@@ -50,7 +50,6 @@ jobs:
 
       - name: Run unit tests and lint
         run: |
-          chmod +x ./gradlew
           ./gradlew \
             :selector:jvmTest \
             :app:testGkdDebugUnitTest \
@@ -99,7 +98,6 @@ jobs:
 
       - name: Build debug and release variants
         run: |
-          chmod +x ./gradlew
           ./gradlew \
             :app:assembleGkdDebug \
             :app:assemblePlayDebug \
