@@ -12,13 +12,18 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -38,18 +43,24 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.lifecycle.LifecycleService
+import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.setViewTreeLifecycleOwner
 import androidx.savedstate.SavedStateRegistryController
 import androidx.savedstate.SavedStateRegistryOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import li.songe.gkd.sdp.a11y.UsageGuardEngine
 import li.songe.gkd.sdp.ui.style.AppTheme
 import li.songe.gkd.sdp.util.BarUtils
+import li.songe.gkd.sdp.util.LogUtils
 import li.songe.gkd.sdp.util.ScreenUtils
+import li.songe.gkd.sdp.util.UsageGuardCountdownOverlayCaptureController
+import li.songe.gkd.sdp.util.UsageGuardCountdownOverlayCapturePolicy
 import li.songe.gkd.sdp.util.UsageGuardCountdownOverlayLayoutPolicy
 import li.songe.gkd.sdp.util.UsageGuardCountdownOverlayPolicy
-import li.songe.gkd.sdp.util.LogUtils
+import li.songe.gkd.sdp.util.UsageGuardCountdownOverlaySession
 import li.songe.gkd.sdp.util.px
 import kotlin.math.roundToInt
 
@@ -62,18 +73,22 @@ internal val USAGE_GUARD_COUNTDOWN_OVERLAY_FLAGS =
 class UsageGuardCountdownOverlayService : LifecycleService(), SavedStateRegistryOwner {
     companion object {
         const val EXTRA_REASON_TEXT = "reasonText"
+        const val EXTRA_OVERLAY_LEASE_ID = "overlayLeaseId"
+        const val EXTRA_RUNTIME_GENERATION = "runtimeGeneration"
     }
 
     private val windowManager by lazy { getSystemService(WINDOW_SERVICE) as WindowManager }
     private var view: ComposeView? = null
     private var layoutParams: WindowManager.LayoutParams? = null
+    private val captureController = UsageGuardCountdownOverlayCaptureController()
+    private var restoreOverlayJob: Job? = null
 
     private val savedStateRegistryController = SavedStateRegistryController.create(this)
     override val savedStateRegistry = savedStateRegistryController.savedStateRegistry
 
     private var appId: String = ""
     private var recordId: Long = 0L
-    private var expiresAt: Long = 0L
+    private var overlayLeaseId: Long = 0L
     private var expiresAtState by mutableStateOf(0L)
     private var reasonTextState by mutableStateOf(
         UsageGuardCountdownOverlayPolicy.MISSING_REASON_TEXT,
@@ -91,31 +106,59 @@ class UsageGuardCountdownOverlayService : LifecycleService(), SavedStateRegistry
         val incomingAppId = intent?.getStringExtra("appId").orEmpty()
         val incomingRecordId = intent?.getLongExtra("recordId", 0L) ?: 0L
         val incomingExpiresAt = intent?.getLongExtra("expiresAt", 0L) ?: 0L
+        val incomingOverlayLeaseId = intent?.getLongExtra(EXTRA_OVERLAY_LEASE_ID, 0L) ?: 0L
+        val incomingRuntimeGeneration = intent?.getLongExtra(EXTRA_RUNTIME_GENERATION, 0L) ?: 0L
         val incomingReasonText = UsageGuardCountdownOverlayPolicy.displayReasonText(
             intent?.getStringExtra(EXTRA_REASON_TEXT).orEmpty(),
         )
         val now = System.currentTimeMillis()
-        if (incomingAppId.isBlank() || incomingRecordId <= 0L || incomingExpiresAt <= now) {
+        val incomingSession = UsageGuardCountdownOverlaySession(
+            appId = incomingAppId,
+            recordId = incomingRecordId,
+            expiresAt = incomingExpiresAt,
+            leaseId = incomingOverlayLeaseId,
+            runtimeGeneration = incomingRuntimeGeneration,
+        )
+        if (!incomingSession.isValid(now)) {
             stopSelf()
             return START_NOT_STICKY
         }
 
-        val shouldResetPosition = UsageGuardCountdownOverlayLayoutPolicy.shouldResetPosition(
-            previousAppId = appId,
-            previousRecordId = recordId,
-            nextAppId = incomingAppId,
-            nextRecordId = incomingRecordId,
+        val startAction = captureController.onStart(
+            session = incomingSession,
+            hasView = view != null,
         )
+        if (
+            startAction ==
+            UsageGuardCountdownOverlayCaptureController.StartAction.IGNORE_TERMINAL
+        ) {
+            UsageGuardEngine.onOverlayMountFailed(
+                kind = "countdown",
+                appId = incomingAppId,
+                countdownLeaseId = incomingOverlayLeaseId,
+            )
+            stopSelf()
+            return START_NOT_STICKY
+        }
         appId = incomingAppId
         recordId = incomingRecordId
-        expiresAt = incomingExpiresAt
+        overlayLeaseId = incomingOverlayLeaseId
         expiresAtState = incomingExpiresAt
         reasonTextState = incomingReasonText
-        if (view == null) {
-            showOverlay()
-        } else if (shouldResetPosition) {
-            showTerminateConfirm = false
-            resetPosition()
+        when (startAction) {
+            UsageGuardCountdownOverlayCaptureController.StartAction.CREATE_AND_MOUNT ->
+                showOverlay()
+
+            UsageGuardCountdownOverlayCaptureController.StartAction.RESET_AND_MOUNT -> {
+                restoreOverlayJob?.cancel()
+                restoreOverlayJob = null
+                showTerminateConfirm = false
+                resetPosition()
+            }
+
+            UsageGuardCountdownOverlayCaptureController.StartAction.KEEP_MOUNTED,
+            UsageGuardCountdownOverlayCaptureController.StartAction.KEEP_HIDDEN,
+            UsageGuardCountdownOverlayCaptureController.StartAction.IGNORE_TERMINAL -> Unit
         }
         return START_NOT_STICKY
     }
@@ -142,6 +185,7 @@ class UsageGuardCountdownOverlayService : LifecycleService(), SavedStateRegistry
                         onDrag = { dx, dy -> updatePosition(dx, dy) },
                         onExpired = { stopSelf() },
                         onDismissTerminate = { hideTerminateConfirm() },
+                        onHideForScreenshot = { hideOverlayForScreenshot() },
                         onConfirmTerminate = {
                             UsageGuardEngine.terminateActiveUsage(appId, recordId)
                             stopSelf()
@@ -165,18 +209,88 @@ class UsageGuardCountdownOverlayService : LifecycleService(), SavedStateRegistry
         }
         view = overlayView
         layoutParams = params
+        mountOverlayView(overlayView, params)
+    }
+
+    private fun mountOverlayView(
+        overlayView: ComposeView,
+        params: WindowManager.LayoutParams,
+    ) {
+        if (captureController.isMounted || captureController.isTerminal) return
         runCatching {
             windowManager.addView(overlayView, params)
+            captureController.onMountSucceeded()
         }.onFailure { error ->
+            captureController.onMountFailed()
+            restoreOverlayJob?.cancel()
+            restoreOverlayJob = null
             view = null
             layoutParams = null
-            LogUtils.d("usage guard countdown overlay mount rejected", error::class.java.simpleName)
-            UsageGuardEngine.onOverlayMountFailed("countdown", appId)
+            LogUtils.d(
+                "usage guard countdown overlay mount rejected",
+                error::class.java.simpleName,
+            )
+            UsageGuardEngine.onOverlayMountFailed(
+                kind = "countdown",
+                appId = appId,
+                countdownLeaseId = overlayLeaseId,
+            )
             stopSelf()
         }
     }
 
+    private fun hideOverlayForScreenshot() {
+        val overlayView = view ?: return
+        val params = layoutParams ?: return
+        val hidden = captureController.snapshotForHide() ?: return
+        val removed = runCatching {
+            windowManager.removeView(overlayView)
+        }.onFailure { error ->
+            LogUtils.d(
+                "usage guard countdown overlay temporary hide rejected",
+                error::class.java.simpleName,
+            )
+        }.isSuccess
+        val shouldScheduleRestore = captureController.onHideResult(hidden, removed)
+        if (!shouldScheduleRestore) return
+
+        showTerminateConfirm = false
+        resetPillLayoutParams(params)
+        restoreOverlayJob?.cancel()
+        restoreOverlayJob = lifecycleScope.launch {
+            delay(UsageGuardCountdownOverlayCapturePolicy.HIDE_DURATION_MS)
+            restoreOverlayJob = null
+            restoreOverlayAfterScreenshot(hidden)
+        }
+    }
+
+    private fun restoreOverlayAfterScreenshot(
+        hidden: UsageGuardCountdownOverlaySession,
+    ) {
+        val now = System.currentTimeMillis()
+        val restoreAction = captureController.restoreAction(
+            hidden = hidden,
+            now = now,
+            leaseActive = UsageGuardEngine.canRestoreCountdownOverlay(hidden),
+        )
+        when (restoreAction) {
+            UsageGuardCountdownOverlayCaptureController.RestoreAction.MOUNT -> {
+                val overlayView = view ?: return
+                val params = layoutParams ?: return
+                mountOverlayView(overlayView, params)
+            }
+
+            UsageGuardCountdownOverlayCaptureController.RestoreAction.STOP_EXPIRED,
+            UsageGuardCountdownOverlayCaptureController.RestoreAction.STOP_REVOKED -> {
+                stopSelf()
+            }
+
+            UsageGuardCountdownOverlayCaptureController.RestoreAction.IGNORE -> Unit
+        }
+    }
+
     private fun showTerminateConfirmScreen() {
+        if (!captureController.isMounted) return
         val params = layoutParams ?: return
         val overlayView = view ?: return
         params.width = WindowManager.LayoutParams.MATCH_PARENT
@@ -192,14 +306,11 @@ class UsageGuardCountdownOverlayService : LifecycleService(), SavedStateRegistry
     }
 
     private fun hideTerminateConfirm() {
+        if (!captureController.isMounted) return
         showTerminateConfirm = false
         val params = layoutParams ?: return
         val overlayView = view ?: return
-        params.width = WindowManager.LayoutParams.WRAP_CONTENT
-        params.height = WindowManager.LayoutParams.WRAP_CONTENT
-        val initialPosition = getInitialPosition()
-        params.x = initialPosition.x
-        params.y = initialPosition.y
+        resetPillLayoutParams(params)
         runCatching {
             windowManager.updateViewLayout(overlayView, params)
         }.onFailure {
@@ -208,7 +319,7 @@ class UsageGuardCountdownOverlayService : LifecycleService(), SavedStateRegistry
     }
 
     private fun updatePosition(dx: Float, dy: Float) {
-        if (showTerminateConfirm) return
+        if (showTerminateConfirm || !captureController.isMounted) return
         val params = layoutParams ?: return
         val overlayView = view ?: return
         val screenWidth = ScreenUtils.getScreenWidth()
@@ -227,16 +338,24 @@ class UsageGuardCountdownOverlayService : LifecycleService(), SavedStateRegistry
     private fun resetPosition() {
         val params = layoutParams ?: return
         val overlayView = view ?: return
-        val initialPosition = getInitialPosition()
-        params.width = WindowManager.LayoutParams.WRAP_CONTENT
-        params.height = WindowManager.LayoutParams.WRAP_CONTENT
-        params.x = initialPosition.x
-        params.y = initialPosition.y
+        resetPillLayoutParams(params)
+        if (!captureController.isMounted) {
+            mountOverlayView(overlayView, params)
+            return
+        }
         runCatching {
             windowManager.updateViewLayout(overlayView, params)
         }.onFailure {
             stopSelf()
         }
+    }
+
+    private fun resetPillLayoutParams(params: WindowManager.LayoutParams) {
+        val initialPosition = getInitialPosition()
+        params.width = WindowManager.LayoutParams.WRAP_CONTENT
+        params.height = WindowManager.LayoutParams.WRAP_CONTENT
+        params.x = initialPosition.x
+        params.y = initialPosition.y
     }
 
     private fun getInitialPosition(): UsageGuardCountdownOverlayLayoutPolicy.Position {
@@ -248,17 +367,25 @@ class UsageGuardCountdownOverlayService : LifecycleService(), SavedStateRegistry
 
     override fun onDestroy() {
         super.onDestroy()
-        view?.let {
-            runCatching {
-                windowManager.removeView(it)
+        restoreOverlayJob?.cancel()
+        restoreOverlayJob = null
+        if (captureController.isMounted) {
+            view?.let {
+                runCatching {
+                    windowManager.removeView(it)
+                }
             }
         }
-        UsageGuardEngine.onCountdownOverlayStopped(appId.ifBlank { null })
+        UsageGuardEngine.onCountdownOverlayStopped(
+            appId = appId.ifBlank { null },
+            leaseId = overlayLeaseId.takeIf { it > 0L },
+        )
+        captureController.onDestroy()
         view = null
         layoutParams = null
         appId = ""
         recordId = 0L
-        expiresAt = 0L
+        overlayLeaseId = 0L
         expiresAtState = 0L
         reasonTextState = UsageGuardCountdownOverlayPolicy.MISSING_REASON_TEXT
         showTerminateConfirm = false
@@ -275,11 +402,13 @@ private fun UsageGuardCountdownOverlayContent(
     onDrag: (Float, Float) -> Unit,
     onExpired: () -> Unit,
     onDismissTerminate: () -> Unit,
+    onHideForScreenshot: () -> Unit,
     onConfirmTerminate: () -> Unit,
 ) {
     if (showTerminateConfirm) {
         UsageGuardTerminateConfirmScreen(
             onDismiss = onDismissTerminate,
+            onHideForScreenshot = onHideForScreenshot,
             onConfirm = onConfirmTerminate,
         )
     } else {
@@ -367,6 +496,7 @@ private fun UsageGuardCountdownPill(
 @Composable
 private fun UsageGuardTerminateConfirmScreen(
     onDismiss: () -> Unit,
+    onHideForScreenshot: () -> Unit,
     onConfirm: () -> Unit,
 ) {
     Box(
@@ -382,16 +512,32 @@ private fun UsageGuardTerminateConfirmScreen(
             tonalElevation = 6.dp,
         ) {
             Column(
-                modifier = Modifier.padding(24.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState())
+                    .padding(24.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
                 Text(
-                    text = "是否终止使用？",
+                    text = "使用控制",
                     style = MaterialTheme.typography.titleLarge,
                 )
                 Text(
-                    text = "终止后本次倒计时将归零，并立即回到桌面。记录会按实际使用时长统计。",
+                    text = "隐藏悬浮条不会暂停本次使用；提前终止会将倒计时归零并立即回到桌面。",
                     style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                OutlinedButton(
+                    onClick = onHideForScreenshot,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(min = 48.dp),
+                ) {
+                    Text("隐藏 10 秒用于截图")
+                }
+                Text(
+                    text = "隐藏期间倒计时继续，之后自动恢复。",
+                    style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Row(
@@ -400,10 +546,10 @@ private fun UsageGuardTerminateConfirmScreen(
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     TextButton(onClick = onDismiss) {
-                        Text("否")
+                        Text("返回")
                     }
                     Button(onClick = onConfirm) {
-                        Text("是，终止")
+                        Text("终止使用")
                     }
                 }
             }

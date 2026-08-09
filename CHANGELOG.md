@@ -6,6 +6,12 @@ All notable GKD-SDP changes are documented here. The format follows
 
 ## [Unreleased]
 
+### Fixed
+
+- Restore foreground-app screenshots through an explicit ten-second countdown
+  overlay hide action while keeping the remaining time and request reason
+  protected whenever GKD-SDP's overlay is visible.
+
 ## [2.1.0] - 2026-08-09
 
 This is the first stable GKD-SDP release. It promotes the tested
