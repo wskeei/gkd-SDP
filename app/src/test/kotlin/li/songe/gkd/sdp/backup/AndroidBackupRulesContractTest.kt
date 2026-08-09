@@ -30,7 +30,7 @@ class AndroidBackupRulesContractTest {
 
         assertEquals("full-backup-content", root.tagName)
         assertEquals(expectedIncludes, rules(root, "include"))
-        assertTrue(rules(root, "exclude").map { it.first }.containsAll(excludedDomains))
+        assertTrue(rules(root, "exclude").isEmpty())
     }
 
     @Test
@@ -41,25 +41,14 @@ class AndroidBackupRulesContractTest {
 
         assertEquals(expectedIncludes, rules(cloud, "include"))
         assertEquals(expectedIncludes, rules(transfer, "include"))
-        assertTrue(rules(cloud, "exclude").map { it.first }.containsAll(excludedDomains))
-        assertTrue(rules(transfer, "exclude").map { it.first }.containsAll(excludedDomains))
+        assertTrue(rules(cloud, "exclude").isEmpty())
+        assertTrue(rules(transfer, "exclude").isEmpty())
     }
 
     private val expectedIncludes = setOf(
         "file" to "store/app_theme.json",
         "file" to "store/display_density.json",
         "file" to "store/language.json",
-    )
-
-    private val excludedDomains = setOf(
-        "database",
-        "sharedpref",
-        "external",
-        "root",
-        "device_root",
-        "device_file",
-        "device_database",
-        "device_sharedpref",
     )
 
     private fun rules(parent: Element, tagName: String): Set<Pair<String, String>> {

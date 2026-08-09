@@ -1,16 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <full-backup-content>
-    <!-- Declaring includes changes the default to deny: only these display preferences remain. -->
+    <!-- Any include changes the policy to deny-by-default across every domain. -->
     <include domain="file" path="store/app_theme.json" />
     <include domain="file" path="store/display_density.json" />
     <include domain="file" path="store/language.json" />
-
-    <exclude domain="database" path="." />
-    <exclude domain="sharedpref" path="." />
-    <exclude domain="external" path="." />
-    <exclude domain="root" path="." />
-    <exclude domain="device_root" path="." />
-    <exclude domain="device_file" path="." />
-    <exclude domain="device_database" path="." />
-    <exclude domain="device_sharedpref" path="." />
 </full-backup-content>
