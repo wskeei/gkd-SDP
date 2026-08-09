@@ -19,6 +19,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.suspendCancellableCoroutine
 import li.songe.gkd.sdp.ui.WebViewRoute
 import li.songe.gkd.sdp.ui.share.LocalMainViewModel
+import li.songe.gkd.sdp.remote.CleartextOriginAuthorizations
+import li.songe.gkd.sdp.remote.CleartextOriginPolicy
 import li.songe.gkd.sdp.util.ShortUrlSet
 import li.songe.gkd.sdp.util.subsItemsFlow
 import li.songe.gkd.sdp.util.throttle
@@ -42,7 +44,7 @@ class InputSubsLinkOption {
         continuation = null
     }
 
-    private fun submit() {
+    private fun submit(authorizeCleartext: Boolean) {
         val value = valueFlow.value
         if (!URLUtil.isNetworkUrl(value)) {
             toast("非法链接")
@@ -57,6 +59,14 @@ class InputSubsLinkOption {
         if (subsItemsFlow.value.any { it.updateUrl == value }) {
             toast("已有相同链接订阅")
             return
+        }
+        val cleartextOrigin = CleartextOriginPolicy.canonicalOrigin(value)
+        if (cleartextOrigin != null && cleartextOrigin !in CleartextOriginAuthorizations.originsFlow.value) {
+            if (!authorizeCleartext) {
+                toast("请先确认此明文来源")
+                return
+            }
+            CleartextOriginAuthorizations.authorize(value)
         }
         resume(value)
     }
@@ -79,6 +89,10 @@ class InputSubsLinkOption {
             val mainVm = LocalMainViewModel.current
             val value by valueFlow.collectAsState()
             val initValue by initValueFlow.collectAsState()
+            val authorizedOrigins by CleartextOriginAuthorizations.originsFlow.collectAsState()
+            val cleartextOrigin = CleartextOriginPolicy.canonicalOrigin(value)
+            val needsCleartextAuthorization = cleartextOrigin != null &&
+                cleartextOrigin !in authorizedOrigins
             AlertDialog(
                 properties = DialogProperties(dismissOnClickOutside = false),
                 title = {
@@ -98,20 +112,27 @@ class InputSubsLinkOption {
                     }
                 },
                 text = {
-                    OutlinedTextField(
-                        value = value,
-                        onValueChange = {
-                            valueFlow.value = it.trim()
-                        },
-                        maxLines = 8,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .autoFocus(),
-                        placeholder = {
-                            Text(text = "请输入订阅链接")
-                        },
-                        isError = value.isNotEmpty() && !URLUtil.isNetworkUrl(value),
-                    )
+                    androidx.compose.foundation.layout.Column {
+                        OutlinedTextField(
+                            value = value,
+                            onValueChange = {
+                                valueFlow.value = it.trim()
+                            },
+                            maxLines = 8,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .autoFocus(),
+                            placeholder = {
+                                Text(text = "请输入订阅链接")
+                            },
+                            isError = value.isNotEmpty() && !URLUtil.isNetworkUrl(value),
+                        )
+                        if (needsCleartextAuthorization) {
+                            Text(
+                                text = "明文来源：$cleartextOrigin\nHTTP 内容可能在传输中被读取或修改；授权仅适用于此 scheme、host 与 port。",
+                            )
+                        }
+                    }
                 },
                 onDismissRequest = {
                     cancel()
@@ -120,10 +141,10 @@ class InputSubsLinkOption {
                     TextButton(
                         enabled = value.isNotEmpty(),
                         onClick = throttle(fn = {
-                            submit()
+                            submit(authorizeCleartext = needsCleartextAuthorization)
                         }),
                     ) {
-                        Text(text = "确定")
+                        Text(text = if (needsCleartextAuthorization) "仅授权此来源" else "确定")
                     }
                 },
                 dismissButton = {

@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>GKD-SDP 本地 Inspector</title>
+  <link rel="stylesheet" href="/app.css">
+</head>
+<body>
+  <main>
+    <h1>GKD-SDP 本地 Inspector</h1>
+    <p>输入应用内显示的 8 位一次性配对码。令牌只保留在当前页面内存中。</p>
+    <form id="pair-form">
+      <label for="pair-code">配对码</label>
+      <input id="pair-code" inputmode="numeric" maxlength="8" pattern="[0-9]{8}" required>
+      <button type="submit">配对</button>
+    </form>
+    <div class="actions" hidden>
+      <button id="server-info" type="button">读取服务信息</button>
+      <button id="snapshot-list" type="button">读取快照列表</button>
+    </div>
+    <pre id="result" role="status" aria-live="polite"></pre>
+  </main>
+  <script src="/app.js" defer></script>
+</body>
+</html>

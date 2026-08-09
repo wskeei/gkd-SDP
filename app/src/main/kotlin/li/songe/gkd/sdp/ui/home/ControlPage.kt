@@ -50,6 +50,7 @@ import li.songe.gkd.sdp.permission.writeSecureSettingsState
 import li.songe.gkd.sdp.service.A11yService
 import li.songe.gkd.sdp.service.ActivityService
 import li.songe.gkd.sdp.service.StatusService
+import li.songe.gkd.sdp.service.HttpService
 import li.songe.gkd.sdp.service.a11yPartDisabledFlow
 import li.songe.gkd.sdp.service.requestStartOrRepairAutomatorService
 import li.songe.gkd.sdp.service.switchAutomatorService
@@ -60,6 +61,7 @@ import li.songe.gkd.sdp.store.actualA11yScopeAppList
 import li.songe.gkd.sdp.store.storeFlow
 import li.songe.gkd.sdp.ui.ActionLogRoute
 import li.songe.gkd.sdp.ui.ActivityLogRoute
+import li.songe.gkd.sdp.ui.AdvancedPageRoute
 import li.songe.gkd.sdp.ui.AppConfigRoute
 import li.songe.gkd.sdp.ui.AuthA11yRoute
 import li.songe.gkd.sdp.ui.UsageGuardReviewRoute
@@ -87,6 +89,8 @@ import li.songe.gkd.sdp.util.launchAsFn
 import li.songe.gkd.sdp.util.openA11ySettings
 import li.songe.gkd.sdp.util.throttle
 import li.songe.gkd.sdp.util.toast
+import li.songe.gkd.sdp.remote.RemoteListenMode
+import li.songe.gkd.sdp.remote.RemoteScope
 
 @Composable
 fun useControlPage(): ScaffoldExt {
@@ -244,6 +248,25 @@ fun useControlPage(): ScaffoldExt {
             )
 
             ServerStatusCard()
+            if (HttpService.isRunning.collectAsState().value) {
+                val remoteSession by HttpService.remoteSessionStateFlow.collectAsState()
+                PageItemCard(
+                    title = "本地 Inspector",
+                    subtitle = if (remoteSession.mode == RemoteListenMode.LOCAL_ONLY) {
+                        "仅本机监听｜${if (remoteSession.paired) "已配对" else "等待配对"}｜" +
+                            "授权 ${remoteSession.enabledScopes.size}/${RemoteScope.entries.size}"
+                    } else {
+                        val minutes = remoteSession.accessExpiresAtMillis
+                            ?.let { ((it - System.currentTimeMillis()).coerceAtLeast(0) + 59_999) / 60_000 }
+                            ?: 0
+                        "局域网会话剩余 $minutes 分钟｜${remoteSession.clientSummary ?: "等待配对"}｜" +
+                            "授权 ${remoteSession.enabledScopes.size}/${RemoteScope.entries.size}"
+                    },
+                    imageVector = PerfIcon.Api,
+                    onClickLabel = "打开本地 Inspector 设置",
+                    onClick = { mainVm.navigatePage(AdvancedPageRoute) },
+                )
+            }
 
             val usageGuardSummary by vm.usageGuardReviewSummaryFlow.collectAsState()
             val digitalSelfDisciplineToday by vm.digitalSelfDisciplineTodaySummaryFlow.collectAsState()

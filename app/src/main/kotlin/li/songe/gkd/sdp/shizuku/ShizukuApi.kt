@@ -18,6 +18,7 @@ import li.songe.gkd.sdp.isActivityVisible
 import li.songe.gkd.sdp.permission.shizukuGrantedState
 import li.songe.gkd.sdp.permission.updatePermissionState
 import li.songe.gkd.sdp.service.ExposeService
+import li.songe.gkd.sdp.remote.ExposeAction
 import li.songe.gkd.sdp.service.StatusService
 import li.songe.gkd.sdp.service.currentAppBlocked
 import li.songe.gkd.sdp.service.currentAppUseA11y
@@ -207,7 +208,9 @@ private fun updateShizukuBinder() = updateBinderMutex.launchTry(appScope, Dispat
         updatePermissionState()
         if (StatusService.needRestart) {
             //
-            shizukuContext.activityManager?.startForegroundService(ExposeService.exposeIntent(expose = -1))
+            shizukuContext.activityManager?.startForegroundService(
+                ExposeService.issueInternalIntent(ExposeAction.STATUS_AUTOSTART),
+            )
         }
         val delayMillis = if (app.justStarted) 1200L else 0L
         if (shizukuContext.serviceWrapper == null) {

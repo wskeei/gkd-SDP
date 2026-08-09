@@ -191,8 +191,7 @@
         <service
             android:name=".service.ExposeService"
             android:exported="true"
-            android:foregroundServiceType="specialUse"
-            tools:ignore="ExportedService">
+            android:foregroundServiceType="specialUse">
             <property
                 android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
                 android:value="Provide an interface for third-party applications to actively invoke snapshot capturing." />

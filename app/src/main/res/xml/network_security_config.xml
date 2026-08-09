@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<network-security-config xmlns:tools="http://schemas.android.com/tools">
-    <base-config
-        cleartextTrafficPermitted="true"
-        tools:ignore="InsecureBaseConfiguration" />
+<network-security-config>
+    <!-- User-supplied HTTP subscriptions remain transport-capable, but the OkHttp
+         CleartextOriginInterceptor rejects every origin until the user authorizes
+         its canonical scheme://host:port. WebView and update checks never use it. -->
+    <base-config cleartextTrafficPermitted="true" />
 </network-security-config>

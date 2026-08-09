@@ -283,7 +283,15 @@ Filesystem locations are defined in [`app/src/main/kotlin/li/songe/gkd/sdp/util/
 - `log/`
 - `sh/`
 
-`ExposeService` also writes a helper shell script to `sh/expose.sh`.
+`ExposeService` only writes `sh/expose.sh` while the user is viewing the command-authorization flow. The script and `start.sh` use mode `0600`, expire after five minutes, and carry a single-use action-bound capability. Only the token hash, action, expiry and consumption state are persisted in `private-store`; startup removes stale command files.
+
+### Remote and web security boundaries
+
+`HttpService` listens on `127.0.0.1` by default. Listening on `0.0.0.0` requires the in-app “15-minute LAN debugging” action and automatically returns to loopback on timeout, lock screen, stop or explicit disconnect. Every API route except the local static Inspector and pairing endpoint requires an 8-digit challenge exchange, a 256-bit bearer token bound to one client IP/User-Agent/origin, an enabled `RemoteScope`, the rolling rate limit, and the request/response size limits. Do not add a route without assigning one exact scope in `HttpService`.
+
+The Inspector is bundled under `assets/http-inspector`; it must not load remote executable code. Static and mirrored document responses retain CSP, `nosniff` and `no-store`. `WebViewPage` uses the platform WebView directly: only `https://gkd.li` is a main-frame origin, `gkd://` is restricted to the internal route allowlist, other HTTPS links leave the app, and HTTP/file/content/data/javascript/intent navigation is blocked. File/content access, mixed content, third-party cookies and JavaScript interfaces remain disabled.
+
+Global cleartext transport remains enabled only for user-supplied HTTP subscriptions. `CleartextOriginInterceptor` rejects HTTP before connection unless the user explicitly authorizes its normalized `scheme://host:port`; redirects are evaluated again. Project URLs, WebView and update checks stay HTTPS-only. Do not reuse the subscription authorization list for other network clients.
 
 ## Important Mental Models
 
