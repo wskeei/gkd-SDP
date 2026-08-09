@@ -6,11 +6,18 @@ All notable GKD-SDP changes are documented here. The format follows
 
 ## [Unreleased]
 
+## [2.1.1] - 2026-08-09
+
 ### Fixed
 
 - Restore foreground-app screenshots through an explicit ten-second countdown
   overlay hide action while keeping the remaining time and request reason
   protected whenever GKD-SDP's overlay is visible.
+
+### Known limitations
+
+- Android/OEM screenshot composition remains platform-controlled. Physical-device
+  and OEM validation is left for the user after downloading this Release.
 
 ## [2.1.0] - 2026-08-09
 
@@ -205,7 +212,8 @@ since that base rather than repeating upstream release notes.
   when the required service permission is disabled.
 - Added screenshot protection for the usage reason overlay.
 
-[Unreleased]: https://github.com/wskeei/gkd-SDP/compare/v2.1.0...HEAD
+[Unreleased]: https://github.com/wskeei/gkd-SDP/compare/v2.1.1...HEAD
+[2.1.1]: https://github.com/wskeei/gkd-SDP/compare/v2.1.0...v2.1.1
 [2.1.0]: https://github.com/wskeei/gkd-SDP/compare/v2.0.0-beta.6...v2.1.0
 [2.0.0-beta.6]: https://github.com/wskeei/gkd-SDP/compare/v2.0.0-beta.5...v2.0.0-beta.6
 [2.0.0-beta.5]: https://github.com/wskeei/gkd-SDP/compare/v2.0.0-beta.4...v2.0.0-beta.5
