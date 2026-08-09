@@ -17,6 +17,14 @@ class StableReleasePolicyTest(unittest.TestCase):
         source = self.read("scripts/generate-update-manifest.sh")
         self.assertIn("tag must be stable vX.Y.Z", source)
 
+    def test_android_build_requires_a_stable_version_name(self) -> None:
+        source = self.read("app/build.gradle.kts")
+        version_guard = next(
+            line for line in source.splitlines()
+            if "require(sdpVersionName.matches" in line
+        )
+        self.assertNotRegex(version_guard, r"alpha|beta|rc")
+
     def test_release_workflow_never_creates_a_prerelease(self) -> None:
         workflow = self.read(".github/workflows/release.yml")
         self.assertNotIn("--prerelease", workflow)

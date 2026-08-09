@@ -38,8 +38,8 @@ val sdpVersionName = requiredSdpVersionProperty("versionName")
 val sdpVersionCodeText = requiredSdpVersionProperty("versionCode")
 val sdpUpstreamBase = requiredSdpVersionProperty("upstreamBase")
 val sdpUpstreamVersionCodeText = requiredSdpVersionProperty("upstreamVersionCode")
-require(sdpVersionName.matches(Regex("^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(-(alpha|beta|rc)\\.(0|[1-9][0-9]*))?$"))) {
-    "Invalid GKD-SDP versionName: $sdpVersionName"
+require(sdpVersionName.matches(Regex("^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)$"))) {
+    "Invalid stable GKD-SDP versionName: $sdpVersionName"
 }
 require(sdpVersionCodeText.matches(Regex("^[1-9][0-9]*$"))) {
     "Invalid GKD-SDP versionCode: $sdpVersionCodeText"
