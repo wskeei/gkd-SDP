@@ -6,6 +6,14 @@ All notable GKD-SDP changes are documented here. The format follows
 
 ## [Unreleased]
 
+### Internal reliability
+
+- Make self-control clocks and dispatchers injectable, collect Compose state only
+  while its lifecycle is started, and restore semantic navigation across activity
+  recreation.
+- Keep UI and overlay host boundaries small and enforce the directory contract in CI;
+  no user data format or runtime policy is changed by this internal refactor.
+
 ## [2.1.1] - 2026-08-09
 
 ### Fixed

@@ -73,6 +73,28 @@ The runtime model is easier to reason about if you separate it into four layers.
 
 [`app/src/main/kotlin/li/songe/gkd/sdp/MainActivity.kt`](app/src/main/kotlin/li/songe/gkd/sdp/MainActivity.kt) hosts the Compose app and also calls `syncFixState()`, which refreshes permissions, service state, top-app state, and Shizuku-backed capabilities.
 
+Runtime seams are explicit and injectable:
+
+- `AppDependencies` owns the process clock, dispatcher set, and application scope;
+  self-control engines use these seams instead of reading wall time or selecting a
+  dispatcher at the call site. Tests provide `FakeSdpClock` and deterministic
+  dispatchers for time jumps and cancellation cases.
+- `ServiceOverlayLifecycleOwner` gives Compose views created by a `LifecycleService`
+  a real `INITIALIZED → STARTED → DESTROYED` owner. The owner is advanced only after
+  `WindowManager.addView` succeeds and is destroyed on every removal path.
+- `AppNavigator` is the only navigation boundary. `MainActivity` supplies its
+  `rememberNavBackStack` (which is saveable across recreation), while ViewModels and
+  background entry points send semantic `AppDestination` effects. `DeepLinkParser`
+  converts the 2.2.0 compatibility links immediately and rejects unknown scheme,
+  host, path, query, user-info, port, and fragment values.
+
+Compose pages use the directory contract under `ui/<feature>/`: `Route.kt`,
+`Screen.kt`, `UiState.kt`, `Presenter.kt`, `Sections.kt`, `Dialogs.kt`, and
+`Editor.kt`. Usage overlays use the analogous `ServiceHost.kt`,
+`WindowController.kt`, `Screen.kt`, `UiState.kt`, and `Presenter.kt` contract.
+`scripts/verify-ui-file-boundaries.py` keeps host files below 500 lines and
+guards against oversized Composable entry points.
+
 ### 2. Accessibility and activity tracking
 
 [`app/src/main/kotlin/li/songe/gkd/sdp/service/A11yService.kt`](app/src/main/kotlin/li/songe/gkd/sdp/service/A11yService.kt) is the main accessibility service base class.
