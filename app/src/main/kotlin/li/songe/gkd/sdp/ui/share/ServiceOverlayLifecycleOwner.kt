@@ -11,7 +11,10 @@ import androidx.lifecycle.LifecycleRegistry
  * continue serving another overlay.
  */
 class ServiceOverlayLifecycleOwner : LifecycleOwner {
-    private val registry = LifecycleRegistry(this)
+    // Service callbacks are serialized by the WindowManager/main service thread;
+    // createUnsafe also keeps the owner testable in the JVM environment where
+    // android.os.Looper is not present.
+    private val registry = LifecycleRegistry.createUnsafe(this)
 
     init {
         registry.currentState = Lifecycle.State.INITIALIZED
