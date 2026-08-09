@@ -121,7 +121,19 @@ while IFS= read -r previous_tag; do
     previous_major=$((10#${BASH_REMATCH[1]}))
     previous_minor=$((10#${BASH_REMATCH[2]}))
     previous_patch=$((10#${BASH_REMATCH[3]}))
-    [[ "$previous_tag" == "$expected_tag" ]] && continue
+
+    previous_properties="$(git -C "$ROOT_DIR" show "${previous_tag}:gradle/version.properties" 2>/dev/null || true)"
+    [[ -n "$previous_properties" ]] || error "${previous_tag} is an SDP tag without gradle/version.properties"
+    previous_code="$(printf '%s\n' "$previous_properties" | awk -F= '$1 == "versionCode" {gsub(/^[[:space:]]+|[[:space:]]+$/, "", $2); print $2; exit}')"
+    [[ "$previous_code" =~ ^[1-9][0-9]*$ ]] \
+        || error "${previous_tag} has an invalid versionCode: ${previous_code:-<empty>}"
+    previous_code_number=$((10#${previous_code}))
+
+    if [[ "$previous_tag" == "$expected_tag" ]]; then
+        ((version_code_number == previous_code_number)) \
+            || error "versionName ${version_name} is already published by ${previous_tag} with versionCode ${previous_code}"
+        continue
+    fi
 
     if ((
         current_major < previous_major
@@ -131,12 +143,6 @@ while IFS= read -r previous_tag; do
         error "versionName ${version_name} must not be older than ${previous_tag}"
     fi
 
-    previous_properties="$(git -C "$ROOT_DIR" show "${previous_tag}:gradle/version.properties" 2>/dev/null || true)"
-    [[ -n "$previous_properties" ]] || error "${previous_tag} is an SDP tag without gradle/version.properties"
-    previous_code="$(printf '%s\n' "$previous_properties" | awk -F= '$1 == "versionCode" {gsub(/^[[:space:]]+|[[:space:]]+$/, "", $2); print $2; exit}')"
-    [[ "$previous_code" =~ ^[1-9][0-9]*$ ]] \
-        || error "${previous_tag} has an invalid versionCode: ${previous_code:-<empty>}"
-    previous_code_number=$((10#${previous_code}))
     ((version_code_number > previous_code_number)) \
         || error "versionCode ${version_code} must be greater than ${previous_code} from ${previous_tag}"
 done < <(git -C "$ROOT_DIR" tag --list 'v*' --sort=version:refname)

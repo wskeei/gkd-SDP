@@ -121,6 +121,10 @@ write_changelog "2.1.0"
 commit_fixture
 git -C "$TEST_ROOT" tag v2.1.0
 assert_success "no-tag metadata may match the latest published version" --no-tag
+write_version "2.1.0" 100
+write_changelog "2.1.0"
+commit_fixture
+assert_failure "published versionName cannot be reused with a new versionCode" --no-tag
 
 reset_repo
 write_version "2.0.0-beta.6" 98
