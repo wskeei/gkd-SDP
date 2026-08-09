@@ -25,10 +25,18 @@ class StableReleasePolicyTest(unittest.TestCase):
         )
         self.assertNotRegex(version_guard, r"alpha|beta|rc")
 
-    def test_release_workflow_never_creates_a_prerelease(self) -> None:
+    def test_release_workflow_creates_a_plain_stable_draft(self) -> None:
         workflow = self.read(".github/workflows/release.yml")
         self.assertNotIn("--prerelease", workflow)
-        self.assertIn("release_args+=(--latest)", workflow)
+        self.assertNotIn("--latest", workflow)
+        self.assertIn("--draft", workflow)
+
+    def test_release_guide_marks_latest_only_when_publishing(self) -> None:
+        guide = self.read("docs/releasing.md")
+        self.assertIn(
+            "gh release edit <tag> --draft=false --prerelease=false --latest",
+            guide,
+        )
 
     def test_ci_runs_both_release_tooling_contracts(self) -> None:
         workflow = self.read(".github/workflows/ci.yml")

@@ -55,7 +55,7 @@
 1. Restrict Android build metadata, release metadata, and update tags to stable `X.Y.Z`.
 2. Apply history monotonicity checks in `--no-tag`, auto, and explicit-tag modes while recognizing historical prerelease tags.
 3. Run both release-tooling test suites in CI.
-4. Remove the prerelease branch from Release creation and always mark the stable Draft as GitHub Latest.
+4. Remove the prerelease branch from Release creation, create a plain stable Draft, and apply GitHub Latest only when publishing the inspected Draft.
 5. Remove `include_prereleases` from the release badge.
 6. Run the new tests to GREEN, then all script tests and `git diff --check`.
 7. Commit with `build: enforce stable release versions`.

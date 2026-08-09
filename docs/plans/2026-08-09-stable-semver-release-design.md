@@ -39,12 +39,13 @@ tags when checking semantic and `versionCode` monotonicity. Release-PR
 permits only an already-published version with the same `versionCode` to match
 itself. The update-manifest generator accepts only stable `vX.Y.Z` tags.
 
-CI runs both release-tooling shell suites. The Release workflow always creates
-a Draft stable Release marked as GitHub Latest; it has no prerelease branch.
-The README badge excludes prereleases, and maintainer documentation prohibits a
-literal rolling `latest` tag or Release. The normal signed workflow still owns
-compilation, signing, package/version/certificate verification, checksums,
-attestation, and immutable asset upload.
+CI runs both release-tooling shell suites. The Release workflow creates a plain
+stable Draft with no prerelease or Latest flag; after asset inspection, the
+publication command marks that stable Release as GitHub Latest. The README badge
+excludes prereleases, and maintainer documentation prohibits a literal rolling
+`latest` tag or Release. The normal signed workflow still owns compilation,
+signing, package/version/certificate verification, checksums, attestation, and
+immutable asset upload.
 
 Before publishing `v2.1.0`, both feature/release PR checks and merged-main CI
 must be green. The Draft assets are downloaded to a temporary directory and

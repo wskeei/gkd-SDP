@@ -282,7 +282,6 @@ jobs:
             --title "GKD-SDP $RELEASE_TAG"
             --notes-file release/release-notes.md
           )
-          release_args+=(--latest)
           gh release create "${release_args[@]}" --repo "$GITHUB_REPOSITORY"
           gh release upload "$RELEASE_TAG" "$APK_PATH" release/update.json release/SHA256SUMS.txt --repo "$GITHUB_REPOSITORY"
           echo "Draft Release created. Inspect assets and notes, then publish it manually."
