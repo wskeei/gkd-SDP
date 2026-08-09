@@ -12,6 +12,7 @@ import li.songe.gkd.sdp.backup.BackupDataMutationBarrier
 import li.songe.gkd.sdp.util.json
 import java.io.File
 import java.util.Locale
+import java.util.concurrent.atomic.AtomicBoolean
 
 enum class DisplayPreferenceBackupFile(val filename: String) {
     APP_THEME("app_theme.json"),
@@ -117,6 +118,14 @@ object DisplayPreferenceBackupPolicy {
     )
 }
 
+object ProcessLocalePolicy {
+    fun resolve(languageTag: String, systemLocale: Locale): Locale =
+        DisplayPreferenceBackupPolicy.sanitizeLanguageTag(languageTag)
+            .takeIf(String::isNotBlank)
+            ?.let(Locale::forLanguageTag)
+            ?: systemLocale
+}
+
 private data class PersistedDisplayPreferences(
     val theme: AppThemeBackup?,
     val density: DisplayDensityBackup?,
@@ -140,6 +149,7 @@ fun initDisplayPreferenceBackup() {
         language = persisted.language,
     )
     storeFlow.value = restored
+    initProcessLocaleCoordinator()
     appScope.launch(Dispatchers.IO) {
         var lastPersisted = persisted
         storeFlow
@@ -154,6 +164,21 @@ fun initDisplayPreferenceBackup() {
                     lastPersisted = updated
                 }
             }
+    }
+}
+
+private val processLocaleCoordinatorStarted = AtomicBoolean(false)
+
+private fun initProcessLocaleCoordinator() {
+    if (!processLocaleCoordinatorStarted.compareAndSet(false, true)) return
+    val systemLocale = Locale.getDefault()
+    appScope.launch(Dispatchers.Default) {
+        storeFlow
+            .map { settings ->
+                ProcessLocalePolicy.resolve(settings.languageTag, systemLocale)
+            }
+            .distinctUntilChanged()
+            .collect(Locale::setDefault)
     }
 }
 

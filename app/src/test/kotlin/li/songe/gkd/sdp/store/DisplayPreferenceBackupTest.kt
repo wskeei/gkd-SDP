@@ -1,5 +1,6 @@
 package li.songe.gkd.sdp.store
 
+import java.util.Locale
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -80,6 +81,24 @@ class DisplayPreferenceBackupTest {
         assertEquals(
             "zh-CN",
             DisplayPreferenceUiPolicy.resolve(restored, "en-US").languageTag,
+        )
+    }
+
+    @Test
+    fun `process locale policy uses one stable system fallback`() {
+        val systemLocale = Locale.forLanguageTag("en-US")
+
+        assertEquals(
+            systemLocale,
+            ProcessLocalePolicy.resolve("", systemLocale),
+        )
+        assertEquals(
+            Locale.forLanguageTag("zh-CN"),
+            ProcessLocalePolicy.resolve("zh-cn", systemLocale),
+        )
+        assertEquals(
+            systemLocale,
+            ProcessLocalePolicy.resolve("not a locale !!!", systemLocale),
         )
     }
 

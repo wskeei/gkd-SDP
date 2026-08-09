@@ -1,6 +1,7 @@
 package li.songe.gkd.sdp.ui.style
 
 import java.io.File
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -16,6 +17,20 @@ class ThemeActivityOwnerContractTest {
 
         assertTrue(provider.contains("LocalContext provides localizedContext"))
         assertTrue(provider.contains("LocalActivity provides activity"))
+    }
+
+    @Test
+    fun appThemeDoesNotOwnTheProcessLocale() {
+        val themeSource = sourceFile(
+            "app/src/main/kotlin/li/songe/gkd/sdp/ui/style/Theme.kt",
+        ).readText()
+        val preferenceSource = sourceFile(
+            "app/src/main/kotlin/li/songe/gkd/sdp/store/DisplayPreferenceBackup.kt",
+        ).readText()
+
+        assertFalse(themeSource.contains("Locale.setDefault"))
+        assertTrue(preferenceSource.contains("processLocaleCoordinatorStarted"))
+        assertTrue(preferenceSource.contains(".collect(Locale::setDefault)"))
     }
 
     private fun sourceFile(relativePath: String): File {

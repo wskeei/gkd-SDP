@@ -96,12 +96,6 @@ fun AppTheme(
     val localizedContext = remember(baseContext, localizedConfiguration) {
         baseContext.createConfigurationContext(localizedConfiguration)
     }
-    DisposableEffect(displayPreferences.languageTag) {
-        val previousLocale = Locale.getDefault()
-        Locale.setDefault(Locale.forLanguageTag(displayPreferences.languageTag))
-        onDispose { Locale.setDefault(previousLocale) }
-    }
-
     val activity = LocalActivity.current
     if (activity != null) {
         LaunchedEffect(darkTheme) {
