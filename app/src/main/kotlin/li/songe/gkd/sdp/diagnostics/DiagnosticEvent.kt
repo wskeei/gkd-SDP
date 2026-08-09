@@ -75,6 +75,12 @@ data class DiagnosticEvent(
     val errorCategory: DiagnosticErrorCategory? = null,
 )
 
+@Serializable
+data class DiagnosticEventRecord(
+    val occurredAtMinute: Long,
+    val event: DiagnosticEvent,
+)
+
 class DiagnosticRateLimiter(
     private val maxEvents: Int,
     private val windowMillis: Long,

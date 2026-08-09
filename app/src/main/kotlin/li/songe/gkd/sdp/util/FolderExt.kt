@@ -1,17 +1,23 @@
 package li.songe.gkd.sdp.util
 
+import android.os.Build
 import android.text.format.DateUtils
 import androidx.annotation.WorkerThread
-import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.Json
+import kotlinx.serialization.decodeFromString
 import li.songe.gkd.sdp.META
 import li.songe.gkd.sdp.app
-import li.songe.gkd.sdp.data.AppInfo
-import li.songe.gkd.sdp.data.UserInfo
-import li.songe.gkd.sdp.data.otherUserMapFlow
+import li.songe.gkd.sdp.data.CrashData
+import li.songe.gkd.sdp.diagnostics.DiagnosticLogger
+import li.songe.gkd.sdp.diagnostics.SupportAppSummary
+import li.songe.gkd.sdp.diagnostics.SupportBundleBuilder
+import li.songe.gkd.sdp.diagnostics.SupportBundleMetadata
+import li.songe.gkd.sdp.diagnostics.SupportBundleRequest
+import li.songe.gkd.sdp.diagnostics.SupportCapabilitySummary
+import li.songe.gkd.sdp.diagnostics.SupportCrashSummary
+import li.songe.gkd.sdp.diagnostics.SupportDiagnosticEvent
 import li.songe.gkd.sdp.permission.allPermissionStates
-import li.songe.gkd.sdp.shizuku.currentUserId
 import li.songe.gkd.sdp.shizuku.shizukuContextFlow
+import li.songe.gkd.sdp.store.storeFlow
 import java.io.File
 
 fun File.autoMk(): File {
@@ -84,44 +90,87 @@ fun clearCache() {
     removeExpired(tempDir)
 }
 
-@Serializable
-private data class AppJsonData(
-    val userId: Int = currentUserId,
-    val apps: List<AppInfo> = userAppInfoMapFlow.value.values.toList(),
-    val otherUsers: List<UserInfo> = otherUserMapFlow.value.values.toList(),
-    val othersApps: List<AppInfo> = otherUserAppInfoMapFlow.value.values.toList(),
-)
-
 @WorkerThread
 fun buildLogFile(): File {
-    val tempDir = createGkdTempDir()
-    val files = mutableListOf(dbFolder, storeFolder, subsFolder, logFolder, crashFolder)
-    tempDir.resolve("apps.json").also {
-        it.writeText(json.encodeToString(AppJsonData()))
-        files.add(it)
+    val nowMillis = System.currentTimeMillis()
+    val settings = storeFlow.value
+    val request = SupportBundleRequest(
+        generatedAtMillis = nowMillis,
+        metadata = SupportBundleMetadata(
+            appVersionName = META.versionName,
+            appVersionCode = META.versionCode,
+            flavor = META.channel,
+            androidApi = Build.VERSION.SDK_INT,
+        ),
+        appSummary = SupportAppSummary(
+            installSourceCategory = installSourceCategory(),
+            appVersionName = META.versionName,
+            appVersionCode = META.versionCode,
+            primaryAbi = Build.SUPPORTED_ABIS.firstOrNull() ?: "unknown",
+            androidApi = Build.VERSION.SDK_INT,
+            featureFlags = linkedMapOf(
+                "accessibilityGuard" to settings.accessibilityGuardEnabled,
+                "appBlocker" to settings.enableBlockA11yAppList,
+                "automation" to settings.enableAutomator,
+                "selectorMatching" to settings.enableMatch,
+                "shizuku" to settings.enableShizuku,
+                "usageGuard" to settings.usageGuardEnabled,
+            ),
+        ),
+        capabilitySummary = SupportCapabilitySummary(
+            capabilities = buildMap {
+                allPermissionStates.forEachIndexed { index, permission ->
+                    put("permission_${index + 1}", permission.stateFlow.value)
+                }
+                put("shizukuConnected", shizukuContextFlow.value.ok)
+            },
+        ),
+        diagnosticEvents = DiagnosticLogger.recentEvents().map { record ->
+            SupportDiagnosticEvent(
+                occurredAtMillis = record.occurredAtMinute,
+                event = record.event,
+            )
+        },
+        crashSummaries = recentCrashSummaries(),
+    )
+    val outputFile = sharedDir.resolve("support-$nowMillis.zip")
+    return SupportBundleBuilder().build(outputFile, request)
+}
+
+private fun recentCrashSummaries(): List<SupportCrashSummary> = crashFolder.listFiles()
+    .orEmpty()
+    .asSequence()
+    .filter(File::isFile)
+    .mapNotNull { file ->
+        runCatching { json.decodeFromString<CrashData>(file.readText()) }.getOrNull()
     }
-    tempDir.resolve("shizuku.txt").also {
-        it.writeText(shizukuContextFlow.value.states.joinToString("\n") { state ->
-            state.first + ": " + state.second.toString()
-        })
-        files.add(it)
+    .sortedByDescending(CrashData::occurredAtMinute)
+    .take(100)
+    .map { crash ->
+        SupportCrashSummary(
+            errorCode = crash.errorCode,
+            errorCategory = crash.errorCategory,
+            occurredAtMillis = crash.occurredAtMinute,
+            appFrames = crash.appFrames,
+            count = crash.count,
+        )
     }
-    tempDir.resolve("permission.txt").also {
-        it.writeText(allPermissionStates.joinToString("\n") { state ->
-            state.name + ": " + state.stateFlow.value.toString()
-        })
-        it.appendText("\nappListAuthAbnormalFlow: ${appListAuthAbnormalFlow.value}")
-        files.add(it)
+    .toList()
+
+private fun installSourceCategory(): String {
+    val installer = runCatching {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            app.packageManager.getInstallSourceInfo(META.appId).installingPackageName
+        } else {
+            @Suppress("DEPRECATION")
+            app.packageManager.getInstallerPackageName(META.appId)
+        }
+    }.getOrNull()
+    return when {
+        installer == null -> "local-or-restored"
+        installer.contains("vending", ignoreCase = true) -> "app-store"
+        installer.contains("packageinstaller", ignoreCase = true) -> "package-installer"
+        installer.contains("shell", ignoreCase = true) -> "developer-tool"
+        else -> "other-store"
     }
-    val formattedJson = Json(from = json) {
-        prettyPrint = true
-    }
-    tempDir.resolve("gkd-${META.versionCode}-v${META.versionName}.json").also {
-        it.writeText(formattedJson.encodeToString(META))
-        files.add(it)
-    }
-    val logZipFile = sharedDir.resolve("log-${System.currentTimeMillis()}.zip")
-    ZipUtils.zipFiles(files, logZipFile)
-    tempDir.deleteRecursively()
-    return logZipFile
 }

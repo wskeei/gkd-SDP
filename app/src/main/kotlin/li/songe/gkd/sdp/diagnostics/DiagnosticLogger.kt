@@ -1,5 +1,6 @@
 package li.songe.gkd.sdp.diagnostics
 
+import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import li.songe.gkd.sdp.META
 import li.songe.gkd.sdp.util.json
@@ -22,6 +23,7 @@ object DiagnosticLogger {
     private const val MAX_ROTATED_FILES = 2
     private const val MAX_EVENTS_PER_MINUTE = 20
     private const val EVENT_WINDOW_MILLIS = 60_000L
+    private const val MINUTE_MILLIS = 60_000L
     private const val SALT_FILENAME = "diagnostic-salt.bin"
     private const val ACTIVE_FILENAME = "diagnostic-events.jsonl"
 
@@ -47,8 +49,34 @@ object DiagnosticLogger {
         val nowMillis = System.currentTimeMillis()
         if (!limiter.tryAcquire(event, nowMillis)) return
         executor.execute {
-            runCatching { append(event) }
+            runCatching {
+                append(
+                    DiagnosticEventRecord(
+                        occurredAtMinute = nowMillis.toMinutePrecision(),
+                        event = event,
+                    ),
+                )
+            }
         }
+    }
+
+    fun recentEvents(limit: Int = 500): List<DiagnosticEventRecord> {
+        if (limit <= 0) return emptyList()
+        runCatching { executor.submit {}.get() }
+        val eventFiles = listOf(
+            logFolder.resolve("diagnostic-events.2.jsonl"),
+            logFolder.resolve("diagnostic-events.1.jsonl"),
+            logFolder.resolve(ACTIVE_FILENAME),
+        )
+        return eventFiles.asSequence()
+            .filter(File::isFile)
+            .flatMap { file ->
+                file.useLines { lines ->
+                    lines.mapNotNull { line -> decodeRecord(line, file.lastModified()) }.toList()
+                }.asSequence()
+            }
+            .toList()
+            .takeLast(limit)
     }
 
     fun recordLegacy(
@@ -110,10 +138,21 @@ object DiagnosticLogger {
         .take(12)
         .toList()
 
-    private fun append(event: DiagnosticEvent) {
-        val line = json.encodeToString(event) + "\n"
+    private fun append(record: DiagnosticEventRecord) {
+        val line = json.encodeToString(record) + "\n"
         fileStore.append(line.toByteArray(Charsets.UTF_8))
     }
+
+    private fun decodeRecord(line: String, fallbackTimeMillis: Long): DiagnosticEventRecord? =
+        runCatching { json.decodeFromString<DiagnosticEventRecord>(line) }.getOrNull()
+            ?: runCatching { json.decodeFromString<DiagnosticEvent>(line) }.getOrNull()?.let { event ->
+                DiagnosticEventRecord(
+                    occurredAtMinute = fallbackTimeMillis.toMinutePrecision(),
+                    event = event,
+                )
+            }
+
+    private fun Long.toMinutePrecision(): Long = this - mod(MINUTE_MILLIS)
 
     private fun loadOrCreateInstallationSalt(): ByteArray {
         val saltFile = privateStoreFolder.resolve(SALT_FILENAME)
