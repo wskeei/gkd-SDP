@@ -31,6 +31,41 @@ class UsageGuardRequestLayoutContractTest {
         assertFalse(form.contains("UsageRequestRhythmSummary"))
     }
 
+    @Test
+    fun requestFormConsumesImeInsetsAndRelocatesEveryInputField() {
+        val source = sourceFile(
+            "app/src/main/kotlin/li/songe/gkd/sdp/service/UsageGuardRequestOverlayService.kt",
+        ).readText()
+        val form = source.substringAfter("private fun UsageGuardRequestContent(")
+        val windowParams = source
+            .substringAfter("val params = WindowManager.LayoutParams(")
+            .substringBefore("runCatching { windowManager.addView")
+
+        val imePadding = form.indexOf(".imePadding()")
+        val verticalScroll = form.indexOf(".verticalScroll(formScrollState)")
+        assertTrue(imePadding >= 0)
+        assertTrue(imePadding < verticalScroll)
+
+        assertTrue(form.contains("val newTagInputModifier = rememberImeAwareBringIntoViewModifier()"))
+        assertTrue(form.contains("val reasonInputModifier = rememberImeAwareBringIntoViewModifier()"))
+        assertTrue(form.contains("val customDurationInputModifier = rememberImeAwareBringIntoViewModifier()"))
+        assertTrue(form.contains(".then(newTagInputModifier)"))
+        assertTrue(form.contains(".then(reasonInputModifier)"))
+        assertTrue(form.contains(".then(customDurationInputModifier)"))
+
+        assertTrue(source.contains("val imeVisible = WindowInsets.isImeVisible"))
+        assertTrue(source.contains("LaunchedEffect(isFocused, imeVisible)"))
+        assertTrue(source.contains("requester.bringIntoView()"))
+
+        assertTrue(windowParams.contains("USAGE_GUARD_REQUEST_OVERLAY_FLAGS"))
+        assertTrue(
+            windowParams.contains(
+                "softInputMode = USAGE_GUARD_REQUEST_OVERLAY_SOFT_INPUT_MODE",
+            ),
+        )
+        assertFalse(windowParams.contains("FLAG_LAYOUT_NO_LIMITS"))
+    }
+
     private fun sourceFile(relativePath: String): File {
         var directory = File(System.getProperty("user.dir"))
         repeat(6) {

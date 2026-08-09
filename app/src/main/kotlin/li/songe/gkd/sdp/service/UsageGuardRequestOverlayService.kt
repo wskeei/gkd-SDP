@@ -9,10 +9,15 @@ import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.isImeVisible
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -24,6 +29,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
@@ -31,6 +37,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -301,6 +308,20 @@ class UsageGuardRequestOverlayService : LifecycleService(), SavedStateRegistryOw
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
+private fun rememberImeAwareBringIntoViewModifier(): Modifier {
+    val requester = remember { BringIntoViewRequester() }
+    var isFocused by remember { mutableStateOf(false) }
+    val imeVisible = WindowInsets.isImeVisible
+    LaunchedEffect(isFocused, imeVisible) {
+        if (isFocused) requester.bringIntoView()
+    }
+    return Modifier
+        .bringIntoViewRequester(requester)
+        .onFocusChanged { isFocused = it.isFocused }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
 private fun UsageGuardRequestContent(
     appName: String,
     tags: List<UsageGuardTag>,
@@ -334,6 +355,10 @@ private fun UsageGuardRequestContent(
     var reasonError by remember { mutableStateOf<String?>(null) }
     var durationError by remember { mutableStateOf<String?>(null) }
     var tagsError by remember { mutableStateOf<String?>(null) }
+    val formScrollState = rememberScrollState()
+    val newTagInputModifier = rememberImeAwareBringIntoViewModifier()
+    val reasonInputModifier = rememberImeAwareBringIntoViewModifier()
+    val customDurationInputModifier = rememberImeAwareBringIntoViewModifier()
 
     val effectiveRequestedDurationMinutes = if (showCustomDuration) {
         customMinutesText.toIntOrNull()?.takeIf { it > 0 }
@@ -364,7 +389,8 @@ private fun UsageGuardRequestContent(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .verticalScroll(rememberScrollState())
+                .imePadding()
+                .verticalScroll(formScrollState)
                 .padding(24.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
@@ -440,7 +466,9 @@ private fun UsageGuardRequestContent(
                     OutlinedTextField(
                         value = newTagText,
                         onValueChange = { newTagText = it },
-                        modifier = Modifier.weight(1f),
+                        modifier = Modifier
+                            .weight(1f)
+                            .then(newTagInputModifier),
                         label = { Text("添加标签") },
                         singleLine = true,
                         enabled = !isSubmitting,
@@ -467,7 +495,9 @@ private fun UsageGuardRequestContent(
                     reasonError = null
                     reasonText = it
                 },
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .then(reasonInputModifier),
                 label = { Text("申请理由") },
                 supportingText = {
                     Row(
@@ -525,7 +555,9 @@ private fun UsageGuardRequestContent(
                             customMinutesText = it
                         }
                     },
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .then(customDurationInputModifier),
                     label = { Text("自定义分钟数") },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     singleLine = true,
