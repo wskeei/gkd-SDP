@@ -21,6 +21,10 @@ import li.songe.gkd.sdp.util.UsageGuardReviewPolicy
 import java.time.LocalDate
 
 class UsageGuardReviewWidget : AppWidgetProvider() {
+    override fun onReceive(context: Context, intent: Intent) {
+        if (intent.action in WIDGET_SYSTEM_ACTIONS) super.onReceive(context, intent)
+    }
+
     override fun onUpdate(
         context: Context,
         appWidgetManager: AppWidgetManager,
@@ -64,7 +68,7 @@ internal fun updateUsageGuardReviewWidgets(
                     context,
                     appWidgetId,
                     Intent(context, MainActivity::class.java).apply {
-                        data = Uri.parse("gkd://page?tab=0")
+                        data = Uri.parse("gkd://usage-review")
                         flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
                     },
                     PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,

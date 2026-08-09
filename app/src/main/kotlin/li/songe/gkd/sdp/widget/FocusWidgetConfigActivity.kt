@@ -3,6 +3,7 @@ package li.songe.gkd.sdp.widget
 import android.app.Activity
 import android.appwidget.AppWidgetManager
 import android.content.Context
+import android.content.ComponentName
 import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -29,6 +30,10 @@ class FocusWidgetConfigActivity : ComponentActivity() {
         setResult(RESULT_CANCELED)
 
         val intent = intent
+        if (intent.action != AppWidgetManager.ACTION_APPWIDGET_CONFIGURE) {
+            finish()
+            return
+        }
         val extras = intent.extras
         if (extras != null) {
             appWidgetId = extras.getInt(
@@ -36,7 +41,11 @@ class FocusWidgetConfigActivity : ComponentActivity() {
             )
         }
 
-        if (appWidgetId == AppWidgetManager.INVALID_APPWIDGET_ID) {
+        if (
+            appWidgetId == AppWidgetManager.INVALID_APPWIDGET_ID ||
+            AppWidgetManager.getInstance(this).getAppWidgetInfo(appWidgetId)?.provider !=
+            ComponentName(this, FocusQuickStartWidget::class.java)
+        ) {
             finish()
             return
         }

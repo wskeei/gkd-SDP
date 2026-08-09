@@ -354,7 +354,6 @@ dependencies {
     implementation(libs.json5)
     compileOnly(libs.loc.annotation)
 
-    implementation(libs.kevinnzouWebview)
 
     implementation(libs.vico.compose)
     implementation(libs.vico.compose.m3)

@@ -48,7 +48,7 @@ class UpsertRuleGroupVm(val route: UpsertRuleGroupRoute) : ViewModel() {
 
     var addAppId: String? = null
 
-    fun saveRule() {
+    suspend fun saveRule() {
         val subs = subsMapFlow.value[route.subsId] ?: error("订阅不存在")
         val text = textFlow.value
         if (text.isBlank()) {

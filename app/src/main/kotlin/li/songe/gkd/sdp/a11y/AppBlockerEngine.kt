@@ -1,13 +1,11 @@
 package li.songe.gkd.sdp.a11y
 
-import android.util.Log
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import li.songe.gkd.sdp.META
 import li.songe.gkd.sdp.app
 import li.songe.gkd.sdp.appScope
 import li.songe.gkd.sdp.data.AppGroup
@@ -70,9 +68,7 @@ object AppBlockerEngine {
                     rules = rules.toList(),
                     groups = groups.toList(),
                 )
-                if (META.debuggable) {
-                    Log.d(TAG, "Rules updated: ${rules.size}, Groups: ${groups.size}")
-                }
+                LogUtils.d("app blocker configuration updated", rules.size + groups.size)
                 sdpRuntimeFeatureCoordinator.reconcileCurrentApp("app-blocker-rules-updated")
             }
         }

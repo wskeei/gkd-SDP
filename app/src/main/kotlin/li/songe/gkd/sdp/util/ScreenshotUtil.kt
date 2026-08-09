@@ -99,7 +99,7 @@ class ScreenshotUtil(
                     }
                 }
             } catch (e: Exception) {
-                e.printStackTrace()
+                LogUtils.d("screenshot capture failed", e)
                 imageReader?.setOnImageAvailableListener(null, null)
                 if (cont.isActive) {
                     cont.resumeWithException(e)

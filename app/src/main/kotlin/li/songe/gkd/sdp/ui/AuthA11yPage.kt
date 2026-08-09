@@ -25,6 +25,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -38,11 +39,14 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation3.runtime.NavKey
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 import li.songe.gkd.sdp.META
 import li.songe.gkd.sdp.permission.Manifest_permission_GET_APP_OPS_STATS
 import li.songe.gkd.sdp.permission.writeSecureSettingsState
 import li.songe.gkd.sdp.service.A11yService
+import li.songe.gkd.sdp.service.ExposeService
 import li.songe.gkd.sdp.service.fixRestartAutomatorService
 import li.songe.gkd.sdp.shizuku.SafeAppOpsService
 import li.songe.gkd.sdp.shizuku.shizukuUsedFlow
@@ -66,6 +70,7 @@ import li.songe.gkd.sdp.util.openA11ySettings
 import li.songe.gkd.sdp.util.shFolder
 import li.songe.gkd.sdp.util.throttle
 import li.songe.gkd.sdp.util.toast
+import li.songe.gkd.sdp.store.writeTextAtomically
 
 @Serializable
 data object AuthA11yRoute : NavKey
@@ -75,6 +80,10 @@ fun AuthA11yPage() {
     val mainVm = LocalMainViewModel.current
     val vm = viewModel<AuthA11yVm>()
     val showCopyDlg by vm.showCopyDlgFlow.collectAsState()
+    val commandText by gkdStartCommandTextFlow.collectAsState()
+    LaunchedEffect(showCopyDlg) {
+        if (showCopyDlg) refreshGkdStartCommandText()
+    }
     val writeSecureSettings by writeSecureSettingsState.stateFlow.collectAsState()
     val a11yRunning by A11yService.isRunning.collectAsState()
     val automatorMode by mainVm.automatorModeFlow.collectAsState()
@@ -311,7 +320,7 @@ fun AuthA11yPage() {
     }
 
     ManualAuthDialog(
-        commandText = gkdStartCommandText,
+        commandText = commandText,
         show = showCopyDlg,
         onUpdateShow = {
             vm.showCopyDlgFlow.value = it
@@ -346,25 +355,32 @@ private fun ShizukuAuthButton(
 private val Int.appopsAllow get() = "appops set ${META.appId} ${AppOpsManagerHidden.opToName(this)} allow"
 private val String.pmGrant get() = "pm grant ${META.appId} $this"
 
-val gkdStartCommandText by lazy {
-    val commandText = listOfNotNull(
-        "set -euo pipefail",
-        "echo '> start start.sh'",
-        Manifest.permission.WRITE_SECURE_SETTINGS.pmGrant,
-        Manifest_permission_GET_APP_OPS_STATS.pmGrant,
-        if (AndroidTarget.TIRAMISU) Manifest.permission.POST_NOTIFICATIONS.pmGrant else null,
-        AppOpsManagerHidden.OP_POST_NOTIFICATION.appopsAllow,
-        AppOpsManagerHidden.OP_SYSTEM_ALERT_WINDOW.appopsAllow,
-        if (AndroidTarget.Q) AppOpsManagerHidden.OP_ACCESS_ACCESSIBILITY.appopsAllow else null,
-        if (AndroidTarget.TIRAMISU) AppOpsManagerHidden.OP_ACCESS_RESTRICTED_SETTINGS.appopsAllow else null,
-        if (AndroidTarget.UPSIDE_DOWN_CAKE) AppOpsManagerHidden.OP_FOREGROUND_SERVICE_SPECIAL_USE.appopsAllow else null,
-        if (SafeAppOpsService.supportCreateA11yOverlay) AppOpsManagerHidden.OP_CREATE_ACCESSIBILITY_OVERLAY.appopsAllow else null,
-        "sh ${shFolder.absolutePath}/expose.sh 1",
-        "echo '> start.sh end'",
-    ).joinToString("\n")
-    val file = shFolder.resolve("start.sh")
-    file.writeText(commandText)
-    "adb shell sh ${file.absolutePath}"
+val gkdStartCommandTextFlow = MutableStateFlow("正在生成一次性授权命令…")
+
+suspend fun refreshGkdStartCommandText() {
+    gkdStartCommandTextFlow.value = "正在生成一次性授权命令…"
+    gkdStartCommandTextFlow.value = runCatching {
+        withContext(Dispatchers.IO) {
+            val exposeFile = ExposeService.refreshExternalCommandFile()
+            val commandText = listOfNotNull(
+                "set -euo pipefail",
+                Manifest.permission.WRITE_SECURE_SETTINGS.pmGrant,
+                Manifest_permission_GET_APP_OPS_STATS.pmGrant,
+                if (AndroidTarget.TIRAMISU) Manifest.permission.POST_NOTIFICATIONS.pmGrant else null,
+                AppOpsManagerHidden.OP_POST_NOTIFICATION.appopsAllow,
+                AppOpsManagerHidden.OP_SYSTEM_ALERT_WINDOW.appopsAllow,
+                if (AndroidTarget.Q) AppOpsManagerHidden.OP_ACCESS_ACCESSIBILITY.appopsAllow else null,
+                if (AndroidTarget.TIRAMISU) AppOpsManagerHidden.OP_ACCESS_RESTRICTED_SETTINGS.appopsAllow else null,
+                if (AndroidTarget.UPSIDE_DOWN_CAKE) AppOpsManagerHidden.OP_FOREGROUND_SERVICE_SPECIAL_USE.appopsAllow else null,
+                if (SafeAppOpsService.supportCreateA11yOverlay) AppOpsManagerHidden.OP_CREATE_ACCESSIBILITY_OVERLAY.appopsAllow else null,
+                "sh ${exposeFile.absolutePath}",
+            ).joinToString("\n")
+            val file = shFolder.resolve("start.sh")
+            writeTextAtomically(file, commandText)
+            ExposeService.restrictToOwner(file)
+            "adb shell sh ${file.absolutePath}"
+        }
+    }.getOrElse { "授权命令生成失败，请关闭后重试" }
 }
 
 @Composable

@@ -18,7 +18,6 @@ import android.hardware.input.InputManager
 import android.net.Uri
 import android.os.PowerManager
 import android.provider.Settings
-import android.util.Log
 import android.view.Display
 import android.view.WindowManager
 import android.view.accessibility.AccessibilityManager
@@ -27,9 +26,15 @@ import androidx.core.content.ContextCompat
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.Serializable
 import li.songe.gkd.sdp.a11y.initA11yFeat
 import li.songe.gkd.sdp.data.CrashData
+import li.songe.gkd.sdp.diagnostics.DiagnosticEvent
+import li.songe.gkd.sdp.diagnostics.DiagnosticEventCode
+import li.songe.gkd.sdp.diagnostics.DiagnosticLogger
+import li.songe.gkd.sdp.diagnostics.DiagnosticResult
+import li.songe.gkd.sdp.diagnostics.DiagnosticStage
 import li.songe.gkd.sdp.data.selfAppInfo
 import li.songe.gkd.sdp.notif.initChannel
 import li.songe.gkd.sdp.service.AutoReenableEnforcer
@@ -38,14 +43,15 @@ import li.songe.gkd.sdp.service.initA11yWhiteAppList
 import li.songe.gkd.sdp.shizuku.initShizuku
 import li.songe.gkd.sdp.store.initStore
 import li.songe.gkd.sdp.util.AndroidTarget
+import li.songe.gkd.sdp.util.BackupUtils
 import li.songe.gkd.sdp.util.LogUtils
 import li.songe.gkd.sdp.util.PKG_FLAGS
 import li.songe.gkd.sdp.util.REPOSITORY_URL
-import li.songe.gkd.sdp.util.deviceInfoDesc
 import li.songe.gkd.sdp.util.initAppState
 import li.songe.gkd.sdp.util.initSubsState
 import li.songe.gkd.sdp.util.initToast
 import li.songe.gkd.sdp.util.launchTry
+import li.songe.gkd.sdp.util.retryPendingDataCleanup
 import li.songe.gkd.sdp.util.toast
 import org.lsposed.hiddenapibypass.HiddenApiBypass
 import kotlin.system.exitProcess
@@ -214,22 +220,26 @@ class App : Application() {
         super.onCreate()
         LogUtils.d()
         Thread.setDefaultUncaughtExceptionHandler { t, e ->
-            toast(e.message ?: e.toString())
             LogUtils.d("UncaughtExceptionHandler", t, e)
             val mtime = System.currentTimeMillis()
+            val errorCode = DiagnosticLogger.errorCode(e)
+            toast("应用发生错误（错误码：$errorCode）")
+            DiagnosticLogger.record(
+                DiagnosticEvent(
+                    eventCode = DiagnosticEventCode.CRASH_CAPTURED,
+                    stage = DiagnosticStage.APP,
+                    result = DiagnosticResult.FAILED,
+                    entityHash = errorCode,
+                    count = 1,
+                    errorCategory = DiagnosticLogger.errorCategory(e),
+                ),
+            )
             appScope.launchTry(Dispatchers.IO) {
-                CrashData(
-                    id = mtime,
-                    mtime = mtime,
-                    device = deviceInfoDesc,
-                    androidVersionCode = android.os.Build.VERSION.SDK_INT,
-                    androidVersionName = android.os.Build.VERSION.RELEASE,
+                CrashData.fromThrowable(
+                    occurredAtMillis = mtime,
                     versionCode = META.versionCode,
                     versionName = META.versionName,
-                    name = e::class.java.name,
-                    message = e.message,
-                    thread = t.name,
-                    stackTrace = Log.getStackTraceString(e),
+                    error = e,
                 ).save()
                 delay(1500)
                 if (isActivityVisible) {
@@ -240,6 +250,10 @@ class App : Application() {
             }
         }
         initToast()
+        runBlocking(Dispatchers.IO) {
+            BackupUtils.recoverInterruptedImport()
+            retryPendingDataCleanup()
+        }
         initStore()
         initChannel()
         initAppState()

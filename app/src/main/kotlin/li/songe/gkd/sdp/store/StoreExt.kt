@@ -4,7 +4,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.update
 import li.songe.gkd.sdp.appScope
 import li.songe.gkd.sdp.service.ExposeService
-import li.songe.gkd.sdp.ui.gkdStartCommandText
 import li.songe.gkd.sdp.util.AppListString
 import li.songe.gkd.sdp.util.launchTry
 import li.songe.gkd.sdp.util.toast
@@ -75,13 +74,13 @@ fun checkAppBlockMatch(appId: String): Boolean {
 fun initStore() = appScope.launchTry(Dispatchers.IO) {
     // preload
     storeFlow.value
+    initDisplayPreferenceBackup()
     actionCountFlow.value
     blockMatchAppListFlow.value
     blockA11yAppListFlow.value
     a11yScopeAppListFlow.value
     accessibilityGuardSessionFlow.value
-    gkdStartCommandText
-    ExposeService.initCommandFile()
+    ExposeService.clearCommandFiles()
 }
 
 fun switchStoreEnableMatch() {

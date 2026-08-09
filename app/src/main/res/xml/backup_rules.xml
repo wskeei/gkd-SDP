@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<full-backup-content>
+    <!-- Any include changes the policy to deny-by-default across every domain. -->
+    <include domain="file" path="store/app_theme.json" />
+    <include domain="file" path="store/display_density.json" />
+    <include domain="file" path="store/language.json" />
+</full-backup-content>

@@ -173,7 +173,6 @@ fun SubsAppGroupListPage(route: SubsAppGroupListRoute) {
                                                 apps = subs.apps.filter { a -> a.id != appId }
                                             )
                                         )
-                                        DbSet.subsConfigDao.deleteAppConfig(subsItemId, appId)
                                     } else {
                                         updateSubscription(
                                             subs.copy(

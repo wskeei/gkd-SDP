@@ -16,6 +16,7 @@ import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.withContext
 import li.songe.gkd.sdp.a11y.useA11yServiceEnabledFlow
 import li.songe.gkd.sdp.a11y.useEnabledA11yServicesFlow
@@ -23,8 +24,12 @@ import li.songe.gkd.sdp.data.CrashData
 import li.songe.gkd.sdp.data.RawSubscription
 import li.songe.gkd.sdp.data.SubsItem
 import li.songe.gkd.sdp.db.DbSet
+import li.songe.gkd.sdp.diagnostics.DiagnosticLogger
 import li.songe.gkd.sdp.permission.AuthReason
 import li.songe.gkd.sdp.permission.shizukuGrantedState
+import li.songe.gkd.sdp.remote.LegacyDeepLinkTarget
+import li.songe.gkd.sdp.remote.SemanticDeepLinkTarget
+import li.songe.gkd.sdp.remote.WebOriginPolicy
 import li.songe.gkd.sdp.service.A11yService
 import li.songe.gkd.sdp.shizuku.shizukuContextFlow
 import li.songe.gkd.sdp.shizuku.uiAutomationFlow
@@ -32,10 +37,13 @@ import li.songe.gkd.sdp.shizuku.updateBinderMutex
 import li.songe.gkd.sdp.store.createTextFlow
 import li.songe.gkd.sdp.store.storeFlow
 import li.songe.gkd.sdp.ui.AdvancedPageRoute
+import li.songe.gkd.sdp.ui.ActionLogRoute
 import li.songe.gkd.sdp.ui.AppOpsAllowRoute
 import li.songe.gkd.sdp.ui.CrashReportRoute
 import li.songe.gkd.sdp.ui.FocusLockRoute
 import li.songe.gkd.sdp.ui.SnapshotPageRoute
+import li.songe.gkd.sdp.ui.UsageGuardReviewRoute
+import li.songe.gkd.sdp.ui.UsageGuardRoute
 import li.songe.gkd.sdp.ui.WebViewRoute
 import li.songe.gkd.sdp.ui.component.AlertDialogOptions
 import li.songe.gkd.sdp.ui.component.InputSubsLinkOption
@@ -67,7 +75,6 @@ import li.songe.gkd.sdp.util.stopCoroutine
 import li.songe.gkd.sdp.util.subsFolder
 import li.songe.gkd.sdp.util.subsItemsFlow
 import li.songe.gkd.sdp.util.toast
-import li.songe.gkd.sdp.util.updateSubsMutex
 import li.songe.gkd.sdp.util.updateSubscription
 import li.songe.loc.Loc
 import rikka.shizuku.Shizuku
@@ -146,27 +153,27 @@ class MainViewModel : BaseViewModel(), OnSimpleLife by DefaultSimpleLifeImpl() {
         it.mapIndexed { i, appId -> appId to i }.toMap()
     }.debounce(500).stateInit(emptyMap())
 
+    private val addOrModifySubsMutex = Mutex()
+
     fun addOrModifySubs(
         url: String,
         oldItem: SubsItem? = null,
     ) = viewModelScope.launchTry(Dispatchers.IO) {
-        if (updateSubsMutex.mutex.isLocked) return@launchTry
-        updateSubsMutex.withStateLock {
+        if (!addOrModifySubsMutex.tryLock()) return@launchTry
+        try {
             val subItems = subsItemsFlow.value
             val text = try {
                 client.get(url).bodyAsText()
             } catch (e: Exception) {
-                e.printStackTrace()
                 LogUtils.d(e)
-                toast("下载订阅文件失败\n${e.message}".trimEnd())
+                toast("下载订阅文件失败\n${DiagnosticLogger.userMessage(e)}")
                 return@launchTry
             }
             val newSubsRaw = try {
                 RawSubscription.parse(text)
             } catch (e: Exception) {
-                e.printStackTrace()
                 LogUtils.d(e)
-                toast("解析订阅文件失败\n${e.message}".trimEnd())
+                toast("解析订阅文件失败\n${DiagnosticLogger.userMessage(e)}")
                 return@launchTry
             }
             if (oldItem == null) {
@@ -189,14 +196,10 @@ class MainViewModel : BaseViewModel(), OnSimpleLife by DefaultSimpleLifeImpl() {
                 updateUrl = url,
                 order = if (subItems.isEmpty()) 1 else (subItems.maxBy { it.order }.order + 1)
             )
-            updateSubscription(newSubsRaw)
-            if (oldItem == null) {
-                DbSet.subsItemDao.insert(newItem)
-                toast("成功添加订阅")
-            } else {
-                DbSet.subsItemDao.update(newItem)
-                toast("成功修改订阅")
-            }
+            updateSubscription(newSubsRaw, newItem)
+            toast(if (oldItem == null) "成功添加订阅" else "成功修改订阅")
+        } finally {
+            addOrModifySubsMutex.unlock()
         }
     }
 
@@ -226,33 +229,57 @@ class MainViewModel : BaseViewModel(), OnSimpleLife by DefaultSimpleLifeImpl() {
 
     fun handleGkdUri(uri: Uri) {
         val notFoundToast = { toast("未知URI\n${uri}") }
-        when (uri.host) {
-            "page" -> when (uri.path) {
-                "" -> {
-                    val tab = uri.getQueryParameter("tab")?.toIntOrNull()
-                    if (tab != null && BottomNavItem.allSubObjects.any { it.key == tab }) {
-                        tabFlow.value = tab
-                    }
-                }
-
-                "/1" -> navigatePage(AdvancedPageRoute)
-                "/2" -> navigatePage(SnapshotPageRoute)
-                "/3" -> navigatePage(AppOpsAllowRoute)
-                "/4" -> navigatePage(FocusLockRoute)
-                else -> notFoundToast()
+        when (WebOriginPolicy.semanticDeepLinkTarget(uri.toString())) {
+            SemanticDeepLinkTarget.OVERVIEW -> {
+                tabFlow.value = BottomNavItem.Control.key
+                return
             }
-
-            "invoke" -> when (uri.path) {
-                "/1" -> openWeChatScaner()
-                else -> notFoundToast()
+            SemanticDeepLinkTarget.SELF_CONTROL -> {
+                navigatePage(FocusLockRoute)
+                return
             }
-
-            else -> notFoundToast()
+            SemanticDeepLinkTarget.SETTINGS -> {
+                tabFlow.value = BottomNavItem.Settings.key
+                return
+            }
+            SemanticDeepLinkTarget.USAGE_GUARD -> {
+                navigatePage(UsageGuardRoute)
+                return
+            }
+            SemanticDeepLinkTarget.USAGE_REVIEW -> {
+                navigatePage(UsageGuardReviewRoute)
+                return
+            }
+            SemanticDeepLinkTarget.ACTION_LOG -> {
+                navigatePage(ActionLogRoute())
+                return
+            }
+            SemanticDeepLinkTarget.RULE_SUBSCRIPTIONS -> {
+                tabFlow.value = BottomNavItem.SubsManage.key
+                return
+            }
+            SemanticDeepLinkTarget.RULE_APPS -> {
+                tabFlow.value = BottomNavItem.AppList.key
+                return
+            }
+            null -> Unit
+        }
+        when (WebOriginPolicy.legacyDeepLinkTarget(uri.toString())) {
+            LegacyDeepLinkTarget.OVERVIEW -> tabFlow.value = BottomNavItem.Control.key
+            LegacyDeepLinkTarget.SUBSCRIPTIONS -> tabFlow.value = BottomNavItem.SubsManage.key
+            LegacyDeepLinkTarget.APPS -> tabFlow.value = BottomNavItem.AppList.key
+            LegacyDeepLinkTarget.SETTINGS -> tabFlow.value = BottomNavItem.Settings.key
+            LegacyDeepLinkTarget.ADVANCED -> navigatePage(AdvancedPageRoute)
+            LegacyDeepLinkTarget.SNAPSHOT -> navigatePage(SnapshotPageRoute)
+            LegacyDeepLinkTarget.APP_OPS -> navigatePage(AppOpsAllowRoute)
+            LegacyDeepLinkTarget.SELF_CONTROL -> navigatePage(FocusLockRoute)
+            LegacyDeepLinkTarget.WECHAT_SCANNER -> openWeChatScaner()
+            null -> notFoundToast()
         }
     }
 
     fun handleIntent(intent: Intent) = viewModelScope.launchTry {
-        LogUtils.d(intent)
+        LogUtils.d("handleIntent")
         val uri = intent.data?.normalizeScheme()
         val source = intent.getStringExtra(activityNavSourceName)
         if (uri?.scheme == "gkd") {
@@ -348,20 +375,22 @@ class MainViewModel : BaseViewModel(), OnSimpleLife by DefaultSimpleLifeImpl() {
         viewModelScope.launchTry(Dispatchers.IO) {
             val subsItems = DbSet.subsItemDao.queryAll()
             if (!subsItems.any { s -> s.id == LOCAL_SUBS_ID }) {
-                if (!subsFolder.resolve("${LOCAL_SUBS_ID}.json").exists()) {
-                    updateSubscription(
-                        RawSubscription(
-                            id = LOCAL_SUBS_ID,
-                            name = "本地订阅",
-                            version = 0
-                        )
+                val localFile = subsFolder.resolve("${LOCAL_SUBS_ID}.json")
+                val localSubscription = if (localFile.exists()) {
+                    RawSubscription.parse(localFile.readText(), json5 = false)
+                } else {
+                    RawSubscription(
+                        id = LOCAL_SUBS_ID,
+                        name = "本地订阅",
+                        version = 0,
                     )
                 }
-                DbSet.subsItemDao.insert(
-                    SubsItem(
+                updateSubscription(
+                    subscription = localSubscription,
+                    subsItem = SubsItem(
                         id = LOCAL_SUBS_ID,
                         order = subsItems.minByOrNull { it.order }?.order ?: 0,
-                    )
+                    ),
                 )
             }
         }
@@ -395,7 +424,7 @@ class MainViewModel : BaseViewModel(), OnSimpleLife by DefaultSimpleLifeImpl() {
                 !list.any { f -> name == f.filename }
             }?.forEach {
                 val mtime = Files.getLastModifiedTime(it.toPath()).toMillis()
-                if (t - mtime > 30.days.inWholeMilliseconds) {
+                if (t - mtime > 7.days.inWholeMilliseconds) {
                     it.delete()
                 }
             }

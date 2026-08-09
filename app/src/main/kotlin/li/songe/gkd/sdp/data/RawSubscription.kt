@@ -15,6 +15,7 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.long
 import li.songe.gkd.sdp.a11y.typeInfo
+import li.songe.gkd.sdp.diagnostics.DiagnosticLogger
 import li.songe.gkd.sdp.util.LOCAL_SUBS_IDS
 import li.songe.gkd.sdp.util.LogUtils
 import li.songe.gkd.sdp.util.ScreenUtils
@@ -297,9 +298,8 @@ data class RawSubscription(
                 }
             } catch (e: Exception) {
                 // 可能存在 1/0 导致错误
-                e.printStackTrace()
                 LogUtils.d("Position.calc", e)
-                toast(e.message ?: e.stackTraceToString())
+                toast(DiagnosticLogger.userMessage(e))
             }
             return null
         }
@@ -662,7 +662,7 @@ data class RawSubscription(
                         }
                     }
                 } catch (e: Exception) {
-                    e.printStackTrace()
+                    LogUtils.d("selector expression rejected", e)
                     null
                 }
             } else {

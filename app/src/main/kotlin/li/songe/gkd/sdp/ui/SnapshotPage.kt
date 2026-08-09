@@ -71,6 +71,7 @@ import li.songe.gkd.sdp.util.SnapshotExt
 import li.songe.gkd.sdp.util.UriUtils
 import li.songe.gkd.sdp.util.appInfoMapFlow
 import li.songe.gkd.sdp.util.copyText
+import li.songe.gkd.sdp.util.createGkdTempDir
 import li.songe.gkd.sdp.util.launchAsFn
 import li.songe.gkd.sdp.util.saveFileToDownloads
 import li.songe.gkd.sdp.util.shareFile
@@ -122,10 +123,7 @@ fun SnapshotPage() {
                                 text = "确定删除所有快照记录?",
                                 error = true,
                             )
-                            snapshots.forEach { s ->
-                                SnapshotExt.removeSnapshot(s.id)
-                            }
-                            DbSet.snapshotDao.deleteAll()
+                            SnapshotExt.deleteSnapshots(snapshots)
                         })
                     )
                 }
@@ -261,19 +259,34 @@ fun SnapshotPage() {
                             val uri = context.pickContentLauncher.launchForImageResult()
                             val oldBitmap =
                                 BitmapFactory.decodeFile(snapshotVal.screenshotFile.absolutePath)
-                            val newBytes = UriUtils.uri2Bytes(uri)
-                            val newBitmap =
-                                BitmapFactory.decodeByteArray(newBytes, 0, newBytes.size)
-                            if (oldBitmap.width == newBitmap.width && oldBitmap.height == newBitmap.height) {
-                                snapshotVal.screenshotFile.writeBytes(newBytes)
-                                if (snapshotVal.githubAssetId != null) {
-                                    // 当本地快照变更时, 移除快照链接
-                                    DbSet.snapshotDao.deleteGithubAssetId(snapshotVal.id)
+                            val replacementDir = createGkdTempDir()
+                            try {
+                                val replacementFile = replacementDir.resolve("replacement-image")
+                                UriUtils.copyUriToFile(
+                                    uri = uri,
+                                    target = replacementFile,
+                                    maxBytes = 32L * 1024L * 1024L,
+                                )
+                                val newBitmap = BitmapFactory.decodeFile(replacementFile.absolutePath)
+                                if (oldBitmap != null && newBitmap != null &&
+                                    oldBitmap.width == newBitmap.width &&
+                                    oldBitmap.height == newBitmap.height
+                                ) {
+                                    replacementFile.copyTo(
+                                        target = snapshotVal.screenshotFile,
+                                        overwrite = true,
+                                    )
+                                    if (snapshotVal.githubAssetId != null) {
+                                        // 当本地快照变更时, 移除快照链接
+                                        DbSet.snapshotDao.deleteGithubAssetId(snapshotVal.id)
+                                    }
+                                    toast("替换成功")
+                                    selectedSnapshot = null
+                                } else {
+                                    toast("截图尺寸不一致或文件不可读取，无法替换")
                                 }
-                                toast("替换成功")
-                                selectedSnapshot = null
-                            } else {
-                                toast("截图尺寸不一致, 无法替换")
+                            } finally {
+                                replacementDir.deleteRecursively()
                             }
                         }))
                         .then(modifier)
@@ -288,10 +301,7 @@ fun SnapshotPage() {
                                 text = "确定删除当前快照吗?",
                                 error = true,
                             )
-                            DbSet.snapshotDao.delete(snapshotVal)
-                            withContext(Dispatchers.IO) {
-                                SnapshotExt.removeSnapshot(snapshotVal.id)
-                            }
+                            SnapshotExt.deleteSnapshot(snapshotVal)
                             toast("删除成功")
                         }))
                         .then(modifier), color = colorScheme.error

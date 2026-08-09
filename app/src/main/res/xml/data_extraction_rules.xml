@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<data-extraction-rules>
+    <cloud-backup>
+        <!-- Any include establishes a deny-by-default allowlist across every domain. -->
+        <include domain="file" path="store/app_theme.json" />
+        <include domain="file" path="store/display_density.json" />
+        <include domain="file" path="store/language.json" />
+    </cloud-backup>
+    <device-transfer>
+        <include domain="file" path="store/app_theme.json" />
+        <include domain="file" path="store/display_density.json" />
+        <include domain="file" path="store/language.json" />
+    </device-transfer>
+</data-extraction-rules>

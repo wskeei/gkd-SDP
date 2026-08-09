@@ -78,7 +78,6 @@ permissions = "com.github.getActivity:XXPermissions:28.2"
 device = "com.github.getActivity:DeviceCompat:2.6"
 json5 = "li.songe:json5:0.5.0"
 activityResultLauncher = "com.github.DylanCaiCoding:ActivityResultLauncher:1.1.2"
-kevinnzouWebview = "io.github.kevinnzou:compose-webview:0.33.6"
 
 [plugins]
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }

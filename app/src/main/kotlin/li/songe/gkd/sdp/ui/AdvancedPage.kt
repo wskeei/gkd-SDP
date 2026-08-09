@@ -58,6 +58,9 @@ import li.songe.gkd.sdp.permission.canDrawOverlaysState
 import li.songe.gkd.sdp.permission.foregroundServiceSpecialUseState
 import li.songe.gkd.sdp.permission.notificationState
 import li.songe.gkd.sdp.permission.requiredPermission
+import li.songe.gkd.sdp.remote.CleartextOriginAuthorizations
+import li.songe.gkd.sdp.remote.RemoteListenMode
+import li.songe.gkd.sdp.remote.RemoteScope
 import li.songe.gkd.sdp.permission.shizukuGrantedState
 import li.songe.gkd.sdp.service.ActivityService
 import li.songe.gkd.sdp.service.ButtonService
@@ -85,6 +88,7 @@ import li.songe.gkd.sdp.ui.style.titleItemPadding
 import li.songe.gkd.sdp.util.AndroidTarget
 import li.songe.gkd.sdp.util.ShortUrlSet
 import li.songe.gkd.sdp.util.appInfoMapFlow
+import li.songe.gkd.sdp.util.copyText
 import li.songe.gkd.sdp.util.launchAsFn
 import li.songe.gkd.sdp.util.throttle
 import li.songe.gkd.sdp.util.toast
@@ -368,6 +372,7 @@ fun AdvancedPage() {
             val server by HttpService.httpServerFlow.collectAsState()
             val httpServerRunning = server != null
             val localNetworkIps by HttpService.localNetworkIpsFlow.collectAsState()
+            val remoteSession by HttpService.remoteSessionStateFlow.collectAsState()
 
             Text(
                 text = "HTTP",
@@ -407,7 +412,22 @@ fun AdvancedPage() {
                     Column(
                         modifier = Modifier.itemPadding()
                     ) {
-                        Text(text = "点击下方链接即可连接")
+                        Text(
+                            text = if (remoteSession.mode == RemoteListenMode.LOCAL_ONLY) {
+                                "监听范围：仅本机"
+                            } else {
+                                val remainingMinutes = remoteSession.accessExpiresAtMillis
+                                    ?.let { ((it - System.currentTimeMillis()).coerceAtLeast(0) + 59_999) / 60_000 }
+                                    ?: 0
+                                "监听范围：局域网｜剩余 $remainingMinutes 分钟"
+                            },
+                        )
+                        remoteSession.pairingCode?.let { code ->
+                            Text(text = "一次性配对码：$code（60 秒内有效）")
+                        }
+                        remoteSession.clientSummary?.let { summary ->
+                            Text(text = "已连接客户端：$summary")
+                        }
                         Row {
                             val localUrl = "http://127.0.0.1:${store.httpServerPort}"
                             Text(
@@ -415,21 +435,54 @@ fun AdvancedPage() {
                                 color = MaterialTheme.colorScheme.primary,
                                 style = LocalTextStyle.current.copy(textDecoration = TextDecoration.Underline),
                                 modifier = Modifier.clickable(onClick = throttle {
-                                    mainVm.openUrl(localUrl)
+                                    copyText(localUrl)
+                                    toast("已复制本机地址")
                                 }),
                             )
                             Spacer(modifier = Modifier.width(2.dp))
-                            Text(text = "仅本设备访问")
+                            Text(text = "点击复制")
                         }
-                        localNetworkIps.forEach { host ->
-                            val lanUrl = "http://${host}:${store.httpServerPort}"
-                            Text(
-                                text = lanUrl,
-                                color = MaterialTheme.colorScheme.primary,
-                                style = LocalTextStyle.current.copy(textDecoration = TextDecoration.Underline),
-                                modifier = Modifier.clickable(onClick = throttle {
-                                    mainVm.openUrl(lanUrl)
-                                })
+                        if (remoteSession.mode == RemoteListenMode.LAN) {
+                            localNetworkIps.forEach { host ->
+                                val lanUrl = "http://${host}:${store.httpServerPort}"
+                                Text(
+                                    text = lanUrl,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    style = LocalTextStyle.current.copy(textDecoration = TextDecoration.Underline),
+                                    modifier = Modifier.clickable(onClick = throttle {
+                                        copyText(lanUrl)
+                                        toast("已复制局域网地址")
+                                    }),
+                                )
+                            }
+                            TextButton(onClick = HttpService::disconnectLanSession) {
+                                Text("立即断开局域网会话")
+                            }
+                        } else {
+                            TextButton(onClick = HttpService::startLanSession) {
+                                Text("开启 15 分钟局域网调试")
+                            }
+                        }
+                        Text(
+                            text = "授权范围",
+                            style = MaterialTheme.typography.titleSmall,
+                        )
+                        RemoteScope.entries.forEach { scope ->
+                            TextSwitch(
+                                title = remoteScopeLabel(scope),
+                                subtitle = if (scope in setOf(
+                                        RemoteScope.SERVER_INFO,
+                                        RemoteScope.SNAPSHOT_LIST,
+                                    )
+                                ) {
+                                    "基础只读范围"
+                                } else {
+                                    "敏感范围，默认关闭"
+                                },
+                                checked = scope in remoteSession.enabledScopes,
+                                onCheckedChange = { enabled ->
+                                    HttpService.setRemoteScope(scope, enabled)
+                                },
                             )
                         }
                     }
@@ -457,6 +510,22 @@ fun AdvancedPage() {
                             }
                         }
                     )
+                    val cleartextOrigins by CleartextOriginAuthorizations.originsFlow.collectAsState()
+                    if (cleartextOrigins.isNotEmpty()) {
+                        Text(
+                            text = "已授权明文来源",
+                            style = MaterialTheme.typography.titleSmall,
+                        )
+                        cleartextOrigins.sorted().forEach { origin ->
+                            SettingItem(
+                                title = origin,
+                                subtitle = "点击撤销；后续更新请求会立即拒绝",
+                                imageVector = PerfIcon.Delete,
+                                onClickLabel = "撤销明文来源授权",
+                                onClick = { CleartextOriginAuthorizations.revoke(origin) },
+                            )
+                        }
+                    }
                 }
             }
 
@@ -641,4 +710,14 @@ fun AdvancedPage() {
             Spacer(modifier = Modifier.height(EmptyHeight))
         }
     }
+}
+
+private fun remoteScopeLabel(scope: RemoteScope): String = when (scope) {
+    RemoteScope.SERVER_INFO -> "服务信息"
+    RemoteScope.SNAPSHOT_LIST -> "快照列表"
+    RemoteScope.VIEW_SNAPSHOT -> "查看快照/截图"
+    RemoteScope.CAPTURE_SNAPSHOT -> "捕获快照"
+    RemoteScope.DELETE_SNAPSHOT -> "删除快照"
+    RemoteScope.UPDATE_SUBSCRIPTION -> "更新内存订阅"
+    RemoteScope.EXEC_SELECTOR -> "执行选择器"
 }

@@ -133,7 +133,6 @@ class HomeVm : BaseViewModel() {
     val showToastSettingsDlgFlow = MutableStateFlow(false)
     val showA11yBlockDlgFlow = MutableStateFlow(false)
     val showBackupDlgFlow = MutableStateFlow(false)
-    val showExportBackupDlgFlow = MutableStateFlow(false)
 
     private fun homeClock() = HomeClock(
         date = LocalDate.now(),

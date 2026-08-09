@@ -1,5 +1,6 @@
 package li.songe.gkd.sdp.ui.style
 
+import android.content.res.Configuration
 import android.view.accessibility.AccessibilityManager
 import androidx.activity.compose.LocalActivity
 import androidx.compose.animation.animateColorAsState
@@ -23,16 +24,22 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Density
 import androidx.core.view.WindowInsetsControllerCompat
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import li.songe.gkd.sdp.app
+import li.songe.gkd.sdp.store.DisplayPreferenceUiPolicy
 import li.songe.gkd.sdp.store.storeFlow
 import li.songe.gkd.sdp.ui.share.LocalDarkTheme
 import li.songe.gkd.sdp.ui.share.LocalIsTalkbackEnabled
 import li.songe.gkd.sdp.util.AndroidTarget
+import java.util.Locale
 
 private val LightColorScheme = lightColorScheme()
 private val DarkColorScheme = darkColorScheme()
@@ -43,29 +50,52 @@ fun AppTheme(
     content: @Composable () -> Unit,
 ) {
     val scope = rememberCoroutineScope()
-    val enableDarkThemeFlow = remember {
-        storeFlow.map { it.enableDarkTheme }.debounce(300).stateIn(
-            scope, SharingStarted.Eagerly, storeFlow.value.enableDarkTheme
+    val baseConfiguration = LocalConfiguration.current
+    val systemLanguageTag = remember(baseConfiguration) {
+        baseConfiguration.locales[0].toLanguageTag().ifBlank { "zh-CN" }
+    }
+    val displayPreferencesFlow = remember(systemLanguageTag) {
+        storeFlow.map {
+            DisplayPreferenceUiPolicy.resolve(it, systemLanguageTag)
+        }.debounce(300).stateIn(
+            scope,
+            SharingStarted.Eagerly,
+            DisplayPreferenceUiPolicy.resolve(storeFlow.value, systemLanguageTag),
         )
     }
-    val enableDynamicColorFlow = remember {
-        storeFlow.map { it.enableDynamicColor }.debounce(300).stateIn(
-            scope, SharingStarted.Eagerly, storeFlow.value.enableDynamicColor
-        )
-    }
-    val enableDarkTheme by enableDarkThemeFlow.collectAsState()
-    val enableDynamicColor by enableDynamicColorFlow.collectAsState()
+    val displayPreferences by displayPreferencesFlow.collectAsState()
     val systemInDarkTheme = isSystemInDarkTheme()
-    val darkTheme = (enableDarkTheme ?: systemInDarkTheme).let {
+    val darkTheme = (displayPreferences.enableDarkTheme ?: systemInDarkTheme).let {
         if (invertedTheme) !it else it
     }
     val colorScheme = when {
-        AndroidTarget.S && enableDynamicColor && darkTheme -> dynamicDarkColorScheme(app)
-        AndroidTarget.S && enableDynamicColor && !darkTheme -> dynamicLightColorScheme(app)
+        AndroidTarget.S && displayPreferences.enableDynamicColor && darkTheme ->
+            dynamicDarkColorScheme(app)
+        AndroidTarget.S && displayPreferences.enableDynamicColor && !darkTheme ->
+            dynamicLightColorScheme(app)
         darkTheme -> DarkColorScheme
         else -> LightColorScheme
     }
 
+    val baseDensity = LocalDensity.current
+    val scaledDensity = remember(baseDensity, displayPreferences.densityScale) {
+        Density(
+            density = baseDensity.density * displayPreferences.densityScale,
+            fontScale = baseDensity.fontScale,
+        )
+    }
+    val baseContext = LocalContext.current
+    val localizedConfiguration = remember(
+        baseConfiguration,
+        displayPreferences.languageTag,
+    ) {
+        Configuration(baseConfiguration).apply {
+            setLocale(Locale.forLanguageTag(displayPreferences.languageTag))
+        }
+    }
+    val localizedContext = remember(baseContext, localizedConfiguration) {
+        baseContext.createConfigurationContext(localizedConfiguration)
+    }
     val activity = LocalActivity.current
     if (activity != null) {
         LaunchedEffect(darkTheme) {
@@ -91,6 +121,10 @@ fun AppTheme(
         }
     }
     CompositionLocalProvider(
+        LocalContext provides localizedContext,
+        LocalActivity provides activity,
+        LocalConfiguration provides localizedConfiguration,
+        LocalDensity provides scaledDensity,
         LocalDarkTheme provides darkTheme,
         LocalIsTalkbackEnabled provides isTalkbackEnabled
     ) {

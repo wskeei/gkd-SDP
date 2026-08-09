@@ -9,4 +9,5 @@ class CrashReportVm : BaseViewModel() {
         tempCrashDataList = emptyList()
         v
     }
+    val crashSummaries = crashDataList.map { it.summaryText }
 }

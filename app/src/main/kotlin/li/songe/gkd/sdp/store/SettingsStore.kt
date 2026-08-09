@@ -31,6 +31,8 @@ data class SettingsStore(
     val hideSnapshotStatusBar: Boolean = false,
     val enableDarkTheme: Boolean? = null,
     val enableDynamicColor: Boolean = true,
+    val displayDensityScale: Float = 1f,
+    val languageTag: String = "",
     val showSaveSnapshotToast: Boolean = true,
     val useSystemToast: Boolean = false,
     val useCustomNotifText: Boolean = false,

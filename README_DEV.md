@@ -283,7 +283,15 @@ Filesystem locations are defined in [`app/src/main/kotlin/li/songe/gkd/sdp/util/
 - `log/`
 - `sh/`
 
-`ExposeService` also writes a helper shell script to `sh/expose.sh`.
+`ExposeService` only writes `sh/expose.sh` while the user is viewing the command-authorization flow. The script and `start.sh` use mode `0600`, expire after five minutes, and carry a single-use action-bound capability. Only the token hash, action, expiry and consumption state are persisted in `private-store`; startup removes stale command files.
+
+### Remote and web security boundaries
+
+`HttpService` listens on `127.0.0.1` by default. Listening on `0.0.0.0` requires the in-app “15-minute LAN debugging” action and automatically returns to loopback on timeout, lock screen, stop or explicit disconnect. Every API route except the local static Inspector and pairing endpoint requires an 8-digit challenge exchange, a 256-bit bearer token bound to one client IP/User-Agent/origin, an enabled `RemoteScope`, the rolling rate limit, and the request/response size limits. Do not add a route without assigning one exact scope in `HttpService`.
+
+The Inspector is bundled under `assets/http-inspector`; it must not load remote executable code. Static and mirrored document responses retain CSP, `nosniff` and `no-store`. `WebViewPage` uses the platform WebView directly: only `https://gkd.li` is a main-frame origin, `gkd://` is restricted to the internal route allowlist, other HTTPS links leave the app, and HTTP/file/content/data/javascript/intent navigation is blocked. File/content access, mixed content, third-party cookies and JavaScript interfaces remain disabled.
+
+Global cleartext transport remains enabled only for user-supplied HTTP subscriptions. `CleartextOriginInterceptor` rejects HTTP before connection unless the user explicitly authorizes its normalized `scheme://host:port`; redirects are evaluated again. Project URLs, WebView and update checks stay HTTPS-only. Do not reuse the subscription authorization list for other network clients.
 
 ## Important Mental Models
 
@@ -318,7 +326,13 @@ Gradle is configured with `-Dfile.encoding=UTF-8` in [`gradle.properties`](gradl
 
 ## Build and Test
 
-The authoritative verification environment is GitHub Actions with JDK 21. Pull requests use `ci.yml`; pushes to `main` produce a short-lived Nightly artifact through `nightly.yml`. This project intentionally does not require Gradle to run locally; local checks can be limited to source inspection, shell tests, and `git diff --check`. Push the branch and inspect the Draft PR checks with `gh pr checks --watch`.
+The authoritative verification environment is GitHub Actions with JDK 21. Pull requests use `ci.yml`; pushes to `main` produce a short-lived Nightly artifact through `nightly.yml`. Local Android builds use JDK 21 and an Android SDK that contains the configured compile SDK. Validate those prerequisites before running Gradle:
+
+```bash
+bash scripts/check-dev-environment.sh --android
+```
+
+Use `--ci` for a lightweight check of JDK 21, Python, Git, and the committed executable Gradle wrapper. The environment check reports capability names only; it does not print local paths or environment variable values. When the complete Android toolchain is unavailable, run the applicable shell/Python checks and `git diff --check`, then use GitHub Actions as the authoritative Android result.
 
 Formal GKD-SDP versions are maintained separately from the upstream GKD base. The source of truth is [`gradle/version.properties`](gradle/version.properties), and [`scripts/verify-release-metadata.sh`](scripts/verify-release-metadata.sh) checks tag, changelog, and `versionCode` rules. Do not add hard-coded version values to workflows or documentation; see [`docs/releasing.md`](docs/releasing.md) for the release procedure.
 

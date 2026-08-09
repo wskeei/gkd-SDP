@@ -69,6 +69,9 @@ data class SubsItem(
         @Query("SELECT * FROM subs_item ORDER BY `order`")
         fun query(): Flow<List<SubsItem>>
 
+        @Query("SELECT * FROM subs_item WHERE id=:id")
+        suspend fun queryById(id: Long): SubsItem?
+
         @Query("SELECT * FROM subs_item ORDER BY `order`")
         fun queryAll(): List<SubsItem>
 

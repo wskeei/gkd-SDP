@@ -21,6 +21,7 @@ import li.songe.gkd.sdp.data.AppInstallLog
 import li.songe.gkd.sdp.data.DateCount
 import li.songe.gkd.sdp.data.MonitoredApp
 import li.songe.gkd.sdp.db.DbSet
+import li.songe.gkd.sdp.diagnostics.DiagnosticLogger
 import li.songe.gkd.sdp.ui.share.BaseViewModel
 import li.songe.gkd.sdp.util.toast
 import java.io.File
@@ -378,7 +379,7 @@ class AppInstallMonitorVm : BaseViewModel() {
             })
             
         } catch (e: Exception) {
-            toast("导出失败: ${e.message}")
+            toast("导出失败：${DiagnosticLogger.userMessage(e)}")
         }
     }
 }

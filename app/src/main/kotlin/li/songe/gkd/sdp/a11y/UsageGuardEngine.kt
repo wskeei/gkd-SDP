@@ -74,6 +74,10 @@ object UsageGuardEngine {
         }
     }
 
+    fun reconcileAfterConfigurationImport() {
+        sdpRuntimeFeatureCoordinator.reconcileCurrentApp("usage-guard-backup-import")
+    }
+
     fun onAppChanged(
         packageName: String,
         owner: SdpRuntimeFeatureCoordinator.RuntimeOwner? = null,

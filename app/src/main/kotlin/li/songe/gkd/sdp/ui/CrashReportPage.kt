@@ -92,9 +92,9 @@ fun CrashReportPage() {
             verticalArrangement = Arrangement.spacedBy(itemVerticalPadding)
         ) {
             if (vm.crashDataList.isNotEmpty()) {
-                vm.crashDataList.forEach { crashData ->
+                vm.crashSummaries.forEach { crashSummary ->
                     CopyTextCard(
-                        text = crashData.stackTrace,
+                        text = crashSummary,
                         modifier = Modifier.padding(horizontal = 8.dp),
                     )
                 }

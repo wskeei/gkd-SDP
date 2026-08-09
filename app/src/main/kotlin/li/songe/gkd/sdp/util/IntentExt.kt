@@ -18,6 +18,7 @@ import li.songe.gkd.sdp.META
 import li.songe.gkd.sdp.MainActivity
 import li.songe.gkd.sdp.app
 import li.songe.gkd.sdp.isActivityVisible
+import li.songe.gkd.sdp.diagnostics.DiagnosticLogger
 import li.songe.gkd.sdp.permission.canWriteExternalStorage
 import li.songe.gkd.sdp.permission.foregroundServiceSpecialUseState
 import li.songe.gkd.sdp.permission.notificationState
@@ -74,9 +75,8 @@ fun Context.tryStartActivity(intent: Intent): Boolean {
         startActivity(intent)
         return true
     } catch (e: Exception) {
-        e.printStackTrace()
         LogUtils.d("tryStartActivity", e)
-        toast("跳转失败\n" + (e.message ?: e.stackTraceToString()))
+        toast("跳转失败\n${DiagnosticLogger.userMessage(e)}")
         return false
     }
 }
@@ -113,7 +113,7 @@ fun openUri(uri: String) {
     val u = try {
         uri.toUri()
     } catch (e: Exception) {
-        e.printStackTrace()
+        LogUtils.d("invalid URI", e)
         toast("非法链接")
         return
     }
@@ -151,7 +151,7 @@ fun <T : Service> startForegroundServiceByClass(clazz: KClass<T>): Boolean {
     } catch (e: Throwable) {
         LogUtils.d(e)
         val prefix = if (isActivityVisible) "" else "${META.appName}: "
-        toast("${prefix}启动服务失败: ${e.message}", forced = true)
+        toast("${prefix}启动服务失败：${DiagnosticLogger.userMessage(e)}", forced = true)
         return false
     }
 }

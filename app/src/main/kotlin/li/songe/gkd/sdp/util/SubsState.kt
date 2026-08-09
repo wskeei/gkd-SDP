@@ -11,8 +11,7 @@ import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.sync.withLock
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.sync.Mutex
 import li.songe.gkd.sdp.appScope
 import li.songe.gkd.sdp.data.AppRule
 import li.songe.gkd.sdp.data.CategoryConfig
@@ -41,7 +40,7 @@ private fun getCheckUpdateUrl(
     try {
         return URI(updateUrl).resolve(checkUpdateUrl).toString()
     } catch (e: Exception) {
-        e.printStackTrace()
+        LogUtils.d("subscription update URL resolution failed", e)
     }
     return null
 }
@@ -125,67 +124,23 @@ val usedSubsEntriesFlow by lazy {
     }.stateIn(appScope, SharingStarted.Eagerly, emptyList())
 }
 
-fun updateSubscription(subscription: RawSubscription) {
-    appScope.launchTry {
-        updateSubsMutex.withStateLock {
-            val subsId = subscription.id
-            val subsName = subscription.name
-            val newMap = subsMapFlow.value.toMutableMap()
-            val nextSubsRaw = if (subsId < 0 && newMap[subsId]?.version == subscription.version) {
-                subscription.run {
-                    copy(
-                        version = version + 1,
-                        apps = apps.filterIfNotAll { it.groups.isNotEmpty() }
-                            .distinctByIfAny { it.id },
-                    )
-                }
-            } else {
-                subscription
-            }
-            newMap[subsId] = nextSubsRaw
-            subsMapFlow.value = newMap
-            if (subsLoadErrorsFlow.value.contains(subsId)) {
-                subsLoadErrorsFlow.update {
-                    it.toMutableMap().apply {
-                        remove(subsId)
-                    }
-                }
-            }
-            withContext(Dispatchers.IO) {
-                cleanupSubsConfig(subsId, nextSubsRaw)
-                DbSet.subsItemDao.updateMtime(subsId, System.currentTimeMillis())
-                subsFolder.resolve("${subsId}.json")
-                    .writeText(json.encodeToString(nextSubsRaw))
-            }
-            LogUtils.d("更新订阅文件:id=${subsId},name=${subsName}")
-        }
-    }
-}
+suspend fun updateSubscription(
+    subscription: RawSubscription,
+    subsItem: SubsItem? = null,
+    expectedCurrentMtime: Long? = null,
+): RawSubscription = SubscriptionMutationRepository.upsert(
+    subscription = subscription,
+    subsItem = subsItem,
+    expectedCurrentMtime = expectedCurrentMtime,
+)
 
-fun deleteSubscription(vararg subsIds: Long) {
-    appScope.launchTry(Dispatchers.IO) {
-        updateSubsMutex.mutex.withLock {
-            val deleteSize = DbSet.subsItemDao.deleteById(*subsIds)
-            if (deleteSize > 0) {
-                DbSet.subsConfigDao.deleteBySubsId(*subsIds)
-                DbSet.actionLogDao.deleteBySubsId(*subsIds)
-                DbSet.categoryConfigDao.deleteBySubsId(*subsIds)
-                val newMap = subsMapFlow.value.toMutableMap()
-                subsIds.forEach { id ->
-                    newMap.remove(id)
-                    subsFolder.resolve("$id.json").apply {
-                        if (exists()) {
-                            delete()
-                        }
-                    }
-                }
-                subsMapFlow.value = newMap
-                toast("删除成功")
-                LogUtils.d("deleteSubscription", subsIds)
-            }
+suspend fun deleteSubscription(vararg subsIds: Long): Int =
+    SubscriptionMutationRepository.delete(*subsIds).also { deleteSize ->
+        if (deleteSize > 0) {
+            toast("删除成功")
+            LogUtils.d("deleteSubscription", "count=$deleteSize")
         }
     }
-}
 
 fun getCategoryEnable(
     category: RawSubscription.RawCategory?,
@@ -433,6 +388,7 @@ private fun refreshRawSubsList(items: List<SubsItem>): Boolean {
 fun initSubsState() {
     subsItemsFlow.value
     appScope.launchTry(Dispatchers.IO) {
+        requirePendingDataRecoveryComplete()
         updateSubsMutex.withStateLock {
             val items = DbSet.subsItemDao.queryAll()
             refreshRawSubsList(items)
@@ -440,7 +396,7 @@ fun initSubsState() {
     }
 }
 
-private suspend fun cleanupSubsConfig(subsId: Long, subsRaw: RawSubscription): Int {
+internal suspend fun cleanupSubsConfig(subsId: Long, subsRaw: RawSubscription): Int {
     val globalGroupKeys = subsRaw.globalGroups.map { it.key }.toHashSet()
     val appIdToGroupKeys = subsRaw.apps.associate { a ->
         a.id to a.groups.map { g -> g.key }.toHashSet()
@@ -457,13 +413,32 @@ private suspend fun cleanupSubsConfig(subsId: Long, subsRaw: RawSubscription): I
             else -> false
         }
     }
-    if (deleteList.isEmpty()) return 0
-    DbSet.subsConfigDao.delete(*deleteList.toTypedArray())
-    LogUtils.d("清理已移除规则配置", "subsId=$subsId, delete=${deleteList.size}")
-    return deleteList.size
+    val categoryKeys = subsRaw.categories.mapTo(hashSetOf()) { it.key }
+    val categoryDeleteList = DbSet.categoryConfigDao
+        .querySubsItemConfig(listOf(subsId))
+        .filter { config -> config.categoryKey !in categoryKeys }
+    val appIds = subsRaw.apps.mapTo(hashSetOf()) { it.id }
+    val appDeleteList = DbSet.appConfigDao
+        .querySubsItemConfig(listOf(subsId))
+        .filter { config -> config.appId !in appIds }
+    if (deleteList.isNotEmpty()) {
+        DbSet.subsConfigDao.delete(*deleteList.toTypedArray())
+    }
+    if (categoryDeleteList.isNotEmpty()) {
+        DbSet.categoryConfigDao.delete(*categoryDeleteList.toTypedArray())
+    }
+    if (appDeleteList.isNotEmpty()) {
+        DbSet.appConfigDao.delete(*appDeleteList.toTypedArray())
+    }
+    val deleteCount = deleteList.size + categoryDeleteList.size + appDeleteList.size
+    if (deleteCount > 0) {
+        LogUtils.d("清理已移除规则配置", "subsId=$subsId,delete=$deleteCount")
+    }
+    return deleteCount
 }
 
 val updateSubsMutex = MutexState()
+private val checkSubsUpdateMutex = Mutex()
 
 private suspend fun updateSubs(subsEntry: SubsEntry): RawSubscription? {
     val subsItem = subsEntry.subsItem
@@ -507,20 +482,23 @@ private suspend fun updateSubs(subsEntry: SubsEntry): RawSubscription? {
 }
 
 fun checkSubsUpdate(showToast: Boolean = false) = appScope.launchTry(Dispatchers.IO) {
-    if (updateSubsMutex.mutex.isLocked) {
-        return@launchTry
-    }
-    updateSubsMutex.withStateLock {
+    requirePendingDataRecoveryComplete()
+    if (!checkSubsUpdateMutex.tryLock()) return@launchTry
+    try {
         if (subsEntriesFlow.value.any { !it.subsItem.isLocal } && !NetworkUtils.isAvailable()) {
             if (showToast) {
                 toast("网络不可用")
             }
-            return@withStateLock
+            return@launchTry
         }
         LogUtils.d("开始检测更新")
         // 文件不存在, 重新加载
-        val changed = refreshRawSubsList(subsEntriesFlow.value.filter { it.subscription == null }
-            .map { it.subsItem })
+        var changed = false
+        updateSubsMutex.withStateLock {
+            changed = refreshRawSubsList(
+                subsEntriesFlow.value.filter { it.subscription == null }.map { it.subsItem },
+            )
+        }
         if (changed) {
             delay(500)
         }
@@ -529,7 +507,10 @@ fun checkSubsUpdate(showToast: Boolean = false) = appScope.launchTry(Dispatchers
             try {
                 val newSubsRaw = updateSubs(subsEntry)
                 if (newSubsRaw != null) {
-                    updateSubscription(newSubsRaw)
+                    updateSubscription(
+                        subscription = newSubsRaw,
+                        expectedCurrentMtime = subsEntry.subsItem.mtime,
+                    )
                     successNum++
                 }
                 if (subsRefreshErrorsFlow.value.contains(subsEntry.subsItem.id)) {
@@ -557,5 +538,7 @@ fun checkSubsUpdate(showToast: Boolean = false) = appScope.launchTry(Dispatchers
         }
         LogUtils.d("结束检测更新")
         delay(500)
+    } finally {
+        checkSubsUpdateMutex.unlock()
     }
 }

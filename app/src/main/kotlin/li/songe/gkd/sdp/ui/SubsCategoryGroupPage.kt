@@ -198,10 +198,6 @@ fun SubsCategoryGroupPage(route: SubsCategoryGroupRoute) {
                                         removeIf { it.key == category.key }
                                     })
                                 )
-                                DbSet.categoryConfigDao.deleteByCategoryKey(
-                                    subs.id,
-                                    category.key
-                                )
                                 toast("删除成功")
                             })
                         )

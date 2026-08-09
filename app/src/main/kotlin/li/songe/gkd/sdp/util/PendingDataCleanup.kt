@@ -1,0 +1,249 @@
+package li.songe.gkd.sdp.util
+
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.encodeToString
+import li.songe.gkd.sdp.data.Snapshot
+import li.songe.gkd.sdp.data.SubsItem
+import li.songe.gkd.sdp.db.DbSet
+import li.songe.gkd.sdp.store.writeTextAtomically
+import java.io.File
+import java.nio.file.AtomicMoveNotSupportedException
+import java.nio.file.Files
+import java.nio.file.StandardCopyOption
+import java.security.MessageDigest
+
+internal const val SNAPSHOT_DELETE_STAGING_PREFIX = ".snapshot-delete-"
+internal const val SUBSCRIPTION_MUTATION_STAGING_PREFIX = ".subs-mutation-"
+internal const val PENDING_MUTATION_MANIFEST = "manifest.json"
+internal const val PENDING_KIND_SUBSCRIPTION_UPSERT = "subscription-upsert"
+internal const val PENDING_KIND_SUBSCRIPTION_DELETE = "subscription-delete"
+internal const val PENDING_KIND_SNAPSHOT_DELETE = "snapshot-delete"
+internal const val PENDING_PHASE_STAGED = "staged"
+internal const val PENDING_PHASE_COMMITTED = "committed"
+
+@Serializable
+internal data class PendingDataMutationManifest(
+    val version: Int = 1,
+    val kind: String,
+    val ids: List<Long>,
+    val phase: String = PENDING_PHASE_STAGED,
+    val targetExisted: Boolean = false,
+    val expectedMtime: Long? = null,
+    val requiredPreviousMtime: Long? = null,
+    val requiredPreviousMtimes: Map<Long, Long> = emptyMap(),
+    val requiredPreviousSnapshotTokens: Map<Long, String> = emptyMap(),
+    val expectedSubsItem: SubsItem? = null,
+)
+
+class PendingDataCleanupException : IllegalStateException("pending_data_cleanup")
+class PendingDataRecoveryException : IllegalStateException("pending_data_recovery")
+
+@Volatile
+private var pendingDataRecoveryBlocked = false
+
+fun requirePendingDataRecoveryComplete() {
+    if (pendingDataRecoveryBlocked) throw PendingDataRecoveryException()
+}
+
+internal fun blockPendingDataRecovery() {
+    pendingDataRecoveryBlocked = true
+}
+
+internal object PendingDataCleanupPolicy {
+    fun cleanup(
+        roots: Collection<File>,
+        deleteDirectory: (File) -> Boolean = { directory -> directory.deleteRecursively() },
+    ): List<File> = roots
+        .flatMap { root -> root.listFiles().orEmpty().asList() }
+        .filter { candidate ->
+            candidate.isDirectory && (
+                candidate.name.startsWith(SNAPSHOT_DELETE_STAGING_PREFIX) ||
+                    candidate.name.startsWith(SUBSCRIPTION_MUTATION_STAGING_PREFIX)
+                )
+        }
+        .filterNot(deleteDirectory)
+}
+
+fun requirePendingDataCleanup(directory: File) {
+    if (directory.exists() && !directory.deleteRecursively()) {
+        throw PendingDataCleanupException()
+    }
+}
+
+internal fun writePendingDataMutationManifest(
+    directory: File,
+    manifest: PendingDataMutationManifest,
+) {
+    writeTextAtomically(
+        directory.resolve(PENDING_MUTATION_MANIFEST),
+        json.encodeToString(manifest),
+    )
+}
+
+suspend fun retryPendingDataCleanup(): Boolean = withContext(Dispatchers.IO) {
+    val candidates = listOf(
+        requireNotNull(snapshotFolder.parentFile),
+        subsFolder,
+    ).flatMap { root ->
+        root.listFiles().orEmpty().filter { candidate ->
+            candidate.isDirectory && (
+                candidate.name.startsWith(SNAPSHOT_DELETE_STAGING_PREFIX) ||
+                    candidate.name.startsWith(SUBSCRIPTION_MUTATION_STAGING_PREFIX)
+                )
+        }
+    }
+    var allRecovered = true
+    candidates.forEach { candidate ->
+        if (!recoverPendingMutation(candidate)) allRecovered = false
+    }
+    pendingDataRecoveryBlocked = !allRecovered
+    allRecovered
+}
+
+private suspend fun recoverPendingMutation(directory: File): Boolean {
+    val manifest = runCatching {
+        json.decodeFromString<PendingDataMutationManifest>(
+            directory.resolve(PENDING_MUTATION_MANIFEST).readText(),
+        )
+    }.getOrNull() ?: return false
+    if (
+        manifest.version != 1 ||
+        manifest.ids.isEmpty() ||
+        manifest.phase !in setOf(PENDING_PHASE_STAGED, PENDING_PHASE_COMMITTED)
+    ) return false
+    if (manifest.phase == PENDING_PHASE_COMMITTED) {
+        return deleteDirectory(directory)
+    }
+
+    return runCatching {
+        when (manifest.kind) {
+            PENDING_KIND_SUBSCRIPTION_UPSERT -> recoverSubscriptionUpsert(directory, manifest)
+            PENDING_KIND_SUBSCRIPTION_DELETE -> recoverSubscriptionDelete(directory, manifest)
+            PENDING_KIND_SNAPSHOT_DELETE -> recoverSnapshotDelete(directory, manifest)
+            else -> false
+        }
+    }.getOrDefault(false)
+}
+
+private suspend fun recoverSubscriptionUpsert(
+    directory: File,
+    manifest: PendingDataMutationManifest,
+): Boolean {
+    if (manifest.ids.size != 1) return false
+    val id = manifest.ids.single()
+    val current = DbSet.subsItemDao.queryById(id)
+    val expectedMtime = manifest.expectedMtime ?: manifest.expectedSubsItem?.mtime
+    val committed = current != null && expectedMtime != null && isCommittedSubscriptionMtime(
+        currentMtime = current.mtime,
+        expectedMtime = expectedMtime,
+        requiredPreviousMtime = manifest.requiredPreviousMtime,
+    )
+    val unchanged = shouldRollbackSubscriptionStaging(
+        currentMtime = current?.mtime,
+        requiredPreviousMtime = manifest.requiredPreviousMtime,
+        targetExisted = manifest.targetExisted,
+    )
+    val target = subsFolder.resolve("$id.json")
+    val stagedNew = directory.resolve("new.json")
+    if (committed) {
+        if (stagedNew.exists()) {
+            if (target.exists()) target.delete()
+            movePath(stagedNew, target)
+        }
+    } else if (unchanged) {
+        val stagedPrevious = directory.resolve("previous.json")
+        if (stagedPrevious.exists()) {
+            if (target.exists()) target.delete()
+            movePath(stagedPrevious, target)
+        } else if (target.exists() && !manifest.targetExisted) {
+            target.delete()
+        }
+    }
+    return deleteDirectory(directory)
+}
+
+internal fun isCommittedSubscriptionMtime(
+    currentMtime: Long,
+    expectedMtime: Long,
+    requiredPreviousMtime: Long?,
+): Boolean = currentMtime == expectedMtime &&
+    (requiredPreviousMtime == null || expectedMtime > requiredPreviousMtime)
+
+internal fun shouldRollbackSubscriptionStaging(
+    currentMtime: Long?,
+    requiredPreviousMtime: Long?,
+    targetExisted: Boolean,
+): Boolean =
+    (currentMtime == null && !targetExisted) ||
+        (currentMtime != null && currentMtime == requiredPreviousMtime)
+
+private suspend fun recoverSubscriptionDelete(
+    directory: File,
+    manifest: PendingDataMutationManifest,
+): Boolean {
+    val committed = manifest.ids.all { DbSet.subsItemDao.queryById(it) == null }
+    if (!committed) {
+        manifest.ids.forEach { id ->
+            val staged = directory.resolve("$id.json")
+            val current = DbSet.subsItemDao.queryById(id)
+            val unchanged = current != null && shouldRollbackSubscriptionStaging(
+                currentMtime = current.mtime,
+                requiredPreviousMtime = manifest.requiredPreviousMtimes[id],
+                targetExisted = true,
+            )
+            if (staged.exists() && unchanged) {
+                val target = subsFolder.resolve("$id.json")
+                if (target.exists()) target.delete()
+                movePath(staged, target)
+            }
+        }
+    }
+    return deleteDirectory(directory)
+}
+
+private suspend fun recoverSnapshotDelete(
+    directory: File,
+    manifest: PendingDataMutationManifest,
+): Boolean {
+    val committed = manifest.ids.all { DbSet.snapshotDao.queryById(it) == null }
+    if (!committed) {
+        manifest.ids.forEach { id ->
+            val staged = directory.resolve(id.toString())
+            val current = DbSet.snapshotDao.queryById(id)
+            val previousToken = manifest.requiredPreviousSnapshotTokens[id]
+            if (
+                staged.exists() && current != null && previousToken != null &&
+                snapshotRecoveryToken(current) == previousToken
+            ) {
+                val target = snapshotFolder.resolve(id.toString())
+                if (target.exists()) target.deleteRecursively()
+                movePath(staged, target)
+            }
+        }
+    }
+    return deleteDirectory(directory)
+}
+
+internal fun snapshotRecoveryToken(snapshot: Snapshot): String = MessageDigest
+    .getInstance("SHA-256")
+    .digest(json.encodeToString(snapshot).encodeToByteArray())
+    .joinToString("") { byte -> "%02x".format(byte) }
+
+private fun deleteDirectory(directory: File): Boolean =
+    !directory.exists() || directory.deleteRecursively()
+
+private fun movePath(source: File, target: File) {
+    target.parentFile?.mkdirs()
+    try {
+        Files.move(
+            source.toPath(),
+            target.toPath(),
+            StandardCopyOption.ATOMIC_MOVE,
+        )
+    } catch (_: AtomicMoveNotSupportedException) {
+        Files.move(source.toPath(), target.toPath())
+    }
+}
