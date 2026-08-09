@@ -19,6 +19,7 @@ import li.songe.gkd.sdp.permission.allPermissionStates
 import li.songe.gkd.sdp.shizuku.shizukuContextFlow
 import li.songe.gkd.sdp.store.storeFlow
 import java.io.File
+import java.nio.file.Files
 
 fun File.autoMk(): File {
     if (!exists()) {
@@ -68,9 +69,7 @@ private val tempDir: File
     get() = cacheDir.resolve("temp").autoMk()
 
 fun createGkdTempDir(): File {
-    return tempDir
-        .resolve(System.currentTimeMillis().toString())
-        .apply { mkdirs() }
+    return Files.createTempDirectory(tempDir.toPath(), "gkd-").toFile()
 }
 
 private fun removeExpired(dir: File) {

@@ -69,9 +69,12 @@ object BackupUtils {
     suspend fun importBackUpData(uri: Uri) {
         toast("导入备份中...")
         val tempDir = createGkdTempDir()
-        val zipFile = tempDir.resolve("file.zip").apply {
-            writeBytes(UriUtils.uri2Bytes(uri))
-        }
+        val zipFile = tempDir.resolve("file.zip")
+        UriUtils.copyUriToFile(
+            uri = uri,
+            target = zipFile,
+            maxBytes = ZipUtils.ArchiveLimits().maxArchiveBytes,
+        )
         val unzipDir = tempDir.resolve("unzip")
         try {
             ZipUtils.unzipFile(zipFile, unzipDir)
