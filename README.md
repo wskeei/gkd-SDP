@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/wskeei/gkd-SDP/actions/workflows/ci.yml/badge.svg)](https://github.com/wskeei/gkd-SDP/actions/workflows/ci.yml)
 [![Nightly](https://github.com/wskeei/gkd-SDP/actions/workflows/nightly.yml/badge.svg)](https://github.com/wskeei/gkd-SDP/actions/workflows/nightly.yml)
-[![Latest release](https://img.shields.io/github/v/release/wskeei/gkd-SDP?display_name=tag&include_prereleases)](https://github.com/wskeei/gkd-SDP/releases)
+[![Latest release](https://img.shields.io/github/v/release/wskeei/gkd-SDP?display_name=tag)](https://github.com/wskeei/gkd-SDP/releases)
 [![License: GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-blue.svg)](LICENSE)
 
 `GKD-SDP` 是一个基于 [GKD](https://github.com/gkd-kit/gkd) fork 的 Android 数字自律工具。

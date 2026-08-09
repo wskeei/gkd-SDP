@@ -10,9 +10,9 @@ usage() {
 Usage: verify-release-metadata.sh [--tag <tag> | --no-tag]
 
 Validate gradle/version.properties, the matching CHANGELOG section, and
-versionCode monotonicity across GKD-SDP v2+ tags. With no option, an exact
-tag on the current commit is validated when one exists. `--no-tag` validates
-unreleased metadata without requiring it to exceed the latest published tag.
+stable SemVer/versionCode monotonicity across GKD-SDP v2+ tags. With no option,
+an exact tag on the current commit is validated when one exists. `--no-tag`
+validates release metadata without requiring an exact tag.
 EOF
 }
 
@@ -78,8 +78,11 @@ version_code="$(read_property versionCode)"
 upstream_base="$(read_property upstreamBase)"
 upstream_version_code="$(read_property upstreamVersionCode)"
 
-[[ "$version_name" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-(alpha|beta|rc)\.(0|[1-9][0-9]*))?$ ]] \
-    || error "versionName must be SemVer with an optional alpha/beta/rc suffix: ${version_name:-<empty>}"
+[[ "$version_name" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]] \
+    || error "versionName must be stable SemVer X.Y.Z: ${version_name:-<empty>}"
+current_major=$((10#${BASH_REMATCH[1]}))
+current_minor=$((10#${BASH_REMATCH[2]}))
+current_patch=$((10#${BASH_REMATCH[3]}))
 [[ "$version_code" =~ ^[1-9][0-9]*$ ]] \
     || error "versionCode must be a positive decimal integer: ${version_code:-<empty>}"
 [[ "$upstream_version_code" =~ ^[1-9][0-9]*$ ]] \
@@ -110,23 +113,33 @@ if [[ -n "$current_tag" ]]; then
         || error "tag ${current_tag} does not match versionName ${version_name}; expected v${version_name}"
 fi
 
-if [[ "$TAG_MODE" != "none" ]]; then
-    version_code_number=$((10#${version_code}))
-    while IFS= read -r previous_tag; do
-        [[ -n "$previous_tag" ]] || continue
-        [[ "$previous_tag" =~ ^v(2|[3-9]|[1-9][0-9]+)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-(alpha|beta|rc)\.(0|[1-9][0-9]*))?$ ]] || continue
-        [[ "$previous_tag" == "$current_tag" ]] && continue
+version_code_number=$((10#${version_code}))
+expected_tag="v${version_name}"
+while IFS= read -r previous_tag; do
+    [[ -n "$previous_tag" ]] || continue
+    [[ "$previous_tag" =~ ^v(2|[3-9]|[1-9][0-9]+)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-(alpha|beta|rc)\.(0|[1-9][0-9]*))?$ ]] || continue
+    previous_major=$((10#${BASH_REMATCH[1]}))
+    previous_minor=$((10#${BASH_REMATCH[2]}))
+    previous_patch=$((10#${BASH_REMATCH[3]}))
+    [[ "$previous_tag" == "$expected_tag" ]] && continue
 
-        previous_properties="$(git -C "$ROOT_DIR" show "${previous_tag}:gradle/version.properties" 2>/dev/null || true)"
-        [[ -n "$previous_properties" ]] || error "${previous_tag} is an SDP tag without gradle/version.properties"
-        previous_code="$(printf '%s\n' "$previous_properties" | awk -F= '$1 == "versionCode" {gsub(/^[[:space:]]+|[[:space:]]+$/, "", $2); print $2; exit}')"
-        [[ "$previous_code" =~ ^[1-9][0-9]*$ ]] \
-            || error "${previous_tag} has an invalid versionCode: ${previous_code:-<empty>}"
-        previous_code_number=$((10#${previous_code}))
-        ((version_code_number > previous_code_number)) \
-            || error "versionCode ${version_code} must be greater than ${previous_code} from ${previous_tag}"
-    done < <(git -C "$ROOT_DIR" tag --list 'v*' --sort=version:refname)
-fi
+    if ((
+        current_major < previous_major
+        || (current_major == previous_major && current_minor < previous_minor)
+        || (current_major == previous_major && current_minor == previous_minor && current_patch < previous_patch)
+    )); then
+        error "versionName ${version_name} must not be older than ${previous_tag}"
+    fi
+
+    previous_properties="$(git -C "$ROOT_DIR" show "${previous_tag}:gradle/version.properties" 2>/dev/null || true)"
+    [[ -n "$previous_properties" ]] || error "${previous_tag} is an SDP tag without gradle/version.properties"
+    previous_code="$(printf '%s\n' "$previous_properties" | awk -F= '$1 == "versionCode" {gsub(/^[[:space:]]+|[[:space:]]+$/, "", $2); print $2; exit}')"
+    [[ "$previous_code" =~ ^[1-9][0-9]*$ ]] \
+        || error "${previous_tag} has an invalid versionCode: ${previous_code:-<empty>}"
+    previous_code_number=$((10#${previous_code}))
+    ((version_code_number > previous_code_number)) \
+        || error "versionCode ${version_code} must be greater than ${previous_code} from ${previous_tag}"
+done < <(git -C "$ROOT_DIR" tag --list 'v*' --sort=version:refname)
 
 printf 'release metadata ok: versionName=%s versionCode=%s upstreamBase=%s upstreamVersionCode=%s' \
     "$version_name" "$version_code" "$upstream_base" "$upstream_version_code"
