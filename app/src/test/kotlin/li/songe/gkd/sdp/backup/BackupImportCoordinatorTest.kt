@@ -108,6 +108,51 @@ class BackupImportCoordinatorTest {
     }
 
     @Test
+    fun `runtime reconcile failure rolls committed data back before reporting failure`() = runBlocking {
+        val target = FakeImportTarget(payload("old")).apply {
+            reconcileFailuresRemaining = 1
+        }
+        val journal = RecordingJournal()
+        val coordinator = coordinator(target, journal)
+        val prepared = coordinator.prepare(
+            encryptedPayload(payload("new")),
+            "correct-password".toCharArray(),
+        ) as BackupResult.Success<PreparedBackupImport>
+
+        val result = coordinator.apply(prepared.value, confirmed = true)
+
+        assertEquals(BackupErrorCode.IMPORT_FAILED, (result as BackupResult.Failure).code)
+        assertEquals("old", target.current.objects.single().content.decodeToString())
+        assertEquals(2, target.events.count { it == "reconcile" })
+        assertTrue(target.events.contains("restore"))
+        assertTrue(journal.cleared)
+        assertEquals(BackupImportPhase.APPLYING, journal.writes.last().phase)
+    }
+
+    @Test
+    fun `failed rollback returns recovery required and keeps applying journal`() = runBlocking {
+        val target = FakeImportTarget(payload("old")).apply {
+            failAfterReplace = true
+            restoreFailuresRemaining = 1
+        }
+        val journal = RecordingJournal()
+        val coordinator = coordinator(target, journal)
+        val prepared = coordinator.prepare(
+            encryptedPayload(payload("new")),
+            "correct-password".toCharArray(),
+        ) as BackupResult.Success<PreparedBackupImport>
+
+        val result = coordinator.apply(prepared.value, confirmed = true)
+
+        assertEquals(
+            BackupErrorCode.IMPORT_RECOVERY_REQUIRED,
+            (result as BackupResult.Failure).code,
+        )
+        assertFalse(journal.cleared)
+        assertEquals(BackupImportPhase.APPLYING, journal.current?.phase)
+    }
+
+    @Test
     fun `apply rejects a stale preview without journaling or modifying newer data`() = runBlocking {
         val target = FakeImportTarget(payload("old"))
         val journal = RecordingJournal()
@@ -253,6 +298,8 @@ class BackupImportCoordinatorTest {
         var referencesValid = true
         var failAfterReplace = false
         var pauseAfterReplace = false
+        var reconcileFailuresRemaining = 0
+        var restoreFailuresRemaining = 0
         val replaceStarted = CompletableDeferred<Unit>()
         val continueReplace = CompletableDeferred<Unit>()
         val events = mutableListOf<String>()
@@ -306,11 +353,19 @@ class BackupImportCoordinatorTest {
 
         override suspend fun restore(previous: BackupPayload) {
             events += "restore"
+            if (restoreFailuresRemaining > 0) {
+                restoreFailuresRemaining -= 1
+                error("synthetic restore failure")
+            }
             current = previous
         }
 
         override suspend fun reconcileRuntime() {
             events += "reconcile"
+            if (reconcileFailuresRemaining > 0) {
+                reconcileFailuresRemaining -= 1
+                error("synthetic reconcile failure")
+            }
         }
     }
 

@@ -1,8 +1,10 @@
 package li.songe.gkd.sdp.backup
 
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 import java.io.File
 
 data class BackupConflictPreview(
@@ -27,9 +29,13 @@ data class PreparedBackupImport(
 private data class BackupImportMutationOutcome(
     val result: BackupResult<Unit>,
     val rollbackCompleted: Boolean = false,
-    val reconcileRequired: Boolean = false,
     val commitRecord: BackupImportJournalRecord? = null,
 )
+
+private class ImportRecoveryException(
+    val recoveryCompleted: Boolean,
+    cause: Throwable,
+) : RuntimeException(cause)
 
 interface BackupImportTarget {
     suspend fun <T> withExclusiveMutation(
@@ -145,29 +151,29 @@ class BackupImportCoordinator(
                         target.replaceIncludedCategories(prepared.payload)
                         BackupImportMutationOutcome(
                             result = BackupResult.Success(Unit),
-                            reconcileRequired = true,
                             commitRecord = baseRecord,
                         )
                     } catch (error: CancellationException) {
                         rollbackAfterFailure(currentState)
                         throw error
                     } catch (_: Throwable) {
+                        val rollbackCompleted = rollbackAfterFailure(currentState)
                         BackupImportMutationOutcome(
-                            result = BackupResult.Failure(BackupErrorCode.IMPORT_FAILED),
-                            rollbackCompleted = rollbackAfterFailure(currentState),
+                            result = BackupResult.Failure(
+                                if (rollbackCompleted) {
+                                    BackupErrorCode.IMPORT_FAILED
+                                } else {
+                                    BackupErrorCode.IMPORT_RECOVERY_REQUIRED
+                                },
+                            ),
+                            rollbackCompleted = rollbackCompleted,
                         )
                     }
                 },
                 afterCommit = { committedOutcome ->
                     val commitRecord = committedOutcome.commitRecord
                     if (commitRecord != null) {
-                        try {
-                            journal.write(commitRecord.copy(phase = BackupImportPhase.COMMITTED))
-                        } catch (error: Throwable) {
-                            target.restore(commitRecord.previousState)
-                            runCatching { journal.clear() }
-                            throw error
-                        }
+                        reconcileCommittedImport(commitRecord)
                     } else if (committedOutcome.rollbackCompleted) {
                         journal.clear()
                     }
@@ -175,18 +181,16 @@ class BackupImportCoordinator(
             )
         } catch (error: CancellationException) {
             throw error
+        } catch (error: ImportRecoveryException) {
+            return BackupResult.Failure(
+                if (error.recoveryCompleted) {
+                    BackupErrorCode.IMPORT_FAILED
+                } else {
+                    BackupErrorCode.IMPORT_RECOVERY_REQUIRED
+                },
+            )
         } catch (_: Throwable) {
-            return BackupResult.Failure(BackupErrorCode.IMPORT_FAILED)
-        }
-        if (outcome.reconcileRequired) {
-            try {
-                target.reconcileRuntime()
-                journal.clear()
-            } catch (error: CancellationException) {
-                throw error
-            } catch (_: Throwable) {
-                return BackupResult.Failure(BackupErrorCode.IMPORT_FAILED)
-            }
+            return BackupResult.Failure(BackupErrorCode.IMPORT_RECOVERY_REQUIRED)
         }
         outcome.result
     }
@@ -239,4 +243,24 @@ class BackupImportCoordinator(
             // Keep the APPLYING journal so startup recovery retries before opening the interface.
             false
         }
+
+    private suspend fun reconcileCommittedImport(record: BackupImportJournalRecord) {
+        try {
+            journal.write(record.copy(phase = BackupImportPhase.COMMITTED))
+            target.reconcileRuntime()
+            journal.clear()
+        } catch (error: Throwable) {
+            val recoveryCompleted = withContext(NonCancellable) {
+                runCatching { journal.write(record.copy(phase = BackupImportPhase.APPLYING)) }
+                val restored = rollbackAfterFailure(record.previousState)
+                val reconciled = restored && runCatching {
+                    target.reconcileRuntime()
+                }.isSuccess
+                val journalCleared = reconciled && runCatching { journal.clear() }.isSuccess
+                restored && reconciled && journalCleared
+            }
+            if (error is CancellationException && recoveryCompleted) throw error
+            throw ImportRecoveryException(recoveryCompleted, error)
+        }
+    }
 }

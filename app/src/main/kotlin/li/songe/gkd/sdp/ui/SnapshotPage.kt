@@ -123,10 +123,7 @@ fun SnapshotPage() {
                                 text = "确定删除所有快照记录?",
                                 error = true,
                             )
-                            snapshots.forEach { s ->
-                                SnapshotExt.removeSnapshot(s.id)
-                            }
-                            DbSet.snapshotDao.deleteAll()
+                            SnapshotExt.deleteSnapshots(snapshots)
                         })
                     )
                 }
@@ -304,10 +301,7 @@ fun SnapshotPage() {
                                 text = "确定删除当前快照吗?",
                                 error = true,
                             )
-                            DbSet.snapshotDao.delete(snapshotVal)
-                            withContext(Dispatchers.IO) {
-                                SnapshotExt.removeSnapshot(snapshotVal.id)
-                            }
+                            SnapshotExt.deleteSnapshot(snapshotVal)
                             toast("删除成功")
                         }))
                         .then(modifier), color = colorScheme.error

@@ -28,21 +28,30 @@ class AppBackupRepository : BackupExportSource, BackupImportTarget {
         block: suspend () -> T,
         afterCommit: suspend (T) -> Unit,
     ): T =
-        BackupDataMutationBarrier.withMutation {
+        BackupDataMutationBarrier.withConsistentDataSnapshot {
             DbSet.withTransaction { block() }.also { afterCommit(it) }
         }
 
     override suspend fun collect(categoryIds: Set<String>): BackupPayload {
+        return BackupDataMutationBarrier.withConsistentDataSnapshot {
+            DbSet.withRawTransaction { database ->
+                collectConsistent(categoryIds, database)
+            }
+        }
+    }
+
+    private fun collectConsistent(
+        categoryIds: Set<String>,
+        database: SupportSQLiteDatabase,
+    ): BackupPayload {
         require(categoryIds.isNotEmpty())
         require(categoryIds.all { BackupCatalog.category(it) != null })
         val objects = mutableListOf<BackupPayloadObject>()
         if ("settings" in categoryIds) objects += exportSettings()
-        DbSet.withRawTransaction { database ->
-            BackupCatalog.categories
-                .filter { it.id in categoryIds }
-                .flatMap(BackupCategory::tables)
-                .forEach { descriptor -> objects += exportTable(database, descriptor) }
-        }
+        BackupCatalog.categories
+            .filter { it.id in categoryIds }
+            .flatMap(BackupCategory::tables)
+            .forEach { descriptor -> objects += exportTable(database, descriptor) }
         if ("subscriptions" in categoryIds) {
             objects += exportFiles(
                 root = subsFolder,

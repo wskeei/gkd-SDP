@@ -11,6 +11,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import li.songe.gkd.sdp.appScope
 import li.songe.gkd.sdp.backup.BackupDataMutationBarrier
+import li.songe.gkd.sdp.backup.BackupDataMutationParticipant
 import li.songe.gkd.sdp.util.json
 import li.songe.gkd.sdp.util.privateStoreFolder
 import li.songe.gkd.sdp.util.storeFolder
@@ -66,29 +67,108 @@ class MutableStoreStateFlow<T>(
     val decode: (String?) -> T,
     val encode: (T) -> String,
     private val stateFlow: MutableStateFlow<T>,
-) : MutableStateFlow<T> by stateFlow {
+) : MutableStateFlow<T> by stateFlow, BackupDataMutationParticipant {
+    private val mutationLock = Any()
+    private var deferredMutations: MutableList<(T) -> T>? = null
+    private var projectedValue: Any? = NO_PROJECTED_VALUE
+    private var replacementValue: Any? = NO_REPLACEMENT_VALUE
+
+    init {
+        BackupDataMutationBarrier.register(this)
+    }
+
     override var value: T
-        get() = stateFlow.value
-        set(value) = BackupDataMutationBarrier.mutateBlocking {
-            stateFlow.value = value
-        }
+        get() = synchronized(mutationLock) { projectedValueOrCommitted() }
+        set(value) = mutateOrDefer { value }
 
-    override fun compareAndSet(expect: T, update: T): Boolean =
-        BackupDataMutationBarrier.mutateBlocking {
+    override fun compareAndSet(expect: T, update: T): Boolean = synchronized(mutationLock) {
+        if (deferredMutations == null) {
             stateFlow.compareAndSet(expect, update)
+        } else if (projectedValueOrCommitted() != expect) {
+            false
+        } else {
+            deferredMutations?.add { update }
+            projectedValue = update
+            true
         }
-
-    override suspend fun emit(value: T) = BackupDataMutationBarrier.withMutation {
-        stateFlow.emit(value)
     }
 
-    override fun tryEmit(value: T): Boolean = BackupDataMutationBarrier.mutateBlocking {
-        stateFlow.tryEmit(value)
+    override suspend fun emit(value: T) {
+        mutateOrDefer { value }
     }
 
-    fun encodeSelf(): String = encode(value)
+    override fun tryEmit(value: T): Boolean {
+        mutateOrDefer { value }
+        return true
+    }
+
+    fun update(function: (T) -> T) = mutateOrDefer(function)
+
+    fun encodeSelf(): String = synchronized(mutationLock) {
+        encode(stateFlow.value)
+    }
+
     fun updateByDecode(text: String?) {
-        stateFlow.value = decode(text)
+        synchronized(mutationLock) {
+            val decoded = decode(text)
+            val mutations = deferredMutations
+            if (mutations == null) {
+                stateFlow.value = decoded
+            } else {
+                replacementValue = decoded
+                projectedValue = mutations.fold(decoded) { value, mutation -> mutation(value) }
+            }
+        }
+    }
+
+    override fun beginConsistentSnapshot() {
+        synchronized(mutationLock) {
+            check(deferredMutations == null)
+            deferredMutations = mutableListOf()
+            projectedValue = stateFlow.value
+            replacementValue = NO_REPLACEMENT_VALUE
+        }
+    }
+
+    override fun finishConsistentSnapshot() {
+        synchronized(mutationLock) {
+            val mutations = deferredMutations ?: return
+            try {
+                @Suppress("UNCHECKED_CAST")
+                var replayed = if (replacementValue === NO_REPLACEMENT_VALUE) {
+                    stateFlow.value
+                } else {
+                    replacementValue as T
+                }
+                mutations.forEach { mutation -> replayed = mutation(replayed) }
+                stateFlow.value = replayed
+            } finally {
+                deferredMutations = null
+                projectedValue = NO_PROJECTED_VALUE
+                replacementValue = NO_REPLACEMENT_VALUE
+            }
+        }
+    }
+
+    private fun mutateOrDefer(function: (T) -> T) {
+        synchronized(mutationLock) {
+            val pending = deferredMutations
+            if (pending == null) {
+                stateFlow.value = function(stateFlow.value)
+            } else {
+                projectedValue = function(projectedValueOrCommitted())
+                pending += function
+            }
+        }
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    private fun projectedValueOrCommitted(): T =
+        if (projectedValue === NO_PROJECTED_VALUE) stateFlow.value else projectedValue as T
+
+    private companion object {
+        private val NO_PROJECTED_VALUE = Any()
+        private val NO_REPLACEMENT_VALUE = Any()
     }
 }
 

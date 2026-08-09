@@ -382,8 +382,7 @@ private fun CoroutineScope.createServer(port: Int, host: String) = embeddedServe
                 if (snapshot == null) {
                     call.respondRemoteError("SNAPSHOT_NOT_FOUND", HttpStatusCode.NotFound)
                 } else {
-                    SnapshotExt.removeSnapshot(id)
-                    DbSet.snapshotDao.delete(snapshot)
+                    SnapshotExt.deleteSnapshot(snapshot)
                     call.respondJsonBounded(RpcOk("快照删除成功"))
                 }
             }

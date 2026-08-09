@@ -5,6 +5,7 @@ import androidx.core.graphics.createBitmap
 import androidx.core.graphics.scale
 import androidx.core.graphics.set
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
@@ -18,6 +19,7 @@ import li.songe.gkd.sdp.a11y.topActivityFlow
 import li.songe.gkd.sdp.backup.BackupDataMutationBarrier
 import li.songe.gkd.sdp.data.ComplexSnapshot
 import li.songe.gkd.sdp.data.RpcError
+import li.songe.gkd.sdp.data.Snapshot
 import li.songe.gkd.sdp.data.info2nodeList
 import li.songe.gkd.sdp.db.DbSet
 import li.songe.gkd.sdp.notif.snapshotNotif
@@ -25,6 +27,10 @@ import li.songe.gkd.sdp.service.ScreenshotService
 import li.songe.gkd.sdp.shizuku.shizukuContextFlow
 import li.songe.gkd.sdp.store.storeFlow
 import java.io.File
+import java.nio.file.AtomicMoveNotSupportedException
+import java.nio.file.Files
+import java.nio.file.StandardCopyOption
+import java.util.UUID
 import kotlin.math.min
 
 object SnapshotExt {
@@ -95,13 +101,61 @@ object SnapshotExt {
         return file
     }
 
-    fun removeSnapshot(id: Long) {
-        BackupDataMutationBarrier.mutateBlocking {
-            snapshotParentPath(id).apply {
-                if (exists()) {
-                    deleteRecursively()
+    suspend fun deleteSnapshot(snapshot: Snapshot): Int = deleteSnapshots(listOf(snapshot))
+
+    suspend fun deleteSnapshots(snapshots: Collection<Snapshot>): Int {
+        if (snapshots.isEmpty()) return 0
+        val uniqueSnapshots = snapshots.distinctBy(Snapshot::id)
+        return BackupDataMutationBarrier.withMutation {
+            val stagingFolder = requireNotNull(snapshotFolder.parentFile).resolve(
+                ".snapshot-delete-${UUID.randomUUID()}",
+            )
+            var transactionCommitted = false
+            try {
+                val deleted = DbSet.withTransaction {
+                    withContext(Dispatchers.IO) {
+                        stagingFolder.mkdirs()
+                        uniqueSnapshots.forEach { snapshot ->
+                            val source = snapshotParentPath(snapshot.id)
+                            if (source.exists()) {
+                                moveSnapshotDirectory(source, stagingFolder.resolve(snapshot.id.toString()))
+                            }
+                        }
+                    }
+                    DbSet.snapshotDao.delete(*uniqueSnapshots.toTypedArray())
                 }
+                transactionCommitted = true
+                withContext(Dispatchers.IO) {
+                    runCatching { stagingFolder.deleteRecursively() }
+                }
+                deleted
+            } catch (error: Throwable) {
+                if (!transactionCommitted) {
+                    withContext(NonCancellable + Dispatchers.IO) {
+                        uniqueSnapshots.forEach { snapshot ->
+                            val staged = stagingFolder.resolve(snapshot.id.toString())
+                            if (staged.exists()) {
+                                moveSnapshotDirectory(staged, snapshotParentPath(snapshot.id))
+                            }
+                        }
+                        stagingFolder.deleteRecursively()
+                    }
+                }
+                throw error
             }
+        }
+    }
+
+    private fun moveSnapshotDirectory(source: File, target: File) {
+        target.parentFile?.mkdirs()
+        try {
+            Files.move(
+                source.toPath(),
+                target.toPath(),
+                StandardCopyOption.ATOMIC_MOVE,
+            )
+        } catch (_: AtomicMoveNotSupportedException) {
+            Files.move(source.toPath(), target.toPath())
         }
     }
 
@@ -269,20 +323,29 @@ object SnapshotExt {
 
             val (bitmap, currentStatus) = screenResult // 拆开(图片+状态)
             BackupDataMutationBarrier.withMutation {
-                withContext(Dispatchers.IO) {
-                    snapshotParentPath(snapshot.id).autoMk()
-                    screenshotFile(snapshot.id).outputStream().use { stream ->
-                        bitmap.compress(Bitmap.CompressFormat.PNG, 100, stream)
-                    }
-                    snapshotFile(snapshot.id).writeText(keepNullJson.encodeToString(snapshot))
-                    minSnapshotFile(snapshot.id).writeText(
-                        keepNullJson.encodeToString(
-                            snapshot.copy(
-                                nodes = emptyList()
+                try {
+                    DbSet.withTransaction {
+                        withContext(Dispatchers.IO) {
+                            snapshotParentPath(snapshot.id).autoMk()
+                            screenshotFile(snapshot.id).outputStream().use { stream ->
+                                bitmap.compress(Bitmap.CompressFormat.PNG, 100, stream)
+                            }
+                            snapshotFile(snapshot.id).writeText(keepNullJson.encodeToString(snapshot))
+                            minSnapshotFile(snapshot.id).writeText(
+                                keepNullJson.encodeToString(
+                                    snapshot.copy(
+                                        nodes = emptyList()
+                                    )
+                                )
                             )
-                        )
-                    )
-                    DbSet.snapshotDao.insert(snapshot.toSnapshot())
+                        }
+                        DbSet.snapshotDao.insert(snapshot.toSnapshot())
+                    }
+                } catch (error: Throwable) {
+                    withContext(NonCancellable + Dispatchers.IO) {
+                        snapshotParentPath(snapshot.id).deleteRecursively()
+                    }
+                    throw error
                 }
             }
             val tip = when (currentStatus) {

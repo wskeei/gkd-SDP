@@ -1016,7 +1016,8 @@ private fun backupErrorText(code: BackupErrorCode): String = when (code) {
     BackupErrorCode.INVALID_PAYLOAD -> "备份校验失败，文件可能已损坏"
     BackupErrorCode.IMPORT_NOT_CONFIRMED -> "导入尚未确认"
     BackupErrorCode.IMPORT_PREVIEW_STALE -> "当前数据已变化，请刷新冲突预览后再次确认"
-    BackupErrorCode.IMPORT_FAILED -> "导入失败，原数据已恢复"
+    BackupErrorCode.IMPORT_FAILED -> "导入失败，新数据已撤销并恢复原状态"
+    BackupErrorCode.IMPORT_RECOVERY_REQUIRED -> "导入未完成，恢复记录已保留；请重启应用继续恢复"
     BackupErrorCode.CRYPTO_FAILURE -> "加密处理失败"
 }
 
