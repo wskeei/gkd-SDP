@@ -10,7 +10,7 @@ GKD-SDP 当前是个人维护的公开 fork。`@wskeei` 是项目维护者、路
 
 - `main` 只接受 Pull Request；Ruleset 要求 `quality`、`build` 和 `dependency-review` checks 全部通过并解决 conversations。
 - CodeQL、Dependabot、secret scanning 和 private vulnerability reporting 是 GitHub 原生安全基线。
-- 每个正式 `vX.Y.Z[-pre]` tag 必须匹配 `gradle/version.properties`，递增 `versionCode`，并通过 release Environment 的签名、证书指纹、SHA-256 和 provenance 校验。
+- 每个正式稳定 `vX.Y.Z` tag 必须匹配 `gradle/version.properties`，递增 `versionCode`，并通过 release Environment 的签名、证书指纹、SHA-256 和 provenance 校验；测试构建使用 Nightly，不创建新的公开预发布 tag。
 - `main` 的 Nightly 只产生短期 debug Artifact；Releases 页面只保留不可覆盖的 tagged 版本。
 
 ## Contributions and maintainers
