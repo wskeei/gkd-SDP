@@ -1,8 +1,8 @@
 # Release smoke checklist
 
-这是版本化 Release workflow 的真实设备检查，不由 JVM/Actions 自动测试替代。记录设备型号、Android 版本、应用版本、测试日期和未覆盖项。旧 `latest` 快照是历史自动构建，不能满足这份清单的 Release 完整性项目。
+这是稳定版 Release workflow 的真实设备检查，不由 JVM/Actions 自动测试替代。记录设备型号、Android 版本、应用版本、测试日期和未覆盖项。只有版本化的稳定 Release 可以执行这份清单，Nightly Artifact 不满足 Release 完整性项目。
 
-本次计划在公开 prerelease 前不执行真机/OEM 验收；相关复选项保持未勾选，由用户下载公开资产后自行验证，不作为发布门禁。
+真机/OEM 项目不作为自动化发布门禁。稳定 Release 发布后，由用户下载公开资产自行验证；未执行的项目保持未勾选，交接时不得声称已经通过。
 
 ## 安装与版本
 

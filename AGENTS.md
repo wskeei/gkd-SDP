@@ -219,26 +219,31 @@ gh pr view <number> --json state,mergeStateStatus,statusCheckRollup,url
 只有用户明确要求发布时才执行以下流程。Nightly Artifact 不是 Release。
 
 1. 功能 PR 先通过检查并合并到 `main`。
-2. 查询现有 tag/Release；版本唯一来源是 `gradle/version.properties`。按 SemVer 选择未占用
-   版本，递增且不复用 `versionCode`，更新 `CHANGELOG.md` 对应日期段。
+2. 查询现有 tag/Release；版本唯一来源是 `gradle/version.properties`。公开版本只使用稳定
+   `X.Y.Z`：不兼容契约变更递增 MAJOR，兼容新功能或较大重构递增 MINOR，兼容修复、UI、
+   性能、安全、文档或发布工具维护递增 PATCH；混合变更使用最高影响级别。选择未占用版本，
+   `versionCode` 必须大于所有历史 GKD-SDP 版本且不可复用，并更新 `CHANGELOG.md` 日期段。
 3. 在发布 PR 上运行：
 
    ```bash
    bash scripts/test-verify-release-metadata.sh
+   bash scripts/test-generate-update-manifest.sh
    bash scripts/verify-release-metadata.sh --no-tag
    git diff --check
    ```
 
 4. 发布 PR 通过 CI 并合并，确认合并后 `main` CI 绿色，再在该合并提交创建 annotated
-   `vX.Y.Z[-pre]` tag；运行带 `--tag` 的验证后推送 tag。
+   `vX.Y.Z` tag；运行带 `--tag` 的验证后推送 tag。新公开 `alpha`、`beta`、`rc` 版本被禁止，
+   日常测试使用 Nightly Artifact。
 5. 标签触发 `.github/workflows/release.yml`。它负责测试、Lint、release 编译、签名、验签、
    `update.json`、`SHA256SUMS.txt`、provenance attestation 和 Draft Release。
 6. 下载 Draft 资产，核对版本、包名、大小、SHA-256、签名/证书和 attestation；按
-   [`docs/testing/release-smoke-checklist.md`](docs/testing/release-smoke-checklist.md) 做升级与
-   应用内更新验证后才发布。预发布标签保持 prerelease。
+   [`docs/testing/release-smoke-checklist.md`](docs/testing/release-smoke-checklist.md) 记录发布后
+   由用户执行的真机/OEM 项目，不把未执行项写成已通过。
 
-不移动或覆盖已公开 tag，不替换不可变 Release 资产，不手工上传未经工作流签名验证的 APK。
-发布失败时修复并使用新的 patch/prerelease 版本，具体恢复方式遵循
+不创建字面量为 `latest` 的 tag/Release；GitHub 的“Latest”属性只标记最新稳定版。不移动或
+覆盖已公开 tag，不替换不可变 Release 资产，不手工上传未经工作流签名验证的 APK。发布失败
+需要修改代码时使用下一个稳定 PATCH 和更大的 `versionCode`，具体恢复方式遵循
 [`docs/releasing.md`](docs/releasing.md) 和
 [`docs/maintenance/recovery-runbook.md`](docs/maintenance/recovery-runbook.md)。
 

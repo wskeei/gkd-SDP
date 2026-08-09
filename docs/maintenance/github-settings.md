@@ -10,7 +10,7 @@
 - Actions 默认 `GITHUB_TOKEN` 权限为 `read`，禁止 workflow 批准 pull request review。
 - Actions SHA pinning required；所有工作流中的 `uses:` 使用完整 commit SHA。当前允许 action 来源已收紧为 GitHub-owned actions、Marketplace verified creators，以及显式的 `gradle/actions/*`；新增 Action 必须先核对来源、完整 SHA 和权限需求，再更新 allowlist。
 - Actions spending/budget 保持在 GitHub Free 的标准 hosted runner 范围，不使用 larger runner。
-- GitHub Immutable Releases 已启用（当前 API `enabled: true`）；它只保护启用后发布的 Release，旧 `latest` 快照不自动获得不可变保护。
+- GitHub Immutable Releases 已启用（当前 API `enabled: true`）；发布流程只创建稳定版本 Release，并用 GitHub 的“Latest”属性标记最新稳定版。禁止创建字面量为 `latest` 的 tag 或 Release。
 
 ## Main Ruleset
 
