@@ -5,7 +5,6 @@ import android.content.Intent
 import android.net.Uri
 import android.webkit.URLUtil
 import androidx.lifecycle.viewModelScope
-import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
 import io.ktor.client.request.get
 import io.ktor.client.statement.bodyAsText
@@ -20,15 +19,13 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.withContext
 import li.songe.gkd.sdp.a11y.useA11yServiceEnabledFlow
 import li.songe.gkd.sdp.a11y.useEnabledA11yServicesFlow
-import li.songe.gkd.sdp.data.CrashData
 import li.songe.gkd.sdp.data.RawSubscription
+import li.songe.gkd.sdp.data.CrashData
 import li.songe.gkd.sdp.data.SubsItem
 import li.songe.gkd.sdp.db.DbSet
 import li.songe.gkd.sdp.diagnostics.DiagnosticLogger
 import li.songe.gkd.sdp.permission.AuthReason
 import li.songe.gkd.sdp.permission.shizukuGrantedState
-import li.songe.gkd.sdp.remote.LegacyDeepLinkTarget
-import li.songe.gkd.sdp.remote.SemanticDeepLinkTarget
 import li.songe.gkd.sdp.remote.WebOriginPolicy
 import li.songe.gkd.sdp.service.A11yService
 import li.songe.gkd.sdp.shizuku.shizukuContextFlow
@@ -45,13 +42,21 @@ import li.songe.gkd.sdp.ui.SnapshotPageRoute
 import li.songe.gkd.sdp.ui.UsageGuardReviewRoute
 import li.songe.gkd.sdp.ui.UsageGuardRoute
 import li.songe.gkd.sdp.ui.WebViewRoute
+import li.songe.gkd.sdp.ui.CrashReportRepository
 import li.songe.gkd.sdp.ui.component.AlertDialogOptions
 import li.songe.gkd.sdp.ui.component.InputSubsLinkOption
 import li.songe.gkd.sdp.ui.component.RuleGroupState
 import li.songe.gkd.sdp.ui.component.UploadOptions
 import li.songe.gkd.sdp.ui.home.BottomNavItem
 import li.songe.gkd.sdp.ui.home.HomeRoute
+import li.songe.gkd.sdp.navigation.AppDestination
+import li.songe.gkd.sdp.navigation.AppNavigationRequests
+import li.songe.gkd.sdp.navigation.AppNavigator
+import li.songe.gkd.sdp.navigation.DeepLinkParseResult
+import li.songe.gkd.sdp.navigation.DeepLinkParser
 import li.songe.gkd.sdp.ui.share.BaseViewModel
+import li.songe.gkd.sdp.ui.share.defaultAppOrderListFlow
+import li.songe.gkd.sdp.ui.share.defaultAppVisitOrderMapFlow
 import li.songe.gkd.sdp.util.AutomatorModeOption
 import li.songe.gkd.sdp.util.BackupUtils
 import li.songe.gkd.sdp.util.DefaultSimpleLifeImpl
@@ -82,35 +87,38 @@ import java.nio.file.Files
 import kotlin.reflect.jvm.jvmName
 import kotlin.time.Duration.Companion.days
 
-class MainViewModel : BaseViewModel(), OnSimpleLife by DefaultSimpleLifeImpl() {
+class MainViewModel(
+    val navigator: AppNavigator = AppNavigator(),
+) : BaseViewModel(), OnSimpleLife by DefaultSimpleLifeImpl() {
     companion object {
-        private var _instance: MainViewModel? = null
-        val instance get() = _instance!!
         private var tempTermsAccepted = false
     }
 
     init {
-        LogUtils.d("MainViewModel:init")
-        _instance = this
-        addCloseable {
-            LogUtils.d("MainViewModel:close")
-            if (_instance == this) { // 可能同时存在 2 个 MainViewModel 实例
-                _instance = null
-            }
+        viewModelScope.launch {
+            AppNavigationRequests.flow.collect(::selectDestination)
         }
     }
 
     override val scope get() = viewModelScope
 
-    val backStack: NavBackStack<NavKey> = NavBackStack(HomeRoute)
+    val backStack get() = navigator.backStack
     val topRoute get() = backStack.last()
+
+    fun bindBackStack(backStack: androidx.navigation3.runtime.NavBackStack<androidx.navigation3.runtime.NavKey>) {
+        val pending = navigator.backStack.toList()
+        if (backStack.size == 1 && pending.size > 1) {
+            backStack.addAll(pending.drop(1))
+        }
+        navigator.bindBackStack(backStack)
+    }
 
     private val backThrottleTimer = ThrottleTimer()
 
     fun popPage(@Loc loc: String = "") = runMainPost {
         if (backThrottleTimer.expired() && backStack.size > 1) {
             val old = backStack.last()
-            backStack.removeAt(backStack.lastIndex)
+            navigator.pop()
             LogUtils.d("popPage", "$old -> ${backStack.last()}", loc = loc)
         }
     }
@@ -122,11 +130,7 @@ class MainViewModel : BaseViewModel(), OnSimpleLife by DefaultSimpleLifeImpl() {
     ) = runMainPost {
         if (navKey != backStack.last()) {
             val old = backStack.last()
-            if (replaced) {
-                backStack[backStack.lastIndex] = navKey
-            } else {
-                backStack.add(navKey)
-            }
+            navigator.navigate(navKey, replaced)
             LogUtils.d("navigatePage", "$old -> ${backStack.last()}", loc = loc)
         }
     }
@@ -148,10 +152,8 @@ class MainViewModel : BaseViewModel(), OnSimpleLife by DefaultSimpleLifeImpl() {
 
     val sheetSubsIdFlow = MutableStateFlow<Long?>(null)
 
-    val appOrderListFlow = DbSet.actionLogDao.queryLatestUniqueAppIds().stateInit(emptyList())
-    val appVisitOrderMapFlow = DbSet.appVisitLogDao.query().map {
-        it.mapIndexed { i, appId -> appId to i }.toMap()
-    }.debounce(500).stateInit(emptyMap())
+    val appOrderListFlow = defaultAppOrderListFlow
+    val appVisitOrderMapFlow = defaultAppVisitOrderMapFlow
 
     private val addOrModifySubsMutex = Mutex()
 
@@ -229,53 +231,27 @@ class MainViewModel : BaseViewModel(), OnSimpleLife by DefaultSimpleLifeImpl() {
 
     fun handleGkdUri(uri: Uri) {
         val notFoundToast = { toast("未知URI\n${uri}") }
-        when (WebOriginPolicy.semanticDeepLinkTarget(uri.toString())) {
-            SemanticDeepLinkTarget.OVERVIEW -> {
-                tabFlow.value = BottomNavItem.Control.key
-                return
+        when (val parsed = DeepLinkParser.parse(uri.toString())) {
+            is DeepLinkParseResult.Destination -> selectDestination(parsed.value)
+            DeepLinkParseResult.Invalid -> when (WebOriginPolicy.legacyDeepLinkTarget(uri.toString())) {
+                li.songe.gkd.sdp.remote.LegacyDeepLinkTarget.ADVANCED -> navigatePage(AdvancedPageRoute)
+                li.songe.gkd.sdp.remote.LegacyDeepLinkTarget.SNAPSHOT -> navigatePage(SnapshotPageRoute)
+                li.songe.gkd.sdp.remote.LegacyDeepLinkTarget.APP_OPS -> navigatePage(AppOpsAllowRoute)
+                li.songe.gkd.sdp.remote.LegacyDeepLinkTarget.WECHAT_SCANNER -> openWeChatScaner()
+                else -> notFoundToast()
             }
-            SemanticDeepLinkTarget.SELF_CONTROL -> {
-                navigatePage(FocusLockRoute)
-                return
-            }
-            SemanticDeepLinkTarget.SETTINGS -> {
-                tabFlow.value = BottomNavItem.Settings.key
-                return
-            }
-            SemanticDeepLinkTarget.USAGE_GUARD -> {
-                navigatePage(UsageGuardRoute)
-                return
-            }
-            SemanticDeepLinkTarget.USAGE_REVIEW -> {
-                navigatePage(UsageGuardReviewRoute)
-                return
-            }
-            SemanticDeepLinkTarget.ACTION_LOG -> {
-                navigatePage(ActionLogRoute())
-                return
-            }
-            SemanticDeepLinkTarget.RULE_SUBSCRIPTIONS -> {
-                tabFlow.value = BottomNavItem.SubsManage.key
-                return
-            }
-            SemanticDeepLinkTarget.RULE_APPS -> {
-                tabFlow.value = BottomNavItem.AppList.key
-                return
-            }
-            null -> Unit
         }
-        when (WebOriginPolicy.legacyDeepLinkTarget(uri.toString())) {
-            LegacyDeepLinkTarget.OVERVIEW -> tabFlow.value = BottomNavItem.Control.key
-            LegacyDeepLinkTarget.SUBSCRIPTIONS -> tabFlow.value = BottomNavItem.SubsManage.key
-            LegacyDeepLinkTarget.APPS -> tabFlow.value = BottomNavItem.AppList.key
-            LegacyDeepLinkTarget.SETTINGS -> tabFlow.value = BottomNavItem.Settings.key
-            LegacyDeepLinkTarget.ADVANCED -> navigatePage(AdvancedPageRoute)
-            LegacyDeepLinkTarget.SNAPSHOT -> navigatePage(SnapshotPageRoute)
-            LegacyDeepLinkTarget.APP_OPS -> navigatePage(AppOpsAllowRoute)
-            LegacyDeepLinkTarget.SELF_CONTROL -> navigatePage(FocusLockRoute)
-            LegacyDeepLinkTarget.WECHAT_SCANNER -> openWeChatScaner()
-            null -> notFoundToast()
+    }
+
+    private fun selectDestination(destination: AppDestination) {
+        navigator.tabFor(destination)?.let { tab ->
+            tabFlow.value = tab.key
+            if (backStack.lastOrNull() !is HomeRoute) {
+                navigator.navigate(HomeRoute, replace = true)
+            }
+            return
         }
+        navigator.navigate(destination)
     }
 
     fun handleIntent(intent: Intent) = viewModelScope.launchTry {
@@ -367,8 +343,6 @@ class MainViewModel : BaseViewModel(), OnSimpleLife by DefaultSimpleLifeImpl() {
 
     val showShareLogDlgFlow = MutableStateFlow(false)
 
-    var tempCrashDataList = emptyList<CrashData>()
-
     init {
         // preload
         appIconMapFlow.value
@@ -428,7 +402,7 @@ class MainViewModel : BaseViewModel(), OnSimpleLife by DefaultSimpleLifeImpl() {
                     it.delete()
                 }
             }
-            tempCrashDataList = list
+            CrashReportRepository.publish(list)
             if (list.isNotEmpty()) {
                 navigatePage(CrashReportRoute)
             }

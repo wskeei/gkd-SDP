@@ -50,6 +50,7 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.entryProvider
+import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import com.dylanc.activityresult.launcher.PickContentLauncher
@@ -280,6 +281,8 @@ class MainActivity : ComponentActivity() {
             updateTopTaskAppId(META.appId)
         }
         setContent {
+            val saveableBackStack = rememberNavBackStack(HomeRoute)
+            mainVm.bindBackStack(saveableBackStack)
             val latestInsets = TopAppBarDefaults.windowInsets
             val density = LocalDensity.current
             if (latestInsets.getTop(density) > topBarWindowInsets.getTop(density)) {
@@ -294,7 +297,7 @@ class MainActivity : ComponentActivity() {
                             rememberSaveableStateHolderNavEntryDecorator(),
                             rememberViewModelStoreNavEntryDecorator(),
                         ),
-                        backStack = mainVm.backStack,
+                        backStack = saveableBackStack,
                         onBack = mainVm::popPage,
                         entryProvider = entryProvider {
                             entry<HomeRoute> { HomePage() }

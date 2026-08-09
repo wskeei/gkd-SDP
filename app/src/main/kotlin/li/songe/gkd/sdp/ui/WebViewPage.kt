@@ -42,7 +42,6 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromString
 import li.songe.gkd.sdp.META
-import li.songe.gkd.sdp.MainActivity
 import li.songe.gkd.sdp.remote.WebNavigationDecision
 import li.songe.gkd.sdp.remote.WebOriginPolicy
 import li.songe.gkd.sdp.remote.readBoundedBody
@@ -181,6 +180,7 @@ fun WebViewPage(route: WebViewRoute) {
                     webViewClient = GkdWebViewClient(
                         onLoadingChanged = { isLoading -> loading = isLoading },
                         onTitleChanged = { title -> pageTitle = title },
+                        onInternalNavigation = mainVm::handleGkdUri,
                     )
                     webChromeClient = object : WebChromeClient() {
                         override fun onProgressChanged(view: WebView?, newProgress: Int) {
@@ -231,6 +231,7 @@ private data class DocConfig(
 private class GkdWebViewClient(
     private val onLoadingChanged: (Boolean) -> Unit,
     private val onTitleChanged: (String) -> Unit,
+    private val onInternalNavigation: (Uri) -> Unit,
 ) : WebViewClient() {
     override fun onPageStarted(view: WebView, url: String?, favicon: Bitmap?) {
         onLoadingChanged(true)
@@ -251,7 +252,7 @@ private class GkdWebViewClient(
             }
             WebNavigationDecision.INTERNAL -> {
                 view.settings.javaScriptEnabled = false
-                (view.context as? MainActivity)?.mainVm?.handleGkdUri(request.url)
+                onInternalNavigation(request.url)
                 true
             }
             WebNavigationDecision.EXTERNAL -> {

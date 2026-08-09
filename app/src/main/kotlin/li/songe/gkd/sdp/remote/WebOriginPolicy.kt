@@ -1,6 +1,8 @@
 package li.songe.gkd.sdp.remote
 
 import java.net.URI
+import li.songe.gkd.sdp.navigation.DeepLinkParseResult
+import li.songe.gkd.sdp.navigation.DeepLinkParser
 
 enum class WebNavigationDecision {
     ALLOW,
@@ -73,6 +75,7 @@ object WebOriginPolicy {
             uri.rawFragment != null ||
             uri.port != -1
         ) return false
+        if (DeepLinkParser.parse(uri.toString()) is DeepLinkParseResult.Destination) return true
         if (semanticDeepLinkTarget(uri) != null) return true
         // Removed by the semantic navigation migration in Task 11; kept only for 2.2.0 upgrades.
         return legacyDeepLinkTarget(uri) != null

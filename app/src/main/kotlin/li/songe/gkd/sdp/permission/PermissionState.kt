@@ -16,13 +16,13 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.updateAndGet
 import li.songe.gkd.sdp.MainActivity
-import li.songe.gkd.sdp.MainViewModel
 import li.songe.gkd.sdp.app
 import li.songe.gkd.sdp.appScope
+import li.songe.gkd.sdp.navigation.AppDestination
+import li.songe.gkd.sdp.navigation.AppNavigationRequests
 import li.songe.gkd.sdp.shizuku.SafeAppOpsService
 import li.songe.gkd.sdp.shizuku.SafePackageManager
 import li.songe.gkd.sdp.shizuku.shizukuContextFlow
-import li.songe.gkd.sdp.ui.AppOpsAllowRoute
 import li.songe.gkd.sdp.util.AndroidTarget
 import li.songe.gkd.sdp.util.toast
 import li.songe.gkd.sdp.util.updateAllAppInfo
@@ -109,7 +109,7 @@ val foregroundServiceSpecialUseState by lazy {
         reason = AuthReason(
             text = { "当前操作权限「特殊用途的前台服务」已被限制, 请先解除限制" },
             confirm = {
-                MainViewModel.instance.navigatePage(AppOpsAllowRoute)
+                AppNavigationRequests.request(AppDestination.SETTINGS_CAPABILITIES)
             },
         ),
     )
