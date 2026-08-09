@@ -35,9 +35,15 @@ class UsageGuardCountdownOverlayLeaseContractTest {
         val stoppedCallback = source
             .substringAfter("fun onCountdownOverlayStopped(")
             .substringBefore("fun onRuntimeDisconnected")
+        val mountFailureCallback = source
+            .substringAfter("fun onOverlayMountFailed(")
+            .substringBefore("fun onRequestGranted")
 
         assertTrue(stoppedCallback.contains("leaseId"))
         assertTrue(stoppedCallback.contains("activeLease.leaseId == leaseId"))
+        assertTrue(mountFailureCallback.contains("activeLease != null"))
+        assertTrue(mountFailureCallback.contains("activeLease.appId == appId"))
+        assertTrue(mountFailureCallback.contains("activeLease.leaseId == countdownLeaseId"))
     }
 
     private fun sourceFile(relativePath: String): File {

@@ -208,7 +208,8 @@ object UsageGuardEngine {
                         val activeLease = countdownOverlayLease.get()
                         if (
                             countdownLeaseId != null &&
-                            activeLease?.appId == appId &&
+                            activeLease != null &&
+                            activeLease.appId == appId &&
                             activeLease.leaseId == countdownLeaseId
                         ) {
                             clearCountdownOverlayState()
