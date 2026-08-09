@@ -24,7 +24,18 @@ data class PreparedBackupImport(
     val sourceFormat: BackupSourceFormat,
 )
 
+private data class BackupImportMutationOutcome(
+    val result: BackupResult<Unit>,
+    val rollbackCompleted: Boolean = false,
+    val reconcileRequired: Boolean = false,
+    val commitRecord: BackupImportJournalRecord? = null,
+)
+
 interface BackupImportTarget {
+    suspend fun <T> withExclusiveMutation(
+        block: suspend () -> T,
+        afterCommit: suspend (T) -> Unit = {},
+    ): T = block().also { afterCommit(it) }
     suspend fun validateReferences(payload: BackupPayload): Boolean
     suspend fun capture(categoryIds: Set<String>): BackupPayload
     suspend fun preview(
@@ -106,36 +117,78 @@ class BackupImportCoordinator(
         confirmed: Boolean,
     ): BackupResult<Unit> = importMutex.withLock {
         if (!confirmed) return BackupResult.Failure(BackupErrorCode.IMPORT_NOT_CONFIRMED)
-        val currentState = try {
-            target.capture(prepared.payload.manifest.categoryIds.toSet())
+        val outcome = try {
+            target.withExclusiveMutation(
+                block = {
+                    val currentState = try {
+                        target.capture(prepared.payload.manifest.categoryIds.toSet())
+                    } catch (error: CancellationException) {
+                        throw error
+                    } catch (_: Throwable) {
+                        return@withExclusiveMutation BackupImportMutationOutcome(
+                            result = BackupResult.Failure(BackupErrorCode.IMPORT_FAILED),
+                        )
+                    }
+                    if (currentState.payloadHash != prepared.previewStateHash) {
+                        return@withExclusiveMutation BackupImportMutationOutcome(
+                            result = BackupResult.Failure(BackupErrorCode.IMPORT_PREVIEW_STALE),
+                        )
+                    }
+                    val baseRecord = BackupImportJournalRecord(
+                        phase = BackupImportPhase.PREPARED,
+                        payloadHash = prepared.payload.payloadHash,
+                        previousState = currentState,
+                    )
+                    try {
+                        journal.write(baseRecord)
+                        journal.write(baseRecord.copy(phase = BackupImportPhase.APPLYING))
+                        target.replaceIncludedCategories(prepared.payload)
+                        BackupImportMutationOutcome(
+                            result = BackupResult.Success(Unit),
+                            reconcileRequired = true,
+                            commitRecord = baseRecord,
+                        )
+                    } catch (error: CancellationException) {
+                        rollbackAfterFailure(currentState)
+                        throw error
+                    } catch (_: Throwable) {
+                        BackupImportMutationOutcome(
+                            result = BackupResult.Failure(BackupErrorCode.IMPORT_FAILED),
+                            rollbackCompleted = rollbackAfterFailure(currentState),
+                        )
+                    }
+                },
+                afterCommit = { committedOutcome ->
+                    val commitRecord = committedOutcome.commitRecord
+                    if (commitRecord != null) {
+                        try {
+                            journal.write(commitRecord.copy(phase = BackupImportPhase.COMMITTED))
+                        } catch (error: Throwable) {
+                            target.restore(commitRecord.previousState)
+                            runCatching { journal.clear() }
+                            throw error
+                        }
+                    } else if (committedOutcome.rollbackCompleted) {
+                        journal.clear()
+                    }
+                },
+            )
         } catch (error: CancellationException) {
             throw error
         } catch (_: Throwable) {
             return BackupResult.Failure(BackupErrorCode.IMPORT_FAILED)
         }
-        if (currentState.payloadHash != prepared.previewStateHash) {
-            return BackupResult.Failure(BackupErrorCode.IMPORT_PREVIEW_STALE)
+        if (outcome.reconcileRequired) {
+            try {
+                target.reconcileRuntime()
+                journal.clear()
+            } catch (error: CancellationException) {
+                throw error
+            } catch (_: Throwable) {
+                return BackupResult.Failure(BackupErrorCode.IMPORT_FAILED)
+            }
         }
-        val baseRecord = BackupImportJournalRecord(
-            phase = BackupImportPhase.PREPARED,
-            payloadHash = prepared.payload.payloadHash,
-            previousState = currentState,
-        )
-        return try {
-            journal.write(baseRecord)
-            journal.write(baseRecord.copy(phase = BackupImportPhase.APPLYING))
-            target.replaceIncludedCategories(prepared.payload)
-            journal.write(baseRecord.copy(phase = BackupImportPhase.COMMITTED))
-            target.reconcileRuntime()
-            journal.clear()
-            BackupResult.Success(Unit)
-        } catch (error: CancellationException) {
-            rollbackAfterFailure(currentState)
-            throw error
-        } catch (_: Throwable) {
-            rollbackAfterFailure(currentState)
-            BackupResult.Failure(BackupErrorCode.IMPORT_FAILED)
-        }
+        outcome.result
     }
 
     suspend fun recoverInterruptedImport(): Unit = importMutex.withLock {
@@ -143,8 +196,10 @@ class BackupImportCoordinator(
         when (record.phase) {
             BackupImportPhase.PREPARED -> journal.clear()
             BackupImportPhase.APPLYING -> {
-                target.restore(record.previousState)
-                journal.clear()
+                target.withExclusiveMutation(
+                    block = { target.restore(record.previousState) },
+                    afterCommit = { journal.clear() },
+                )
             }
             BackupImportPhase.COMMITTED -> {
                 target.reconcileRuntime()
@@ -176,12 +231,12 @@ class BackupImportCoordinator(
         BackupResult.Failure(BackupErrorCode.INVALID_PAYLOAD)
     }
 
-    private suspend fun rollbackAfterFailure(previousState: BackupPayload) {
+    private suspend fun rollbackAfterFailure(previousState: BackupPayload): Boolean =
         try {
             target.restore(previousState)
-            journal.clear()
+            true
         } catch (_: Throwable) {
             // Keep the APPLYING journal so startup recovery retries before opening the interface.
+            false
         }
-    }
 }

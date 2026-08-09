@@ -1,6 +1,11 @@
 package li.songe.gkd.sdp.backup
 
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.async
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.yield
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -150,6 +155,33 @@ class BackupImportCoordinatorTest {
     }
 
     @Test
+    fun `concurrent history write waits for failed import rollback and is preserved`() = runBlocking {
+        val target = FakeImportTarget(payload("old")).apply {
+            failAfterReplace = true
+            pauseAfterReplace = true
+        }
+        val coordinator = coordinator(target, RecordingJournal())
+        val prepared = coordinator.prepare(
+            encryptedPayload(payload("new")),
+            "correct-password".toCharArray(),
+        ) as BackupResult.Success<PreparedBackupImport>
+
+        val applyResult = async { coordinator.apply(prepared.value, confirmed = true) }
+        target.replaceStarted.await()
+        val concurrentWrite = async { target.writeHistory(payload("concurrent")) }
+        yield()
+
+        assertFalse(concurrentWrite.isCompleted)
+        target.continueReplace.complete(Unit)
+        assertEquals(
+            BackupErrorCode.IMPORT_FAILED,
+            (applyResult.await() as BackupResult.Failure).code,
+        )
+        concurrentWrite.await()
+        assertEquals("concurrent", target.current.objects.single().content.decodeToString())
+    }
+
+    @Test
     fun `startup rolls back applying journal before interface can open`() = runBlocking {
         val original = payload("old")
         val target = FakeImportTarget(payload("partially-applied"))
@@ -216,10 +248,26 @@ class BackupImportCoordinatorTest {
     }
 
     private class FakeImportTarget(initial: BackupPayload) : BackupImportTarget {
+        private val mutationMutex = Mutex()
         var current = initial
         var referencesValid = true
         var failAfterReplace = false
+        var pauseAfterReplace = false
+        val replaceStarted = CompletableDeferred<Unit>()
+        val continueReplace = CompletableDeferred<Unit>()
         val events = mutableListOf<String>()
+
+        override suspend fun <T> withExclusiveMutation(
+            block: suspend () -> T,
+            afterCommit: suspend (T) -> Unit,
+        ): T = mutationMutex.withLock {
+            block().also { afterCommit(it) }
+        }
+
+        suspend fun writeHistory(payload: BackupPayload) = mutationMutex.withLock {
+            events += "concurrent-write"
+            current = payload
+        }
 
         override suspend fun validateReferences(payload: BackupPayload): Boolean {
             events += "validate"
@@ -249,6 +297,10 @@ class BackupImportCoordinatorTest {
         override suspend fun replaceIncludedCategories(payload: BackupPayload) {
             events += "replace"
             current = payload
+            if (pauseAfterReplace) {
+                replaceStarted.complete(Unit)
+                continueReplace.await()
+            }
             if (failAfterReplace) error("synthetic failure")
         }
 

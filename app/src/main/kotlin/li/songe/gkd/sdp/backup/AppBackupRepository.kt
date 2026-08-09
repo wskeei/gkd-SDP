@@ -24,6 +24,14 @@ import java.security.MessageDigest
 import java.util.Base64
 
 class AppBackupRepository : BackupExportSource, BackupImportTarget {
+    override suspend fun <T> withExclusiveMutation(
+        block: suspend () -> T,
+        afterCommit: suspend (T) -> Unit,
+    ): T =
+        BackupDataMutationBarrier.withMutation {
+            DbSet.withTransaction { block() }.also { afterCommit(it) }
+        }
+
     override suspend fun collect(categoryIds: Set<String>): BackupPayload {
         require(categoryIds.isNotEmpty())
         require(categoryIds.all { BackupCatalog.category(it) != null })

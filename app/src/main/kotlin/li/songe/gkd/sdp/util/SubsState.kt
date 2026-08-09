@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import li.songe.gkd.sdp.appScope
+import li.songe.gkd.sdp.backup.BackupDataMutationBarrier
 import li.songe.gkd.sdp.data.AppRule
 import li.songe.gkd.sdp.data.CategoryConfig
 import li.songe.gkd.sdp.data.GlobalRule
@@ -127,61 +128,67 @@ val usedSubsEntriesFlow by lazy {
 
 fun updateSubscription(subscription: RawSubscription) {
     appScope.launchTry {
-        updateSubsMutex.withStateLock {
-            val subsId = subscription.id
-            val subsName = subscription.name
-            val newMap = subsMapFlow.value.toMutableMap()
-            val nextSubsRaw = if (subsId < 0 && newMap[subsId]?.version == subscription.version) {
-                subscription.run {
-                    copy(
-                        version = version + 1,
-                        apps = apps.filterIfNotAll { it.groups.isNotEmpty() }
-                            .distinctByIfAny { it.id },
-                    )
+        BackupDataMutationBarrier.withMutation {
+            updateSubsMutex.withStateLock {
+                val subsId = subscription.id
+                val subsName = subscription.name
+                val newMap = subsMapFlow.value.toMutableMap()
+                val nextSubsRaw = if (
+                    subsId < 0 && newMap[subsId]?.version == subscription.version
+                ) {
+                    subscription.run {
+                        copy(
+                            version = version + 1,
+                            apps = apps.filterIfNotAll { it.groups.isNotEmpty() }
+                                .distinctByIfAny { it.id },
+                        )
+                    }
+                } else {
+                    subscription
                 }
-            } else {
-                subscription
-            }
-            newMap[subsId] = nextSubsRaw
-            subsMapFlow.value = newMap
-            if (subsLoadErrorsFlow.value.contains(subsId)) {
-                subsLoadErrorsFlow.update {
-                    it.toMutableMap().apply {
-                        remove(subsId)
+                newMap[subsId] = nextSubsRaw
+                subsMapFlow.value = newMap
+                if (subsLoadErrorsFlow.value.contains(subsId)) {
+                    subsLoadErrorsFlow.update {
+                        it.toMutableMap().apply {
+                            remove(subsId)
+                        }
                     }
                 }
+                withContext(Dispatchers.IO) {
+                    cleanupSubsConfig(subsId, nextSubsRaw)
+                    DbSet.subsItemDao.updateMtime(subsId, System.currentTimeMillis())
+                    subsFolder.resolve("${subsId}.json")
+                        .writeText(json.encodeToString(nextSubsRaw))
+                }
+                LogUtils.d("更新订阅文件:id=${subsId},name=${subsName}")
             }
-            withContext(Dispatchers.IO) {
-                cleanupSubsConfig(subsId, nextSubsRaw)
-                DbSet.subsItemDao.updateMtime(subsId, System.currentTimeMillis())
-                subsFolder.resolve("${subsId}.json")
-                    .writeText(json.encodeToString(nextSubsRaw))
-            }
-            LogUtils.d("更新订阅文件:id=${subsId},name=${subsName}")
         }
     }
 }
 
 fun deleteSubscription(vararg subsIds: Long) {
     appScope.launchTry(Dispatchers.IO) {
-        updateSubsMutex.mutex.withLock {
-            val deleteSize = DbSet.subsItemDao.deleteById(*subsIds)
-            if (deleteSize > 0) {
-                DbSet.subsConfigDao.deleteBySubsId(*subsIds)
-                DbSet.actionLogDao.deleteBySubsId(*subsIds)
-                DbSet.categoryConfigDao.deleteBySubsId(*subsIds)
-                val newMap = subsMapFlow.value.toMutableMap()
-                subsIds.forEach { id ->
-                    newMap.remove(id)
-                    subsFolder.resolve("$id.json").apply {
-                        if (exists()) {
-                            delete()
+        BackupDataMutationBarrier.withMutation {
+            updateSubsMutex.mutex.withLock {
+                val deleteSize = DbSet.subsItemDao.deleteById(*subsIds)
+                if (deleteSize > 0) {
+                    DbSet.subsConfigDao.deleteBySubsId(*subsIds)
+                    DbSet.actionLogDao.deleteBySubsId(*subsIds)
+                    DbSet.categoryConfigDao.deleteBySubsId(*subsIds)
+                    val newMap = subsMapFlow.value.toMutableMap()
+                    subsIds.forEach { id ->
+                        newMap.remove(id)
+                        subsFolder.resolve("$id.json").apply {
+                            if (exists()) {
+                                delete()
+                            }
                         }
                     }
+                    subsMapFlow.value = newMap
+                    toast("删除成功")
+                    LogUtils.d("deleteSubscription", subsIds)
                 }
-                subsMapFlow.value = newMap
-                toast("删除成功")
-                LogUtils.d("deleteSubscription", subsIds)
             }
         }
     }

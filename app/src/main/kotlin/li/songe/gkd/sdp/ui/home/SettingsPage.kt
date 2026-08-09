@@ -105,7 +105,9 @@ import li.songe.gkd.sdp.ui.style.titleItemPadding
 import li.songe.gkd.sdp.util.AndroidTarget
 import li.songe.gkd.sdp.util.BackupUtils
 import li.songe.gkd.sdp.util.DarkThemeOption
+import li.songe.gkd.sdp.util.DisplayDensityOption
 import li.songe.gkd.sdp.util.FocusLockUtils
+import li.songe.gkd.sdp.util.LanguageOption
 import li.songe.gkd.sdp.util.findOption
 import li.songe.gkd.sdp.util.launchAsFn
 import li.songe.gkd.sdp.util.mapState
@@ -910,6 +912,24 @@ fun useSettingsPage(): ScaffoldExt {
                     }
                 )
             }
+
+            TextMenu(
+                title = "界面密度",
+                option = DisplayDensityOption.objects.findOption(store.displayDensityScale),
+                onOptionChange = {
+                    storeFlow.update { settings ->
+                        settings.copy(displayDensityScale = it.value)
+                    }
+                },
+            )
+
+            TextMenu(
+                title = "应用语言",
+                option = LanguageOption.objects.findOption(store.languageTag),
+                onOptionChange = {
+                    storeFlow.update { settings -> settings.copy(languageTag = it.value) }
+                },
+            )
 
             Text(
                 text = "其他",

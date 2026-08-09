@@ -15,6 +15,7 @@ import kotlinx.serialization.json.JsonObject
 import li.songe.gkd.sdp.a11y.A11yRuleEngine
 import li.songe.gkd.sdp.a11y.TopActivity
 import li.songe.gkd.sdp.a11y.topActivityFlow
+import li.songe.gkd.sdp.backup.BackupDataMutationBarrier
 import li.songe.gkd.sdp.data.ComplexSnapshot
 import li.songe.gkd.sdp.data.RpcError
 import li.songe.gkd.sdp.data.info2nodeList
@@ -45,8 +46,10 @@ object SnapshotExt {
             val minSnapshot = JsonObject(snapshotJson.toMutableMap().apply {
                 this["nodes"] = JsonArray(emptyList())
             })
-            withContext(Dispatchers.IO) {
-                f.writeText(keepNullJson.encodeToString(minSnapshot))
+            BackupDataMutationBarrier.withMutation {
+                withContext(Dispatchers.IO) {
+                    f.writeText(keepNullJson.encodeToString(minSnapshot))
+                }
             }
             return minSnapshot
         }
@@ -93,9 +96,11 @@ object SnapshotExt {
     }
 
     fun removeSnapshot(id: Long) {
-        snapshotParentPath(id).apply {
-            if (exists()) {
-                deleteRecursively()
+        BackupDataMutationBarrier.mutateBlocking {
+            snapshotParentPath(id).apply {
+                if (exists()) {
+                    deleteRecursively()
+                }
             }
         }
     }
@@ -263,20 +268,22 @@ object SnapshotExt {
             }
 
             val (bitmap, currentStatus) = screenResult // 拆开(图片+状态)
-            withContext(Dispatchers.IO) {
-                snapshotParentPath(snapshot.id).autoMk()
-                screenshotFile(snapshot.id).outputStream().use { stream ->
-                    bitmap.compress(Bitmap.CompressFormat.PNG, 100, stream)
-                }
-                snapshotFile(snapshot.id).writeText(keepNullJson.encodeToString(snapshot))
-                minSnapshotFile(snapshot.id).writeText(
-                    keepNullJson.encodeToString(
-                        snapshot.copy(
-                            nodes = emptyList()
+            BackupDataMutationBarrier.withMutation {
+                withContext(Dispatchers.IO) {
+                    snapshotParentPath(snapshot.id).autoMk()
+                    screenshotFile(snapshot.id).outputStream().use { stream ->
+                        bitmap.compress(Bitmap.CompressFormat.PNG, 100, stream)
+                    }
+                    snapshotFile(snapshot.id).writeText(keepNullJson.encodeToString(snapshot))
+                    minSnapshotFile(snapshot.id).writeText(
+                        keepNullJson.encodeToString(
+                            snapshot.copy(
+                                nodes = emptyList()
+                            )
                         )
                     )
-                )
-                DbSet.snapshotDao.insert(snapshot.toSnapshot())
+                    DbSet.snapshotDao.insert(snapshot.toSnapshot())
+                }
             }
             val tip = when (currentStatus) {
                 ScreenWhy.NotHave -> "快照成功 (无截图)"

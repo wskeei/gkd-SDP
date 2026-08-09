@@ -66,6 +66,36 @@ sealed class DarkThemeOption(
     }
 }
 
+sealed class DisplayDensityOption(
+    override val value: Float,
+    override val label: String,
+) : Option<Float> {
+    override val options get() = objects
+
+    data object Compact : DisplayDensityOption(0.9f, "紧凑")
+    data object Standard : DisplayDensityOption(1f, "标准")
+    data object Comfortable : DisplayDensityOption(1.15f, "舒适")
+    data object Large : DisplayDensityOption(1.3f, "放大")
+
+    companion object {
+        val objects by lazy { listOf(Compact, Standard, Comfortable, Large) }
+    }
+}
+
+sealed class LanguageOption(
+    override val value: String,
+    override val label: String,
+) : Option<String> {
+    override val options get() = objects
+
+    data object FollowSystem : LanguageOption("", "跟随系统")
+    data object SimplifiedChinese : LanguageOption("zh-CN", "简体中文")
+
+    companion object {
+        val objects by lazy { listOf(FollowSystem, SimplifiedChinese) }
+    }
+}
+
 sealed class EnableGroupOption(
     override val value: Boolean?,
     override val label: String

@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import li.songe.gkd.sdp.appScope
+import li.songe.gkd.sdp.backup.BackupDataMutationBarrier
 import li.songe.gkd.sdp.util.json
 import li.songe.gkd.sdp.util.privateStoreFolder
 import li.songe.gkd.sdp.util.storeFolder
@@ -66,9 +67,28 @@ class MutableStoreStateFlow<T>(
     val encode: (T) -> String,
     private val stateFlow: MutableStateFlow<T>,
 ) : MutableStateFlow<T> by stateFlow {
+    override var value: T
+        get() = stateFlow.value
+        set(value) = BackupDataMutationBarrier.mutateBlocking {
+            stateFlow.value = value
+        }
+
+    override fun compareAndSet(expect: T, update: T): Boolean =
+        BackupDataMutationBarrier.mutateBlocking {
+            stateFlow.compareAndSet(expect, update)
+        }
+
+    override suspend fun emit(value: T) = BackupDataMutationBarrier.withMutation {
+        stateFlow.emit(value)
+    }
+
+    override fun tryEmit(value: T): Boolean = BackupDataMutationBarrier.mutateBlocking {
+        stateFlow.tryEmit(value)
+    }
+
     fun encodeSelf(): String = encode(value)
     fun updateByDecode(text: String?) {
-        value = decode(text)
+        stateFlow.value = decode(text)
     }
 }
 
@@ -87,8 +107,10 @@ fun <T> createTextFlow(
     val stateFlow = MutableStateFlow(initValue)
     scope.launch {
         stateFlow.drop(1).conflate().debounce(debounceMillis).collect {
-            withContext(Dispatchers.IO) {
-                writeTextAtomically(file, encode(it))
+            BackupDataMutationBarrier.withMutation {
+                withContext(Dispatchers.IO) {
+                    writeTextAtomically(file, encode(it))
+                }
             }
         }
     }

@@ -39,6 +39,14 @@ class DisplayPreferenceBackupTest {
         assertFalse(restored.enableShizuku)
         assertFalse(restored.usageGuardEnabled)
         assertFalse(restored.accessibilityGuardEnabled)
+
+        val uiState = DisplayPreferenceUiPolicy.resolve(
+            settings = restored,
+            systemLanguageTag = "en-US",
+        )
+        assertEquals(true, uiState.enableDarkTheme)
+        assertEquals(1.2f, uiState.densityScale)
+        assertEquals("zh-CN", uiState.languageTag)
     }
 
     @Test
@@ -69,6 +77,10 @@ class DisplayPreferenceBackupTest {
         )
 
         assertEquals(current, restored)
+        assertEquals(
+            "zh-CN",
+            DisplayPreferenceUiPolicy.resolve(restored, "en-US").languageTag,
+        )
     }
 
     private fun settings(
