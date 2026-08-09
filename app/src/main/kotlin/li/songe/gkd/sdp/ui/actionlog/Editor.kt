@@ -1,5 +1,7 @@
-package li.songe.gkd.sdp
+@file:JvmName("ActionLogEditor0")
 
-/** Action log filter/editor boundary. */
-internal object ActionLogEditorBoundary
+package li.songe.gkd.sdp.ui
 
+import li.songe.gkd.sdp.data.ActionLog
+
+internal data class ActionLogEditorState(val isEditing: Boolean = false)

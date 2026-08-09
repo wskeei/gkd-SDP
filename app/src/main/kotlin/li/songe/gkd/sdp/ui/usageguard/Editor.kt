@@ -1,5 +1,5 @@
-package li.songe.gkd.sdp
+@file:JvmName("UsageGuardEditor")
 
-/** Usage request form editor boundary. */
-internal object UsageGuardEditorBoundary
+package li.songe.gkd.sdp.ui
 
+internal fun usageGuardDurationLabel(minutes: Int): String = "${minutes.coerceAtLeast(0)}分钟"

@@ -1,29 +1,26 @@
-@file:JvmName("ImagePreviewSections")
+@file:JvmName("ImagePreviewSections0")
 
 package li.songe.gkd.sdp.ui
+
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 
 import android.webkit.URLUtil
 import androidx.activity.compose.LocalActivity
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.AnimationConstants.DefaultDurationMillis
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -31,21 +28,13 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.painter.Painter
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
@@ -53,10 +42,7 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.navigation3.runtime.NavKey
-import coil3.EventListener
 import coil3.ImageLoader
-import coil3.compose.AsyncImagePainter
-import coil3.compose.rememberAsyncImagePainter
 import coil3.decode.Decoder
 import coil3.disk.DiskCache
 import coil3.fetch.Fetcher
@@ -64,17 +50,12 @@ import coil3.gif.AnimatedImageDecoder
 import coil3.gif.GifDecoder
 import coil3.imageLoader
 import coil3.network.okhttp.OkHttpNetworkFetcherFactory
-import coil3.request.CachePolicy
-import coil3.request.ErrorResult
 import coil3.request.ImageRequest
-import coil3.request.Options
-import coil3.request.SuccessResult
-import coil3.request.crossfade
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.serialization.Serializable
 import li.songe.gkd.sdp.MainActivity
+import li.songe.gkd.sdp.MainViewModel
 import li.songe.gkd.sdp.app
 import li.songe.gkd.sdp.ui.component.PerfIcon
 import li.songe.gkd.sdp.ui.component.PerfIconButton
@@ -83,30 +64,12 @@ import li.songe.gkd.sdp.ui.share.LocalMainViewModel
 import li.songe.gkd.sdp.util.AndroidTarget
 import li.songe.gkd.sdp.util.coilCacheDir
 import li.songe.gkd.sdp.util.throttle
-import me.saket.telephoto.zoomable.ZoomableContentLocation
-import me.saket.telephoto.zoomable.rememberZoomableState
-import me.saket.telephoto.zoomable.zoomable
 import okhttp3.OkHttpClient
 import okio.Path.Companion.toOkioPath
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.toJavaDuration
 
-@Serializable
-data class ImagePreviewItem(
-    val uri: String,
-    val title: String? = null,
-    val titles: List<String> = emptyList(),
-)
-
-@Serializable
-data class ImagePreviewRoute(
-    val title: String? = null,
-    val uri: String? = null,
-    val uris: List<String> = emptyList(),
-    val items: List<ImagePreviewItem> = emptyList(),
-) : NavKey
-
-private val imageLoader by lazy {
+internal val imageLoader by lazy {
     ImageLoader.Builder(app)
         .diskCache {
             DiskCache.Builder()
@@ -133,6 +96,7 @@ private val imageLoader by lazy {
         }
         .build()
 }
+
 
 @Composable
 fun ImagePreviewPageSections(route: ImagePreviewRoute) {
@@ -202,345 +166,128 @@ fun ImagePreviewPageSections(route: ImagePreviewRoute) {
             .background(Color.Black)
             .fillMaxSize()
     ) {
-        when {
-            singleItem != null -> {
-                UriImage(
-                    uri = singleItem.uri,
-                    onToggleBars = { showBars = !showBars },
-                )
-            }
-
-            previewItems.isNotEmpty() -> {
-                HorizontalPager(
-                    modifier = Modifier.fillMaxSize(),
-                    state = pagerState,
-                    pageContent = { index ->
-                        UriImage(
-                            uri = previewItems[index].uri,
-                            onToggleBars = { showBars = !showBars },
-                        )
-                    }
-                )
-            }
-        }
-
-        AnimatedVisibility(
-            visible = showBars,
-            enter = fadeIn(),
-            exit = fadeOut(),
-            modifier = Modifier
-                .zIndex(1f)
-                .fillMaxWidth()
-        ) {
-            Column {
-                val currentPreviewItem =
-                    singleItem ?: previewItems.getOrNull(pagerState.currentPage)
-                val currentUri = currentPreviewItem?.uri
-                PerfTopAppBar(
-                    modifier = Modifier.background(Color.Black.copy(alpha = 0.5f)),
-                    navigationIcon = {
-                        PerfIconButton(
-                            imageVector = PerfIcon.ArrowBack,
-                            onClick = { mainVm.popPage() },
-                            colors = IconButtonDefaults.iconButtonColors(contentColor = Color.White)
-                        )
-                    },
-                    title = {
-                        val baseTitle = route.title?.takeIf { it.isNotBlank() }
-                        val itemTitle = currentPreviewItem
-                            ?.let(::buildPreviewSubtitle)
-                            ?.takeIf { it.isNotBlank() && it != baseTitle }
-                        when {
-                            baseTitle != null && itemTitle != null -> {
-                                Column {
-                                    Text(
-                                        text = baseTitle,
-                                        maxLines = 1,
-                                        softWrap = false,
-                                        overflow = TextOverflow.MiddleEllipsis,
-                                        style = MaterialTheme.typography.titleLarge.copy(
-                                            color = Color.White,
-                                            fontWeight = FontWeight.Medium
-                                        )
-                                    )
-                                    Text(
-                                        text = itemTitle,
-                                        maxLines = 1,
-                                        softWrap = false,
-                                        overflow = TextOverflow.MiddleEllipsis,
-                                        style = MaterialTheme.typography.titleSmall.copy(
-                                            color = Color.White.copy(alpha = 0.8f),
-                                            fontWeight = FontWeight.Normal
-                                        )
-                                    )
-                                }
-                            }
-
-                            baseTitle != null -> {
-                                Text(
-                                    text = baseTitle,
-                                    maxLines = 1,
-                                    softWrap = false,
-                                    overflow = TextOverflow.MiddleEllipsis,
-                                    style = MaterialTheme.typography.titleLarge.copy(
-                                        color = Color.White,
-                                        fontWeight = FontWeight.Medium
-                                    )
-                                )
-                            }
-
-                            itemTitle != null -> {
-                                Text(
-                                    text = itemTitle,
-                                    maxLines = 1,
-                                    softWrap = false,
-                                    overflow = TextOverflow.MiddleEllipsis,
-                                    style = MaterialTheme.typography.titleLarge.copy(
-                                        color = Color.White,
-                                        fontWeight = FontWeight.Medium
-                                    )
-                                )
-                            }
-                        }
-                    },
-                    actions = {
-                        if (currentUri != null && URLUtil.isNetworkUrl(currentUri)) {
-                            PerfIconButton(
-                                imageVector = PerfIcon.OpenInNew,
-                                onClick = throttle(fn = { mainVm.openUrl(currentUri) }),
-                                colors = IconButtonDefaults.iconButtonColors(contentColor = Color.White)
-                            )
-                        }
-                    },
-                    colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = Color.Transparent,
-                        navigationIconContentColor = Color.White,
-                        titleContentColor = Color.White,
-                        actionIconContentColor = Color.White
-                    )
-                )
-
-                if (previewItems.size > 1) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 12.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = "${pagerState.currentPage + 1} / ${previewItems.size}",
-                            modifier = Modifier
-                                .background(Color.Black.copy(alpha = 0.5f), CircleShape)
-                                .padding(horizontal = 12.dp, vertical = 4.dp),
-                            color = Color.White,
-                            style = MaterialTheme.typography.bodyMedium.copy(
-                                fontWeight = FontWeight.Bold
-                            )
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun UriImage(
-    uri: String,
-    onToggleBars: () -> Unit = {},
-) {
-    val context = LocalContext.current
-    val imageLoader = context.imageLoader
-    val isNetworkImage = remember(uri) { URLUtil.isNetworkUrl(uri) }
-    val phaseTextFlow = remember(uri) { MutableStateFlow<String?>(null) }
-    val phaseText by phaseTextFlow.collectAsStateWithLifecycle()
-
-    // 手势层切至 Telephoto，loading / error 还是使用 AsyncImagePainter.State 统一驱动。
-    val model = remember(uri) {
-        buildPreviewImageRequest(
-            context = context,
-            uri = uri,
-            listener = object : EventListener() {
-                override fun onStart(request: ImageRequest) {
-                    phaseTextFlow.value = "请求中"
-                }
-
-                override fun fetchStart(
-                    request: ImageRequest,
-                    fetcher: Fetcher,
-                    options: Options,
-                ) {
-                    phaseTextFlow.value = if (isNetworkImage) "下载中" else "读取中"
-                }
-
-                override fun decodeStart(
-                    request: ImageRequest,
-                    decoder: Decoder,
-                    options: Options,
-                ) {
-                    phaseTextFlow.value = "解码中"
-                }
-
-                override fun onSuccess(request: ImageRequest, result: SuccessResult) {
-                    phaseTextFlow.value = null
-                }
-
-                override fun onError(request: ImageRequest, result: ErrorResult) {
-                    phaseTextFlow.value = null
-                }
-
-                override fun onCancel(request: ImageRequest) {
-                    phaseTextFlow.value = null
-                }
-            }
+        ImagePreviewMedia(
+            previewItems = previewItems,
+            singleItem = singleItem,
+            pagerState = pagerState,
+            onToggleBars = { showBars = !showBars },
+        )
+        ImagePreviewBars(
+            route = route,
+            previewItems = previewItems,
+            singleItem = singleItem,
+            pagerState = pagerState,
+            showBars = showBars,
+            mainVm = mainVm,
         )
     }
-    val painter = rememberAsyncImagePainter(
-        model = model,
-        imageLoader = imageLoader,
-    )
-    val state by painter.state.collectAsStateWithLifecycle()
-
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
-    ) {
-        when (val stateVal = state) {
-            AsyncImagePainter.State.Empty -> Unit
-
-            is AsyncImagePainter.State.Loading -> {
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .pointerInput(uri) {
-                            detectTapGestures(onTap = { onToggleBars() })
-                        },
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center,
-                ) {
-                    CircularProgressIndicator(modifier = Modifier.size(40.dp))
-                    phaseText?.let { text ->
-                        Spacer(modifier = Modifier.height(12.dp))
-                        Text(
-                            text = text,
-                            color = MaterialTheme.colorScheme.outline,
-                            style = MaterialTheme.typography.bodySmall,
-                        )
-                    }
-                }
-            }
-
-            is AsyncImagePainter.State.Success -> {
-                ZoomableImageContent(
-                    uri = uri,
-                    painter = painter,
-                    onToggleBars = onToggleBars,
-                )
-            }
-
-            is AsyncImagePainter.State.Error -> {
-                val reload = throttle { painter.restart() }
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .pointerInput(uri) {
-                            detectTapGestures(onTap = { onToggleBars() })
-                        },
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center,
-                ) {
-                    Text(
-                        modifier = Modifier.pointerInput(uri) {
-                            detectTapGestures(onTap = { reload() })
-                        },
-                        text = "加载失败, 点击重试",
-                        color = MaterialTheme.colorScheme.error,
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                    stateVal.result.throwable.message?.let { msg ->
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = msg,
-                            color = MaterialTheme.colorScheme.outline,
-                            style = MaterialTheme.typography.labelSmall,
-                            modifier = Modifier.padding(horizontal = 16.dp),
-                            textAlign = TextAlign.Center
-                        )
-                    }
-                }
-            }
-        }
-    }
 }
 
 @Composable
-private fun ZoomableImageContent(
-    uri: String,
-    painter: Painter,
+private fun ImagePreviewMedia(
+    previewItems: List<ImagePreviewItem>,
+    singleItem: ImagePreviewItem?,
+    pagerState: androidx.compose.foundation.pager.PagerState,
     onToggleBars: () -> Unit,
 ) {
-    // 每个 pager page 都独立持有一个 ZoomableState，避免翻页后复用缩放位置。
-    val zoomableState = rememberZoomableState()
-    val intrinsicSize = painter.intrinsicSize
-
-    // Image() 的绘制区域和实际图片内容边界并不总是完全一致。
-    // 把内容位置告诉 Telephoto 后，边缘检测和与 pager 的手势协同会更稳定。
-    LaunchedEffect(uri, intrinsicSize) {
-        if (intrinsicSize != Size.Unspecified && intrinsicSize.width > 0f && intrinsicSize.height > 0f) {
-            zoomableState.setContentLocation(
-                ZoomableContentLocation.scaledInsideAndCenterAligned(intrinsicSize)
-            )
-        }
-    }
-
-    // 限制图片成功状态下的深色画布背景，防止非必要全局黑色背景不跟随主题
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.Black),
-        contentAlignment = Alignment.Center
-    ) {
-        Image(
-            painter = painter,
-            contentDescription = null,
-            modifier = Modifier
-                .fillMaxSize()
-                .zoomable(
-                    state = zoomableState,
-                    onClick = { onToggleBars() },
-                ),
-            contentScale = ContentScale.Inside,
-            alignment = Alignment.Center,
-        )
-    }
-}
-
-private fun buildPreviewImageRequest(
-    context: android.content.Context,
-    uri: String,
-    listener: EventListener? = null,
-): ImageRequest {
-    return ImageRequest.Builder(context)
-        .data(uri)
-        .crossfade(DefaultDurationMillis)
-        .listener(listener)
-        .run {
-            if (URLUtil.isNetworkUrl(uri)) {
-                this
-            } else {
-                diskCachePolicy(CachePolicy.DISABLED)
-                    .memoryCachePolicy(CachePolicy.DISABLED)
+    when {
+        singleItem != null -> UriImage(uri = singleItem.uri, onToggleBars = onToggleBars)
+        previewItems.isNotEmpty() -> {
+            HorizontalPager(modifier = Modifier.fillMaxSize(), state = pagerState) { index ->
+                UriImage(uri = previewItems[index].uri, onToggleBars = onToggleBars)
             }
         }
-        .build()
+    }
 }
 
-private fun buildPreviewSubtitle(item: ImagePreviewItem): String? {
-    val titles = buildList {
-        item.title?.takeIf { it.isNotBlank() }?.let(::add)
-        item.titles
-            .mapNotNull { it.takeIf(String::isNotBlank) }
-            .forEach(::add)
-    }.distinct()
-    return titles.takeIf { it.isNotEmpty() }?.joinToString(" / ")
+@Composable
+private fun ImagePreviewBars(
+    route: ImagePreviewRoute,
+    previewItems: List<ImagePreviewItem>,
+    singleItem: ImagePreviewItem?,
+    pagerState: androidx.compose.foundation.pager.PagerState,
+    showBars: Boolean,
+    mainVm: MainViewModel,
+) {
+    AnimatedVisibility(
+        visible = showBars,
+        enter = fadeIn(),
+        exit = fadeOut(),
+        modifier = Modifier.zIndex(1f).fillMaxWidth(),
+    ) {
+        val currentPreviewItem = singleItem ?: previewItems.getOrNull(pagerState.currentPage)
+        val currentUri = currentPreviewItem?.uri
+        Column {
+            PerfTopAppBar(
+                modifier = Modifier.background(Color.Black.copy(alpha = 0.5f)),
+                navigationIcon = {
+                    PerfIconButton(
+                        imageVector = PerfIcon.ArrowBack,
+                        onClick = { mainVm.popPage() },
+                        colors = IconButtonDefaults.iconButtonColors(contentColor = Color.White),
+                    )
+                },
+                title = { ImagePreviewTitle(route.title, currentPreviewItem) },
+                actions = {
+                    if (currentUri != null && URLUtil.isNetworkUrl(currentUri)) {
+                        PerfIconButton(
+                            imageVector = PerfIcon.OpenInNew,
+                            onClick = throttle(fn = { mainVm.openUrl(currentUri) }),
+                            colors = IconButtonDefaults.iconButtonColors(contentColor = Color.White),
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color.Transparent,
+                    navigationIconContentColor = Color.White,
+                    titleContentColor = Color.White,
+                    actionIconContentColor = Color.White,
+                ),
+            )
+            if (previewItems.size > 1) {
+                Box(
+                    modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        text = "${pagerState.currentPage + 1} / ${previewItems.size}",
+                        modifier = Modifier
+                            .background(Color.Black.copy(alpha = 0.5f), CircleShape)
+                            .padding(horizontal = 12.dp, vertical = 4.dp),
+                        color = Color.White,
+                        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ImagePreviewTitle(baseTitle: String?, item: ImagePreviewItem?) {
+    val title = baseTitle?.takeIf { it.isNotBlank() }
+    val itemTitle = item?.let(::buildPreviewSubtitle)?.takeIf { it.isNotBlank() && it != title }
+    when {
+        title != null && itemTitle != null -> Column {
+            ImagePreviewTitleText(title, MaterialTheme.typography.titleLarge)
+            ImagePreviewTitleText(itemTitle, MaterialTheme.typography.titleSmall, alpha = 0.8f)
+        }
+        title != null -> ImagePreviewTitleText(title, MaterialTheme.typography.titleLarge)
+        itemTitle != null -> ImagePreviewTitleText(itemTitle, MaterialTheme.typography.titleLarge)
+    }
+}
+
+@Composable
+private fun ImagePreviewTitleText(
+    text: String,
+    style: androidx.compose.ui.text.TextStyle,
+    alpha: Float = 1f,
+) {
+    Text(
+        text = text,
+        maxLines = 1,
+        softWrap = false,
+        overflow = TextOverflow.MiddleEllipsis,
+        style = style.copy(color = Color.White.copy(alpha = alpha), fontWeight = if (alpha < 1f) FontWeight.Normal else FontWeight.Medium),
+    )
 }

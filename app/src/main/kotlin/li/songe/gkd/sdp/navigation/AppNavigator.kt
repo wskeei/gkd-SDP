@@ -11,7 +11,7 @@ import li.songe.gkd.sdp.ui.home.HomeRoute
 
 /** Navigation boundary shared by the activity and non-UI entry points. */
 class AppNavigator {
-    private var boundBackStack: NavBackStack<NavKey> = NavBackStack(HomeRoute)
+    private var boundBackStack: NavBackStack<NavKey> = NavBackStack(HomeRoute())
     private val _navigationEffects = MutableSharedFlow<AppDestination>(
         extraBufferCapacity = 16,
         onBufferOverflow = BufferOverflow.DROP_OLDEST,
@@ -22,6 +22,17 @@ class AppNavigator {
 
     fun bindBackStack(backStack: NavBackStack<NavKey>) {
         boundBackStack = backStack
+    }
+
+    fun navigateHome(tabKey: Int) {
+        if (boundBackStack.isEmpty()) {
+            boundBackStack.add(HomeRoute(tabKey))
+            return
+        }
+        boundBackStack[0] = HomeRoute(tabKey)
+        while (boundBackStack.size > 1) {
+            boundBackStack.removeAt(boundBackStack.lastIndex)
+        }
     }
 
     fun pop(): Boolean {
@@ -46,7 +57,7 @@ class AppNavigator {
             AppDestination.RULES_SUBSCRIPTIONS,
             AppDestination.RULES_APPS,
             AppDestination.SETTINGS,
-            -> navigate(key)
+            -> navigateHome(tabFor(destination)!!.key)
 
             else -> navigate(key)
         }

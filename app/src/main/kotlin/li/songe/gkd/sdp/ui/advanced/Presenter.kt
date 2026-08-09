@@ -1,4 +1,7 @@
-package li.songe.gkd.sdp
+@file:JvmName("AdvancedPresenter0")
 
-/** Advanced settings presenter boundary. */
-internal object AdvancedPresenterBoundary
+package li.songe.gkd.sdp.ui
+
+
+
+internal fun advancedPresenterEvent(action: String): String = action

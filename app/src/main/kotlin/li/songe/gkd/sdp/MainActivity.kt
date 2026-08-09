@@ -132,7 +132,7 @@ import li.songe.gkd.sdp.ui.SubsGlobalGroupListPage
 import li.songe.gkd.sdp.ui.SubsGlobalGroupListRoute
 import li.songe.gkd.sdp.ui.UpsertRuleGroupPage
 import li.songe.gkd.sdp.ui.UpsertRuleGroupRoute
-import li.songe.gkd.sdp.ui.UrlBlockPage
+import li.songe.gkd.sdp.ui.UrlBlockerRoute
 import li.songe.gkd.sdp.ui.UrlBlockRoute
 import li.songe.gkd.sdp.ui.UsageGuardPage
 import li.songe.gkd.sdp.ui.UsageGuardRoute
@@ -281,7 +281,7 @@ class MainActivity : ComponentActivity() {
             updateTopTaskAppId(META.appId)
         }
         setContent {
-            val saveableBackStack = rememberNavBackStack(HomeRoute)
+            val saveableBackStack = rememberNavBackStack(HomeRoute())
             mainVm.bindBackStack(saveableBackStack)
             val latestInsets = TopAppBarDefaults.windowInsets
             val density = LocalDensity.current
@@ -300,7 +300,7 @@ class MainActivity : ComponentActivity() {
                         backStack = saveableBackStack,
                         onBack = mainVm::popPage,
                         entryProvider = entryProvider {
-                            entry<HomeRoute> { HomePage() }
+                            entry<HomeRoute> { HomePage(it) }
                             entry<AuthA11yRoute> { AuthA11yPage() }
                             entry<AboutRoute> { AboutPage() }
                             entry<BlockA11yAppListRoute> { BlockA11yAppListPage() }
@@ -326,7 +326,7 @@ class MainActivity : ComponentActivity() {
                             entry<SubsCategoryGroupRoute> { SubsCategoryGroupPage(it) }
                             entry<FocusLockRoute> { FocusLockPage() }
                             entry<FocusModeRoute> { FocusModePage() }
-                            entry<UrlBlockRoute> { UrlBlockPage() }
+                            entry<UrlBlockRoute> { UrlBlockerRoute() }
                             entry<AppBlockerRoute> { AppBlockerPage() }
                             entry<UsageGuardRoute> { UsageGuardPage() }
                             entry<UsageGuardReviewRoute> { UsageGuardReviewPage() }

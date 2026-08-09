@@ -15,6 +15,7 @@ class DeepLinkParserTest {
             "gkd://settings" to AppDestination.SETTINGS,
             "gkd://settings/capabilities" to AppDestination.SETTINGS_CAPABILITIES,
             "gkd://settings/privacy-data" to AppDestination.SETTINGS_PRIVACY_DATA,
+            "gkd://snapshots" to AppDestination.SNAPSHOTS,
             "gkd://usage-guard" to AppDestination.USAGE_GUARD,
             "gkd://usage-review" to AppDestination.USAGE_REVIEW,
             "gkd://action-log" to AppDestination.ACTION_LOG,
@@ -36,9 +37,9 @@ class DeepLinkParserTest {
         )
         val legacyPages = mapOf(
             "gkd://page/0" to AppDestination.OVERVIEW,
-            "gkd://page/1" to AppDestination.LEGACY_ADVANCED,
-            "gkd://page/2" to AppDestination.LEGACY_SNAPSHOT,
-            "gkd://page/3" to AppDestination.LEGACY_APP_OPS,
+            "gkd://page/1" to AppDestination.SETTINGS_PRIVACY_DATA,
+            "gkd://page/2" to AppDestination.SNAPSHOTS,
+            "gkd://page/3" to AppDestination.SETTINGS_CAPABILITIES,
             "gkd://page/4" to AppDestination.SELF_CONTROL,
         )
         legacyPages.forEach { (uri, destination) ->

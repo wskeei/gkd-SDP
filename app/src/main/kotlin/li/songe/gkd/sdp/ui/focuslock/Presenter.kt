@@ -1,4 +1,7 @@
-package li.songe.gkd.sdp
+@file:JvmName("FocusLockPresenter0")
 
-/** Presenter boundary; lock policy remains in the existing ViewModel and policy classes. */
-internal object FocusLockPresenterBoundary
+package li.songe.gkd.sdp.ui
+
+
+
+internal fun FocusLockPresenterEvent(action: String): String = action

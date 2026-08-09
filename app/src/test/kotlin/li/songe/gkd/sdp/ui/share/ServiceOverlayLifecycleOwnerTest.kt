@@ -16,4 +16,14 @@ class ServiceOverlayLifecycleOwnerTest {
         owner.onViewRemoved()
         assertEquals(Lifecycle.State.DESTROYED, owner.lifecycle.currentState)
     }
+
+    @Test
+    fun `mount failure destroys an owner that never reached create`() {
+        val owner = ServiceOverlayLifecycleOwner()
+
+        owner.onViewRemoved()
+        owner.onViewRemoved()
+
+        assertEquals(Lifecycle.State.DESTROYED, owner.lifecycle.currentState)
+    }
 }

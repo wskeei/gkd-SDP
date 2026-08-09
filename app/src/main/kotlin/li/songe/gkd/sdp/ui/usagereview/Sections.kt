@@ -1,6 +1,9 @@
-@file:JvmName("UsageReviewSections")
+@file:JvmName("UsageReviewSections0")
 
 package li.songe.gkd.sdp.ui
+
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -26,10 +29,8 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.text.font.FontWeight
@@ -37,31 +38,16 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
-import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.navigation3.runtime.NavKey
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
-import kotlinx.serialization.Serializable
 import li.songe.gkd.sdp.data.SelfControlAttempt
 import li.songe.gkd.sdp.data.SelfControlAttemptEvent
 import li.songe.gkd.sdp.data.UsageReviewRow
-import li.songe.gkd.sdp.data.SelfControlIntervalRepository
 import li.songe.gkd.sdp.ui.component.DigitalSelfDisciplineReviewPresentation
 import li.songe.gkd.sdp.ui.component.DigitalSelfDisciplineTrendChart
 import li.songe.gkd.sdp.ui.component.PerfIcon
 import li.songe.gkd.sdp.ui.component.PerfIconButton
 import li.songe.gkd.sdp.ui.component.PerfTopAppBar
-import li.songe.gkd.sdp.ui.share.BaseViewModel
 import li.songe.gkd.sdp.ui.share.LocalMainViewModel
 import li.songe.gkd.sdp.ui.style.itemPadding
 import li.songe.gkd.sdp.ui.style.scaffoldPadding
@@ -70,117 +56,6 @@ import li.songe.gkd.sdp.ui.style.AppTheme
 import li.songe.gkd.sdp.util.DigitalSelfDisciplineReviewPolicy
 import java.time.LocalDate
 import java.time.ZoneId
-
-sealed interface DigitalSelfDisciplineReviewUiState {
-    data object Loading : DigitalSelfDisciplineReviewUiState
-    data class Ready(val summary: DigitalSelfDisciplineReviewPolicy.ReviewSummary) : DigitalSelfDisciplineReviewUiState
-    data class Error(val message: String) : DigitalSelfDisciplineReviewUiState
-}
-
-class UsageGuardReviewVm : BaseViewModel() {
-    private val repository by lazy { SelfControlIntervalRepository.fromDb() }
-    private val rangeFlow = MutableStateFlow(DigitalSelfDisciplineReviewPolicy.Range.Today)
-    private val reviewTypeFlow = MutableStateFlow(DigitalSelfDisciplineReviewPolicy.ReviewType.UsageRequest)
-    private val interceptFilterFlow = MutableStateFlow(DigitalSelfDisciplineReviewPolicy.InterceptKindFilter.All)
-    private val metricFlow = MutableStateFlow(DigitalSelfDisciplineReviewPolicy.ReviewMetric.USAGE_RATIO)
-
-    val selectedRangeFlow = rangeFlow
-    val selectedReviewTypeFlow = reviewTypeFlow
-    val selectedInterceptFilterFlow = interceptFilterFlow
-    val selectedMetricFlow = metricFlow
-
-    private val todayFlow = flow {
-        var current = reviewClock()
-        emit(current)
-        while (true) {
-            delay(60_000L)
-            val next = reviewClock()
-            if (next != current) {
-                current = next
-                emit(current)
-            }
-        }
-    }.distinctUntilChanged().stateIn(viewModelScope, SharingStarted.Eagerly, reviewClock())
-
-    val reviewUiStateFlow = combine(
-        rangeFlow,
-        reviewTypeFlow,
-        interceptFilterFlow,
-        metricFlow,
-        todayFlow,
-    ) { range, reviewType, interceptFilter, metric, today ->
-        ReviewSelection(range, reviewType, interceptFilter, metric, today.date, today.zoneId)
-    }.flatMapLatest { selection ->
-        val bounds = DigitalSelfDisciplineReviewPolicy.rangeBounds(selection.range, selection.today, selection.zoneId)
-        val previousBounds = DigitalSelfDisciplineReviewPolicy.rangeBounds(
-            selection.range,
-            selection.today.minusDays(selection.range.days),
-            selection.zoneId,
-        )
-        combine(
-            repository.observeReviewSource(bounds.startAt, bounds.endAt),
-            repository.observeReviewSource(previousBounds.startAt, previousBounds.endAt),
-        ) { current, previous ->
-            val previousSummary = DigitalSelfDisciplineReviewPolicy.summarize(
-                usageRows = previous.usageRows,
-                events = previous.interceptEvents,
-                bounds = previousBounds,
-                reviewType = selection.reviewType,
-                interceptFilter = selection.interceptFilter,
-                zoneId = selection.zoneId,
-            )
-            DigitalSelfDisciplineReviewPolicy.summarize(
-                usageRows = current.usageRows,
-                events = current.interceptEvents,
-                bounds = bounds,
-                reviewType = selection.reviewType,
-                interceptFilter = selection.interceptFilter,
-                zoneId = selection.zoneId,
-                previousSummary = previousSummary,
-            )
-        }.map { summary ->
-            DigitalSelfDisciplineReviewUiState.Ready(summary) as DigitalSelfDisciplineReviewUiState
-        }.catch {
-            emit(DigitalSelfDisciplineReviewUiState.Error("复盘数据暂时不可用"))
-        }
-    }.stateIn(viewModelScope, SharingStarted.Eagerly, DigitalSelfDisciplineReviewUiState.Loading)
-
-    fun updateRange(range: DigitalSelfDisciplineReviewPolicy.Range) = rangeFlow.update { range }
-
-    fun updateReviewType(type: DigitalSelfDisciplineReviewPolicy.ReviewType) {
-        reviewTypeFlow.update { type }
-        metricFlow.update {
-            DigitalSelfDisciplineReviewPresentation.defaultMetric(type)
-        }
-        if (type == DigitalSelfDisciplineReviewPolicy.ReviewType.UsageRequest) {
-            interceptFilterFlow.update { DigitalSelfDisciplineReviewPolicy.InterceptKindFilter.All }
-        }
-    }
-
-    fun updateMetric(metric: DigitalSelfDisciplineReviewPolicy.ReviewMetric) {
-        if (reviewTypeFlow.value == DigitalSelfDisciplineReviewPolicy.ReviewType.UsageRequest &&
-            metric != DigitalSelfDisciplineReviewPolicy.ReviewMetric.INTERCEPT_INTERVAL
-        ) {
-            metricFlow.update { metric }
-        }
-    }
-
-    fun updateInterceptFilter(filter: DigitalSelfDisciplineReviewPolicy.InterceptKindFilter) =
-        interceptFilterFlow.update { filter }
-
-    private data class ReviewSelection(
-        val range: DigitalSelfDisciplineReviewPolicy.Range,
-        val reviewType: DigitalSelfDisciplineReviewPolicy.ReviewType,
-        val interceptFilter: DigitalSelfDisciplineReviewPolicy.InterceptKindFilter,
-        val metric: DigitalSelfDisciplineReviewPolicy.ReviewMetric,
-        val today: LocalDate,
-        val zoneId: ZoneId,
-    )
-
-    private data class ReviewClock(val date: LocalDate, val zoneId: ZoneId)
-
-    private fun reviewClock() = ReviewClock(LocalDate.now(), ZoneId.systemDefault())
-}
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -337,8 +212,9 @@ fun UsageGuardReviewPageSections() {
     }
 }
 
+
 @Composable
-private fun OverviewCard(page: DigitalSelfDisciplineReviewPresentation.PagePresentation) {
+internal fun OverviewCard(page: DigitalSelfDisciplineReviewPresentation.PagePresentation) {
     ReviewSectionCard("数据概览", page.coverage.text) {
         BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
             val compact = maxWidth < 600.dp
@@ -366,8 +242,9 @@ private fun OverviewCard(page: DigitalSelfDisciplineReviewPresentation.PagePrese
     }
 }
 
+
 @Composable
-private fun ReviewRankedBarList(
+internal fun ReviewRankedBarList(
     title: String,
     bars: List<DigitalSelfDisciplineReviewPresentation.RankedBar>,
 ) {
@@ -391,8 +268,9 @@ private fun ReviewRankedBarList(
     }
 }
 
+
 @Composable
-private fun RecentRowsCard(rows: List<DigitalSelfDisciplineReviewPresentation.RecentRow>) {
+internal fun RecentRowsCard(rows: List<DigitalSelfDisciplineReviewPresentation.RecentRow>) {
     ReviewSectionCard("最近明细", "最多显示最近 10 条，不包含申请理由、网址或选择器文本") {
         if (rows.isEmpty()) {
             Text("所选范围暂无明细", color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -407,8 +285,9 @@ private fun RecentRowsCard(rows: List<DigitalSelfDisciplineReviewPresentation.Re
     }
 }
 
+
 @Composable
-private fun ReviewSectionCard(
+internal fun ReviewSectionCard(
     title: String,
     subtitle: String,
     content: @Composable () -> Unit,
@@ -428,42 +307,48 @@ private fun ReviewSectionCard(
     }
 }
 
+
 @Composable
-private fun MetricBlock(label: String, value: String, modifier: Modifier = Modifier) {
+internal fun MetricBlock(label: String, value: String, modifier: Modifier = Modifier) {
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(3.dp)) {
         Text(label, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         Text(value, style = MaterialTheme.typography.titleMedium)
     }
 }
 
+
 @Preview(showBackground = true, widthDp = 360)
 @Composable
-private fun UsageGuardReviewPagePreviewUsageData() {
+internal fun UsageGuardReviewPagePreviewUsageData() {
     AppTheme { ReviewPreviewContent(previewSummary(DigitalSelfDisciplineReviewPolicy.ReviewType.UsageRequest, hasData = true)) }
 }
 
+
 @Preview(showBackground = true, widthDp = 360)
 @Composable
-private fun UsageGuardReviewPagePreviewUsageEmpty() {
+internal fun UsageGuardReviewPagePreviewUsageEmpty() {
     AppTheme { ReviewPreviewContent(previewSummary(DigitalSelfDisciplineReviewPolicy.ReviewType.UsageRequest, hasData = false)) }
 }
 
+
 @Preview(showBackground = true, widthDp = 600)
 @Composable
-private fun UsageGuardReviewPagePreviewInterceptData() {
+internal fun UsageGuardReviewPagePreviewInterceptData() {
     AppTheme { ReviewPreviewContent(previewSummary(DigitalSelfDisciplineReviewPolicy.ReviewType.InterceptAttempt, hasData = true)) }
 }
 
+
 @Preview(showBackground = true, widthDp = 600, fontScale = 2f, uiMode = android.content.res.Configuration.UI_MODE_NIGHT_YES)
 @Composable
-private fun UsageGuardReviewPagePreviewWideDarkLargeText() {
+internal fun UsageGuardReviewPagePreviewWideDarkLargeText() {
     AppTheme(invertedTheme = true) {
         ReviewPreviewContent(previewSummary(DigitalSelfDisciplineReviewPolicy.ReviewType.UsageRequest, hasData = true))
     }
 }
 
+
 @Composable
-private fun ReviewPreviewContent(summary: DigitalSelfDisciplineReviewPolicy.ReviewSummary) {
+internal fun ReviewPreviewContent(summary: DigitalSelfDisciplineReviewPolicy.ReviewSummary) {
     val page = DigitalSelfDisciplineReviewPresentation.page(summary)
     LazyColumn(
         modifier = Modifier.fillMaxWidth(),
@@ -483,7 +368,8 @@ private fun ReviewPreviewContent(summary: DigitalSelfDisciplineReviewPolicy.Revi
     }
 }
 
-private fun previewSummary(
+
+internal fun previewSummary(
     type: DigitalSelfDisciplineReviewPolicy.ReviewType,
     hasData: Boolean,
 ): DigitalSelfDisciplineReviewPolicy.ReviewSummary {

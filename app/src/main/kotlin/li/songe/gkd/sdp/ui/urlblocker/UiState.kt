@@ -1,4 +1,7 @@
-package li.songe.gkd.sdp
+@file:JvmName("UrlBlockerUiState0")
 
-/** URL blocker state and action boundary. */
-internal object UrlBlockerUiStateBoundary
+package li.songe.gkd.sdp.ui
+
+
+
+internal data class UrlBlockerUiState(val isLoading: Boolean = false)

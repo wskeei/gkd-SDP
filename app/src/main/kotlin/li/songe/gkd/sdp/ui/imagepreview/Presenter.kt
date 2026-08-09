@@ -1,4 +1,7 @@
-package li.songe.gkd.sdp
+@file:JvmName("ImagePreviewPresenter0")
 
-/** Image preview presenter boundary. */
-internal object ImagePreviewPresenterBoundary
+package li.songe.gkd.sdp.ui
+
+
+
+internal fun imagePreviewPresenterEvent(action: String): String = action

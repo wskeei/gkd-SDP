@@ -1,4 +1,7 @@
-package li.songe.gkd.sdp
+@file:JvmName("AdvancedUiState0")
 
-/** Advanced settings state boundary. */
-internal object AdvancedUiStateBoundary
+package li.songe.gkd.sdp.ui
+
+
+
+internal data class AdvancedUiState(val isLoading: Boolean = false)

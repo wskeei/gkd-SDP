@@ -1,4 +1,7 @@
-package li.songe.gkd.sdp
+@file:JvmName("FocusModePresenter0")
 
-/** Presenter boundary for focus session actions. */
-internal object FocusModePresenterBoundary
+package li.songe.gkd.sdp.ui
+
+
+
+internal fun FocusModePresenterEvent(action: String): String = action

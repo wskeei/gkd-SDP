@@ -1,4 +1,7 @@
-package li.songe.gkd.sdp
+@file:JvmName("UrlBlockerPresenter0")
 
-/** URL blocker presenter boundary. */
-internal object UrlBlockerPresenterBoundary
+package li.songe.gkd.sdp.ui
+
+
+
+internal fun UrlBlockerPresenterEvent(action: String): String = action

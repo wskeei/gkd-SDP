@@ -7,9 +7,7 @@ import org.junit.Test
 class UsageGuardCountdownOverlayScreenshotModeContractTest {
     @Test
     fun screenshotModeUnmountsThenRestoresOnlyTheCurrentSecureOverlay() {
-        val source = sourceFile(
-            "app/src/main/kotlin/li/songe/gkd/sdp/service/UsageGuardCountdownOverlayService.kt",
-        ).readText()
+        val source = overlaySource()
         val hideMethod = source
             .substringAfter("private fun hideOverlayForScreenshot()")
             .substringBefore("private fun restoreOverlayAfterScreenshot")
@@ -50,9 +48,7 @@ class UsageGuardCountdownOverlayScreenshotModeContractTest {
 
     @Test
     fun terminalServiceRejectsAndRevokesTheIncomingReplacementLease() {
-        val source = sourceFile(
-            "app/src/main/kotlin/li/songe/gkd/sdp/service/UsageGuardCountdownOverlayService.kt",
-        ).readText()
+        val source = overlaySource()
         val terminalBranch = source
             .substringAfter(
                 "UsageGuardCountdownOverlayCaptureController.StartAction.IGNORE_TERMINAL",
@@ -67,9 +63,7 @@ class UsageGuardCountdownOverlayScreenshotModeContractTest {
 
     @Test
     fun usageControlExposesAnAccessibleScreenshotAction() {
-        val source = sourceFile(
-            "app/src/main/kotlin/li/songe/gkd/sdp/service/UsageGuardCountdownOverlayService.kt",
-        ).readText()
+        val source = overlaySource()
         val control = source.substringAfter("private fun UsageGuardTerminateConfirmScreen(")
 
         assertTrue(source.contains("onHideForScreenshot = { hideOverlayForScreenshot() }"))
@@ -83,12 +77,19 @@ class UsageGuardCountdownOverlayScreenshotModeContractTest {
     }
 
     private fun sourceFile(relativePath: String): File {
-        var directory = File(System.getProperty("user.dir"))
-        repeat(8) {
-            val candidate = File(directory, relativePath)
-            if (candidate.isFile) return candidate
-            directory = directory.parentFile ?: return File(relativePath)
+        val userDir = requireNotNull(System.getProperty("user.dir"))
+        var directory = File(userDir).absoluteFile
+        while (!File(directory, "settings.gradle.kts").isFile || !File(directory, "app/src").isDirectory) {
+            directory = directory.parentFile ?: error("Repository root marker not found from $userDir")
         }
-        return File(relativePath)
+        return File(directory, relativePath).also { check(it.isFile) { "Missing source: $relativePath" } }
     }
+
+    private fun overlaySource(): String = listOf(
+        "app/src/main/kotlin/li/songe/gkd/sdp/service/usageguardcountdown/ServiceHost.kt",
+        "app/src/main/kotlin/li/songe/gkd/sdp/service/usageguardcountdown/Screen.kt",
+        "app/src/main/kotlin/li/songe/gkd/sdp/service/usageguardcountdown/UiState.kt",
+        "app/src/main/kotlin/li/songe/gkd/sdp/service/usageguardcountdown/Presenter.kt",
+        "app/src/main/kotlin/li/songe/gkd/sdp/service/usageguardcountdown/WindowController.kt",
+    ).joinToString("\n") { sourceFile(it).readText() }
 }

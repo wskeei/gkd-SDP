@@ -1,5 +1,7 @@
-package li.songe.gkd.sdp
+@file:JvmName("AdvancedEditor0")
 
-/** Advanced settings editor boundary. */
-internal object AdvancedEditorBoundary
+package li.songe.gkd.sdp.ui
 
+
+
+internal data class AdvancedEditorState(val isEditing: Boolean = false)

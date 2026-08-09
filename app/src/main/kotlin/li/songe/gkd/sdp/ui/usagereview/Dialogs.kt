@@ -1,4 +1,7 @@
-package li.songe.gkd.sdp
+@file:JvmName("UsageReviewDialogs0")
 
-/** Review detail dialog boundary. */
-internal object UsageReviewDialogsBoundary
+package li.songe.gkd.sdp.ui
+
+
+
+internal sealed interface UsageReviewDialogAction { data object Dismiss : UsageReviewDialogAction }

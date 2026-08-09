@@ -9,8 +9,6 @@ import android.view.accessibility.AccessibilityNodeInfo
 import android.view.accessibility.AccessibilityWindowInfo
 import kotlinx.atomicfu.atomic
 import kotlinx.atomicfu.getAndUpdate
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runInterruptible
@@ -34,6 +32,7 @@ import li.songe.gkd.sdp.service.A11yService
 import li.songe.gkd.sdp.service.EventService
 import li.songe.gkd.sdp.service.InterceptOverlayService
 import li.songe.gkd.sdp.service.topAppIdFlow
+import li.songe.gkd.sdp.runtime.appDependencies
 import li.songe.gkd.sdp.shizuku.shizukuContextFlow
 import li.songe.gkd.sdp.shizuku.uiAutomationFlow
 import li.songe.gkd.sdp.store.actualBlockA11yAppList
@@ -48,19 +47,17 @@ import li.songe.gkd.sdp.util.showActionToast
 import li.songe.gkd.sdp.util.systemUiAppId
 import li.songe.selector.MatchOption
 import li.songe.selector.Selector
-import java.util.concurrent.Executors
 import kotlin.coroutines.Continuation
 import kotlin.coroutines.resume
-
-
-private val eventDispatcher = Executors.newSingleThreadExecutor().asCoroutineDispatcher()
-private val queryDispatcher = Executors.newSingleThreadExecutor().asCoroutineDispatcher()
-private val actionDispatcher = Executors.newSingleThreadExecutor().asCoroutineDispatcher()
 
 private val latestServiceMode = atomic(0)
 private val latestServiceTime = atomic(0L)
 
 class A11yRuleEngine(val service: A11yCommonImpl) {
+    // Keep one dispatcher set for the whole engine lifetime.  Re-reading the
+    // dependency container for every event could move a still-draining queue
+    // to a newly installed dispatcher and break the ordering contract.
+    private val dispatchers = appDependencies.dispatchers
     private val a11yContext = A11yContext(this)
     private val effective
         get() = latestServiceMode.value == service.mode.value &&
@@ -180,7 +177,7 @@ class A11yRuleEngine(val service: A11yCommonImpl) {
             latestStateEvent = a11yEvent
         }
         synchronized(eventDeque) { eventDeque.addLast(QueuedA11yEvent(a11yEvent, eventOwner)) }
-        scope.launch(eventDispatcher) { consumeEvent(a11yEvent, eventOwner) }
+        scope.launch(dispatchers.a11yEvent) { consumeEvent(a11yEvent, eventOwner) }
     }
 
     private val queryEvents = mutableListOf<A11yEvent>()
@@ -255,7 +252,7 @@ class A11yRuleEngine(val service: A11yCommonImpl) {
         // 某些应用通过无障碍获取 safeActiveWindow 耗时长，导致多个事件连续堆积堵塞，无法检测到 appId 切换导致状态异常
         // https://github.com/gkd-kit/gkd/issues/622
         lastAppId = withTimeoutOrNull(100) {
-            runInterruptible(Dispatchers.IO) { safeActiveWindowAppId }
+            runInterruptible(dispatchers.io) { safeActiveWindowAppId }
         } ?: shizukuContextFlow.value.topCpn()?.packageName
         lastGetAppIdTime = System.currentTimeMillis()
         return lastAppId
@@ -265,13 +262,13 @@ class A11yRuleEngine(val service: A11yCommonImpl) {
     private suspend fun getTimeoutActiveWindow(): AccessibilityNodeInfo? {
         return suspendCancellableCoroutine { s ->
             val temp = atomic<Continuation<AccessibilityNodeInfo?>?>(s)
-            scope.launch(Dispatchers.IO) {
+            scope.launch(dispatchers.io) {
                 delay(500L)
                 if (s.isActive) {
                     temp.getAndUpdate { null }?.resume(null)
                 }
             }
-            scope.launch(Dispatchers.IO) {
+            scope.launch(dispatchers.io) {
                 val a = safeActiveWindow
                 if (s.isActive) {
                     temp.getAndUpdate { null }?.resume(a)
@@ -295,7 +292,7 @@ class A11yRuleEngine(val service: A11yCommonImpl) {
         if (querying) return
         // 无障碍从零启动时获取 safeActiveWindow 非常耗时
         if (byEvent == null && service.justStarted && !hasOthersService) return checkFutureStartJob()
-        scope.launchTry(queryDispatcher) {
+        scope.launchTry(dispatchers.a11yQuery) {
             querying = true
             val st = if (META.debuggable) System.currentTimeMillis() else 0L
             try {
@@ -317,12 +314,12 @@ class A11yRuleEngine(val service: A11yCommonImpl) {
     private fun checkFutureStartJob() {
         val t = System.currentTimeMillis()
         if (t - lastTriggerTime < 3000L || t - appChangeTime < 3000L) {
-            scope.launch(actionDispatcher) {
+            scope.launch(dispatchers.a11yAction) {
                 delay(300)
                 startQueryJob()
             }
         } else if (activityRuleFlow.value.hasFeatureAction) {
-            scope.launch(actionDispatcher) {
+            scope.launch(dispatchers.a11yAction) {
                 delay(300)
                 startQueryJob(byForced = true)
             }
@@ -339,7 +336,7 @@ class A11yRuleEngine(val service: A11yCommonImpl) {
                 updateTopActivity(rightAppId, null)
             }
         }
-        scope.launch(actionDispatcher) {
+        scope.launch(dispatchers.a11yAction) {
             delay(300)
             startQueryJob()
         }
@@ -386,7 +383,7 @@ class A11yRuleEngine(val service: A11yCommonImpl) {
         val activityRule = synchronized(topActivityFlow) { activityRuleFlow.value }
         activityRule.currentRules.forEach { rule ->
             if (rule.status == RuleStatus.Status3 && rule.matchDelayJob.value == null) {
-                rule.matchDelayJob.value = scope.launch(actionDispatcher) {
+                rule.matchDelayJob.value = scope.launch(dispatchers.a11yAction) {
                     delay(rule.matchDelay)
                     rule.matchDelayJob.value = null
                     startQueryJob(byDelayRule = rule)
@@ -441,13 +438,13 @@ class A11yRuleEngine(val service: A11yCommonImpl) {
             val rightAppId = nodeVal.packageName?.toString() ?: break
             val matchApp = rule.matchActivity(rightAppId)
             if (topActivityFlow.value.appId != rightAppId || (!matchApp && rule is AppRule)) {
-                scope.launch(eventDispatcher) { fixAppId(rightAppId) }
+                scope.launch(dispatchers.a11yEvent) { fixAppId(rightAppId) }
                 return
             }
             if (!matchApp) continue
             val target = a11yContext.queryRule(rule, nodeVal) ?: continue
             if (rule.checkDelay() && rule.actionDelayJob.value == null) {
-                rule.actionDelayJob.value = scope.launch(actionDispatcher) {
+                rule.actionDelayJob.value = scope.launch(dispatchers.a11yAction) {
                     delay(rule.actionDelay)
                     rule.actionDelayJob.value = null
                     startQueryJob(byDelayRule = rule)
@@ -517,7 +514,7 @@ class A11yRuleEngine(val service: A11yCommonImpl) {
             if (actionResult.result && effective && runtimeOwner === queryOwner) {
                 val topActivity = topActivityFlow.value
                 rule.trigger()
-                scope.launch(actionDispatcher) {
+                scope.launch(dispatchers.a11yAction) {
                     delay(300)
                     startQueryJob()
                 }
@@ -594,7 +591,7 @@ class A11yRuleEngine(val service: A11yCommonImpl) {
             val targetNode = A11yContext(s, interruptable = false).querySelfOrSelector(
                 a, selector, MatchOption(fastQuery = gkdAction.fastQuery)
             ) ?: throw RpcError("没有查询到节点")
-            return withContext(Dispatchers.IO) {
+            return withContext(appDependencies.dispatchers.io) {
                 ActionPerformer
                     .getAction(gkdAction.action ?: ActionPerformer.None.action)
                     .perform(targetNode, gkdAction)

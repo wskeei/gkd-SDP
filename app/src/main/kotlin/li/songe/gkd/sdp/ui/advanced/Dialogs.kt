@@ -1,4 +1,7 @@
-package li.songe.gkd.sdp
+@file:JvmName("AdvancedDialogs0")
 
-/** Advanced settings dialog boundary. */
-internal object AdvancedDialogsBoundary
+package li.songe.gkd.sdp.ui
+
+
+
+internal sealed interface AdvancedDialogAction { data object Dismiss : AdvancedDialogAction }

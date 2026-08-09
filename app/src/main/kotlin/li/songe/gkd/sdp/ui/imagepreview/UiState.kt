@@ -1,4 +1,8 @@
-package li.songe.gkd.sdp
+@file:JvmName("ImagePreviewUiState0")
 
-/** Image preview state boundary. */
-internal object ImagePreviewUiStateBoundary
+package li.songe.gkd.sdp.ui
+
+internal data class ImagePreviewUiState(
+    val isLoading: Boolean = false,
+    val selectedIndex: Int = 0,
+)

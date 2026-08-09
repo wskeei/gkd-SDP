@@ -40,6 +40,10 @@ class ServiceOverlayLifecycleOwner : LifecycleOwner {
             }
 
             Lifecycle.State.CREATED -> registry.handleLifecycleEvent(Lifecycle.Event.ON_DESTROY)
+            Lifecycle.State.INITIALIZED -> {
+                registry.handleLifecycleEvent(Lifecycle.Event.ON_CREATE)
+                registry.handleLifecycleEvent(Lifecycle.Event.ON_DESTROY)
+            }
             else -> Unit
         }
     }

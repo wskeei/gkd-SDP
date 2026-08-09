@@ -1,4 +1,8 @@
+@file:JvmName("UsageGuardCountdownPresenter")
+
 package li.songe.gkd.sdp.service
 
-/** Countdown overlay presenter boundary. */
-internal object UsageGuardCountdownPresenterBoundary
+import li.songe.gkd.sdp.util.UsageGuardCountdownOverlayPolicy
+
+internal fun countdownRemainingText(expiresAt: Long, nowEpochMs: Long): String =
+    UsageGuardCountdownOverlayPolicy.formatRemainingText(expiresAt, nowEpochMs)

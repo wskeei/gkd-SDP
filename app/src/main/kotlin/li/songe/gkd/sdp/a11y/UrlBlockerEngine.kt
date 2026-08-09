@@ -95,9 +95,9 @@ object UrlBlockerEngine {
         }
 
         // 检查冷却时间
-        val now = appDependencies.clock.nowEpochMillis()
+        val now = appDependencies.clock.elapsedRealtimeMillis()
         val lastTriggerTime = cooldownMap[packageName] ?: 0L
-        if (now - lastTriggerTime < COOLDOWN_MS) {
+        if (cooldownMap.containsKey(packageName) && now - lastTriggerTime < COOLDOWN_MS) {
             return
         }
 
@@ -271,7 +271,7 @@ object UrlBlockerEngine {
                     redirectAccepted
                 }
                 if (accepted && isOwnerCurrent(owner)) {
-                    cooldownMap[packageName] = appDependencies.clock.nowEpochMillis()
+                    cooldownMap[packageName] = appDependencies.clock.elapsedRealtimeMillis()
                     sdpRuntimeFeatureCoordinator.recordDecision(owner, "url-blocker", packageName, "overlay_accepted")
                 } else if (!accepted) {
                     sdpRuntimeFeatureCoordinator.recordDecision(owner, "url-blocker", packageName, "overlay_rejected")

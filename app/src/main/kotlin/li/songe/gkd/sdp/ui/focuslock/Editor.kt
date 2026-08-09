@@ -1,5 +1,7 @@
-package li.songe.gkd.sdp
+@file:JvmName("FocusLockEditor0")
 
-/** Focus lock editor boundary. */
-internal object FocusLockEditorBoundary
+package li.songe.gkd.sdp.ui
 
+
+
+internal data class FocusLockEditorState(val isEditing: Boolean = false)

@@ -1,4 +1,9 @@
+@file:JvmName("UsageGuardCountdownUiState")
+
 package li.songe.gkd.sdp.service
 
-/** Countdown overlay immutable state boundary. */
-internal object UsageGuardCountdownUiStateBoundary
+internal data class UsageGuardCountdownUiState(
+    val expiresAt: Long,
+    val reasonText: String,
+    val showTerminateConfirm: Boolean,
+)

@@ -1,4 +1,7 @@
-package li.songe.gkd.sdp
+@file:JvmName("FocusModeUiState0")
 
-/** UI state and action boundary for focus mode extraction. */
-internal object FocusModeUiStateBoundary
+package li.songe.gkd.sdp.ui
+
+
+
+internal data class FocusModeUiState(val isLoading: Boolean = false)

@@ -1,5 +1,7 @@
-package li.songe.gkd.sdp
+@file:JvmName("UsageReviewEditor0")
 
-/** Review filter/editor boundary. */
-internal object UsageReviewEditorBoundary
+package li.songe.gkd.sdp.ui
 
+
+
+internal data class UsageReviewEditorState(val isEditing: Boolean = false)

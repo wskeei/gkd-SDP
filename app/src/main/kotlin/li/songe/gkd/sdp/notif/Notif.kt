@@ -154,7 +154,7 @@ val snapshotNotif = Notif(
     title = "快照已保存",
     ongoing = false,
     autoCancel = true,
-    uri = "gkd://settings/privacy-data",
+    uri = "gkd://snapshots",
 )
 
 val recordNotif = Notif(

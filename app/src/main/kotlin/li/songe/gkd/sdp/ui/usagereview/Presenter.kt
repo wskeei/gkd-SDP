@@ -1,4 +1,7 @@
-package li.songe.gkd.sdp
+@file:JvmName("UsageReviewPresenter0")
 
-/** Review presenter boundary. */
-internal object UsageReviewPresenterBoundary
+package li.songe.gkd.sdp.ui
+
+
+
+internal fun UsageReviewPresenterEvent(action: String): String = action

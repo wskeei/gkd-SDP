@@ -8,6 +8,7 @@ import li.songe.gkd.sdp.ui.FocusLockRoute
 import li.songe.gkd.sdp.ui.SnapshotPageRoute
 import li.songe.gkd.sdp.ui.UsageGuardReviewRoute
 import li.songe.gkd.sdp.ui.UsageGuardRoute
+import li.songe.gkd.sdp.ui.home.BottomNavItem
 import li.songe.gkd.sdp.ui.home.HomeRoute
 import kotlinx.serialization.Serializable
 
@@ -21,9 +22,7 @@ enum class AppDestination {
     SETTINGS,
     SETTINGS_CAPABILITIES,
     SETTINGS_PRIVACY_DATA,
-    LEGACY_ADVANCED,
-    LEGACY_SNAPSHOT,
-    LEGACY_APP_OPS,
+    SNAPSHOTS,
     USAGE_GUARD,
     USAGE_REVIEW,
     ACTION_LOG,
@@ -36,18 +35,15 @@ sealed interface DeepLinkParseResult {
 
 /** Maps a stable destination to the existing Navigation 3 page key. */
 fun AppDestination.toNavKey(): NavKey = when (this) {
-    AppDestination.OVERVIEW,
-    AppDestination.RULES_SUBSCRIPTIONS,
-    AppDestination.RULES_APPS,
-    AppDestination.SETTINGS,
-    -> HomeRoute
+    AppDestination.OVERVIEW -> HomeRoute(BottomNavItem.Control.key)
+    AppDestination.RULES_SUBSCRIPTIONS -> HomeRoute(BottomNavItem.SubsManage.key)
+    AppDestination.RULES_APPS -> HomeRoute(BottomNavItem.AppList.key)
+    AppDestination.SETTINGS -> HomeRoute(BottomNavItem.Settings.key)
 
     AppDestination.SELF_CONTROL -> FocusLockRoute
     AppDestination.SETTINGS_CAPABILITIES -> AppOpsAllowRoute
     AppDestination.SETTINGS_PRIVACY_DATA -> AdvancedPageRoute
-    AppDestination.LEGACY_ADVANCED -> AdvancedPageRoute
-    AppDestination.LEGACY_SNAPSHOT -> SnapshotPageRoute
-    AppDestination.LEGACY_APP_OPS -> AppOpsAllowRoute
+    AppDestination.SNAPSHOTS -> SnapshotPageRoute
     AppDestination.USAGE_GUARD -> UsageGuardRoute
     AppDestination.USAGE_REVIEW -> UsageGuardReviewRoute
     AppDestination.ACTION_LOG -> ActionLogRoute()

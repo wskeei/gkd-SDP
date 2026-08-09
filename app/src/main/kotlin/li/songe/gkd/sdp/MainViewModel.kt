@@ -216,16 +216,16 @@ class MainViewModel(
         }
     }
 
-    val tabFlow = MutableStateFlow(BottomNavItem.Control.key)
     val resetPageScrollEvent = MutableSharedFlow<BottomNavItem>()
     private var lastClickTabTime = 0L
     fun handleClickTab(navItem: BottomNavItem) {
         val t = System.currentTimeMillis()
+        val currentTab = (backStack.firstOrNull() as? HomeRoute)?.tabKey
         // double click
-        if (navItem.key == tabFlow.value && t - lastClickTabTime < 500) {
+        if (navItem.key == currentTab && t - lastClickTabTime < 500) {
             viewModelScope.launch { resetPageScrollEvent.emit(navItem) }
         }
-        tabFlow.value = navItem.key
+        navigator.navigateHome(navItem.key)
         lastClickTabTime = t
     }
 
@@ -245,10 +245,7 @@ class MainViewModel(
 
     private fun selectDestination(destination: AppDestination) {
         navigator.tabFor(destination)?.let { tab ->
-            tabFlow.value = tab.key
-            if (backStack.lastOrNull() !is HomeRoute) {
-                navigator.navigate(HomeRoute, replace = true)
-            }
+            navigator.navigateHome(tab.key)
             return
         }
         navigator.navigate(destination)

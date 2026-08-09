@@ -1,4 +1,7 @@
-package li.songe.gkd.sdp
+@file:JvmName("ImagePreviewEditor0")
 
-/** Image preview editor boundary. */
-internal object ImagePreviewEditorBoundary
+package li.songe.gkd.sdp.ui
+
+import androidx.compose.foundation.Image
+
+internal data class ImagePreviewEditorState(val isEditing: Boolean = false)

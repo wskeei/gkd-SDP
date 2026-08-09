@@ -1,4 +1,7 @@
-package li.songe.gkd.sdp
+@file:JvmName("AppBlockerUiState0")
 
-/** UI state and action boundary for incremental app blocker extraction. */
-internal object AppBlockerUiStateBoundary
+package li.songe.gkd.sdp.ui
+
+
+
+internal data class AppBlockerUiState(val isLoading: Boolean = false)

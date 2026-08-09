@@ -1,4 +1,7 @@
-package li.songe.gkd.sdp
+@file:JvmName("ImagePreviewDialogs0")
 
-/** Image preview dialog boundary. */
-internal object ImagePreviewDialogsBoundary
+package li.songe.gkd.sdp.ui
+
+import androidx.compose.foundation.Image
+
+internal sealed interface ImagePreviewDialogAction { data object Dismiss : ImagePreviewDialogAction }

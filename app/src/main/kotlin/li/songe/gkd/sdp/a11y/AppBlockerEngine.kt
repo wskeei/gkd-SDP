@@ -154,9 +154,9 @@ object AppBlockerEngine {
         }
 
         // 检查冷却时间
-        val now = appDependencies.clock.nowEpochMillis()
+        val now = appDependencies.clock.elapsedRealtimeMillis()
         val lastTriggerTime = cooldownMap[packageName] ?: 0L
-        if (now - lastTriggerTime < COOLDOWN_MS) {
+        if (cooldownMap.containsKey(packageName) && now - lastTriggerTime < COOLDOWN_MS) {
             LogUtils.d("$TAG: Cooldown active for $packageName")
             return
         }

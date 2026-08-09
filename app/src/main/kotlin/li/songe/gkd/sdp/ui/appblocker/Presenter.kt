@@ -1,4 +1,7 @@
-package li.songe.gkd.sdp
+@file:JvmName("AppBlockerPresenter0")
 
-/** Presenter boundary; state is still sourced from the existing ViewModel. */
-internal object AppBlockerPresenterBoundary
+package li.songe.gkd.sdp.ui
+
+import li.songe.gkd.sdp.app
+
+internal fun appBlockerPresenterEvent(action: String): String = action

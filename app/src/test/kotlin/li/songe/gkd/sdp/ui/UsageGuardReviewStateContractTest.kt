@@ -8,9 +8,9 @@ import org.junit.Test
 class UsageGuardReviewStateContractTest {
     @Test
     fun reviewPageUsesOneStateFlowAndUnifiedSummaryOnly() {
-        val source = sourceFile("app/src/main/kotlin/li/songe/gkd/sdp/ui/UsageGuardReviewPage.kt").readText()
+        val source = sourceFile("app/src/main/kotlin/li/songe/gkd/sdp/ui/usagereview/Sections.kt").readText()
 
-        assertTrue(source.contains("val reviewUiStateFlow"))
+        assertTrue(source.contains("reviewUiStateFlow"))
         assertTrue(source.contains("selectedMetricFlow"))
         assertFalse(source.contains("usageGuardSummaryFlow"))
         assertFalse(source.contains("UsageRequestSummaryCard"))
@@ -20,7 +20,7 @@ class UsageGuardReviewStateContractTest {
 
     @Test
     fun reviewPageUsesAccessibleSegmentedFiltersAndAdaptiveWidth() {
-        val source = sourceFile("app/src/main/kotlin/li/songe/gkd/sdp/ui/UsageGuardReviewPage.kt").readText()
+        val source = sourceFile("app/src/main/kotlin/li/songe/gkd/sdp/ui/usagereview/Sections.kt").readText()
 
         assertTrue(source.contains("SingleChoiceSegmentedButtonRow"))
         assertTrue(source.contains("SegmentedButtonDefaults.itemShape"))
@@ -48,12 +48,11 @@ class UsageGuardReviewStateContractTest {
     }
 
     private fun sourceFile(relativePath: String): File {
-        var directory = File(System.getProperty("user.dir"))
-        repeat(6) {
-            val candidate = File(directory, relativePath)
-            if (candidate.isFile) return candidate
-            directory = directory.parentFile ?: return File(relativePath)
+        val userDir = requireNotNull(System.getProperty("user.dir"))
+        var directory = File(userDir).absoluteFile
+        while (!File(directory, "settings.gradle.kts").isFile || !File(directory, "app/src").isDirectory) {
+            directory = directory.parentFile ?: error("Repository root marker not found from $userDir")
         }
-        return File(relativePath)
+        return File(directory, relativePath).also { check(it.isFile) { "Missing source: $relativePath" } }
     }
 }

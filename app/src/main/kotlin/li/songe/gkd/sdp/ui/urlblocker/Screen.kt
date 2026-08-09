@@ -1,4 +1,11 @@
-package li.songe.gkd.sdp
+@file:JvmName("UrlBlockerScreen")
 
-/** URL blocker card/screen host boundary. */
-internal object UrlBlockerScreenBoundary
+package li.songe.gkd.sdp.ui
+
+import androidx.compose.runtime.Composable
+
+/** Stable screen host used by navigation; the existing page owns its content. */
+@Composable
+internal fun UrlBlockerScreen() {
+    UrlBlockPage()
+}
