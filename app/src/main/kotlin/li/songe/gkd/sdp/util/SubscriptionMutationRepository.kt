@@ -20,6 +20,7 @@ object SubscriptionMutationRepository {
     suspend fun upsert(
         subscription: RawSubscription,
         subsItem: SubsItem? = null,
+        expectedCurrentMtime: Long? = null,
     ): RawSubscription = BackupDataMutationBarrier.withMutation {
         updateSubsMutex.withStateLock {
             val nextSubscription = normalizeSubscription(subscription)
@@ -33,19 +34,36 @@ object SubscriptionMutationRepository {
             var previousStaged = false
             var targetReplaced = false
             var transactionCommitted = false
+            val now = System.currentTimeMillis()
+            val targetExisted = targetFile.exists()
+            val manifest = PendingDataMutationManifest(
+                kind = PENDING_KIND_SUBSCRIPTION_UPSERT,
+                ids = listOf(subsId),
+                targetExisted = targetExisted,
+                expectedMtime = if (subsItem == null) now else null,
+                requiredPreviousMtime = expectedCurrentMtime,
+                expectedSubsItem = subsItem?.copy(mtime = now),
+            )
             try {
                 withContext(Dispatchers.IO) {
                     stagingFolder.mkdirs()
+                    writePendingDataMutationManifest(stagingFolder, manifest)
                     writeTextAtomically(
                         stagedNewFile,
                         json.encodeToString(nextSubscription),
                     )
                 }
-                val now = System.currentTimeMillis()
                 DbSet.withTransaction {
                     cleanupSubsConfig(subsId, nextSubscription)
                     if (subsItem == null) {
-                        DbSet.subsItemDao.updateMtime(subsId, now)
+                        val current = DbSet.subsItemDao.queryById(subsId)
+                        check(current != null) { "订阅已不存在" }
+                        expectedCurrentMtime?.let { expected ->
+                            check(current.mtime == expected) { "订阅已发生变化" }
+                        }
+                        check(DbSet.subsItemDao.updateMtime(subsId, now) == 1) {
+                            "订阅已不存在"
+                        }
                     } else {
                         DbSet.subsItemDao.insert(subsItem.copy(mtime = now))
                     }
@@ -59,6 +77,12 @@ object SubscriptionMutationRepository {
                     }
                 }
                 transactionCommitted = true
+                withContext(Dispatchers.IO) {
+                    writePendingDataMutationManifest(
+                        stagingFolder,
+                        manifest.copy(phase = PENDING_PHASE_COMMITTED),
+                    )
+                }
                 subsMapFlow.update { current -> current + (subsId to nextSubscription) }
                 subsLoadErrorsFlow.update { current -> current - subsId }
                 withContext(Dispatchers.IO) {
@@ -96,10 +120,15 @@ object SubscriptionMutationRepository {
                 )
                 val stagedIds = mutableSetOf<Long>()
                 var transactionCommitted = false
+                val manifest = PendingDataMutationManifest(
+                    kind = PENDING_KIND_SUBSCRIPTION_DELETE,
+                    ids = uniqueIds.toList(),
+                )
                 try {
                     val deleted = DbSet.withTransaction {
                         withContext(Dispatchers.IO) {
                             stagingFolder.mkdirs()
+                            writePendingDataMutationManifest(stagingFolder, manifest)
                             uniqueIds.forEach { subsId ->
                                 val source = subsFolder.resolve("$subsId.json")
                                 if (source.exists()) {
@@ -119,6 +148,12 @@ object SubscriptionMutationRepository {
                         deleteSize
                     }
                     transactionCommitted = true
+                    withContext(Dispatchers.IO) {
+                        writePendingDataMutationManifest(
+                            stagingFolder,
+                            manifest.copy(phase = PENDING_PHASE_COMMITTED),
+                        )
+                    }
                     subsMapFlow.update { current -> current - uniqueIds.toSet() }
                     withContext(Dispatchers.IO) {
                         requirePendingDataCleanup(stagingFolder)

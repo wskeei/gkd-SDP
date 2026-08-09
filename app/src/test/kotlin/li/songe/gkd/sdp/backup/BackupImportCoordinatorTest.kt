@@ -175,7 +175,10 @@ class BackupImportCoordinatorTest {
 
         assertEquals("old", target.current.objects.single().content.decodeToString())
         assertTrue(target.events.contains("restore"))
-        assertEquals(BackupImportPhase.APPLYING, journal.current?.phase)
+        assertTrue(journal.cleared)
+        target.current = payload("new-history")
+        coordinator.recoverInterruptedImport()
+        assertEquals("new-history", target.current.objects.single().content.decodeToString())
     }
 
     @Test

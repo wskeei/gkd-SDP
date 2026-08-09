@@ -42,10 +42,23 @@ class PendingDataCleanupTest {
     @Test
     fun `application startup retries registered cleanup before opening state`() {
         val source = sourceFile("app/src/main/kotlin/li/songe/gkd/sdp/App.kt").readText()
+        val cleanup = sourceFile(
+            "app/src/main/kotlin/li/songe/gkd/sdp/util/PendingDataCleanup.kt",
+        ).readText()
+        val subscription = sourceFile(
+            "app/src/main/kotlin/li/songe/gkd/sdp/util/SubscriptionMutationRepository.kt",
+        ).readText()
+        val snapshot = sourceFile(
+            "app/src/main/kotlin/li/songe/gkd/sdp/util/SnapshotExt.kt",
+        ).readText()
         val startup = source.substringAfter("override fun onCreate()")
 
         assertTrue(startup.contains("retryPendingDataCleanup()"))
         assertTrue(startup.indexOf("retryPendingDataCleanup()") < startup.indexOf("initStore()"))
+        assertTrue(cleanup.contains("PENDING_MUTATION_MANIFEST"))
+        assertTrue(cleanup.contains("queryById(id)"))
+        assertTrue(subscription.contains("writePendingDataMutationManifest"))
+        assertTrue(snapshot.contains("writePendingDataMutationManifest"))
     }
 
     private fun sourceFile(relativePath: String): File {

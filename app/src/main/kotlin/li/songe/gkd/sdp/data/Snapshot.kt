@@ -56,6 +56,9 @@ data class Snapshot(
         @Query("SELECT * FROM snapshot ORDER BY id DESC")
         fun query(): Flow<List<Snapshot>>
 
+        @Query("SELECT * FROM snapshot WHERE id=:id")
+        suspend fun queryById(id: Long): Snapshot?
+
         @Query("UPDATE snapshot SET github_asset_id=null WHERE id = :id")
         suspend fun deleteGithubAssetId(id: Long)
 
@@ -63,7 +66,6 @@ data class Snapshot(
         fun count(): Flow<Int>
     }
 }
-
 
 
 

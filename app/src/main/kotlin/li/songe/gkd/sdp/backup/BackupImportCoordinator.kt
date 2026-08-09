@@ -123,6 +123,7 @@ class BackupImportCoordinator(
         confirmed: Boolean,
     ): BackupResult<Unit> = importMutex.withLock {
         if (!confirmed) return BackupResult.Failure(BackupErrorCode.IMPORT_NOT_CONFIRMED)
+        var cancellationRollbackState: BackupPayload? = null
         val outcome = try {
             target.withExclusiveMutation(
                 block = {
@@ -140,6 +141,7 @@ class BackupImportCoordinator(
                             result = BackupResult.Failure(BackupErrorCode.IMPORT_PREVIEW_STALE),
                         )
                     }
+                    cancellationRollbackState = currentState
                     val baseRecord = BackupImportJournalRecord(
                         phase = BackupImportPhase.PREPARED,
                         payloadHash = prepared.payload.payloadHash,
@@ -154,9 +156,6 @@ class BackupImportCoordinator(
                             commitRecord = baseRecord,
                         )
                     } catch (error: CancellationException) {
-                        withContext(NonCancellable) {
-                            rollbackAfterFailure(currentState)
-                        }
                         throw error
                     } catch (_: Throwable) {
                         val rollbackCompleted = rollbackAfterFailure(currentState)
@@ -182,6 +181,17 @@ class BackupImportCoordinator(
                 },
             )
         } catch (error: CancellationException) {
+            val previousState = cancellationRollbackState
+            if (previousState != null) {
+                withContext(NonCancellable) {
+                    runCatching {
+                        target.withExclusiveMutation(
+                            block = { target.restore(previousState) },
+                            afterCommit = { journal.clear() },
+                        )
+                    }
+                }
+            }
             throw error
         } catch (error: ImportRecoveryException) {
             return BackupResult.Failure(

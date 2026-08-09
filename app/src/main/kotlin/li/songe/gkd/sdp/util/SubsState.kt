@@ -127,7 +127,12 @@ val usedSubsEntriesFlow by lazy {
 suspend fun updateSubscription(
     subscription: RawSubscription,
     subsItem: SubsItem? = null,
-): RawSubscription = SubscriptionMutationRepository.upsert(subscription, subsItem)
+    expectedCurrentMtime: Long? = null,
+): RawSubscription = SubscriptionMutationRepository.upsert(
+    subscription = subscription,
+    subsItem = subsItem,
+    expectedCurrentMtime = expectedCurrentMtime,
+)
 
 suspend fun deleteSubscription(vararg subsIds: Long): Int =
     SubscriptionMutationRepository.delete(*subsIds).also { deleteSize ->
@@ -500,7 +505,10 @@ fun checkSubsUpdate(showToast: Boolean = false) = appScope.launchTry(Dispatchers
             try {
                 val newSubsRaw = updateSubs(subsEntry)
                 if (newSubsRaw != null) {
-                    updateSubscription(newSubsRaw)
+                    updateSubscription(
+                        subscription = newSubsRaw,
+                        expectedCurrentMtime = subsEntry.subsItem.mtime,
+                    )
                     successNum++
                 }
                 if (subsRefreshErrorsFlow.value.contains(subsEntry.subsItem.id)) {

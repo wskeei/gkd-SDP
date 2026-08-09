@@ -72,6 +72,7 @@ class MutableStoreStateFlow<T>(
     private var deferredMutations: MutableList<(T) -> T>? = null
     private var snapshotValue: Any? = NO_SNAPSHOT_VALUE
     private var replacementValue: Any? = NO_REPLACEMENT_VALUE
+    private var replacementCommitRequested = false
 
     init {
         BackupDataMutationBarrier.register(this)
@@ -131,12 +132,14 @@ class MutableStoreStateFlow<T>(
             deferredMutations = mutableListOf()
             snapshotValue = stateFlow.value
             replacementValue = NO_REPLACEMENT_VALUE
+            replacementCommitRequested = false
         }
     }
 
     override fun commitConsistentSnapshot() {
         synchronized(mutationLock) {
             val mutations = deferredMutations ?: return
+            replacementCommitRequested = true
             if (replacementValue !== NO_REPLACEMENT_VALUE) {
                 @Suppress("UNCHECKED_CAST")
                 var replayed = replacementValue as T
@@ -150,11 +153,14 @@ class MutableStoreStateFlow<T>(
     override fun finishConsistentSnapshot() {
         synchronized(mutationLock) {
             try {
-                commitConsistentSnapshot()
+                if (!replacementCommitRequested) {
+                    replacementValue = NO_REPLACEMENT_VALUE
+                }
             } finally {
                 deferredMutations = null
                 snapshotValue = NO_SNAPSHOT_VALUE
                 replacementValue = NO_REPLACEMENT_VALUE
+                replacementCommitRequested = false
             }
         }
     }

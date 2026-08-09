@@ -15,6 +15,7 @@ import java.io.File
 import java.util.concurrent.Executors
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.fail
 import org.junit.Test
 
 class StorageMutationBarrierTest {
@@ -181,6 +182,30 @@ class StorageMutationBarrierTest {
         queuedOldEmission.await()
 
         assertEquals(41, persistedValue)
+    }
+
+    @Test
+    fun `failed snapshot discards staged replacement instead of publishing it`() = runBlocking {
+        val state = MutableStateFlow(1)
+        val flow = MutableStoreStateFlow(
+            filename = "rollback-test.txt",
+            decode = { it?.toIntOrNull() ?: 0 },
+            encode = Int::toString,
+            stateFlow = state,
+        )
+
+        try {
+            BackupDataMutationBarrier.withConsistentDataSnapshot {
+                flow.updateByDecode("40")
+                error("synthetic import failure")
+            }
+            fail("expected import failure")
+        } catch (_: IllegalStateException) {
+            // The replacement must be discarded by the barrier cleanup.
+        }
+
+        assertEquals(1, flow.value)
+        assertEquals(1, state.value)
     }
 
     private fun sourceFile(relativePath: String): File {

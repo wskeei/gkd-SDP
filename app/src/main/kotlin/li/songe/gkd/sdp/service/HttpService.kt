@@ -63,6 +63,7 @@ import li.songe.gkd.sdp.remote.RemoteRevocationReason
 import li.songe.gkd.sdp.remote.RemoteScope
 import li.songe.gkd.sdp.remote.RemoteSessionPolicy
 import li.songe.gkd.sdp.remote.RemoteSessionSnapshot
+import li.songe.gkd.sdp.appScope
 import li.songe.gkd.sdp.store.storeFlow
 import li.songe.gkd.sdp.util.DefaultSimpleLifeImpl
 import li.songe.gkd.sdp.util.LOCAL_HTTP_SUBS_ID
@@ -128,7 +129,7 @@ class HttpService : Service(), OnSimpleLife by DefaultSimpleLifeImpl() {
             remoteSessionStateFlow.value = remoteSessionPolicy.snapshot()
             rateLimiter.clear()
             if (storeFlow.value.autoClearMemorySubs) {
-                scope.launchTry(Dispatchers.IO) {
+                appScope.launchTry(Dispatchers.IO) {
                     deleteSubscription(LOCAL_HTTP_SUBS_ID)
                 }
             }

@@ -111,10 +111,15 @@ object SnapshotExt {
                 "$SNAPSHOT_DELETE_STAGING_PREFIX${UUID.randomUUID()}",
             )
             var transactionCommitted = false
+            val manifest = PendingDataMutationManifest(
+                kind = PENDING_KIND_SNAPSHOT_DELETE,
+                ids = uniqueSnapshots.map(Snapshot::id),
+            )
             try {
                 val deleted = DbSet.withTransaction {
                     withContext(Dispatchers.IO) {
                         stagingFolder.mkdirs()
+                        writePendingDataMutationManifest(stagingFolder, manifest)
                         uniqueSnapshots.forEach { snapshot ->
                             val source = snapshotParentPath(snapshot.id)
                             if (source.exists()) {
@@ -125,6 +130,12 @@ object SnapshotExt {
                     DbSet.snapshotDao.delete(*uniqueSnapshots.toTypedArray())
                 }
                 transactionCommitted = true
+                withContext(Dispatchers.IO) {
+                    writePendingDataMutationManifest(
+                        stagingFolder,
+                        manifest.copy(phase = PENDING_PHASE_COMMITTED),
+                    )
+                }
                 withContext(Dispatchers.IO) {
                     requirePendingDataCleanup(stagingFolder)
                 }
