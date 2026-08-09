@@ -51,6 +51,7 @@ import li.songe.gkd.sdp.util.initAppState
 import li.songe.gkd.sdp.util.initSubsState
 import li.songe.gkd.sdp.util.initToast
 import li.songe.gkd.sdp.util.launchTry
+import li.songe.gkd.sdp.util.retryPendingDataCleanup
 import li.songe.gkd.sdp.util.toast
 import org.lsposed.hiddenapibypass.HiddenApiBypass
 import kotlin.system.exitProcess
@@ -251,6 +252,7 @@ class App : Application() {
         initToast()
         runBlocking(Dispatchers.IO) {
             BackupUtils.recoverInterruptedImport()
+            retryPendingDataCleanup()
         }
         initStore()
         initChannel()

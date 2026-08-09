@@ -155,10 +155,15 @@ fun initDisplayPreferenceBackup() {
         storeFlow
             .map(DisplayPreferenceBackupPolicy::snapshot)
             .distinctUntilChanged()
-            .collect { snapshot ->
-                while (!lastPersisted.matches(snapshot)) {
-                    val updated = BackupDataMutationBarrier.withMutation {
-                        writeChangedDisplayPreferences(folder, lastPersisted, snapshot)
+            .collect {
+                while (true) {
+                    val (updated, latestSnapshot) = BackupDataMutationBarrier.withMutation {
+                        val latest = DisplayPreferenceBackupPolicy.snapshot(storeFlow.value)
+                        writeChangedDisplayPreferences(folder, lastPersisted, latest) to latest
+                    }
+                    if (updated.matches(latestSnapshot)) {
+                        lastPersisted = updated
+                        break
                     }
                     if (updated == lastPersisted) delay(1_000)
                     lastPersisted = updated

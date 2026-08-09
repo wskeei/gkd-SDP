@@ -108,7 +108,7 @@ object SnapshotExt {
         val uniqueSnapshots = snapshots.distinctBy(Snapshot::id)
         return BackupDataMutationBarrier.withMutation {
             val stagingFolder = requireNotNull(snapshotFolder.parentFile).resolve(
-                ".snapshot-delete-${UUID.randomUUID()}",
+                "$SNAPSHOT_DELETE_STAGING_PREFIX${UUID.randomUUID()}",
             )
             var transactionCommitted = false
             try {
@@ -126,7 +126,7 @@ object SnapshotExt {
                 }
                 transactionCommitted = true
                 withContext(Dispatchers.IO) {
-                    runCatching { stagingFolder.deleteRecursively() }
+                    requirePendingDataCleanup(stagingFolder)
                 }
                 deleted
             } catch (error: Throwable) {

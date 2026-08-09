@@ -357,10 +357,6 @@ class RuleGroupState(
                                 globalGroups = showSubs.globalGroups.filter { g -> g.key != showGroup.key }
                             )
                         )
-                        DbSet.subsConfigDao.deleteGlobalGroupConfig(
-                            showGroupState.subsId,
-                            showGroupState.groupKey
-                        )
                     } else if (showGroupState.appId != null) {
                         updateSubscription(
                             showSubs.copy(

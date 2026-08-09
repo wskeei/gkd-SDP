@@ -127,7 +127,11 @@ class HttpService : Service(), OnSimpleLife by DefaultSimpleLifeImpl() {
             remoteSessionPolicy.revoke(RemoteRevocationReason.SERVICE_STOPPED)
             remoteSessionStateFlow.value = remoteSessionPolicy.snapshot()
             rateLimiter.clear()
-            if (storeFlow.value.autoClearMemorySubs) deleteSubscription(LOCAL_HTTP_SUBS_ID)
+            if (storeFlow.value.autoClearMemorySubs) {
+                scope.launchTry(Dispatchers.IO) {
+                    deleteSubscription(LOCAL_HTTP_SUBS_ID)
+                }
+            }
             httpServerFlow.value?.stop()
             httpServerFlow.value = null
             listenModeFlow.value = RemoteListenMode.LOCAL_ONLY
@@ -394,10 +398,9 @@ private fun CoroutineScope.createServer(port: Int, host: String) = embeddedServe
                     version = 0,
                     author = "@gkd-kit/inspect",
                 )
-                updateSubscription(subscription)
                 val current = subsItemsFlow.value.find { item -> item.id == httpSubsItem.id }
                     ?: httpSubsItem
-                DbSet.subsItemDao.insert(current.copy(mtime = System.currentTimeMillis()))
+                updateSubscription(subscription, current)
                 call.respondJsonBounded(RpcOk())
             }
             post("/execSelector") {

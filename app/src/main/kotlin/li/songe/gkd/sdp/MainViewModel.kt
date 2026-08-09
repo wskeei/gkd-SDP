@@ -16,6 +16,7 @@ import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.withContext
 import li.songe.gkd.sdp.a11y.useA11yServiceEnabledFlow
 import li.songe.gkd.sdp.a11y.useEnabledA11yServicesFlow
@@ -74,7 +75,6 @@ import li.songe.gkd.sdp.util.stopCoroutine
 import li.songe.gkd.sdp.util.subsFolder
 import li.songe.gkd.sdp.util.subsItemsFlow
 import li.songe.gkd.sdp.util.toast
-import li.songe.gkd.sdp.util.updateSubsMutex
 import li.songe.gkd.sdp.util.updateSubscription
 import li.songe.loc.Loc
 import rikka.shizuku.Shizuku
@@ -153,12 +153,14 @@ class MainViewModel : BaseViewModel(), OnSimpleLife by DefaultSimpleLifeImpl() {
         it.mapIndexed { i, appId -> appId to i }.toMap()
     }.debounce(500).stateInit(emptyMap())
 
+    private val addOrModifySubsMutex = Mutex()
+
     fun addOrModifySubs(
         url: String,
         oldItem: SubsItem? = null,
     ) = viewModelScope.launchTry(Dispatchers.IO) {
-        if (updateSubsMutex.mutex.isLocked) return@launchTry
-        updateSubsMutex.withStateLock {
+        if (!addOrModifySubsMutex.tryLock()) return@launchTry
+        try {
             val subItems = subsItemsFlow.value
             val text = try {
                 client.get(url).bodyAsText()
@@ -194,14 +196,10 @@ class MainViewModel : BaseViewModel(), OnSimpleLife by DefaultSimpleLifeImpl() {
                 updateUrl = url,
                 order = if (subItems.isEmpty()) 1 else (subItems.maxBy { it.order }.order + 1)
             )
-            updateSubscription(newSubsRaw)
-            if (oldItem == null) {
-                DbSet.subsItemDao.insert(newItem)
-                toast("成功添加订阅")
-            } else {
-                DbSet.subsItemDao.update(newItem)
-                toast("成功修改订阅")
-            }
+            updateSubscription(newSubsRaw, newItem)
+            toast(if (oldItem == null) "成功添加订阅" else "成功修改订阅")
+        } finally {
+            addOrModifySubsMutex.unlock()
         }
     }
 
@@ -377,20 +375,22 @@ class MainViewModel : BaseViewModel(), OnSimpleLife by DefaultSimpleLifeImpl() {
         viewModelScope.launchTry(Dispatchers.IO) {
             val subsItems = DbSet.subsItemDao.queryAll()
             if (!subsItems.any { s -> s.id == LOCAL_SUBS_ID }) {
-                if (!subsFolder.resolve("${LOCAL_SUBS_ID}.json").exists()) {
-                    updateSubscription(
-                        RawSubscription(
-                            id = LOCAL_SUBS_ID,
-                            name = "本地订阅",
-                            version = 0
-                        )
+                val localFile = subsFolder.resolve("${LOCAL_SUBS_ID}.json")
+                val localSubscription = if (localFile.exists()) {
+                    RawSubscription.parse(localFile.readText(), json5 = false)
+                } else {
+                    RawSubscription(
+                        id = LOCAL_SUBS_ID,
+                        name = "本地订阅",
+                        version = 0,
                     )
                 }
-                DbSet.subsItemDao.insert(
-                    SubsItem(
+                updateSubscription(
+                    subscription = localSubscription,
+                    subsItem = SubsItem(
                         id = LOCAL_SUBS_ID,
                         order = subsItems.minByOrNull { it.order }?.order ?: 0,
-                    )
+                    ),
                 )
             }
         }

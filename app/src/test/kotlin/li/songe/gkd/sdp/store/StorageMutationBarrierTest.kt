@@ -42,12 +42,17 @@ class StorageMutationBarrierTest {
             stateFlow = committedState,
         )
         val barrierHeld = CompletableDeferred<Unit>()
-        val releaseBarrier = CompletableDeferred<Unit>()
+        val stageReplacement = CompletableDeferred<Unit>()
+        val replacementStaged = CompletableDeferred<Unit>()
+        val commitReplacement = CompletableDeferred<Unit>()
         val import = async(Dispatchers.Default) {
             BackupDataMutationBarrier.withConsistentDataSnapshot {
                 barrierHeld.complete(Unit)
-                releaseBarrier.await()
+                stageReplacement.await()
                 flow.updateByDecode("40")
+                replacementStaged.complete(Unit)
+                commitReplacement.await()
+                BackupDataMutationBarrier.commitPendingDataReplacements()
             }
         }
         barrierHeld.await()
@@ -61,8 +66,12 @@ class StorageMutationBarrierTest {
         concurrentMutation.await()
 
         assertEquals(1, flow.value)
-        assertEquals(0, committedState.value)
-        releaseBarrier.complete(Unit)
+        assertEquals(1, committedState.value)
+        stageReplacement.complete(Unit)
+        replacementStaged.await()
+        assertEquals(1, flow.value)
+        assertEquals(1, committedState.value)
+        commitReplacement.complete(Unit)
         import.await()
         assertEquals(41, flow.value)
         assertEquals(41, committedState.value)
@@ -122,7 +131,7 @@ class StorageMutationBarrierTest {
             withTimeout(1_000) { mainMutation.await() }
 
             assertEquals(1, flow.value)
-            assertEquals(0, committedState.value)
+            assertEquals(1, committedState.value)
             releaseIo.complete(Unit)
             barrierOwner.await()
             assertEquals(1, committedState.value)
@@ -130,6 +139,48 @@ class StorageMutationBarrierTest {
             releaseIo.complete(Unit)
             mainDispatcher.close()
         }
+    }
+
+    @Test
+    fun `queued persistence reads latest committed value after barrier release`() = runBlocking {
+        val state = MutableStateFlow(0)
+        val flow = MutableStoreStateFlow(
+            filename = "persistence-order-test.txt",
+            decode = { it?.toIntOrNull() ?: 0 },
+            encode = Int::toString,
+            stateFlow = state,
+        )
+        val snapshotStarted = CompletableDeferred<Unit>()
+        val stageImport = CompletableDeferred<Unit>()
+        val importStaged = CompletableDeferred<Unit>()
+        val finishImport = CompletableDeferred<Unit>()
+        val snapshot = async(Dispatchers.Default) {
+            BackupDataMutationBarrier.withConsistentDataSnapshot {
+                snapshotStarted.complete(Unit)
+                stageImport.await()
+                flow.updateByDecode("40")
+                importStaged.complete(Unit)
+                finishImport.await()
+                BackupDataMutationBarrier.commitPendingDataReplacements()
+            }
+        }
+        snapshotStarted.await()
+        flow.update { it + 1 }
+
+        var persistedValue = -1
+        val queuedOldEmission = async(Dispatchers.Default) {
+            BackupDataMutationBarrier.withMutation {
+                persistedValue = state.value
+            }
+        }
+        stageImport.complete(Unit)
+        importStaged.await()
+        assertFalse(queuedOldEmission.isCompleted)
+        finishImport.complete(Unit)
+        snapshot.await()
+        queuedOldEmission.await()
+
+        assertEquals(41, persistedValue)
     }
 
     private fun sourceFile(relativePath: String): File {

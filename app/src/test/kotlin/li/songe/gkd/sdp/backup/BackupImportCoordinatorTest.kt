@@ -2,6 +2,8 @@ package li.songe.gkd.sdp.backup
 
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.async
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -153,6 +155,30 @@ class BackupImportCoordinatorTest {
     }
 
     @Test
+    fun `cancellation restores through suspending target in non cancellable context`() = runBlocking {
+        val target = FakeImportTarget(payload("old")).apply {
+            pauseAfterReplace = true
+            restoreChecksCancellation = true
+        }
+        val journal = RecordingJournal()
+        val coordinator = coordinator(target, journal)
+        val prepared = coordinator.prepare(
+            encryptedPayload(payload("new")),
+            "correct-password".toCharArray(),
+        ) as BackupResult.Success<PreparedBackupImport>
+
+        val apply = async { coordinator.apply(prepared.value, confirmed = true) }
+        target.replaceStarted.await()
+        apply.cancel()
+        target.continueReplace.complete(Unit)
+        runCatching { apply.await() }
+
+        assertEquals("old", target.current.objects.single().content.decodeToString())
+        assertTrue(target.events.contains("restore"))
+        assertEquals(BackupImportPhase.APPLYING, journal.current?.phase)
+    }
+
+    @Test
     fun `apply rejects a stale preview without journaling or modifying newer data`() = runBlocking {
         val target = FakeImportTarget(payload("old"))
         val journal = RecordingJournal()
@@ -300,6 +326,7 @@ class BackupImportCoordinatorTest {
         var pauseAfterReplace = false
         var reconcileFailuresRemaining = 0
         var restoreFailuresRemaining = 0
+        var restoreChecksCancellation = false
         val replaceStarted = CompletableDeferred<Unit>()
         val continueReplace = CompletableDeferred<Unit>()
         val events = mutableListOf<String>()
@@ -353,6 +380,10 @@ class BackupImportCoordinatorTest {
 
         override suspend fun restore(previous: BackupPayload) {
             events += "restore"
+            if (restoreChecksCancellation) {
+                yield()
+                currentCoroutineContext().ensureActive()
+            }
             if (restoreFailuresRemaining > 0) {
                 restoreFailuresRemaining -= 1
                 error("synthetic restore failure")

@@ -70,7 +70,7 @@ class MutableStoreStateFlow<T>(
 ) : MutableStateFlow<T> by stateFlow, BackupDataMutationParticipant {
     private val mutationLock = Any()
     private var deferredMutations: MutableList<(T) -> T>? = null
-    private var projectedValue: Any? = NO_PROJECTED_VALUE
+    private var snapshotValue: Any? = NO_SNAPSHOT_VALUE
     private var replacementValue: Any? = NO_REPLACEMENT_VALUE
 
     init {
@@ -78,18 +78,16 @@ class MutableStoreStateFlow<T>(
     }
 
     override var value: T
-        get() = synchronized(mutationLock) { projectedValueOrCommitted() }
+        get() = stateFlow.value
         set(value) = mutateOrDefer { value }
 
     override fun compareAndSet(expect: T, update: T): Boolean = synchronized(mutationLock) {
         if (deferredMutations == null) {
             stateFlow.compareAndSet(expect, update)
-        } else if (projectedValueOrCommitted() != expect) {
-            false
         } else {
-            deferredMutations?.add { update }
-            projectedValue = update
-            true
+            stateFlow.compareAndSet(expect, update).also { changed ->
+                if (changed) deferredMutations?.add { update }
+            }
         }
     }
 
@@ -105,7 +103,14 @@ class MutableStoreStateFlow<T>(
     fun update(function: (T) -> T) = mutateOrDefer(function)
 
     fun encodeSelf(): String = synchronized(mutationLock) {
-        encode(stateFlow.value)
+        @Suppress("UNCHECKED_CAST")
+        encode(
+            if (snapshotValue === NO_SNAPSHOT_VALUE) {
+                stateFlow.value
+            } else {
+                snapshotValue as T
+            },
+        )
     }
 
     fun updateByDecode(text: String?) {
@@ -116,7 +121,6 @@ class MutableStoreStateFlow<T>(
                 stateFlow.value = decoded
             } else {
                 replacementValue = decoded
-                projectedValue = mutations.fold(decoded) { value, mutation -> mutation(value) }
             }
         }
     }
@@ -125,26 +129,31 @@ class MutableStoreStateFlow<T>(
         synchronized(mutationLock) {
             check(deferredMutations == null)
             deferredMutations = mutableListOf()
-            projectedValue = stateFlow.value
+            snapshotValue = stateFlow.value
             replacementValue = NO_REPLACEMENT_VALUE
+        }
+    }
+
+    override fun commitConsistentSnapshot() {
+        synchronized(mutationLock) {
+            val mutations = deferredMutations ?: return
+            if (replacementValue !== NO_REPLACEMENT_VALUE) {
+                @Suppress("UNCHECKED_CAST")
+                var replayed = replacementValue as T
+                mutations.forEach { mutation -> replayed = mutation(replayed) }
+                stateFlow.value = replayed
+                replacementValue = NO_REPLACEMENT_VALUE
+            }
         }
     }
 
     override fun finishConsistentSnapshot() {
         synchronized(mutationLock) {
-            val mutations = deferredMutations ?: return
             try {
-                @Suppress("UNCHECKED_CAST")
-                var replayed = if (replacementValue === NO_REPLACEMENT_VALUE) {
-                    stateFlow.value
-                } else {
-                    replacementValue as T
-                }
-                mutations.forEach { mutation -> replayed = mutation(replayed) }
-                stateFlow.value = replayed
+                commitConsistentSnapshot()
             } finally {
                 deferredMutations = null
-                projectedValue = NO_PROJECTED_VALUE
+                snapshotValue = NO_SNAPSHOT_VALUE
                 replacementValue = NO_REPLACEMENT_VALUE
             }
         }
@@ -153,21 +162,13 @@ class MutableStoreStateFlow<T>(
     private fun mutateOrDefer(function: (T) -> T) {
         synchronized(mutationLock) {
             val pending = deferredMutations
-            if (pending == null) {
-                stateFlow.value = function(stateFlow.value)
-            } else {
-                projectedValue = function(projectedValueOrCommitted())
-                pending += function
-            }
+            stateFlow.value = function(stateFlow.value)
+            pending?.add(function)
         }
     }
 
-    @Suppress("UNCHECKED_CAST")
-    private fun projectedValueOrCommitted(): T =
-        if (projectedValue === NO_PROJECTED_VALUE) stateFlow.value else projectedValue as T
-
     private companion object {
-        private val NO_PROJECTED_VALUE = Any()
+        private val NO_SNAPSHOT_VALUE = Any()
         private val NO_REPLACEMENT_VALUE = Any()
     }
 }
@@ -188,8 +189,9 @@ fun <T> createTextFlow(
     scope.launch {
         stateFlow.drop(1).conflate().debounce(debounceMillis).collect {
             BackupDataMutationBarrier.withMutation {
+                val latestValue = stateFlow.value
                 withContext(Dispatchers.IO) {
-                    writeTextAtomically(file, encode(it))
+                    writeTextAtomically(file, encode(latestValue))
                 }
             }
         }

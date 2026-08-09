@@ -10,6 +10,7 @@ import kotlin.coroutines.CoroutineContext
 
 internal interface BackupDataMutationParticipant {
     fun beginConsistentSnapshot()
+    fun commitConsistentSnapshot()
     fun finishConsistentSnapshot()
 }
 
@@ -56,6 +57,14 @@ object BackupDataMutationBarrier {
             } finally {
                 finishConsistentSnapshot()
             }
+        }
+    }
+
+    suspend fun commitPendingDataReplacements() {
+        check(currentCoroutineContext()[HeldKey] != null)
+        synchronized(participantStateLock) {
+            check(consistentSnapshotActive)
+            activeParticipants.forEach(BackupDataMutationParticipant::commitConsistentSnapshot)
         }
     }
 

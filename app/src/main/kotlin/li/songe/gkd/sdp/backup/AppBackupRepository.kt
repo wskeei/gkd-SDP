@@ -29,7 +29,10 @@ class AppBackupRepository : BackupExportSource, BackupImportTarget {
         afterCommit: suspend (T) -> Unit,
     ): T =
         BackupDataMutationBarrier.withConsistentDataSnapshot {
-            DbSet.withTransaction { block() }.also { afterCommit(it) }
+            val result = DbSet.withTransaction { block() }
+            BackupDataMutationBarrier.commitPendingDataReplacements()
+            afterCommit(result)
+            result
         }
 
     override suspend fun collect(categoryIds: Set<String>): BackupPayload {
@@ -109,6 +112,7 @@ class AppBackupRepository : BackupExportSource, BackupImportTarget {
 
     override suspend fun restore(previous: BackupPayload) {
         replaceIncludedCategories(previous)
+        BackupDataMutationBarrier.commitPendingDataReplacements()
     }
 
     override suspend fun reconcileRuntime() {

@@ -34,7 +34,7 @@ class MutexState() {
         }
     }
 
-    suspend inline fun withStateLock(block: () -> Unit): Unit = mutex.withLock {
+    suspend inline fun <T> withStateLock(block: () -> T): T = mutex.withLock {
         intState.update { it + 1 }
         try {
             block()
@@ -43,9 +43,9 @@ class MutexState() {
         }
     }
 
-    suspend inline fun whenUnLock(block: () -> Unit) {
-        if (mutex.isLocked) return
-        withStateLock(block)
+    suspend inline fun <T> whenUnLock(block: () -> T): T? {
+        if (mutex.isLocked) return null
+        return withStateLock(block)
     }
 
     fun launchTry(

@@ -154,7 +154,9 @@ class BackupImportCoordinator(
                             commitRecord = baseRecord,
                         )
                     } catch (error: CancellationException) {
-                        rollbackAfterFailure(currentState)
+                        withContext(NonCancellable) {
+                            rollbackAfterFailure(currentState)
+                        }
                         throw error
                     } catch (_: Throwable) {
                         val rollbackCompleted = rollbackAfterFailure(currentState)
