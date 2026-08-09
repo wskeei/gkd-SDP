@@ -153,7 +153,9 @@ object SnapshotExt {
                 }
                 deleted
             } catch (error: Throwable) {
-                if (!transactionCommitted) {
+                if (transactionCommitted) {
+                    blockPendingDataRecovery()
+                } else {
                     withContext(NonCancellable + Dispatchers.IO) {
                         uniqueSnapshots.forEach { snapshot ->
                             val staged = stagingFolder.resolve(snapshot.id.toString())

@@ -90,14 +90,14 @@ object SubscriptionMutationRepository {
                         }
                     }
                     transactionCommitted = true
+                    subsMapFlow.update { current -> current + (subsId to nextSubscription) }
+                    subsLoadErrorsFlow.update { current -> current - subsId }
                     withContext(Dispatchers.IO) {
                         writePendingDataMutationManifest(
                             stagingFolder,
                             manifest.copy(phase = PENDING_PHASE_COMMITTED),
                         )
                     }
-                    subsMapFlow.update { current -> current + (subsId to nextSubscription) }
-                    subsLoadErrorsFlow.update { current -> current - subsId }
                     result
                 }
                 withContext(Dispatchers.IO) {
@@ -109,7 +109,9 @@ object SubscriptionMutationRepository {
                 )
                 nextSubscription
             } catch (error: Throwable) {
-                if (!transactionCommitted) {
+                if (transactionCommitted) {
+                    blockPendingDataRecovery()
+                } else {
                     withContext(NonCancellable + Dispatchers.IO) {
                         restoreSubscriptionFile(
                             targetFile = targetFile,
@@ -166,13 +168,13 @@ object SubscriptionMutationRepository {
                             deleteSize
                         }
                         transactionCommitted = true
+                        subsMapFlow.update { current -> current - uniqueIds.toSet() }
                         withContext(Dispatchers.IO) {
                             writePendingDataMutationManifest(
                                 stagingFolder,
                                 manifest.copy(phase = PENDING_PHASE_COMMITTED),
                             )
                         }
-                        subsMapFlow.update { current -> current - uniqueIds.toSet() }
                         result
                     }
                     withContext(Dispatchers.IO) {
@@ -180,7 +182,9 @@ object SubscriptionMutationRepository {
                     }
                     deleted
                 } catch (error: Throwable) {
-                    if (!transactionCommitted) {
+                    if (transactionCommitted) {
+                        blockPendingDataRecovery()
+                    } else {
                         withContext(NonCancellable + Dispatchers.IO) {
                             stagedIds.forEach { subsId ->
                                 val staged = stagingFolder.resolve("$subsId.json")

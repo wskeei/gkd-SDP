@@ -44,6 +44,10 @@ fun requirePendingDataRecoveryComplete() {
     if (pendingDataRecoveryBlocked) throw PendingDataRecoveryException()
 }
 
+internal fun blockPendingDataRecovery() {
+    pendingDataRecoveryBlocked = true
+}
+
 internal object PendingDataCleanupPolicy {
     fun cleanup(
         roots: Collection<File>,
@@ -128,11 +132,11 @@ private suspend fun recoverSubscriptionUpsert(
     val id = manifest.ids.single()
     val current = DbSet.subsItemDao.queryById(id)
     val expectedMtime = manifest.expectedMtime ?: manifest.expectedSubsItem?.mtime
-    val committed = current != null && expectedMtime != null && (
-        current.mtime == expectedMtime ||
-            (current.mtime > expectedMtime && manifest.requiredPreviousMtime
-                ?.let { current.mtime > it } != false)
-        )
+    val committed = current != null && expectedMtime != null && isCommittedSubscriptionMtime(
+        currentMtime = current.mtime,
+        expectedMtime = expectedMtime,
+        requiredPreviousMtime = manifest.requiredPreviousMtime,
+    )
     val target = subsFolder.resolve("$id.json")
     val stagedNew = directory.resolve("new.json")
     if (committed) {
@@ -151,6 +155,13 @@ private suspend fun recoverSubscriptionUpsert(
     }
     return deleteDirectory(directory)
 }
+
+internal fun isCommittedSubscriptionMtime(
+    currentMtime: Long,
+    expectedMtime: Long,
+    requiredPreviousMtime: Long?,
+): Boolean = currentMtime == expectedMtime &&
+    (requiredPreviousMtime == null || expectedMtime > requiredPreviousMtime)
 
 private suspend fun recoverSubscriptionDelete(
     directory: File,

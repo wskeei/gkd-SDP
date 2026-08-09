@@ -29,6 +29,8 @@ class SubscriptionMutationBoundaryContractTest {
         assertTrue(repository.contains("queryById(subsId)"))
         assertTrue(repository.contains("updateMtime(subsId, now) == 1"))
         assertTrue(repository.contains("requirePendingDataRecoveryComplete()"))
+        assertTrue(repository.contains("blockPendingDataRecovery()"))
+        assertTrue(repository.contains("withContext(NonCancellable)"))
         assertTrue(state.contains("suspend fun updateSubscription("))
         assertTrue(state.contains("suspend fun deleteSubscription("))
         assertFalse(state.substringAfter("suspend fun updateSubscription(").substringBefore("suspend fun deleteSubscription(").contains("appScope.launch"))

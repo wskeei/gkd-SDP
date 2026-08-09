@@ -40,6 +40,14 @@ class PendingDataCleanupTest {
     }
 
     @Test
+    fun `staged subscription recovery never overwrites a newer mtime`() {
+        assertTrue(isCommittedSubscriptionMtime(20, 20, 10))
+        assertTrue(isCommittedSubscriptionMtime(20, 20, null))
+        assertFalse(isCommittedSubscriptionMtime(21, 20, 10))
+        assertFalse(isCommittedSubscriptionMtime(20, 20, 20))
+    }
+
+    @Test
     fun `application startup retries registered cleanup before opening state`() {
         val source = sourceFile("app/src/main/kotlin/li/songe/gkd/sdp/App.kt").readText()
         val cleanup = sourceFile(
@@ -63,8 +71,14 @@ class PendingDataCleanupTest {
         assertTrue(subscription.contains("writePendingDataMutationManifest"))
         assertTrue(subscription.contains("withContext(NonCancellable)"))
         assertTrue(subscription.contains("nextMutationMtime"))
+        assertTrue(subscription.contains("blockPendingDataRecovery()"))
+        assertTrue(
+            subscription.indexOf("subsMapFlow.update") <
+                subscription.indexOf("manifest.copy(phase = PENDING_PHASE_COMMITTED)"),
+        )
         assertTrue(snapshot.contains("writePendingDataMutationManifest"))
         assertTrue(snapshot.contains("withContext(NonCancellable)"))
+        assertTrue(snapshot.contains("blockPendingDataRecovery()"))
     }
 
     private fun sourceFile(relativePath: String): File {
