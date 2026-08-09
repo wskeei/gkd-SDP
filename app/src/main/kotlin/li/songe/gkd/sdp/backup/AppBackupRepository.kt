@@ -32,10 +32,12 @@ class AppBackupRepository : BackupExportSource, BackupImportTarget {
         block: suspend () -> T,
         afterCommit: suspend (T) -> Unit,
     ): T = BackupDataMutationBarrier.withConsistentDataSnapshot {
+        var blockStarted = false
         var blockCompleted = false
         var completedResult: Any? = null
         val result = try {
             DbSet.withTransaction {
+                blockStarted = true
                 block().also { value ->
                     completedResult = value
                     blockCompleted = true
@@ -46,13 +48,18 @@ class AppBackupRepository : BackupExportSource, BackupImportTarget {
             @Suppress("UNCHECKED_CAST")
             val committedResult = completedResult as T
             withContext(NonCancellable) {
-                BackupDataMutationBarrier.commitPendingDataReplacements()
+                commitPendingDataReplacementsSafely()
                 afterCommit(committedResult)
             }
             throw error
+        } catch (error: Throwable) {
+            // A Room commit/endTransaction failure leaves file replacements ambiguous.
+            // Keep the gate closed until startup recovery can reconcile both stores.
+            if (blockStarted) blockBackupImportRecovery()
+            throw error
         }
         withContext(NonCancellable) {
-            BackupDataMutationBarrier.commitPendingDataReplacements()
+            commitPendingDataReplacementsSafely()
             afterCommit(result)
         }
         result
@@ -60,9 +67,11 @@ class AppBackupRepository : BackupExportSource, BackupImportTarget {
 
     override suspend fun <T> withRecoveryMutation(block: suspend () -> T): T =
         BackupDataMutationBarrier.withConsistentDataSnapshot {
+            var blockStarted = false
             var blockCompleted = false
             val result = try {
                 DbSet.withTransaction {
+                    blockStarted = true
                     block().also {
                         blockCompleted = true
                     }
@@ -70,15 +79,28 @@ class AppBackupRepository : BackupExportSource, BackupImportTarget {
             } catch (error: CancellationException) {
                 if (!blockCompleted) throw error
                 withContext(NonCancellable) {
-                    BackupDataMutationBarrier.commitPendingDataReplacements()
+                    commitPendingDataReplacementsSafely()
                 }
+                throw error
+            } catch (error: Throwable) {
+                // Recovery mutations must not release the gate after an ambiguous commit.
+                if (blockStarted) blockBackupImportRecovery()
                 throw error
             }
             withContext(NonCancellable) {
-                BackupDataMutationBarrier.commitPendingDataReplacements()
+                commitPendingDataReplacementsSafely()
             }
             result
         }
+
+    private suspend fun commitPendingDataReplacementsSafely() {
+        try {
+            BackupDataMutationBarrier.commitPendingDataReplacements()
+        } catch (error: Throwable) {
+            blockBackupImportRecovery()
+            throw error
+        }
+    }
 
     override suspend fun collect(categoryIds: Set<String>): BackupPayload {
         return BackupDataMutationBarrier.withConsistentDataSnapshot {
