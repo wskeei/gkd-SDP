@@ -9,6 +9,7 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.yield
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -19,6 +20,11 @@ import org.junit.rules.TemporaryFolder
 class BackupImportCoordinatorTest {
     @get:Rule
     val temporaryFolder = TemporaryFolder()
+
+    @After
+    fun resetRecoveryGate() {
+        unblockBackupImportRecovery()
+    }
 
     @Test
     fun `prepare decrypts validates and previews without modifying target`() = runBlocking {
