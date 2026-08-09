@@ -32,10 +32,11 @@ assets are never moved or replaced.
 
 ## Enforcement and release flow
 
-The metadata verifier accepts only stable current `versionName` values, while
-still reading historical beta tags when checking semantic and `versionCode`
-monotonicity. Release-PR `--no-tag` validation performs the same history checks
-as tag validation and permits only an exact already-published version to match
+The Android build metadata guard and metadata verifier accept only stable
+current `versionName` values, while the verifier still reads historical beta
+tags when checking semantic and `versionCode` monotonicity. Release-PR
+`--no-tag` validation performs the same history checks as tag validation and
+permits only an already-published version with the same `versionCode` to match
 itself. The update-manifest generator accepts only stable `vX.Y.Z` tags.
 
 CI runs both release-tooling shell suites. The Release workflow always creates

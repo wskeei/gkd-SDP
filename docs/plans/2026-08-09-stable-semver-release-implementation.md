@@ -45,13 +45,14 @@
 - Modify: `scripts/verify-release-metadata.sh`
 - Modify: `scripts/generate-update-manifest.sh`
 - Modify: `scripts/test-generate-update-manifest.sh`
+- Modify: `app/build.gradle.kts`
 - Modify: `.github/workflows/ci.yml`
 - Modify: `.github/workflows/release.yml`
 - Modify: `README.md`
 
 **Steps:**
 
-1. Restrict current metadata and update tags to stable `X.Y.Z`.
+1. Restrict Android build metadata, release metadata, and update tags to stable `X.Y.Z`.
 2. Apply history monotonicity checks in `--no-tag`, auto, and explicit-tag modes while recognizing historical prerelease tags.
 3. Run both release-tooling test suites in CI.
 4. Remove the prerelease branch from Release creation and always mark the stable Draft as GitHub Latest.
@@ -69,6 +70,9 @@
 - Modify: `docs/maintenance/recovery-runbook.md`
 - Modify: `.github/ISSUE_TEMPLATE/bug_report.yml`
 - Modify: `AGENTS.md`
+- Modify: `SECURITY.md`
+- Modify: `SUPPORT.md`
+- Modify: `GOVERNANCE.md`
 
 **Steps:**
 
