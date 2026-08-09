@@ -49,7 +49,7 @@ class GatedRoomDaoTest {
     @Test
     fun `proxy obeys the suspend JVM ABI for sync async and failure paths`() = runBlocking {
         val delegate = GatedRoomDaoTestDelegate()
-        val dao = gateRoomDao(delegate)
+        val dao: GatedRoomDaoTestContract = gateRoomDao(delegate)
         val immediate = GatedRoomDaoTestContract::class.java.getMethod(
             "immediate",
             String::class.java,
@@ -90,7 +90,7 @@ class GatedRoomDaoTest {
     @Test
     fun `proxy preserves synchronous and suspending dao results`() = runBlocking {
         val delegate = GatedRoomDaoTestDelegate()
-        val dao = gateRoomDao(delegate)
+        val dao: GatedRoomDaoTestContract = gateRoomDao(delegate)
 
         assertEquals("sync", dao.immediate("sync"))
         val delayed = async { dao.delayed("-suffix") }
@@ -102,7 +102,7 @@ class GatedRoomDaoTest {
 
     @Test
     fun `proxy propagates delegate failures`() = runBlocking {
-        val dao = gateRoomDao(GatedRoomDaoTestDelegate())
+        val dao: GatedRoomDaoTestContract = gateRoomDao(GatedRoomDaoTestDelegate())
 
         val result = runCatching { dao.failing() }
 
@@ -114,7 +114,7 @@ class GatedRoomDaoTest {
     fun `proxy waits for and can cancel while mutation gate is held`() = runBlocking {
         val gateEntered = CompletableDeferred<Unit>()
         val releaseGate = CompletableDeferred<Unit>()
-        val dao = gateRoomDao(GatedRoomDaoTestDelegate())
+        val dao: GatedRoomDaoTestContract = gateRoomDao(GatedRoomDaoTestDelegate())
         val holder = async {
             withBackupDataMutationGate {
                 gateEntered.complete(Unit)
@@ -136,7 +136,7 @@ class GatedRoomDaoTest {
     @Test
     fun `transaction-like default method holds gate across its suspension`() = runBlocking {
         val delegate = GatedRoomDaoTestDelegate()
-        val dao = gateRoomDao(delegate)
+        val dao: GatedRoomDaoTestContract = gateRoomDao(delegate)
         val transaction = async { dao.transactionLike("first") }
         yield()
 
