@@ -12,6 +12,7 @@ import android.widget.Button
 import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.TextView
+import li.songe.gkd.sdp.util.LogUtils
 
 object FetchOverlayController {
     private var windowManager: WindowManager? = null
@@ -86,7 +87,7 @@ object FetchOverlayController {
         try {
             windowManager?.addView(overlayView, layoutParams)
         } catch (ex: Exception) {
-            ex.printStackTrace()
+            LogUtils.d("contact fetch overlay mount failed", ex)
         }
     }
 
@@ -95,7 +96,7 @@ object FetchOverlayController {
             try {
                 windowManager?.removeView(overlayView)
             } catch (ex: Exception) {
-                ex.printStackTrace()
+                LogUtils.d("contact fetch overlay removal failed", ex)
             }
             overlayView = null
             windowManager = null

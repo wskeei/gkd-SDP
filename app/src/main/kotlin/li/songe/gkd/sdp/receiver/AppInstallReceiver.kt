@@ -72,8 +72,7 @@ class AppInstallReceiver : BroadcastReceiver() {
                 LogUtils.d("$TAG: Logged $action for $appName ($packageName)")
                 
             } catch (e: Exception) {
-                LogUtils.d("$TAG: Error logging install: ${e.message}")
-                e.printStackTrace()
+                LogUtils.d("app install event persistence failed", e)
             } finally {
                 pendingResult.finish()
             }

@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.withContext
 import li.songe.gkd.sdp.a11y.A11yCommonImpl
 import li.songe.gkd.sdp.a11y.A11yRuleEngine
+import li.songe.gkd.sdp.diagnostics.DiagnosticLogger
 import li.songe.gkd.sdp.service.StatusService
 import li.songe.gkd.sdp.store.updateEnableAutomator
 import li.songe.gkd.sdp.util.AutomatorModeOption
@@ -135,9 +136,9 @@ class AutomationService private constructor() : A11yCommonImpl {
                         if (!silent) {
                             automationRegisteredExceptionFlow.value = e
                         }
-                        LogUtils.d(e.message)
+                        LogUtils.d("automation already registered", e)
                     } else {
-                        toast("自动化启动失败：${e.message}")
+                        toast("自动化启动失败：${DiagnosticLogger.userMessage(e)}")
                         LogUtils.d(e)
                     }
                 }

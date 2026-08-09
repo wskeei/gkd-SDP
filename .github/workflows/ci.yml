@@ -40,6 +40,9 @@ jobs:
       - name: Test security dependency audit
         run: python3 -m unittest discover -s scripts/tests -p 'test_*.py' -v
 
+      - name: Verify sensitive output policy
+        run: python3 scripts/verify-sensitive-output-policy.py
+
       - name: Test release tooling contracts
         run: |
           bash scripts/test-verify-release-metadata.sh

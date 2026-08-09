@@ -14,6 +14,7 @@ import kotlinx.coroutines.launch
 import li.songe.gkd.sdp.MainActivity
 import li.songe.gkd.sdp.R
 import li.songe.gkd.sdp.db.DbSet
+import li.songe.gkd.sdp.util.LogUtils
 
 class FocusQuickStartWidget : AppWidgetProvider() {
 
@@ -77,7 +78,7 @@ class FocusQuickStartWidget : AppWidgetProvider() {
                         context.startActivity(appIntent)
                     }
                 } catch (e: Exception) {
-                    e.printStackTrace()
+                    LogUtils.d("focus widget action failed", e)
                 } finally {
                     pendingResult.finish()
                 }

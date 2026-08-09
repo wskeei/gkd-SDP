@@ -1,7 +1,6 @@
 ﻿package li.songe.gkd.sdp.a11y
 
 import android.content.Intent
-import android.util.Log
 import android.view.accessibility.AccessibilityNodeInfo
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -11,7 +10,6 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import li.songe.gkd.sdp.META
 import li.songe.gkd.sdp.app
 import li.songe.gkd.sdp.appScope
 import li.songe.gkd.sdp.data.FocusRule
@@ -115,9 +113,7 @@ object FocusModeEngine {
             }.collect { (rules, session) ->
                 cachedRules = rules
                 cachedSession = session
-                if (META.debuggable) {
-                    Log.d(TAG, "Rules updated: ${rules.size}, Session: $session")
-                }
+                LogUtils.d("focus configuration updated", rules.size, session != null)
             }
         }
 
@@ -204,9 +200,7 @@ object FocusModeEngine {
 
         if (isWhitelisted(packageName)) {
             sdpRuntimeFeatureCoordinator.recordDecision(owner, "focus", packageName, "whitelisted")
-            if (META.debuggable) {
-                Log.d(TAG, "App $packageName is whitelisted, allowing")
-            }
+            LogUtils.d("focus decision allowed")
             return
         }
 

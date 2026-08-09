@@ -2,14 +2,12 @@ package li.songe.gkd.sdp.a11y
 
 import android.content.Intent
 import android.net.Uri
-import android.util.Log
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
-import li.songe.gkd.sdp.META
 import li.songe.gkd.sdp.appScope
 import li.songe.gkd.sdp.data.BrowserConfig
 import li.songe.gkd.sdp.data.SelfControlAttempt
@@ -55,9 +53,10 @@ object UrlBlockerEngine {
                 cachedBrowsers = browsers.associateBy { it.packageName }
                 cachedGroups = groups
                 cachedTimeRules = timeRules
-                if (META.debuggable) {
-                    Log.d(TAG, "Rules updated: ${rules.size}, Browsers: ${browsers.size}, Groups: ${groups.size}, TimeRules: ${timeRules.size}")
-                }
+                LogUtils.d(
+                    "url blocker configuration updated",
+                    rules.size + browsers.size + groups.size + timeRules.size,
+                )
             }
         }
 
@@ -104,18 +103,14 @@ object UrlBlockerEngine {
         // 尝试读取 URL
         val url = tryReadUrl(ruleEngine, browserConfig) ?: return
 
-        if (META.debuggable) {
-            Log.d(TAG, "Detected URL in $packageName")
-        }
+        LogUtils.d("browser URL observed")
 
         // 检查是否匹配任何规则
         val matchedRule = cachedRules.firstOrNull { it.matches(url) }
         if (matchedRule != null) {
             // 检查时间规则
             if (!shouldBlockRule(matchedRule)) {
-                if (META.debuggable) {
-                    Log.d(TAG, "Matched URL rule is outside its active schedule")
-                }
+                LogUtils.d("URL rule outside active schedule")
                 return
             }
             
@@ -176,10 +171,8 @@ object UrlBlockerEngine {
         return try {
             val rootNode = ruleEngine.safeActiveWindow ?: return null
             findUrlBarText(rootNode, browserConfig.urlBarId)
-        } catch (_: Exception) {
-            if (META.debuggable) {
-                Log.e(TAG, "Failed to read URL")
-            }
+        } catch (error: Exception) {
+            LogUtils.d("URL read failed", error)
             null
         }
     }

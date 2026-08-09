@@ -1,13 +1,12 @@
 package li.songe.gkd.sdp.a11y
 
-import android.util.Log
 import android.util.LruCache
 import android.view.accessibility.AccessibilityNodeInfo
 import kotlinx.atomicfu.atomic
-import li.songe.gkd.sdp.META
 import li.songe.gkd.sdp.data.ResolvedRule
 import li.songe.gkd.sdp.shizuku.casted
 import li.songe.gkd.sdp.util.InterruptRuleMatchException
+import li.songe.gkd.sdp.util.LogUtils
 import li.songe.selector.FastQuery
 import li.songe.selector.MatchOption
 import li.songe.selector.QueryContext
@@ -70,20 +69,13 @@ class A11yContext(
             if (rootCache.value == eventNode) {
                 rootCache.value = eventNode
             } else {
-                if (META.debuggable) {
-                    Log.d(
-                        "cache",
-                        "clear node cache ${eventNode.packageName}/${eventNode.className}"
-                    )
-                }
+                LogUtils.d("node cache invalidated")
                 return
             }
         }
-        if (META.debuggable) {
-            val sizeList = listOf(childCache.size(), parentCache.size(), indexCache.size())
-            if (sizeList.any { it > 0 }) {
-                Log.d("cache", "clear cache -> $sizeList")
-            }
+        val sizeList = listOf(childCache.size(), parentCache.size(), indexCache.size())
+        if (sizeList.any { it > 0 }) {
+            LogUtils.d("node caches cleared", sizeList.sum())
         }
         try {
             childCache.evictAll()
@@ -122,9 +114,7 @@ class A11yContext(
         if (!activityRuleFlow.value.activePriority) return
         if (!activityRuleFlow.value.currentRules.any { it === rule }) return
         if (rule.isPriority()) return
-        if (META.debuggable) {
-            Log.d("guardInterrupt", "中断 rule=${rule.statusText()}")
-        }
+        LogUtils.d("rule match interrupted")
         throw InterruptRuleMatchException()
     }
 

@@ -9,6 +9,7 @@ import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.yield
 import li.songe.gkd.sdp.data.RpcError
+import li.songe.gkd.sdp.diagnostics.DiagnosticLogger
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext
 
@@ -21,12 +22,12 @@ fun CoroutineScope.launchTry(
     try {
         block()
     } catch (e: CancellationException) {
-        e.printStackTrace()
+        throw e
     } catch (_: InterruptRuleMatchException) {
     } catch (e: Throwable) {
         LogUtils.d(e)
         if (!silent) {
-            toast(e.message ?: e.stackTraceToString(), loc = "", forced = e is RpcError)
+            toast(stableErrorMessage(e), loc = "", forced = e is RpcError)
         }
     }
 }
@@ -41,10 +42,10 @@ fun CoroutineScope.launchAsFn(
         try {
             block()
         } catch (e: CancellationException) {
-            e.printStackTrace()
+            throw e
         } catch (e: Throwable) {
             LogUtils.d(e)
-            toast(e.message ?: e.stackTraceToString(), loc = "")
+            toast(stableErrorMessage(e), loc = "")
         }
     }
 }
@@ -59,13 +60,16 @@ fun <T> CoroutineScope.launchAsFn(
         try {
             block(it)
         } catch (e: CancellationException) {
-            e.printStackTrace()
+            throw e
         } catch (e: Throwable) {
             LogUtils.d(e)
-            toast(e.message ?: e.stackTraceToString(), loc = "")
+            toast(stableErrorMessage(e), loc = "")
         }
     }
 }
+
+private fun stableErrorMessage(error: Throwable): String =
+    DiagnosticLogger.userMessage(error)
 
 suspend fun stopCoroutine(): Nothing {
     currentCoroutineContext()[Job]?.cancel()

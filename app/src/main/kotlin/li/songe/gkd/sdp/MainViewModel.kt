@@ -23,6 +23,7 @@ import li.songe.gkd.sdp.data.CrashData
 import li.songe.gkd.sdp.data.RawSubscription
 import li.songe.gkd.sdp.data.SubsItem
 import li.songe.gkd.sdp.db.DbSet
+import li.songe.gkd.sdp.diagnostics.DiagnosticLogger
 import li.songe.gkd.sdp.permission.AuthReason
 import li.songe.gkd.sdp.permission.shizukuGrantedState
 import li.songe.gkd.sdp.service.A11yService
@@ -156,17 +157,15 @@ class MainViewModel : BaseViewModel(), OnSimpleLife by DefaultSimpleLifeImpl() {
             val text = try {
                 client.get(url).bodyAsText()
             } catch (e: Exception) {
-                e.printStackTrace()
                 LogUtils.d(e)
-                toast("下载订阅文件失败\n${e.message}".trimEnd())
+                toast("下载订阅文件失败\n${DiagnosticLogger.userMessage(e)}")
                 return@launchTry
             }
             val newSubsRaw = try {
                 RawSubscription.parse(text)
             } catch (e: Exception) {
-                e.printStackTrace()
                 LogUtils.d(e)
-                toast("解析订阅文件失败\n${e.message}".trimEnd())
+                toast("解析订阅文件失败\n${DiagnosticLogger.userMessage(e)}")
                 return@launchTry
             }
             if (oldItem == null) {
@@ -252,7 +251,7 @@ class MainViewModel : BaseViewModel(), OnSimpleLife by DefaultSimpleLifeImpl() {
     }
 
     fun handleIntent(intent: Intent) = viewModelScope.launchTry {
-        LogUtils.d(intent)
+        LogUtils.d("handleIntent")
         val uri = intent.data?.normalizeScheme()
         val source = intent.getStringExtra(activityNavSourceName)
         if (uri?.scheme == "gkd") {
@@ -395,7 +394,7 @@ class MainViewModel : BaseViewModel(), OnSimpleLife by DefaultSimpleLifeImpl() {
                 !list.any { f -> name == f.filename }
             }?.forEach {
                 val mtime = Files.getLastModifiedTime(it.toPath()).toMillis()
-                if (t - mtime > 30.days.inWholeMilliseconds) {
+                if (t - mtime > 7.days.inWholeMilliseconds) {
                     it.delete()
                 }
             }

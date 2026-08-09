@@ -2,7 +2,6 @@ package li.songe.gkd.sdp.a11y
 
 import android.accessibilityservice.AccessibilityService
 import android.graphics.Bitmap
-import android.util.Log
 import android.view.Display
 import android.view.KeyEvent
 import android.view.accessibility.AccessibilityEvent
@@ -168,10 +167,7 @@ class A11yRuleEngine(val service: A11yCommonImpl) {
         if (!sdpRuntimeFeatureCoordinator.isCurrent(eventOwner)) return
         EventService.logEvent(event)
         if (META.debuggable) {
-            Log.d(
-                "onNewA11yEvent",
-                "type:${event.eventType}, time:${event.eventTime - lastEventTime}, app:${event.packageName}, cls:${event.className}"
-            )
+            LogUtils.d("accessibility event observed", event.eventType)
         }
         if (event.eventTime < lastEventTime) {
             // 某些应用会发送负时间事件, 直接丢弃
@@ -304,17 +300,14 @@ class A11yRuleEngine(val service: A11yCommonImpl) {
             val st = if (META.debuggable) System.currentTimeMillis() else 0L
             try {
                 if (META.debuggable) {
-                    Log.d(
-                        "A11yRuleEngine",
-                        "startQueryJob start byEvent=${byEvent != null}, byForced=$byForced, byDelayRule=${byDelayRule != null}"
-                    )
+                    LogUtils.d("accessibility query started")
                 }
                 queryAction(byEvent, byForced, byDelayRule)
             } finally {
                 checkFutureStartJob()
                 if (META.debuggable) {
                     val et = System.currentTimeMillis() - st
-                    Log.d("A11yRuleEngine", "startQueryJob end $et ms")
+                    LogUtils.d("accessibility query finished", et)
                 }
                 querying = false
             }

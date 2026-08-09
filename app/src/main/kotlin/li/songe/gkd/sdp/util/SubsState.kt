@@ -41,7 +41,7 @@ private fun getCheckUpdateUrl(
     try {
         return URI(updateUrl).resolve(checkUpdateUrl).toString()
     } catch (e: Exception) {
-        e.printStackTrace()
+        LogUtils.d("subscription update URL resolution failed", e)
     }
     return null
 }

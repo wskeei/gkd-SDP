@@ -14,6 +14,7 @@ import kotlinx.coroutines.launch
 import li.songe.gkd.sdp.appScope
 import li.songe.gkd.sdp.data.WechatContact
 import li.songe.gkd.sdp.db.DbSet
+import li.songe.gkd.sdp.diagnostics.DiagnosticLogger
 import li.songe.gkd.sdp.util.LogUtils
 import li.songe.gkd.sdp.util.toast
 import kotlin.random.Random
@@ -110,8 +111,8 @@ object WechatContactFetcher {
 
                 fetchContactsFromCurrentScreen()
             } catch (err: Exception) {
-                LogUtils.d("$TAG: Fetch error: ${err.message}")
-                toast("抓取失败：${err.message}")
+                LogUtils.d("contact fetch failed", err)
+                toast("抓取失败：${DiagnosticLogger.userMessage(err)}")
             } finally {
                 finishFetch()
             }

@@ -2,7 +2,6 @@ package li.songe.gkd.sdp.service
 
 import android.app.Service
 import android.content.Intent
-import android.util.Log
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
@@ -41,6 +40,7 @@ import li.songe.gkd.sdp.data.DeviceInfo
 import li.songe.gkd.sdp.data.GkdAction
 import li.songe.gkd.sdp.data.RawSubscription
 import li.songe.gkd.sdp.data.RpcError
+import li.songe.gkd.sdp.diagnostics.DiagnosticLogger
 import li.songe.gkd.sdp.data.SubsItem
 import li.songe.gkd.sdp.data.selfAppInfo
 import li.songe.gkd.sdp.db.DbSet
@@ -109,7 +109,7 @@ class HttpService : Service(), OnSimpleLife by DefaultSimpleLifeImpl() {
                     httpServerFlow.value = try {
                         scope.createServer(port).apply { start() }
                     } catch (e: Exception) {
-                        toast("HTTP服务启动失败:${e.stackTraceToString()}")
+                        toast("HTTP 服务启动失败：${DiagnosticLogger.userMessage(e)}")
                         LogUtils.d("HTTP服务启动失败", e)
                         null
                     }
@@ -261,26 +261,30 @@ private fun getKtorCorsPlugin() = createApplicationPlugin(name = "KtorCorsPlugin
 private fun getKtorErrorPlugin() = createApplicationPlugin(name = "KtorErrorPlugin") {
     onCall { call ->
         if (call.request.uri == "/" || call.request.uri.startsWith("/api/")) {
-            Log.d("Ktor", "onCall: ${call.request.origin.remoteAddress} -> ${call.request.uri}")
+            LogUtils.d("HTTP request received")
         }
     }
     on(CallFailed) { call, cause ->
         when (cause) {
             is RpcError -> {
                 // 主动抛出的错误
-                LogUtils.d(call.request.uri, cause.message)
+                LogUtils.d("HTTP request rejected", cause)
                 call.respond(cause)
             }
 
             is Exception -> {
                 // 未知错误
-                LogUtils.d(call.request.uri, cause.message)
-                cause.printStackTrace()
-                call.respond(RpcError(message = cause.message ?: "unknown error", unknown = true))
+                LogUtils.d("HTTP request failed", cause)
+                call.respond(
+                    RpcError(
+                        message = "request failed: ${DiagnosticLogger.errorCode(cause)}",
+                        unknown = true,
+                    ),
+                )
             }
 
             else -> {
-                cause.printStackTrace()
+                LogUtils.d("HTTP request failed", cause)
             }
         }
     }

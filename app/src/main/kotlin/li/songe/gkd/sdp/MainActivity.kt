@@ -67,6 +67,7 @@ import kotlinx.coroutines.sync.withLock
 import li.songe.gkd.sdp.a11y.topActivityFlow
 import li.songe.gkd.sdp.a11y.updateSystemDefaultAppId
 import li.songe.gkd.sdp.a11y.updateTopActivity
+import li.songe.gkd.sdp.diagnostics.DiagnosticLogger
 import li.songe.gkd.sdp.permission.AuthDialog
 import li.songe.gkd.sdp.permission.canDrawOverlaysState
 import li.songe.gkd.sdp.permission.updatePermissionState
@@ -440,7 +441,7 @@ fun syncFixState() {
 private fun ShizukuErrorDialog(stateFlow: MutableStateFlow<Throwable?>) {
     val state = stateFlow.collectAsState().value
     if (state != null) {
-        val errorText = remember { state.stackTraceToString() }
+        val errorText = remember(state) { DiagnosticLogger.userMessage(state) }
         val appInfoCache = appInfoMapFlow.collectAsState().value
         val installed = appInfoCache.contains(shizukuAppId)
         AlertDialog(

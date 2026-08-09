@@ -254,7 +254,7 @@ private class GkdWebViewClient() : AccompanistWebViewClient() {
                 }?.let { return it }
             }
         } catch (e: Throwable) {
-            e.printStackTrace()
+            LogUtils.d("WebView request interception failed", e)
         }
         return super.shouldInterceptRequest(view, request)
     }
