@@ -5,6 +5,7 @@ import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
+import li.songe.gkd.sdp.data.Snapshot
 import li.songe.gkd.sdp.data.SubsItem
 import li.songe.gkd.sdp.db.DbSet
 import li.songe.gkd.sdp.store.writeTextAtomically
@@ -12,6 +13,7 @@ import java.io.File
 import java.nio.file.AtomicMoveNotSupportedException
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
+import java.security.MessageDigest
 
 internal const val SNAPSHOT_DELETE_STAGING_PREFIX = ".snapshot-delete-"
 internal const val SUBSCRIPTION_MUTATION_STAGING_PREFIX = ".subs-mutation-"
@@ -31,6 +33,8 @@ internal data class PendingDataMutationManifest(
     val targetExisted: Boolean = false,
     val expectedMtime: Long? = null,
     val requiredPreviousMtime: Long? = null,
+    val requiredPreviousMtimes: Map<Long, Long> = emptyMap(),
+    val requiredPreviousSnapshotTokens: Map<Long, String> = emptyMap(),
     val expectedSubsItem: SubsItem? = null,
 )
 
@@ -137,6 +141,11 @@ private suspend fun recoverSubscriptionUpsert(
         expectedMtime = expectedMtime,
         requiredPreviousMtime = manifest.requiredPreviousMtime,
     )
+    val unchanged = shouldRollbackSubscriptionStaging(
+        currentMtime = current?.mtime,
+        requiredPreviousMtime = manifest.requiredPreviousMtime,
+        targetExisted = manifest.targetExisted,
+    )
     val target = subsFolder.resolve("$id.json")
     val stagedNew = directory.resolve("new.json")
     if (committed) {
@@ -144,7 +153,7 @@ private suspend fun recoverSubscriptionUpsert(
             if (target.exists()) target.delete()
             movePath(stagedNew, target)
         }
-    } else {
+    } else if (unchanged) {
         val stagedPrevious = directory.resolve("previous.json")
         if (stagedPrevious.exists()) {
             if (target.exists()) target.delete()
@@ -163,6 +172,14 @@ internal fun isCommittedSubscriptionMtime(
 ): Boolean = currentMtime == expectedMtime &&
     (requiredPreviousMtime == null || expectedMtime > requiredPreviousMtime)
 
+internal fun shouldRollbackSubscriptionStaging(
+    currentMtime: Long?,
+    requiredPreviousMtime: Long?,
+    targetExisted: Boolean,
+): Boolean =
+    (currentMtime == null && !targetExisted) ||
+        (currentMtime != null && currentMtime == requiredPreviousMtime)
+
 private suspend fun recoverSubscriptionDelete(
     directory: File,
     manifest: PendingDataMutationManifest,
@@ -171,7 +188,13 @@ private suspend fun recoverSubscriptionDelete(
     if (!committed) {
         manifest.ids.forEach { id ->
             val staged = directory.resolve("$id.json")
-            if (staged.exists()) {
+            val current = DbSet.subsItemDao.queryById(id)
+            val unchanged = current != null && shouldRollbackSubscriptionStaging(
+                currentMtime = current.mtime,
+                requiredPreviousMtime = manifest.requiredPreviousMtimes[id],
+                targetExisted = true,
+            )
+            if (staged.exists() && unchanged) {
                 val target = subsFolder.resolve("$id.json")
                 if (target.exists()) target.delete()
                 movePath(staged, target)
@@ -189,7 +212,12 @@ private suspend fun recoverSnapshotDelete(
     if (!committed) {
         manifest.ids.forEach { id ->
             val staged = directory.resolve(id.toString())
-            if (staged.exists()) {
+            val current = DbSet.snapshotDao.queryById(id)
+            val previousToken = manifest.requiredPreviousSnapshotTokens[id]
+            if (
+                staged.exists() && current != null && previousToken != null &&
+                snapshotRecoveryToken(current) == previousToken
+            ) {
                 val target = snapshotFolder.resolve(id.toString())
                 if (target.exists()) target.deleteRecursively()
                 movePath(staged, target)
@@ -198,6 +226,11 @@ private suspend fun recoverSnapshotDelete(
     }
     return deleteDirectory(directory)
 }
+
+internal fun snapshotRecoveryToken(snapshot: Snapshot): String = MessageDigest
+    .getInstance("SHA-256")
+    .digest(json.encodeToString(snapshot).encodeToByteArray())
+    .joinToString("") { byte -> "%02x".format(byte) }
 
 private fun deleteDirectory(directory: File): Boolean =
     !directory.exists() || directory.deleteRecursively()

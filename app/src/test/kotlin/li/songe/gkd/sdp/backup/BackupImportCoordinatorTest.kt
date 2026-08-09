@@ -128,7 +128,7 @@ class BackupImportCoordinatorTest {
         assertEquals(2, target.events.count { it == "reconcile" })
         assertTrue(target.events.contains("restore"))
         assertTrue(journal.cleared)
-        assertEquals(BackupImportPhase.APPLYING, journal.writes.last().phase)
+        assertEquals(BackupImportPhase.ROLLED_BACK, journal.writes.last().phase)
     }
 
     @Test
@@ -179,6 +179,52 @@ class BackupImportCoordinatorTest {
         target.current = payload("new-history")
         coordinator.recoverInterruptedImport()
         assertEquals("new-history", target.current.objects.single().content.decodeToString())
+    }
+
+    @Test
+    fun `cancellation rollback completes before queued writer enters mutation`() = runBlocking {
+        val target = FakeImportTarget(payload("old")).apply {
+            pauseAfterReplace = true
+        }
+        val journal = RecordingJournal()
+        val coordinator = coordinator(target, journal)
+        val prepared = coordinator.prepare(
+            encryptedPayload(payload("new")),
+            "correct-password".toCharArray(),
+        ) as BackupResult.Success<PreparedBackupImport>
+
+        val apply = async { coordinator.apply(prepared.value, confirmed = true) }
+        target.replaceStarted.await()
+        val writer = async { target.writeHistory(payload("new-history")) }
+        apply.cancel()
+        target.continueReplace.complete(Unit)
+        runCatching { apply.await() }
+        writer.await()
+
+        assertEquals("new-history", target.current.objects.single().content.decodeToString())
+    }
+
+    @Test
+    fun `rollback journal terminal state survives clear failure`() = runBlocking {
+        val target = FakeImportTarget(payload("old")).apply { failAfterReplace = true }
+        val journal = RecordingJournal().apply { clearResult = false }
+        val coordinator = coordinator(target, journal)
+        val prepared = coordinator.prepare(
+            encryptedPayload(payload("new")),
+            "correct-password".toCharArray(),
+        ) as BackupResult.Success<PreparedBackupImport>
+
+        try {
+            val result = coordinator.apply(prepared.value, confirmed = true)
+            assertEquals(
+                BackupErrorCode.IMPORT_RECOVERY_REQUIRED,
+                (result as BackupResult.Failure).code,
+            )
+            assertEquals(BackupImportPhase.ROLLED_BACK, journal.current?.phase)
+            assertFalse(journal.cleared)
+        } finally {
+            unblockBackupImportRecovery()
+        }
     }
 
     @Test
@@ -442,6 +488,7 @@ class BackupImportCoordinatorTest {
         val writes = mutableListOf<BackupImportJournalRecord>()
         var current: BackupImportJournalRecord? = null
         var cleared = false
+        var clearResult = true
 
         override suspend fun read(): BackupImportJournalRecord? = current
 
@@ -450,9 +497,10 @@ class BackupImportCoordinatorTest {
             writes += record
         }
 
-        override suspend fun clear() {
-            current = null
-            cleared = true
+        override suspend fun clear(): Boolean {
+            if (clearResult) current = null
+            cleared = clearResult
+            return clearResult
         }
     }
 }

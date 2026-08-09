@@ -123,6 +123,9 @@ object SnapshotExt {
             val manifest = PendingDataMutationManifest(
                 kind = PENDING_KIND_SNAPSHOT_DELETE,
                 ids = uniqueSnapshots.map(Snapshot::id),
+                requiredPreviousSnapshotTokens = uniqueSnapshots.associate {
+                    it.id to snapshotRecoveryToken(it)
+                },
             )
             try {
                 val deleted = withContext(NonCancellable) {
@@ -156,15 +159,18 @@ object SnapshotExt {
                 if (transactionCommitted) {
                     blockPendingDataRecovery()
                 } else {
-                    withContext(NonCancellable + Dispatchers.IO) {
-                        uniqueSnapshots.forEach { snapshot ->
-                            val staged = stagingFolder.resolve(snapshot.id.toString())
-                            if (staged.exists()) {
-                                moveSnapshotDirectory(staged, snapshotParentPath(snapshot.id))
+                    val recoveryCompleted = runCatching {
+                        withContext(NonCancellable + Dispatchers.IO) {
+                            uniqueSnapshots.forEach { snapshot ->
+                                val staged = stagingFolder.resolve(snapshot.id.toString())
+                                if (staged.exists()) {
+                                    moveSnapshotDirectory(staged, snapshotParentPath(snapshot.id))
+                                }
                             }
+                            requirePendingDataCleanup(stagingFolder)
                         }
-                        stagingFolder.deleteRecursively()
-                    }
+                    }.isSuccess
+                    if (!recoveryCompleted) blockPendingDataRecovery()
                 }
                 throw error
             }

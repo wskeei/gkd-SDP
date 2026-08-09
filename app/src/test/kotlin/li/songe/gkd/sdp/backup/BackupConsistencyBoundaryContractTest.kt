@@ -22,6 +22,15 @@ class BackupConsistencyBoundaryContractTest {
         assertTrue(collect.contains("DbSet.withRawTransaction"))
         assertTrue(exclusiveMutation.contains("BackupDataMutationBarrier.withConsistentDataSnapshot"))
         assertTrue(exclusiveMutation.contains("DbSet.withTransaction"))
+        assertTrue(exclusiveMutation.contains("commitPendingDataReplacements"))
+        assertTrue(exclusiveMutation.contains("withContext(NonCancellable)"))
+        assertTrue(repository.contains("override suspend fun <T> withRecoveryMutation"))
+        assertTrue(repository.contains("override suspend fun restore(previous: BackupPayload)"))
+        assertFalse(
+            repository.substringAfter("override suspend fun restore(previous: BackupPayload)")
+                .substringBefore("override suspend fun reconcileRuntime()")
+                .contains("commitPendingDataReplacements"),
+        )
         assertTrue(repository.contains("override suspend fun capture(categoryIds: Set<String>): BackupPayload = collect(categoryIds)"))
     }
 
@@ -48,6 +57,24 @@ class BackupConsistencyBoundaryContractTest {
         assertTrue(httpService.contains("SnapshotExt.deleteSnapshot(snapshot)"))
         assertFalse(snapshotPage.contains("SnapshotExt.removeSnapshot"))
         assertFalse(httpService.contains("SnapshotExt.removeSnapshot"))
+    }
+
+    @Test
+    fun importRecoveryUsesTerminalJournalAndHeldRecoveryTransaction() {
+        val coordinator = sourceFile(
+            "app/src/main/kotlin/li/songe/gkd/sdp/backup/BackupImportCoordinator.kt",
+        ).readText()
+        val journal = sourceFile(
+            "app/src/main/kotlin/li/songe/gkd/sdp/backup/BackupImportJournal.kt",
+        ).readText()
+
+        assertTrue(coordinator.contains("BackupImportPhase.ROLLED_BACK"))
+        assertTrue(coordinator.contains("withRecoveryMutation"))
+        assertTrue(coordinator.contains("withContext(NonCancellable)"))
+        assertTrue(coordinator.contains("finalizeRollback"))
+        assertTrue(journal.contains("suspend fun clear(): Boolean"))
+        assertTrue(journal.contains("BackupImportRecoveryBlockedException"))
+        assertTrue(journal.contains("withBackupImportRecoveryContext"))
     }
 
     private fun sourceFile(relativePath: String): File {

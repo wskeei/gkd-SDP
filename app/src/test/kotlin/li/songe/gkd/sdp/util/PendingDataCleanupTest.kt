@@ -45,6 +45,10 @@ class PendingDataCleanupTest {
         assertTrue(isCommittedSubscriptionMtime(20, 20, null))
         assertFalse(isCommittedSubscriptionMtime(21, 20, 10))
         assertFalse(isCommittedSubscriptionMtime(20, 20, 20))
+        assertTrue(shouldRollbackSubscriptionStaging(null, null, targetExisted = false))
+        assertFalse(shouldRollbackSubscriptionStaging(null, null, targetExisted = true))
+        assertTrue(shouldRollbackSubscriptionStaging(10, 10, targetExisted = true))
+        assertFalse(shouldRollbackSubscriptionStaging(11, 10, targetExisted = true))
     }
 
     @Test
@@ -72,6 +76,8 @@ class PendingDataCleanupTest {
         assertTrue(subscription.contains("withContext(NonCancellable)"))
         assertTrue(subscription.contains("nextMutationMtime"))
         assertTrue(subscription.contains("blockPendingDataRecovery()"))
+        assertTrue(subscription.contains("requirePendingDataCleanup(stagingFolder)"))
+        assertFalse(subscription.contains("runCatching { requirePendingDataCleanup(stagingFolder) }"))
         assertTrue(
             subscription.indexOf("subsMapFlow.update") <
                 subscription.indexOf("manifest.copy(phase = PENDING_PHASE_COMMITTED)"),
@@ -79,6 +85,7 @@ class PendingDataCleanupTest {
         assertTrue(snapshot.contains("writePendingDataMutationManifest"))
         assertTrue(snapshot.contains("withContext(NonCancellable)"))
         assertTrue(snapshot.contains("blockPendingDataRecovery()"))
+        assertTrue(snapshot.contains("requirePendingDataCleanup(stagingFolder)"))
     }
 
     private fun sourceFile(relativePath: String): File {

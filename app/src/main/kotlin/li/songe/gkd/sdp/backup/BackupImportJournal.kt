@@ -1,17 +1,22 @@
 package li.songe.gkd.sdp.backup
 
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import li.songe.gkd.sdp.store.writeTextAtomically
 import java.io.File
+import kotlin.coroutines.AbstractCoroutineContextElement
+import kotlin.coroutines.CoroutineContext
 
 @Serializable
 enum class BackupImportPhase {
     PREPARED,
     APPLYING,
     COMMITTED,
+    ROLLED_BACK,
 }
 
 @Serializable
@@ -24,8 +29,36 @@ data class BackupImportJournalRecord(
 interface BackupImportJournal {
     suspend fun read(): BackupImportJournalRecord?
     suspend fun write(record: BackupImportJournalRecord)
-    suspend fun clear()
+    suspend fun clear(): Boolean
 }
+
+class BackupImportRecoveryBlockedException : IllegalStateException("backup_import_recovery")
+
+private object RecoveryContextKey : CoroutineContext.Key<RecoveryContext>
+private class RecoveryContext : AbstractCoroutineContextElement(RecoveryContextKey)
+
+@Volatile
+private var backupImportRecoveryBlocked = false
+
+internal fun blockBackupImportRecovery() {
+    backupImportRecoveryBlocked = true
+}
+
+internal fun unblockBackupImportRecovery() {
+    backupImportRecoveryBlocked = false
+}
+
+suspend fun requireBackupImportRecoveryComplete() {
+    if (
+        backupImportRecoveryBlocked &&
+        currentCoroutineContext()[RecoveryContextKey] == null
+    ) {
+        throw BackupImportRecoveryBlockedException()
+    }
+}
+
+suspend fun <T> withBackupImportRecoveryContext(block: suspend () -> T): T =
+    withContext(RecoveryContext()) { block() }
 
 class FileBackupImportJournal(
     private val file: File,
@@ -39,8 +72,10 @@ class FileBackupImportJournal(
         writeTextAtomically(file, codec.encodeToString(record))
     }
 
-    override suspend fun clear() {
-        file.delete()
-        file.parentFile?.resolve("${file.name}.tmp")?.delete()
-    }
+    override suspend fun clear(): Boolean = runCatching {
+        val tempFile = file.parentFile?.resolve("${file.name}.tmp")
+        if (file.exists() && !file.delete()) return@runCatching false
+        if (tempFile?.exists() == true && !tempFile.delete()) return@runCatching false
+        !file.exists() && tempFile?.exists() != true
+    }.getOrDefault(false)
 }

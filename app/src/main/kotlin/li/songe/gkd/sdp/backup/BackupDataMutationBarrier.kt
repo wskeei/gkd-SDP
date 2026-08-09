@@ -42,6 +42,7 @@ object BackupDataMutationBarrier {
     }
 
     suspend fun <T> withMutation(block: suspend () -> T): T {
+        requireBackupImportRecoveryComplete()
         if (currentCoroutineContext()[HeldKey] != null) return block()
         return mutex.withLock {
             withContext(HeldContext()) { block() }
@@ -49,6 +50,7 @@ object BackupDataMutationBarrier {
     }
 
     suspend fun <T> withConsistentDataSnapshot(block: suspend () -> T): T {
+        requireBackupImportRecoveryComplete()
         if (currentCoroutineContext()[HeldKey] != null) return block()
         return mutex.withLock {
             beginConsistentSnapshot()

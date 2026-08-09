@@ -4,6 +4,8 @@ import android.content.ContentValues
 import android.database.Cursor
 import android.database.sqlite.SQLiteDatabase
 import androidx.sqlite.db.SupportSQLiteDatabase
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import li.songe.gkd.sdp.a11y.UsageGuardEngine
@@ -31,8 +33,19 @@ class AppBackupRepository : BackupExportSource, BackupImportTarget {
     ): T =
         BackupDataMutationBarrier.withConsistentDataSnapshot {
             val result = DbSet.withTransaction { block() }
-            BackupDataMutationBarrier.commitPendingDataReplacements()
+            withContext(NonCancellable) {
+                BackupDataMutationBarrier.commitPendingDataReplacements()
+            }
             afterCommit(result)
+            result
+        }
+
+    override suspend fun <T> withRecoveryMutation(block: suspend () -> T): T =
+        BackupDataMutationBarrier.withConsistentDataSnapshot {
+            val result = DbSet.withTransaction { block() }
+            withContext(NonCancellable) {
+                BackupDataMutationBarrier.commitPendingDataReplacements()
+            }
             result
         }
 
@@ -114,7 +127,6 @@ class AppBackupRepository : BackupExportSource, BackupImportTarget {
 
     override suspend fun restore(previous: BackupPayload) {
         replaceIncludedCategories(previous)
-        BackupDataMutationBarrier.commitPendingDataReplacements()
     }
 
     override suspend fun reconcileRuntime() {

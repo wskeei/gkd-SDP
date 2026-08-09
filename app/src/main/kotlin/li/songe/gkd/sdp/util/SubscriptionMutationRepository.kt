@@ -112,15 +112,18 @@ object SubscriptionMutationRepository {
                 if (transactionCommitted) {
                     blockPendingDataRecovery()
                 } else {
-                    withContext(NonCancellable + Dispatchers.IO) {
-                        restoreSubscriptionFile(
-                            targetFile = targetFile,
-                            stagedPreviousFile = stagedPreviousFile,
-                            previousStaged = previousStaged,
-                            targetReplaced = targetReplaced,
-                        )
-                        runCatching { requirePendingDataCleanup(stagingFolder) }
-                    }
+                    val recoveryCompleted = runCatching {
+                        withContext(NonCancellable + Dispatchers.IO) {
+                            restoreSubscriptionFile(
+                                targetFile = targetFile,
+                                stagedPreviousFile = stagedPreviousFile,
+                                previousStaged = previousStaged,
+                                targetReplaced = targetReplaced,
+                            )
+                            requirePendingDataCleanup(stagingFolder)
+                        }
+                    }.isSuccess
+                    if (!recoveryCompleted) blockPendingDataRecovery()
                 }
                 throw error
             }
@@ -142,6 +145,9 @@ object SubscriptionMutationRepository {
                 val manifest = PendingDataMutationManifest(
                     kind = PENDING_KIND_SUBSCRIPTION_DELETE,
                     ids = uniqueIds.toList(),
+                    requiredPreviousMtimes = uniqueIds.asList().mapNotNull { id ->
+                        DbSet.subsItemDao.queryById(id)?.let { id to it.mtime }
+                    }.toMap(),
                 )
                 try {
                     val deleted = withContext(NonCancellable) {
@@ -181,10 +187,11 @@ object SubscriptionMutationRepository {
                         requirePendingDataCleanup(stagingFolder)
                     }
                     deleted
-                } catch (error: Throwable) {
-                    if (transactionCommitted) {
-                        blockPendingDataRecovery()
-                    } else {
+            } catch (error: Throwable) {
+                if (transactionCommitted) {
+                    blockPendingDataRecovery()
+                } else {
+                    val recoveryCompleted = runCatching {
                         withContext(NonCancellable + Dispatchers.IO) {
                             stagedIds.forEach { subsId ->
                                 val staged = stagingFolder.resolve("$subsId.json")
@@ -195,9 +202,11 @@ object SubscriptionMutationRepository {
                                     )
                                 }
                             }
-                            runCatching { requirePendingDataCleanup(stagingFolder) }
+                            requirePendingDataCleanup(stagingFolder)
                         }
-                    }
+                    }.isSuccess
+                    if (!recoveryCompleted) blockPendingDataRecovery()
+                }
                     throw error
                 }
             }
