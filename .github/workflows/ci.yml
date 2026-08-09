@@ -40,6 +40,11 @@ jobs:
       - name: Test security dependency audit
         run: python3 -m unittest discover -s scripts/tests -p 'test_*.py' -v
 
+      - name: Test release tooling contracts
+        run: |
+          bash scripts/test-verify-release-metadata.sh
+          bash scripts/test-generate-update-manifest.sh
+
       - name: Generate security dependency report
         run: bash scripts/generate-security-dependency-report.sh
 

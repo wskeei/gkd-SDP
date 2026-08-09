@@ -6,33 +6,34 @@
 
 GKD-SDP 使用 Semantic Versioning 2.0：
 
-- `MAJOR`：不兼容的产品/数据/权限语义变化；
-- `MINOR`：向后兼容的新功能；
-- `PATCH`：向后兼容的 bug/security 修复；
-- `-alpha.N`、`-beta.N`、`-rc.N`：稳定版前的可安装预发布。
+- `MAJOR`：不兼容的产品、数据、权限、更新或运行时契约变化；
+- `MINOR`：向后兼容的用户可见功能或较大兼容性重构；
+- `PATCH`：向后兼容的 bug 修复、UI 修正、性能、安全、文档或发布工具维护。
 
-当前上游基础是 `1.12.1`，首个独立 SDP 产品版本建议为 `2.0.0-beta.1`，`versionCode` 从 92 增加到 93。以后每一个出现在 Releases 页面并供用户安装的版本都必须拥有：
+一个版本包含多类变更时，使用影响最高的一类。公开版本只使用稳定的 `X.Y.Z`，不再创建新的 `alpha`、`beta` 或 `rc` tag/Release；日常测试统一使用 Nightly Artifact。历史 `v2.0.0-beta.1` 至 `v2.0.0-beta.6` 保持原样，用于升级兼容与版本递增校验。稳定版本线从 `v2.1.0`、Android `versionCode=99` 开始。
 
-- 唯一的 `vX.Y.Z[-pre]` tag；
-- 递增且不可复用的 Android `versionCode`；
+每一个出现在 Releases 页面并供用户安装的版本都必须拥有：
+
+- 唯一的稳定 `vX.Y.Z` annotated tag；
+- 大于所有历史 GKD-SDP 版本且不可复用的 Android `versionCode`；
 - `gradle/version.properties` 中的 `versionName`；
 - `CHANGELOG.md` 对应版本段和日期；
 - 独立的 GitHub Release、APK、`update.json` 和 `SHA256SUMS.txt`。
 
-Nightly 是 Actions Artifact，不是正式版本，也不能替代版本号或 Release 历史。
+禁止创建字面量为 `latest` 的滚动 tag 或 Release。GitHub Release 的“Latest”标记只指向最新稳定版，不是一个名为 `latest` 的版本。Nightly 是 Actions Artifact，不是正式版本，也不能替代版本号或 Release 历史。
 
 Nightly 通过 [`nightly.yml`](../.github/workflows/nightly.yml) 在 `main` 成功提交后构建 debug keystore 签名的非发布 APK。它不读取 release Environment，不创建 tag/Release，不覆盖任何历史资产，Artifact 保留 7 天。
 
 ## Release flow
 
 ```text
-版本 PR / CHANGELOG
+发布 PR：版本号 / CHANGELOG
         ↓
 PR CI + dependency review + CodeQL
         ↓
-合并 main，生成 Nightly artifact
+合并 main，等待 main CI
         ↓
-更新 `gradle/version.properties` 和 `CHANGELOG.md`，运行元数据测试，并创建 annotated `vX.Y.Z` tag
+在已验证的 main 提交创建 annotated `vX.Y.Z` tag
         ↓
 Release workflow：测试、Lint、签名、验签、checksum、attestation
         ↓
@@ -41,7 +42,7 @@ Draft Release：上传 APK/update.json/SHA256SUMS
 人工检查后发布不可变 Release
 ```
 
-正式发布不强推 tag、不覆盖已发布资产、不把 main 的每次提交写成 Release。Tag 必须与 `versionName` 完全匹配，`versionCode` 只能递增且不可复用；若已发布版本有问题，创建新的 patch/beta/rc 版本，并在旧版本说明中标注已知问题。发布工作流会在发现同名 Release 或 tag 已存在时停止，不覆盖历史资产。
+正式发布不强推 tag、不覆盖已发布资产、不把 main 的每次提交写成 Release。Tag 必须与 `versionName` 完全匹配，稳定 SemVer 和 `versionCode` 都必须相对历史版本单调递增；若已发布版本有问题，创建下一个稳定 PATCH 版本，并在旧版本说明中标注已知问题。发布工作流发现同名 Release 已存在时会停止，不覆盖历史资产。
 
 ## Signing safety
 
@@ -49,7 +50,7 @@ Release signing secrets 只放在 GitHub `release` Environment：`GKD_STORE_FILE
 
 维护者还要在 `release` Environment/repository variable 中设置 `RELEASE_CERT_SHA256`，并从可信本机记录证书指纹。工作流把 keystore 解码到 `$RUNNER_TEMP`，通过 `ORG_GRADLE_PROJECT_*` 仅向当前 Gradle 进程提供配置，完成后无论成功失败都会清理临时文件。证书指纹必须与 `RELEASE_CERT_SHA256` 对照；指纹变化必须停止发布并调查。维护者应在本地加密保存至少两份离线 keystore 副本，记录 alias、创建日期和指纹，不记录密码到仓库。
 
-手动触发 `Release` workflow 时必须选择受保护的 `main` ref，默认 `publish=false`：它仍会签名、验签并上传 7 天 Artifact，但不会创建 Release。真实 tag 或明确 `publish=true` 的手动运行只会创建并上传 Draft Release；维护者检查三项资产、notes、checksum 和 attestation 后，再在 GitHub UI 或 `gh release edit <tag> --draft=false` 手动发布。只有已有的、与 `versionName` 匹配的 tag 才允许手动发布；正常发布应将 annotated `vX.Y.Z[-pre]` tag 推送到 `main` 的已合并提交。来自 feature branch 的手动运行会被 job 条件跳过，避免把签名 Environment 暴露给未合并代码。
+手动触发 `Release` workflow 时必须选择受保护的 `main` ref，默认 `publish=false`：它仍会签名、验签并上传 7 天 Artifact，但不会创建 Release。真实 tag 或明确 `publish=true` 的手动运行只会创建并上传稳定 Draft Release；维护者检查三项资产、notes、checksum 和 attestation 后，再在 GitHub UI 或 `gh release edit <tag> --draft=false --prerelease=false --latest` 手动发布。只有已有的、与 `versionName` 匹配的稳定 tag 才允许手动发布；正常发布应将 annotated `vX.Y.Z` tag 推送到 `main` 的已合并提交。来自 feature branch 的手动运行会被 job 条件跳过，避免把签名 Environment 暴露给未合并代码。
 
 ## Release notes
 
@@ -59,8 +60,9 @@ Release signing secrets 只放在 GitHub `release` Environment：`GKD_STORE_FILE
 
 ## Failure and recovery
 
-- tag workflow 在创建公开 Release 前失败：修复代码并创建新的 prerelease/tag，或在确认没有公开资产时清理 draft。
-- 已发布 Release 失败：不覆盖 tag/资产，发布新的 patch/prerelease。
+- tag workflow 因临时平台故障失败且代码、提交和 tag 均不变：从同一 tag 重新运行；需要修改代码时使用下一个稳定 PATCH 和更大的 `versionCode`，不移动已推送 tag。
+- Draft Release 失败：确认没有公开资产后只清理对应 draft；不得删除或替换已发布 Release。
+- 已发布 Release 出现问题：不覆盖 tag/资产，发布下一个稳定 PATCH。
 - 签名失败或证书指纹不一致：停止发布，检查 Environment 和离线 keystore，不得绕过验签。
 - GitHub API/Actions 暂时故障：保留待发布状态，恢复后从同一个已确认 commit 重新运行；不要移动已经公开的 tag。
 

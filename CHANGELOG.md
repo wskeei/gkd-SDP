@@ -6,6 +6,30 @@ All notable GKD-SDP changes are documented here. The format follows
 
 ## [Unreleased]
 
+## [2.1.0] - 2026-08-09
+
+This is the first stable GKD-SDP release. It promotes the tested
+`2.0.0-beta.6` product state without changing Android runtime behavior, Room
+schema, permissions, dependencies, signing identity, or application ID.
+
+### Changed
+
+- Adopt stable Semantic Versioning: incompatible changes increment MAJOR,
+  compatible features increment MINOR, and compatible fixes or maintenance
+  increment PATCH; routine test builds use Nightly instead of public betas.
+- Make the versioned stable Release the only GitHub Latest target and retire the
+  deprecated rolling Release and tag whose literal name was `latest`.
+
+### Fixed
+
+- Reject prerelease version names/tags, reused Android version codes, and
+  backwards SemVer cores in release tooling, with the contracts enforced by CI.
+
+### Known limitations
+
+- Physical-device/OEM validation is left for the user after downloading this
+  public stable Release and is not claimed by automated release evidence.
+
 ## [2.0.0-beta.6] - 2026-08-09
 
 ### Fixed
@@ -175,7 +199,8 @@ since that base rather than repeating upstream release notes.
   when the required service permission is disabled.
 - Added screenshot protection for the usage reason overlay.
 
-[Unreleased]: https://github.com/wskeei/gkd-SDP/compare/v2.0.0-beta.6...HEAD
+[Unreleased]: https://github.com/wskeei/gkd-SDP/compare/v2.1.0...HEAD
+[2.1.0]: https://github.com/wskeei/gkd-SDP/compare/v2.0.0-beta.6...v2.1.0
 [2.0.0-beta.6]: https://github.com/wskeei/gkd-SDP/compare/v2.0.0-beta.5...v2.0.0-beta.6
 [2.0.0-beta.5]: https://github.com/wskeei/gkd-SDP/compare/v2.0.0-beta.4...v2.0.0-beta.5
 [2.0.0-beta.4]: https://github.com/wskeei/gkd-SDP/releases/tag/v2.0.0-beta.4

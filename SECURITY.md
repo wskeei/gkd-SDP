@@ -5,8 +5,8 @@
 | Version channel | Support |
 | --- | --- |
 | Latest stable release | Security fixes prioritized |
-| Latest beta/rc release | Best effort，可能先要求升级到 stable |
-| Older releases and Nightly artifacts | 不承诺安全修复 |
+| Older stable releases and historical prereleases | Best effort，可能先要求升级到 latest stable |
+| Nightly artifacts | 不承诺安全修复 |
 
 由于项目由个人维护，不能承诺固定响应 SLA；高影响漏洞会尽量优先处理。
 

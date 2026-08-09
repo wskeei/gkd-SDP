@@ -15,8 +15,8 @@ body:
     id: version
     attributes:
       label: GKD-SDP 版本
-      description: 例如 2.0.0-beta.1，以及 Release/Nightly/自行构建来源
-      placeholder: 2.0.0-beta.1 (Release)
+      description: 例如 2.1.0，以及 Release/Nightly/自行构建来源
+      placeholder: 2.1.0 (Release)
     validations:
       required: true
   - type: input

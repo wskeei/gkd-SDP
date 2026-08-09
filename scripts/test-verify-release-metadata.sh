@@ -71,33 +71,37 @@ commit_fixture() {
 }
 
 reset_repo
-write_version "2.0.0-beta.1" 93
+write_version "2.1.0" 99
 
-write_version "2.0.0-beta.1" 1
+write_version "2.1.0" 1
 assert_failure "versionCode below the upstream baseline" --no-tag
-write_version "2.0.0-beta.1" 93
-write_changelog "2.0.0-beta.1"
+write_version "2.1.0" 99
+write_changelog "2.1.0"
 commit_fixture
 
 assert_success "valid metadata without a tag" --no-tag
-assert_success "matching tag" --tag v2.0.0-beta.1
-assert_failure "mismatched tag" --tag v2.0.0
+assert_success "matching tag" --tag v2.1.0
+assert_failure "mismatched tag" --tag v2.1.1
 
-write_version "2.0.0-beta.1" 0
+write_version "2.1.0-beta.1" 100
+write_changelog "2.1.0-beta.1"
+assert_failure "current prerelease version is forbidden" --no-tag
+
+write_version "2.1.0" 0
 assert_failure "non-positive versionCode" --no-tag
-write_version "2.0.0-beta.1" 93
+write_version "2.1.0" 99
 
-printf '\nversionCode=94\n' >> "$TEST_ROOT/gradle/version.properties"
+printf '\nversionCode=100\n' >> "$TEST_ROOT/gradle/version.properties"
 assert_failure "duplicate versionCode" --no-tag
-write_version "2.0.0-beta.1" 93
+write_version "2.1.0" 99
 
-printf ' versionCode=94\n' >> "$TEST_ROOT/gradle/version.properties"
+printf ' versionCode=100\n' >> "$TEST_ROOT/gradle/version.properties"
 assert_failure "non-canonical version property" --no-tag
-write_version "2.0.0-beta.1" 93
+write_version "2.1.0" 99
 
-write_version "02.0.0-beta.1" 93
+write_version "02.1.0" 99
 assert_failure "non-SemVer leading zero" --no-tag
-write_version "2.0.0-beta.1" 93
+write_version "2.1.0" 99
 
 cat > "$TEST_ROOT/CHANGELOG.md" <<'EOF'
 # Changelog
@@ -109,27 +113,48 @@ cat > "$TEST_ROOT/CHANGELOG.md" <<'EOF'
 - Missing version heading.
 EOF
 assert_failure "missing changelog heading" --no-tag
-write_changelog "2.0.0-beta.1"
+write_changelog "2.1.0"
 
 reset_repo
-write_version "2.0.0-beta.0" 93
-write_changelog "2.0.0-beta.0"
+write_version "2.1.0" 99
+write_changelog "2.1.0"
 commit_fixture
-git -C "$TEST_ROOT" tag v2.0.0-beta.0
+git -C "$TEST_ROOT" tag v2.1.0
 assert_success "no-tag metadata may match the latest published version" --no-tag
-write_version "2.0.0-beta.1" 94
-write_changelog "2.0.0-beta.1"
+write_version "2.1.0" 100
+write_changelog "2.1.0"
 commit_fixture
-assert_success "versionCode increased from the previous SDP tag" --tag v2.0.0-beta.1
-
-write_version "2.0.0-beta.2" 93
-write_changelog "2.0.0-beta.2"
-commit_fixture
-assert_failure "versionCode reused from the previous SDP tag" --tag v2.0.0-beta.2
+assert_failure "published versionName cannot be reused with a new versionCode" --no-tag
 
 reset_repo
-write_version "2.0.0-beta.1" 93
-write_changelog "2.0.0-beta.1"
+write_version "2.0.0-beta.6" 98
+write_changelog "2.0.0-beta.6"
+commit_fixture
+git -C "$TEST_ROOT" tag v2.0.0-beta.6
+write_version "2.1.0" 99
+write_changelog "2.1.0"
+commit_fixture
+assert_success "stable metadata follows historical prerelease tags" --no-tag
+assert_success "stable tag follows historical prerelease tags" --tag v2.1.0
+
+write_version "2.1.0" 98
+write_changelog "2.1.0"
+commit_fixture
+assert_failure "release PR rejects a reused versionCode" --no-tag
+
+reset_repo
+write_version "2.1.0" 99
+write_changelog "2.1.0"
+commit_fixture
+git -C "$TEST_ROOT" tag v2.1.0
+write_version "2.0.1" 100
+write_changelog "2.0.1"
+commit_fixture
+assert_failure "release PR rejects an older SemVer core" --no-tag
+
+reset_repo
+write_version "2.1.0" 99
+write_changelog "2.1.0"
 commit_fixture
 git -C "$TEST_ROOT" tag v1.12.1
 assert_success "upstream v1 tags are ignored" --no-tag

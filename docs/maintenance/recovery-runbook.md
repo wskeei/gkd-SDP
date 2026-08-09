@@ -21,7 +21,7 @@
 
 - 构建或签名失败：保留日志和未公开 Artifact，修复后重新运行 dry-run；不要修改已经发布的 tag。
 - 证书指纹不一致：立即停止发布，核对 Environment secret 与离线副本；不得绕过指纹检查。
-- Draft Release 创建后失败：先检查 draft 是否没有公开资产，再决定是否清理；已发布 Release 不删除、不替换资产，改发新的 patch/beta/rc。
+- Draft Release 创建后失败：先确认 draft 没有公开资产，再只清理对应 draft；已发布 Release 不删除、不替换资产，需要代码修复时改发下一个稳定 PATCH 并递增 `versionCode`。
 - keystore 丢失或疑似泄露：暂停发布，保护账户和剩余副本，评估迁移/通知方案。新证书不能为旧安装提供原地升级。
 
 ## 事件记录

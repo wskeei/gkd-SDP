@@ -11,7 +11,7 @@ GKD-SDP 是个人维护的开源项目，支持以公开、可复现和 best-eff
 
 ## 提问前准备
 
-请说明 GKD-SDP 版本（About 页面或 Release tag）、下载来源、Android 版本、设备/ROM、Accessibility 或 Automation/Shizuku 运行模式、相关权限状态和最小复现步骤。Nightly 是 7 天过期的测试 Artifact，不等同于 stable/beta；报告 Nightly 问题时请附 Actions run 链接。先确认问题能在最新 stable 或明确标注的 beta 上复现。
+请说明 GKD-SDP 版本（About 页面或 Release tag）、下载来源、Android 版本、设备/ROM、Accessibility 或 Automation/Shizuku 运行模式、相关权限状态和最小复现步骤。Nightly 是 7 天过期的测试 Artifact，不等同于稳定 Release；报告 Nightly 问题时请附 Actions run 链接。先确认问题能在最新稳定版上复现；历史预发布版本可能先被要求升级。
 
 日志和截图上传前必须脱敏，尤其是申请理由、URL、账号、通知内容、屏幕文本、token 和 keystore。无法确定是否敏感时，请只描述现象并在 Discussion 中询问。
 
