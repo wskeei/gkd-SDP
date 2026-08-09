@@ -389,6 +389,31 @@ class BackupImportCoordinatorTest {
     }
 
     @Test
+    fun `startup retry keeps applying journal when restore commit boundary is interrupted`() = runBlocking {
+        val original = payload("old")
+        val target = FakeImportTarget(payload("partially-applied")).apply {
+            skipAfterCommitOnce = true
+        }
+        val journal = RecordingJournal().apply {
+            current = BackupImportJournalRecord(
+                phase = BackupImportPhase.APPLYING,
+                payloadHash = payload("new").payloadHash,
+                previousState = original,
+            )
+        }
+        val coordinator = coordinator(target, journal)
+
+        runCatching { coordinator.recoverInterruptedImport() }
+        assertEquals(BackupImportPhase.APPLYING, journal.current?.phase)
+        assertFalse(journal.cleared)
+
+        target.skipAfterCommitOnce = false
+        coordinator.recoverInterruptedImport()
+        assertEquals("old", target.current.objects.single().content.decodeToString())
+        assertTrue(journal.cleared)
+    }
+
+    @Test
     fun `reference failure blocks capture journal and mutation`() = runBlocking {
         val target = FakeImportTarget(payload("old")).apply { referencesValid = false }
         val journal = RecordingJournal()
@@ -445,6 +470,7 @@ class BackupImportCoordinatorTest {
         var restoreChecksCancellation = false
         var cancelDuringReconcile = false
         var cancelAfterMutationReturn = false
+        var skipAfterCommitOnce = false
         val replaceStarted = CompletableDeferred<Unit>()
         val continueReplace = CompletableDeferred<Unit>()
         val reconcileStarted = CompletableDeferred<Unit>()
@@ -456,6 +482,10 @@ class BackupImportCoordinatorTest {
             afterCommit: suspend (T) -> Unit,
         ): T {
             val result = mutationMutex.withLock { block() }
+            if (skipAfterCommitOnce) {
+                skipAfterCommitOnce = false
+                error("synthetic commit interruption")
+            }
             if (cancelAfterMutationReturn) {
                 kotlinx.coroutines.withContext(kotlinx.coroutines.NonCancellable) {
                     afterCommit(result)

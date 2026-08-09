@@ -274,11 +274,11 @@ class BackupImportCoordinator(
                     BackupImportPhase.PREPARED -> clearJournalOrBlock()
                     BackupImportPhase.APPLYING -> {
                         target.withExclusiveMutation(
-                            block = {
-                                target.restore(record.previousState)
+                            block = { target.restore(record.previousState) },
+                            afterCommit = {
                                 persistRollbackTerminal(record)
+                                clearJournalOrBlock()
                             },
-                            afterCommit = { clearJournalOrBlock() },
                         )
                     }
                     BackupImportPhase.ROLLED_BACK -> {
@@ -375,10 +375,10 @@ class BackupImportCoordinator(
                     journal.write(record.copy(phase = BackupImportPhase.APPLYING))
                 }.isSuccess
                 val restored = applyingWritten && runCatching {
-                    target.withRecoveryMutation {
-                        target.restore(record.previousState)
-                        persistRollbackTerminal(record)
-                    }
+                    target.withExclusiveMutation(
+                        block = { target.restore(record.previousState) },
+                        afterCommit = { persistRollbackTerminal(record) },
+                    )
                 }.isSuccess
                 val reconciled = restored && runCatching {
                     target.reconcileRuntime()

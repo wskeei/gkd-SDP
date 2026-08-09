@@ -77,6 +77,7 @@ class BackupConsistencyBoundaryContractTest {
         assertTrue(coordinator.contains("withRecoveryMutation"))
         assertTrue(coordinator.contains("withContext(NonCancellable)"))
         assertTrue(coordinator.contains("persistRollbackTerminal"))
+        assertTrue(coordinator.contains("afterCommit = { persistRollbackTerminal(record) }"))
         assertTrue(journal.contains("suspend fun clear(): Boolean"))
         assertTrue(journal.contains("BackupImportRecoveryBlockedException"))
         assertTrue(journal.contains("withBackupImportRecoveryContext"))
