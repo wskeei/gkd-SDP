@@ -16,13 +16,11 @@ class UsageGuardCountdownOverlayCapturePolicyTest {
 
     @Test
     fun sameUnexpiredRecordCanRestore() {
+        val session = session(expiresAt = 20_001L)
         assertTrue(
             UsageGuardCountdownOverlayCapturePolicy.shouldRestore(
-                hiddenAppId = "com.example.target",
-                hiddenRecordId = 7L,
-                currentAppId = "com.example.target",
-                currentRecordId = 7L,
-                expiresAt = 20_001L,
+                hidden = session,
+                current = session,
                 now = 20_000L,
             ),
         )
@@ -32,21 +30,15 @@ class UsageGuardCountdownOverlayCapturePolicyTest {
     fun recordAtOrPastExpiryCannotRestore() {
         assertFalse(
             UsageGuardCountdownOverlayCapturePolicy.shouldRestore(
-                hiddenAppId = "com.example.target",
-                hiddenRecordId = 7L,
-                currentAppId = "com.example.target",
-                currentRecordId = 7L,
-                expiresAt = 20_000L,
+                hidden = session(expiresAt = 20_000L),
+                current = session(expiresAt = 20_000L),
                 now = 20_000L,
             ),
         )
         assertFalse(
             UsageGuardCountdownOverlayCapturePolicy.shouldRestore(
-                hiddenAppId = "com.example.target",
-                hiddenRecordId = 7L,
-                currentAppId = "com.example.target",
-                currentRecordId = 7L,
-                expiresAt = 19_999L,
+                hidden = session(expiresAt = 19_999L),
+                current = session(expiresAt = 19_999L),
                 now = 20_000L,
             ),
         )
@@ -56,43 +48,53 @@ class UsageGuardCountdownOverlayCapturePolicyTest {
     fun invalidOrReplacedRecordCannotRestore() {
         assertFalse(
             UsageGuardCountdownOverlayCapturePolicy.shouldRestore(
-                hiddenAppId = "",
-                hiddenRecordId = 7L,
-                currentAppId = "",
-                currentRecordId = 7L,
-                expiresAt = 20_001L,
+                hidden = session(appId = ""),
+                current = session(appId = ""),
                 now = 20_000L,
             ),
         )
         assertFalse(
             UsageGuardCountdownOverlayCapturePolicy.shouldRestore(
-                hiddenAppId = "com.example.target",
-                hiddenRecordId = 0L,
-                currentAppId = "com.example.target",
-                currentRecordId = 0L,
-                expiresAt = 20_001L,
+                hidden = session(recordId = 0L),
+                current = session(recordId = 0L),
+                now = 20_000L,
+            ),
+        )
+        val hidden = session()
+        assertFalse(
+            UsageGuardCountdownOverlayCapturePolicy.shouldRestore(
+                hidden = hidden,
+                current = session(appId = "com.example.other"),
                 now = 20_000L,
             ),
         )
         assertFalse(
             UsageGuardCountdownOverlayCapturePolicy.shouldRestore(
-                hiddenAppId = "com.example.target",
-                hiddenRecordId = 7L,
-                currentAppId = "com.example.other",
-                currentRecordId = 7L,
-                expiresAt = 20_001L,
+                hidden = hidden,
+                current = session(recordId = 8L),
                 now = 20_000L,
             ),
         )
         assertFalse(
             UsageGuardCountdownOverlayCapturePolicy.shouldRestore(
-                hiddenAppId = "com.example.target",
-                hiddenRecordId = 7L,
-                currentAppId = "com.example.target",
-                currentRecordId = 8L,
-                expiresAt = 20_001L,
+                hidden = hidden,
+                current = session(runtimeGeneration = 6L),
                 now = 20_000L,
             ),
         )
     }
+
+    private fun session(
+        appId: String = "com.example.target",
+        recordId: Long = 7L,
+        expiresAt: Long = 20_001L,
+        leaseId: Long = 11L,
+        runtimeGeneration: Long = 5L,
+    ) = UsageGuardCountdownOverlaySession(
+        appId = appId,
+        recordId = recordId,
+        expiresAt = expiresAt,
+        leaseId = leaseId,
+        runtimeGeneration = runtimeGeneration,
+    )
 }

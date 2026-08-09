@@ -62,16 +62,20 @@ requested screenshot; disappearance of the overlay is the immediate feedback.
 - **Destroyed:** no restoration job or window remains.
 
 The hide action resets the future layout to the compact pill, removes the
-window, records the current app/record identity, and starts one lifecycle-bound
-ten-second job. On wake-up it verifies identity and expiration before re-adding
-the same view with the original secure flags. A stale job cannot restore a
-different record.
+window, records the current app/record/runtime lease, and starts one
+lifecycle-bound ten-second job. On wake-up it verifies identity, expiration,
+the engine-owned lease, current foreground app, and runtime generation before
+re-adding the same view with the original secure flags. The engine revokes the
+lease before requesting a stop, so a stale job cannot restore during an app or
+runtime handoff.
 
-If the initial mount or restoration is rejected, the service reports the
-existing `countdown` mount-failure category, stops itself, and lets
-`SdpRuntimeFeatureCoordinator` invalidate and recompute the current app. A
-failed removal leaves the window mounted and does not pretend screenshot mode
-started.
+If the initial mount or restoration is rejected, the per-service capture state
+machine enters a terminal state, clears the unattached view/params, reports the
+existing `countdown` mount-failure category with its lease, stops itself, and
+lets `SdpRuntimeFeatureCoordinator` invalidate and recompute the current app.
+Until destruction completes, the terminal instance rejects any replacement
+start and revokes that incoming lease as another mount failure. A failed
+removal leaves the window mounted and does not pretend screenshot mode started.
 
 ## Data, Privacy, and Compatibility
 

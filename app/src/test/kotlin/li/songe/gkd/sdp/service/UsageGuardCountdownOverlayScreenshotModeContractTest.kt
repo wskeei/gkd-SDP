@@ -17,8 +17,14 @@ class UsageGuardCountdownOverlayScreenshotModeContractTest {
             .substringAfter("private fun restoreOverlayAfterScreenshot")
             .substringBefore("private fun showTerminateConfirmScreen")
 
-        assertTrue(source.contains("private var overlayMounted = false"))
+        assertTrue(
+            source.contains(
+                "private val captureController = UsageGuardCountdownOverlayCaptureController()",
+            ),
+        )
         assertTrue(source.contains("private var restoreOverlayJob: Job? = null"))
+        assertTrue(source.contains("EXTRA_OVERLAY_LEASE_ID"))
+        assertTrue(source.contains("EXTRA_RUNTIME_GENERATION"))
         assertTrue(hideMethod.contains("windowManager.removeView(overlayView)"))
         assertTrue(
             hideMethod.contains(
@@ -27,16 +33,36 @@ class UsageGuardCountdownOverlayScreenshotModeContractTest {
         )
         assertTrue(
             hideMethod.contains(
-                "restoreOverlayAfterScreenshot(hiddenAppId, hiddenRecordId)",
+                "restoreOverlayAfterScreenshot(hidden)",
             ),
         )
         assertTrue(
             restoreMethod.contains(
-                "UsageGuardCountdownOverlayCapturePolicy.shouldRestore(",
+                "UsageGuardEngine.canRestoreCountdownOverlay(",
             ),
         )
         assertTrue(restoreMethod.contains("mountOverlayView(overlayView, params)"))
         assertTrue(source.contains("WindowManager.LayoutParams.FLAG_SECURE"))
+        assertTrue(source.contains("captureController.onMountFailed()"))
+        assertTrue(source.contains("view = null"))
+        assertTrue(source.contains("layoutParams = null"))
+    }
+
+    @Test
+    fun terminalServiceRejectsAndRevokesTheIncomingReplacementLease() {
+        val source = sourceFile(
+            "app/src/main/kotlin/li/songe/gkd/sdp/service/UsageGuardCountdownOverlayService.kt",
+        ).readText()
+        val terminalBranch = source
+            .substringAfter(
+                "UsageGuardCountdownOverlayCaptureController.StartAction.IGNORE_TERMINAL",
+            )
+            .substringBefore("\n        appId = incomingAppId")
+
+        assertTrue(terminalBranch.contains("UsageGuardEngine.onOverlayMountFailed("))
+        assertTrue(terminalBranch.contains("appId = incomingAppId"))
+        assertTrue(terminalBranch.contains("countdownLeaseId = incomingOverlayLeaseId"))
+        assertTrue(terminalBranch.contains("stopSelf()"))
     }
 
     @Test

@@ -143,12 +143,14 @@ produce a blank or black protected region, or reject the entire capture.
 The full-screen usage control provides `隐藏 10 秒用于截图`. This action removes
 the secure countdown window from `WindowManager` without pausing or ending the
 approved usage record, then restores only the same unexpired record after ten
-seconds. It does not weaken the independent request-form window, and it cannot
-override `FLAG_SECURE` or a capture policy owned by the foreground third-party
-app.
+seconds when the engine still owns the same overlay lease, the protected app
+is still foreground, and the runtime generation has not changed. It does not
+weaken the independent request-form window, and it cannot override
+`FLAG_SECURE` or a capture policy owned by the foreground third-party app.
 
 Screenshot protection requires physical-device/manual verification; JVM unit
-tests validate the configured flag, temporary-hide policy, and service wiring.
+tests validate the configured flag, temporary-hide state machine, engine lease,
+and service wiring.
 
 #### Interception attribution and rhythm data
 

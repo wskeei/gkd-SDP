@@ -4,7 +4,7 @@
 
 **Goal:** Let users temporarily remove the secure usage-countdown overlay for ten seconds so the foreground app can be screenshotted without exposing the countdown or request reason.
 
-**Architecture:** Keep `FLAG_SECURE` whenever the countdown window is mounted. Add a pure capture policy for the ten-second duration and stale-restore checks, then let `UsageGuardCountdownOverlayService` temporarily remove and later re-add its existing `ComposeView` while the service, active record, and engine expiry watch continue running.
+**Architecture:** Keep `FLAG_SECURE` whenever the countdown window is mounted. Add a pure capture state machine plus an engine-owned app/record/runtime lease for the ten-second duration and stale-restore checks, then let `UsageGuardCountdownOverlayService` temporarily remove and later re-add its existing `ComposeView` while the service, active record, and engine expiry watch continue running.
 
 **Tech Stack:** Android 8.0+, Kotlin, Jetpack Compose Material 3, `LifecycleService`, coroutines, `WindowManager.TYPE_APPLICATION_OVERLAY`, JUnit 4.
 
@@ -128,41 +128,48 @@ existing assertion to make screenshots pass.
 
 **Files:**
 - Modify: `app/src/main/kotlin/li/songe/gkd/sdp/service/UsageGuardCountdownOverlayService.kt`
+- Modify: `app/src/main/kotlin/li/songe/gkd/sdp/a11y/UsageGuardEngine.kt`
+- Create: `app/src/main/kotlin/li/songe/gkd/sdp/util/UsageGuardCountdownOverlayCaptureController.kt`
 - Test: `app/src/test/kotlin/li/songe/gkd/sdp/service/UsageGuardCountdownOverlayScreenshotModeContractTest.kt`
+- Test: `app/src/test/kotlin/li/songe/gkd/sdp/util/UsageGuardCountdownOverlayCaptureControllerTest.kt`
+- Test: `app/src/test/kotlin/li/songe/gkd/sdp/util/UsageGuardCountdownOverlayLeasePolicyTest.kt`
+- Test: `app/src/test/kotlin/li/songe/gkd/sdp/a11y/UsageGuardCountdownOverlayLeaseContractTest.kt`
 
-**Step 1: Add explicit mount state and a lifecycle-bound restoration job**
+**Step 1: Add explicit capture state and a lifecycle-bound restoration job**
 
-Add:
+Use `UsageGuardCountdownOverlayCaptureController` as the single source for
+mounted, hidden, terminal, replacement-session, and restore decisions. Keep:
 
 ```kotlin
-private var overlayMounted = false
 private var restoreOverlayJob: Job? = null
 ```
 
 Extract the existing `addView` call into one `mountOverlayView()` helper that
-sets `overlayMounted = true` only after `WindowManager.addView` succeeds.
+marks the controller mounted only after `WindowManager.addView` succeeds.
 
 **Step 2: Implement the screenshot action**
 
 The service callback must:
 
 1. Return unless the current view and params are mounted.
-2. Capture the current `appId` and `recordId`.
-3. Call `windowManager.removeView(overlayView)` and set
-   `overlayMounted = false` only after success.
+2. Capture the current app/record/expiration/lease/runtime session.
+3. Call `windowManager.removeView(overlayView)` and mark the controller hidden
+   only after success.
 4. Reset the detached params to compact `WRAP_CONTENT` at the normal safe
    position and close the full-screen control state.
 5. Launch exactly one `lifecycleScope` job that delays for
    `UsageGuardCountdownOverlayCapturePolicy.HIDE_DURATION_MS`.
-6. Re-check app identity, record identity, and `expiresAt` with the pure policy.
-7. Re-add the same view only when the policy returns true.
+6. Re-check identity and `expiresAt` with the pure state machine.
+7. Ask `UsageGuardEngine` to verify the engine-owned lease, foreground app, and
+   runtime generation before re-adding the same view.
 8. Stop the service instead of restoring when the same record has expired.
 
 A removal failure must leave the existing secure window mounted. A restoration
-failure must report `UsageGuardEngine.onOverlayMountFailed("countdown", appId)`
-and stop the service so the shared runtime can recompute.
+failure must enter terminal state, clear the unattached view/params, report the
+matching countdown lease to `UsageGuardEngine.onOverlayMountFailed`, and stop
+the service so the shared runtime can recompute.
 
-**Step 3: Guard all layout mutations by mount state**
+**Step 3: Guard all layout mutations by controller mount state**
 
 Do not call `WindowManager.updateViewLayout` while temporarily hidden. A new
 record reset must cancel the stale restore job and mount the new compact state;
@@ -195,6 +202,9 @@ the pill's existing tap and drag handlers.
 ```bash
 bash ./gradlew :app:testGkdDebugUnitTest \
   --tests '*UsageGuardCountdownOverlayCapturePolicyTest' \
+  --tests '*UsageGuardCountdownOverlayCaptureControllerTest' \
+  --tests '*UsageGuardCountdownOverlayLeasePolicyTest' \
+  --tests '*UsageGuardCountdownOverlayLeaseContractTest' \
   --tests '*UsageGuardCountdownOverlayScreenshotModeContractTest' \
   --tests '*UsageGuardCountdownOverlayWindowFlagsTest' \
   --tests '*UsageGuardCountdownOverlayLayoutPolicyTest' \

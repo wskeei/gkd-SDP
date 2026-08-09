@@ -22,7 +22,10 @@ import li.songe.gkd.sdp.db.DbSet
 import li.songe.gkd.sdp.service.UsageGuardCountdownOverlayService
 import li.songe.gkd.sdp.service.UsageGuardRequestOverlayService
 import li.songe.gkd.sdp.service.UsageGuardTimeoutOverlayService
+import li.songe.gkd.sdp.util.UsageGuardCountdownOverlayCapturePolicy
+import li.songe.gkd.sdp.util.UsageGuardCountdownOverlayLease
 import li.songe.gkd.sdp.util.UsageGuardCountdownOverlayPolicy
+import li.songe.gkd.sdp.util.UsageGuardCountdownOverlaySession
 import li.songe.gkd.sdp.util.UsageGuardUsageEndPolicy
 import li.songe.gkd.sdp.store.storeFlow
 import li.songe.gkd.sdp.util.UsageGuardPolicy
@@ -31,6 +34,7 @@ import li.songe.gkd.sdp.util.LogUtils
 import li.songe.gkd.sdp.util.systemUiAppId
 import li.songe.gkd.sdp.widget.UsageGuardReviewWidget
 import java.util.concurrent.atomic.AtomicLong
+import java.util.concurrent.atomic.AtomicReference
 
 object UsageGuardEngine {
     private val stateMutex = Mutex()
@@ -40,6 +44,8 @@ object UsageGuardEngine {
     private var countdownOverlayAppId: String? = null
     private var countdownOverlayRecordId: Long? = null
     private var countdownOverlayExpiresAt: Long = 0L
+    private val countdownOverlayLeaseSequence = AtomicLong()
+    private val countdownOverlayLease = AtomicReference<UsageGuardCountdownOverlayLease?>(null)
 
     private var expiryWatchAppId: String? = null
     private var expiryWatchRecordId: Long? = null
@@ -87,6 +93,17 @@ object UsageGuardEngine {
         }
     }
 
+    fun canRestoreCountdownOverlay(
+        session: UsageGuardCountdownOverlaySession,
+    ): Boolean {
+        return UsageGuardCountdownOverlayCapturePolicy.isLeaseActive(
+            lease = countdownOverlayLease.get(),
+            session = session,
+            foregroundAppId = topActivityFlow.value.appId,
+            currentRuntimeGeneration = sdpRuntimeFeatureCoordinator.currentOwner()?.generation,
+        )
+    }
+
     fun onRequestOverlayStopped(appId: String?) {
         appScope.launch(Dispatchers.IO) {
             stateMutex.withLock {
@@ -123,10 +140,16 @@ object UsageGuardEngine {
         }
     }
 
-    fun onCountdownOverlayStopped(appId: String?) {
+    fun onCountdownOverlayStopped(appId: String?, leaseId: Long?) {
         appScope.launch {
             stateMutex.withLock {
-                if (appId == null || countdownOverlayAppId == appId) {
+                val activeLease = countdownOverlayLease.get() ?: return@withLock
+                if (
+                    appId != null &&
+                    leaseId != null &&
+                    activeLease.appId == appId &&
+                    activeLease.leaseId == leaseId
+                ) {
                     clearCountdownOverlayState()
                 }
             }
@@ -171,13 +194,26 @@ object UsageGuardEngine {
         }
     }
 
-    fun onOverlayMountFailed(kind: String, appId: String?) {
+    fun onOverlayMountFailed(
+        kind: String,
+        appId: String?,
+        countdownLeaseId: Long? = null,
+    ) {
         appScope.launch {
             stateMutex.withLock {
                 when (kind) {
                     "request" -> blockingOverlayState.clearRequest(appId)
                     "timeout" -> blockingOverlayState.clearTimeout(appId)
-                    "countdown" -> if (countdownOverlayAppId == appId) clearCountdownOverlayState()
+                    "countdown" -> {
+                        val activeLease = countdownOverlayLease.get()
+                        if (
+                            countdownLeaseId != null &&
+                            activeLease?.appId == appId &&
+                            activeLease.leaseId == countdownLeaseId
+                        ) {
+                            clearCountdownOverlayState()
+                        }
+                    }
                 }
             }
         }
@@ -537,28 +573,58 @@ object UsageGuardEngine {
         token: Long,
     ) {
         if (!isCurrentRequest(record.appId, owner, token)) return
-        if (
+        val runtimeGeneration = (
+            owner ?: sdpRuntimeFeatureCoordinator.currentOwner() ?: return
+        ).generation
+        val sameOverlayRecord =
             countdownOverlayAppId == record.appId &&
-            countdownOverlayRecordId == record.id &&
-            countdownOverlayExpiresAt == record.expiresAt
+                countdownOverlayRecordId == record.id &&
+                countdownOverlayExpiresAt == record.expiresAt
+        val activeLease = countdownOverlayLease.get()
+        if (
+            sameOverlayRecord &&
+            activeLease != null &&
+            activeLease.appId == record.appId &&
+            activeLease.recordId == record.id &&
+            activeLease.expiresAt == record.expiresAt &&
+            activeLease.runtimeGeneration == runtimeGeneration
         ) {
             return
         }
 
-        stopCountdownOverlay(owner = owner, token = token)
+        if (!sameOverlayRecord) {
+            stopCountdownOverlay(owner = owner, token = token)
+        }
+        val leaseId = countdownOverlayLeaseSequence.incrementAndGet()
+        val lease = UsageGuardCountdownOverlayLease(
+            appId = record.appId,
+            recordId = record.id,
+            expiresAt = record.expiresAt,
+            leaseId = leaseId,
+            runtimeGeneration = runtimeGeneration,
+        )
         val result = selfControlOverlayLauncher.launch(Intent(app, UsageGuardCountdownOverlayService::class.java).apply {
             putExtra("appId", record.appId)
             putExtra("recordId", record.id)
             putExtra("expiresAt", record.expiresAt)
+            putExtra(UsageGuardCountdownOverlayService.EXTRA_OVERLAY_LEASE_ID, leaseId)
+            putExtra(UsageGuardCountdownOverlayService.EXTRA_RUNTIME_GENERATION, runtimeGeneration)
             putExtra(
                 UsageGuardCountdownOverlayService.EXTRA_REASON_TEXT,
                 record.reasonText,
             )
         })
-        if (result == OverlayLaunchResult.Accepted && isCurrentRequest(record.appId, owner, token)) {
-            countdownOverlayAppId = record.appId
-            countdownOverlayRecordId = record.id
-            countdownOverlayExpiresAt = record.expiresAt
+        if (result == OverlayLaunchResult.Accepted) {
+            if (isCurrentRequest(record.appId, owner, token)) {
+                countdownOverlayAppId = record.appId
+                countdownOverlayRecordId = record.id
+                countdownOverlayExpiresAt = record.expiresAt
+                countdownOverlayLease.set(lease)
+            } else {
+                selfControlOverlayLauncher.stop(
+                    Intent(app, UsageGuardCountdownOverlayService::class.java),
+                )
+            }
         }
     }
 
@@ -610,6 +676,7 @@ object UsageGuardEngine {
     }
 
     private fun clearCountdownOverlayState() {
+        countdownOverlayLease.set(null)
         countdownOverlayAppId = null
         countdownOverlayRecordId = null
         countdownOverlayExpiresAt = 0L
