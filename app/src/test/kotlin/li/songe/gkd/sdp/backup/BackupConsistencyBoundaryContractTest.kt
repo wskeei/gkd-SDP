@@ -89,7 +89,9 @@ class BackupConsistencyBoundaryContractTest {
         assertTrue(appDb.contains("withBackupDataMutationGate"))
         assertTrue(appDb.contains("gateRoomDao"))
         assertTrue(gatedDao.contains("withBackupDataMutationGate"))
-        assertTrue(gatedDao.contains("startCoroutine"))
+        assertTrue(gatedDao.contains("startCoroutineUninterceptedOrReturn"))
+        assertTrue(gatedDao.contains("suspendCoroutineUninterceptedOrReturn"))
+        assertFalse(gatedDao.contains("return COROUTINE_SUSPENDED"))
     }
 
     private fun sourceFile(relativePath: String): File {

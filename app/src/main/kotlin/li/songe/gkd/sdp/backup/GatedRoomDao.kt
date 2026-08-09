@@ -4,11 +4,8 @@ import java.lang.reflect.InvocationTargetException
 import java.lang.reflect.Proxy
 import java.util.IdentityHashMap
 import kotlin.coroutines.Continuation
-import kotlin.coroutines.intrinsics.COROUTINE_SUSPENDED
-import kotlin.coroutines.resume
-import kotlin.coroutines.resumeWithException
-import kotlin.coroutines.startCoroutine
-import kotlin.coroutines.suspendCoroutine
+import kotlin.coroutines.intrinsics.startCoroutineUninterceptedOrReturn
+import kotlin.coroutines.intrinsics.suspendCoroutineUninterceptedOrReturn
 
 /**
  * Room exposes DAO interfaces directly, so calls which do not use DbSet.withTransaction would
@@ -61,22 +58,14 @@ private fun invokeGatedSuspend(
     val methodArgs = args.copyOf(args.size - 1)
     val operation: suspend () -> Any? = {
         withBackupDataMutationGate {
-            suspendCoroutine { delegateContinuation ->
-                try {
-                    val result = invokeRoomDao(
-                        delegate = delegate,
-                        method = method,
-                        args = methodArgs + delegateContinuation,
-                    )
-                    if (result !== COROUTINE_SUSPENDED) {
-                        delegateContinuation.resume(result)
-                    }
-                } catch (error: Throwable) {
-                    delegateContinuation.resumeWithException(error)
-                }
+            suspendCoroutineUninterceptedOrReturn { delegateContinuation ->
+                invokeRoomDao(
+                    delegate = delegate,
+                    method = method,
+                    args = methodArgs + delegateContinuation,
+                )
             }
         }
     }
-    operation.startCoroutine(completion)
-    return COROUTINE_SUSPENDED
+    return operation.startCoroutineUninterceptedOrReturn(completion)
 }
