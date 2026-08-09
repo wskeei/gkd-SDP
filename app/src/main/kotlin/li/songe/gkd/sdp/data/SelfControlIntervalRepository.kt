@@ -5,6 +5,8 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapLatest
 import li.songe.gkd.sdp.db.DbSet
+import li.songe.gkd.sdp.runtime.SdpClock
+import li.songe.gkd.sdp.runtime.appDependencies
 import li.songe.gkd.sdp.util.SelfControlInsightWindowPolicy
 import li.songe.gkd.sdp.util.SelfControlIntervalPolicy
 
@@ -14,6 +16,7 @@ import li.songe.gkd.sdp.util.SelfControlIntervalPolicy
 class SelfControlIntervalRepository(
     private val usageRecords: UsageRecordSource,
     private val attemptEvents: AttemptEventSource,
+    private val clock: SdpClock = appDependencies.clock,
 ) {
     interface UsageRecordSource {
         suspend fun queryRecentRecords(appId: String, limit: Int): List<UsageGuardRecord>
@@ -124,7 +127,7 @@ class SelfControlIntervalRepository(
     suspend fun loadUsageRequestOverlay(appId: String): UsageRequestOverlay {
         val data = loadUsageRequestOverlayData(
             appId = appId,
-            insightAnchorAt = System.currentTimeMillis(),
+            insightAnchorAt = clock.nowEpochMillis(),
         )
         return UsageRequestOverlay(
             latestRequestedAt = data.latestRequestedAt,

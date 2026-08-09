@@ -1,6 +1,5 @@
 package li.songe.gkd.sdp.a11y
 
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
@@ -8,6 +7,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import li.songe.gkd.sdp.app
 import li.songe.gkd.sdp.appScope
+import li.songe.gkd.sdp.runtime.appDependencies
 import li.songe.gkd.sdp.data.AppGroup
 import li.songe.gkd.sdp.data.BlockTimeRule
 import li.songe.gkd.sdp.db.DbSet
@@ -57,7 +57,7 @@ object AppBlockerEngine {
 
     init {
         // 监听规则和应用组变化
-        appScope.launch(Dispatchers.IO) {
+        appScope.launch(appDependencies.dispatchers.io) {
             combine(
                 DbSet.blockTimeRuleDao.queryAll(),
                 DbSet.appGroupDao.queryAll()
@@ -154,7 +154,7 @@ object AppBlockerEngine {
         }
 
         // 检查冷却时间
-        val now = System.currentTimeMillis()
+        val now = appDependencies.clock.nowEpochMillis()
         val lastTriggerTime = cooldownMap[packageName] ?: 0L
         if (now - lastTriggerTime < COOLDOWN_MS) {
             LogUtils.d("$TAG: Cooldown active for $packageName")

@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import li.songe.gkd.sdp.appScope
+import li.songe.gkd.sdp.runtime.appDependencies
 import li.songe.gkd.sdp.data.BrowserConfig
 import li.songe.gkd.sdp.data.SelfControlAttempt
 import li.songe.gkd.sdp.data.UrlBlockRule
@@ -40,7 +41,7 @@ object UrlBlockerEngine {
 
     init {
         // 监听规则和浏览器配置变化
-        appScope.launch(Dispatchers.IO) {
+        appScope.launch(appDependencies.dispatchers.io) {
             combine(
                 DbSet.urlBlockRuleDao.queryEnabled(),
                 DbSet.browserConfigDao.queryEnabled(),
@@ -61,7 +62,7 @@ object UrlBlockerEngine {
         }
 
         // 初始化内置浏览器配置
-        appScope.launch(Dispatchers.IO) {
+        appScope.launch(appDependencies.dispatchers.io) {
             DbSet.browserConfigDao.insertIgnore(BrowserConfig.BUILTIN_BROWSERS)
         }
     }
@@ -94,7 +95,7 @@ object UrlBlockerEngine {
         }
 
         // 检查冷却时间
-        val now = System.currentTimeMillis()
+        val now = appDependencies.clock.nowEpochMillis()
         val lastTriggerTime = cooldownMap[packageName] ?: 0L
         if (now - lastTriggerTime < COOLDOWN_MS) {
             return
@@ -232,7 +233,7 @@ object UrlBlockerEngine {
         packageName: String,
         owner: SdpRuntimeFeatureCoordinator.RuntimeOwner?,
     ) {
-        appScope.launch(Dispatchers.Main) {
+        appScope.launch(appDependencies.dispatchers.main) {
             try {
                 if (!isOwnerCurrent(owner)) return@launch
                 // 1. 先跳转到安全页面
@@ -270,7 +271,7 @@ object UrlBlockerEngine {
                     redirectAccepted
                 }
                 if (accepted && isOwnerCurrent(owner)) {
-                    cooldownMap[packageName] = System.currentTimeMillis()
+                    cooldownMap[packageName] = appDependencies.clock.nowEpochMillis()
                     sdpRuntimeFeatureCoordinator.recordDecision(owner, "url-blocker", packageName, "overlay_accepted")
                 } else if (!accepted) {
                     sdpRuntimeFeatureCoordinator.recordDecision(owner, "url-blocker", packageName, "overlay_rejected")

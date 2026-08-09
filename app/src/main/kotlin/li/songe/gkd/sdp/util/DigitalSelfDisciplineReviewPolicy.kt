@@ -3,6 +3,7 @@ package li.songe.gkd.sdp.util
 import li.songe.gkd.sdp.data.SelfControlAttempt
 import li.songe.gkd.sdp.data.SelfControlAttemptEvent
 import li.songe.gkd.sdp.data.UsageReviewRow
+import li.songe.gkd.sdp.runtime.SdpClock
 import java.math.BigDecimal
 import java.math.RoundingMode
 import java.time.Instant
@@ -184,6 +185,16 @@ object DigitalSelfDisciplineReviewPolicy {
     ): RangeBounds = rangeBounds(
         range = range,
         today = Instant.ofEpochMilli(nowEpochMs).atZone(zoneId).toLocalDate(),
+        zoneId = zoneId,
+    )
+
+    fun rangeBounds(
+        range: Range,
+        clock: SdpClock,
+        zoneId: ZoneId = ZoneId.systemDefault(),
+    ): RangeBounds = rangeBounds(
+        range = range,
+        nowEpochMs = clock.nowEpochMillis(),
         zoneId = zoneId,
     )
 

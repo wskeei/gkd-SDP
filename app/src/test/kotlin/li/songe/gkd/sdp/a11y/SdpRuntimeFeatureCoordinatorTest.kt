@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import li.songe.gkd.sdp.util.AutomatorModeOption
+import li.songe.gkd.sdp.runtime.FakeSdpClock
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -184,6 +185,24 @@ class SdpRuntimeFeatureCoordinatorTest {
 
         assertEquals(listOf("com.example.reader", "com.example.video"), healthy)
         assertEquals(2, failures.get())
+    }
+
+    @Test
+    fun decisionTimestampUsesInjectedClock() = runBlocking {
+        val clock = FakeSdpClock(epochMillis = 123_456L)
+        val foreground = MutableStateFlow("com.example.reader")
+        val coordinator = SdpRuntimeFeatureCoordinator(
+            foregroundApps = foreground,
+            scope = CoroutineScope(Dispatchers.Unconfined + Job()).also { jobs += it.coroutineContext[Job]!! },
+            handlers = emptyList(),
+            foregroundDispatcher = Dispatchers.Unconfined,
+            clock = clock,
+        )
+        val owner = coordinator.attach("a11y", AutomatorModeOption.A11yMode)
+
+        coordinator.recordDecision(owner, "test", "com.example.reader", "allowed")
+
+        assertEquals(123_456L, coordinator.statusFlow.value.lastDecision?.atEpochMs)
     }
 
     private fun coordinator(
