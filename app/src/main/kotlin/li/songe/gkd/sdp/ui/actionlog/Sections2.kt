@@ -44,13 +44,13 @@ import li.songe.gkd.sdp.ui.component.GroupNameText
 import li.songe.gkd.sdp.ui.component.PerfIcon
 import li.songe.gkd.sdp.ui.share.LocalMainViewModel
 import li.songe.gkd.sdp.ui.style.iconTextSize
-import li.songe.gkd.sdp.ui.style.DimensionTokens.SpacingBase
 import li.songe.gkd.sdp.util.subsItemsFlow
 import li.songe.gkd.sdp.util.subsMapFlow
 import li.songe.gkd.sdp.util.throttle
 import li.songe.gkd.sdp.util.toast
 import androidx.compose.ui.res.stringResource
 import li.songe.gkd.sdp.R
+import li.songe.gkd.sdp.ui.style.DimensionTokens
 
 @Composable
 internal fun ActionLogCard(

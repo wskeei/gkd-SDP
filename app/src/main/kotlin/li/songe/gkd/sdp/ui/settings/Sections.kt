@@ -102,7 +102,6 @@ import li.songe.gkd.sdp.ui.share.LocalMainViewModel
 import li.songe.gkd.sdp.ui.share.asMutableState
 import li.songe.gkd.sdp.ui.style.EmptyHeight
 import li.songe.gkd.sdp.ui.style.iconTextSize
-import li.songe.gkd.sdp.ui.style.DimensionTokens.SpacingBase
 import li.songe.gkd.sdp.ui.style.titleItemPadding
 import li.songe.gkd.sdp.util.AndroidTarget
 import li.songe.gkd.sdp.util.BackupUtils
@@ -118,6 +117,7 @@ import li.songe.gkd.sdp.util.ruleSummaryFlow
 import li.songe.gkd.sdp.util.throttle
 import li.songe.gkd.sdp.util.toast
 import li.songe.gkd.sdp.util.UriUtils
+import li.songe.gkd.sdp.ui.style.DimensionTokens
 
 @Composable
 fun useSettingsPageSections(): ScaffoldExt {

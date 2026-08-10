@@ -45,7 +45,6 @@ import li.songe.gkd.sdp.ui.SubsCategoryRoute
 import li.songe.gkd.sdp.ui.SubsGlobalGroupListRoute
 import li.songe.gkd.sdp.ui.share.LocalMainViewModel
 import li.songe.gkd.sdp.ui.style.EmptyHeight
-import li.songe.gkd.sdp.ui.style.DimensionTokens.SpacingBase
 import li.songe.gkd.sdp.util.LOCAL_SUBS_ID
 import li.songe.gkd.sdp.util.checkSubsUpdate
 import li.songe.gkd.sdp.util.deleteSubscription
@@ -58,6 +57,7 @@ import li.songe.gkd.sdp.util.toast
 import li.songe.gkd.sdp.util.updateSubsMutex
 import androidx.compose.ui.res.stringResource
 import li.songe.gkd.sdp.R
+import li.songe.gkd.sdp.ui.style.DimensionTokens
 
 @Composable
 fun SubsSheet(

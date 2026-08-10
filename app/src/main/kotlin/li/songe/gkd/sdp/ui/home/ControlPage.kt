@@ -75,8 +75,6 @@ import li.songe.gkd.sdp.ui.component.textSize
 import li.songe.gkd.sdp.ui.component.useScrollBehaviorState
 import li.songe.gkd.sdp.ui.share.LocalMainViewModel
 import li.songe.gkd.sdp.ui.style.EmptyHeight
-import li.songe.gkd.sdp.ui.style.DimensionTokens.SpacingBase
-import li.songe.gkd.sdp.ui.style.DimensionTokens.SpacingMd
 import li.songe.gkd.sdp.ui.style.surfaceCardColors
 import li.songe.gkd.sdp.util.HOME_PAGE_URL
 import li.songe.gkd.sdp.util.HomeA11yServiceTogglePolicy
@@ -91,6 +89,7 @@ import li.songe.gkd.sdp.util.throttle
 import li.songe.gkd.sdp.util.toast
 import li.songe.gkd.sdp.remote.RemoteListenMode
 import li.songe.gkd.sdp.remote.RemoteScope
+import li.songe.gkd.sdp.ui.style.DimensionTokens
 
 @Composable
 fun useControlPage(): ScaffoldExt {

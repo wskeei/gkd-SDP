@@ -59,8 +59,6 @@ import li.songe.gkd.sdp.ui.component.PerfTopAppBar
 import li.songe.gkd.sdp.ui.component.updateDialogOptions
 import li.songe.gkd.sdp.ui.share.LocalMainViewModel
 import li.songe.gkd.sdp.ui.style.EmptyHeight
-import li.songe.gkd.sdp.ui.style.DimensionTokens.SpacingMd
-import li.songe.gkd.sdp.ui.style.DimensionTokens.SpacingBase
 import li.songe.gkd.sdp.ui.style.surfaceCardColors
 import li.songe.gkd.sdp.util.AndroidTarget
 import li.songe.gkd.sdp.util.AutomatorModeOption
@@ -73,6 +71,7 @@ import li.songe.gkd.sdp.util.toast
 import li.songe.gkd.sdp.store.writeTextAtomically
 import androidx.compose.ui.res.stringResource
 import li.songe.gkd.sdp.R
+import li.songe.gkd.sdp.ui.style.DimensionTokens
 
 @Serializable
 data object AuthA11yRoute : NavKey

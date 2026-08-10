@@ -102,7 +102,6 @@ import li.songe.gkd.sdp.ui.share.LocalMainViewModel
 import li.songe.gkd.sdp.ui.share.asMutableState
 import li.songe.gkd.sdp.ui.style.EmptyHeight
 import li.songe.gkd.sdp.ui.style.iconTextSize
-import li.songe.gkd.sdp.ui.style.DimensionTokens.SpacingBase
 import li.songe.gkd.sdp.ui.style.titleItemPadding
 import li.songe.gkd.sdp.util.AndroidTarget
 import li.songe.gkd.sdp.util.BackupUtils
@@ -122,6 +121,7 @@ import androidx.compose.runtime.MutableState
 import li.songe.gkd.sdp.MainViewModel
 import li.songe.gkd.sdp.store.SettingsStore
 import androidx.compose.ui.res.stringResource
+import li.songe.gkd.sdp.ui.style.DimensionTokens
 
 @Composable
 internal fun SettingsTextDialogs(

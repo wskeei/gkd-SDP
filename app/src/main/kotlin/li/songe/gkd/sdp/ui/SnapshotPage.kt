@@ -62,8 +62,6 @@ import li.songe.gkd.sdp.ui.share.ListPlaceholder
 import li.songe.gkd.sdp.ui.share.LocalMainViewModel
 import li.songe.gkd.sdp.ui.share.noRippleClickable
 import li.songe.gkd.sdp.ui.style.EmptyHeight
-import li.songe.gkd.sdp.ui.style.DimensionTokens.SpacingBase
-import li.songe.gkd.sdp.ui.style.DimensionTokens.SpacingMd
 import li.songe.gkd.sdp.ui.style.scaffoldPadding
 import li.songe.gkd.sdp.util.IMPORT_SHORT_URL
 import li.songe.gkd.sdp.util.ImageUtils
@@ -78,6 +76,7 @@ import li.songe.gkd.sdp.util.shareFile
 import li.songe.gkd.sdp.util.throttle
 import li.songe.gkd.sdp.util.toast
 import li.songe.gkd.sdp.R
+import li.songe.gkd.sdp.ui.style.DimensionTokens
 
 @Serializable
 data object SnapshotPageRoute : NavKey

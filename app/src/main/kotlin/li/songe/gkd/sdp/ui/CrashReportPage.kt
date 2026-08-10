@@ -30,11 +30,10 @@ import li.songe.gkd.sdp.ui.component.useScrollBehaviorState
 import li.songe.gkd.sdp.ui.share.LocalMainViewModel
 import li.songe.gkd.sdp.ui.share.noRippleClickable
 import li.songe.gkd.sdp.ui.style.EmptyHeight
-import li.songe.gkd.sdp.ui.style.DimensionTokens.SpacingBase
-import li.songe.gkd.sdp.ui.style.DimensionTokens.SpacingMd
 import li.songe.gkd.sdp.util.ISSUES_URL
 import li.songe.gkd.sdp.util.throttle
 import li.songe.gkd.sdp.R
+import li.songe.gkd.sdp.ui.style.DimensionTokens
 
 
 @Serializable
