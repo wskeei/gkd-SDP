@@ -4,15 +4,7 @@ All notable GKD-SDP changes are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
-
-### Internal reliability
-
-- Make self-control clocks and dispatchers injectable, collect Compose state only
-  while its lifecycle is started, and restore semantic navigation across activity
-  recreation.
-- Keep UI and overlay host boundaries small and enforce the directory contract in CI;
-  no user data format or runtime policy is changed by this internal refactor.
+## [2.2.0] - 2026-08-11
 
 ### Added
 
@@ -29,6 +21,14 @@ All notable GKD-SDP changes are documented here. The format follows
 - Make usage-request validation, duration presentation, and interval queries
   explicit pure-Kotlin contracts; interval insight queries are half-open and
   no longer load through a capped recent-record list.
+
+### Testing
+
+- Replace placeholder/source-string contracts with behavioral JVM and
+  instrumentation tests, Room 32→33 migration coverage, and test-quality
+  policy checks.
+- Add Compose screenshot regression references, Kover business-policy
+  coverage gates, managed-device definitions, and four-variant CI builds.
 
 ### Security
 
@@ -241,7 +241,8 @@ since that base rather than repeating upstream release notes.
   when the required service permission is disabled.
 - Added screenshot protection for the usage reason overlay.
 
-[Unreleased]: https://github.com/wskeei/gkd-SDP/compare/v2.1.1...HEAD
+[2.2.0]: https://github.com/wskeei/gkd-SDP/compare/v2.1.1...v2.2.0
+[Unreleased]: https://github.com/wskeei/gkd-SDP/compare/v2.2.0...HEAD
 [2.1.1]: https://github.com/wskeei/gkd-SDP/compare/v2.1.0...v2.1.1
 [2.1.0]: https://github.com/wskeei/gkd-SDP/compare/v2.0.0-beta.6...v2.1.0
 [2.0.0-beta.6]: https://github.com/wskeei/gkd-SDP/compare/v2.0.0-beta.5...v2.0.0-beta.6
