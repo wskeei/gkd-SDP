@@ -1,52 +1,31 @@
 package li.songe.gkd.sdp.settings
 
-import li.songe.gkd.sdp.store.SettingsStore
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class SettingsFormPolicyTest {
-    private fun store(
-        title: String = "默认标题",
-        text: String = "默认正文",
-    ) = SettingsStore(
-        customNotifTitle = title,
-        customNotifText = text,
-    )
-
     @Test
     fun savesWhenOnlyTitleChanged() {
-        val s = store(title = "旧标题", text = "正文")
-        assertTrue(SettingsFormPolicy.notificationTextChanged(s, "新标题", "正文"))
-        val updated = SettingsFormPolicy.notificationTextUpdate(s, "新标题", "正文")
-        assertEquals("新标题", updated.customNotifTitle)
-        assertEquals("正文", updated.customNotifText)
+        assertTrue(SettingsFormPolicy.notificationTextChanged("旧标题", "正文", "新标题", "正文"))
     }
 
     @Test
     fun savesWhenOnlyTextChanged() {
-        val s = store(title = "标题", text = "旧正文")
-        assertTrue(SettingsFormPolicy.notificationTextChanged(s, "标题", "新正文"))
-        val updated = SettingsFormPolicy.notificationTextUpdate(s, "标题", "新正文")
-        assertEquals("标题", updated.customNotifTitle)
-        assertEquals("新正文", updated.customNotifText)
+        assertTrue(SettingsFormPolicy.notificationTextChanged("标题", "旧正文", "标题", "新正文"))
     }
 
     @Test
     fun doesNotReportChangeWhenNeitherChanged() {
-        val s = store(title = "标题", text = "正文")
-        assertFalse(SettingsFormPolicy.notificationTextChanged(s, "标题", "正文"))
+        assertFalse(SettingsFormPolicy.notificationTextChanged("标题", "正文", "标题", "正文"))
     }
 
     @Test
-    fun updateAlwaysSavesBothCurrentValues() {
-        val s = store(title = "a", text = "b")
-        val updated = SettingsFormPolicy.notificationTextUpdate(s, "c", "d")
-        assertEquals("c", updated.customNotifTitle)
-        assertEquals("d", updated.customNotifText)
-        assertEquals("a", s.customNotifTitle)
-        assertEquals("b", s.customNotifText)
+    fun comparisonIsFieldByField() {
+        // title value compared with the title, text value with the text
+        assertTrue(SettingsFormPolicy.notificationTextChanged("a", "b", "a", "c"))
+        assertTrue(SettingsFormPolicy.notificationTextChanged("a", "b", "c", "b"))
     }
 }
 

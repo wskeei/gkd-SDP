@@ -256,8 +256,8 @@ private fun SettingsNotificationDialog(
         confirmButton = {
             TextButton(onClick = {
                 context.justHideSoftInput()
-                if (SettingsFormPolicy.notificationTextChanged(store, titleValue, textValue)) {
-                    storeFlow.update { SettingsFormPolicy.notificationTextUpdate(it, titleValue, textValue) }
+                if (SettingsFormPolicy.notificationTextChanged(store.customNotifTitle, store.customNotifText, titleValue, textValue)) {
+                    storeFlow.update { it.copy(customNotifTitle = titleValue, customNotifText = textValue) }
                     toast(li.songe.gkd.sdp.app.getString(R.string.s_e2cff77372))
                 }
                 showNotifTextInputDlg.value = false
