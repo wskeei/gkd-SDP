@@ -1,6 +1,7 @@
 package li.songe.gkd.sdp.ui.home
 
 import li.songe.gkd.sdp.navigation.AppDestination
+import li.songe.gkd.sdp.navigation.toNavKey
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
