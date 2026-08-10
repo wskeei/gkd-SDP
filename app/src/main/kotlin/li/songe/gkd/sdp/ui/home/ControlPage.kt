@@ -273,10 +273,11 @@ fun useControlPage(): ScaffoldExt {
             val usageGuardWidgetSummary = UsageGuardReviewPolicy.widgetSummary(usageGuardSummary)
             PageItemCard(
                 title = stringResource(R.string.s_c7380c3c20),
-                subtitle = stringResource(R.string.s_7ea330e955, DigitalSelfDisciplineReviewPresentation.homeSummary(
+                subtitle = stringResource(R.string.s_0cde7c26f2, DigitalSelfDisciplineReviewPresentation.homeSummary(
                     digitalSelfDisciplineToday.requestCount,
                     digitalSelfDisciplineToday.interceptCount,
-                ), usageGuardWidgetSummary.hint),
+                )) +
+                    usageGuardWidgetSummary.hint,
                 imageVector = PerfIcon.Equalizer,
                 onClickLabel = stringResource(R.string.s_d971a601ba),
                 onClick = {

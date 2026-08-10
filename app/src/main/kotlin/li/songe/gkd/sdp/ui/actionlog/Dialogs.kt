@@ -181,7 +181,8 @@ private fun ActionLogDialogSummary(
             modifier = Modifier.padding(top = 2.dp),
         )
         Text(
-            text = stringResource(R.string.s_2e56559e95, actionLog.groupType, actionLog.groupKey, actionLog.ruleIndex, actionLog.ruleKey?.let { "key=$it" } ?: "未设置 key"),
+            text = stringResource(R.string.s_ea63fc76c4, actionLog.groupType, actionLog.groupKey) +
+                "index=${actionLog.ruleIndex}, ${actionLog.ruleKey?.let { "key=$it" } ?: "未设置 key"}",
             style = MaterialTheme.typography.bodySmall,
             modifier = Modifier.padding(top = 2.dp),
         )

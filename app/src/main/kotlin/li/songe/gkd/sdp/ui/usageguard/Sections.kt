@@ -81,6 +81,7 @@ import li.songe.gkd.sdp.util.UsageGuardReviewPolicy
 import li.songe.gkd.sdp.util.UsageGuardUiStatePolicy
 import li.songe.gkd.sdp.util.appInfoMapFlow
 import androidx.compose.ui.res.stringResource
+import li.songe.gkd.sdp.R
 
 @Composable
 fun UsageGuardPageSections() {

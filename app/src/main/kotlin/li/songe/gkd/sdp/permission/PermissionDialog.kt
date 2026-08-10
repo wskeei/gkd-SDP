@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import li.songe.gkd.sdp.MainActivity
 import li.songe.gkd.sdp.util.stopCoroutine
 import androidx.compose.ui.res.stringResource
+import li.songe.gkd.sdp.R
 
 data class AuthReason(
     val text: () -> String,

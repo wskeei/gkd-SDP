@@ -180,7 +180,7 @@ fun A11yEventLogPage() {
                     )
                     .padding(horizontal = 4.dp)
                 Column {
-                    Text(text = li.songe.gkd.sdp.app.getString(R.string.s_41145b031b, if (eventLog.isStateChanged) "状态变化" else "内容变化"))
+                    Text(text = li.songe.gkd.sdp.app.getString(R.string.s_cd42ed46a6) + if (eventLog.isStateChanged) li.songe.gkd.sdp.app.getString(R.string.s_c5277e6e6f) else li.songe.gkd.sdp.app.getString(R.string.s_458dd653a4))
                     Spacer(modifier = Modifier.height(12.dp))
                     Text(text = li.songe.gkd.sdp.app.getString(R.string.s_be8af550f3))
                     Row {

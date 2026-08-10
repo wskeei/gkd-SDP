@@ -32,6 +32,7 @@ import li.songe.gkd.sdp.data.UrlBlockRule
 import li.songe.gkd.sdp.data.UrlTimeRule
 import li.songe.gkd.sdp.ui.component.PerfIcon
 import androidx.compose.ui.res.stringResource
+import li.songe.gkd.sdp.R
 
 @Composable
 fun UrlInGroupRow(

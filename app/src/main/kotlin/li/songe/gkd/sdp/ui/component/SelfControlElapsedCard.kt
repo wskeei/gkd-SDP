@@ -18,6 +18,7 @@ import kotlinx.coroutines.delay
 import li.songe.gkd.sdp.util.SelfControlElapsedPolicy
 import li.songe.gkd.sdp.util.SelfControlInsightWindowPolicy
 import androidx.compose.ui.res.stringResource
+import li.songe.gkd.sdp.R
 
 @Composable
 fun SelfControlElapsedCard(
@@ -155,7 +156,8 @@ private fun RunningElapsedContent(
         modifier = Modifier.padding(top = 4.dp),
     )
     Text(
-        text = stringResource(R.string.s_489c4cd278, if (state.firstOccurrence) copy.firstTimeLabel else copy.previousTimeLabel, SelfControlElapsedPolicy.formatAbsolute(state.anchorAtEpochMs)),
+        text = stringResource(R.string.s_de27714146, if (state.firstOccurrence) copy.firstTimeLabel else copy.previousTimeLabel) +
+            SelfControlElapsedPolicy.formatAbsolute(state.anchorAtEpochMs),
         style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         modifier = Modifier.padding(top = 2.dp),

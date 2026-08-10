@@ -21,6 +21,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import li.songe.gkd.sdp.data.UrlTimeRule
 import androidx.compose.ui.res.stringResource
+import li.songe.gkd.sdp.R
 
 @Composable
 internal fun UrlBlockerTemplatePickerDialog(

@@ -41,6 +41,7 @@ import li.songe.gkd.sdp.ui.component.PerfIcon
 import li.songe.gkd.sdp.ui.style.itemPadding
 import li.songe.gkd.sdp.ui.style.surfaceCardColors
 import androidx.compose.ui.res.stringResource
+import li.songe.gkd.sdp.R
 
 @Composable
 fun UrlGroupCard(

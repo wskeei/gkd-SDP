@@ -420,6 +420,7 @@ def classify_lambda(masked: str, brace: int) -> bool | None:
 
 
 
+
 def call_attached_to_brace(head: str) -> re.Match | None:
     """The call whose ')' sits directly before the lambda brace."""
     close = head.rfind(")")
@@ -435,86 +436,6 @@ def call_attached_to_brace(head: str) -> re.Match | None:
             if depth == 0:
                 return CALL_START.search(head[max(0, i - 40):i + 1])
     return None
-
-
-def collect_chain(
-    text: str,
-    lit: Literal,
-) -> tuple[int, int, str, list[str]] | None:
-    """Merge a `"A" + expr + "C"` chain into one format resource.
-
-    Returns (start, end, fmt, args) when [lit] begins a concatenation chain,
-    otherwise None. Expression parts (including if/when with inner literals)
-    become %N$s arguments.
-    """
-    if not re.match(r"\s*\+", text[lit.end:]):
-        return None
-    parts: list[tuple[str, str]] = []  # ("lit"|"expr", raw)
-    pos = lit.end
-    current = ("lit", lit.raw)
-    saw_part = False
-    while True:
-        m = re.match(r"\s*\+\s*", text[pos:])
-        if not m:
-            break
-        pos += m.end()
-        nxt_lits = find_literals(text[pos:])
-        if nxt_lits and nxt_lits[0].start == 0:
-            parts.append(current)
-            current = ("lit", nxt_lits[0].raw)
-            pos = pos + nxt_lits[0].end
-            saw_part = True
-            continue
-        expr_start = pos
-        depth = 0
-        while pos < len(text):
-            ch = text[pos]
-            if ch == '"':
-                inner = find_literals(text[pos:])
-                if inner and inner[0].start == 0:
-                    pos = pos + inner[0].end
-                    continue
-            if ch in "([{":
-                depth += 1
-            elif ch in ")]}":
-                depth = max(0, depth - 1)
-            elif ch in "+," and depth == 0:
-                break
-            elif ch == ")" and depth == 0:
-                break
-            elif ch == "\n" and depth <= 0:
-                break
-            pos += 1
-        expr = text[expr_start:pos].strip()
-        if expr:
-            parts.append(current)
-            current = ("expr", expr)
-            saw_part = True
-            if pos < len(text) and text[pos] == "+":
-                continue
-            parts.append(current)
-            current = ("", "")
-            break
-        break
-    if not saw_part:
-        return None
-    if current[0]:
-        parts.append(current)
-    fmt_parts: list[str] = []
-    args: list[str] = []
-    for kind, raw in parts:
-        if kind == "expr":
-            args.append(raw)
-            fmt_parts.append("{%d}" % len(args))
-            continue
-        if "${" in raw or re.search(r"(?<!\\)\$[A-Za-z_]", raw):
-            f, a = decode_template(raw)
-            fmt_parts.append(f)
-            args.extend(a)
-        else:
-            fmt_parts.append(raw)
-    return lit.start, pos, "".join(fmt_parts), args
-
 
 
 
@@ -563,18 +484,6 @@ def decode_template(raw: str) -> tuple[str, list[str]]:
     fmt = fmt.replace("\\n", "\n").replace("\\t", "\t").replace("\\\"", "\"")
     return fmt, args
 
-
-def decode_concat(between: str) -> tuple[str, list[str]] | None:
-    """Text('a' + expr) -> ('a', [expr]) as format string."""
-    parts = re.split(r"\s*\+\s*", between.strip(), maxsplit=1)
-    if len(parts) != 2:
-        return None
-    left = parts[0].strip()
-    if not (left.startswith('"') and left.endswith('"')):
-        return None
-    raw = left[1:-1]
-    fmt = raw.replace("%", "%%")
-    return fmt, [parts[1].strip()]
 
 
 def escape_xml(value: str) -> str:
@@ -636,10 +545,6 @@ def migrate_file(path: pathlib.Path, dry_run: bool = False) -> tuple[dict[str, s
         named_owner = owning_named_argument(masked, text, lit) if not ctx else None
         if not ctx and not named_owner:
             continue
-        chain = collect_chain(text, lit)
-        if chain:
-            candidates.append((lit, ("__chain__", chain)))
-            continue
         if ctx:
             candidates.append((lit, ctx))
         else:
@@ -649,18 +554,11 @@ def migrate_file(path: pathlib.Path, dry_run: bool = False) -> tuple[dict[str, s
     # Drop candidates nested inside another candidate (outer templates and
     # concat chains contain inner literals; migrating them twice corrupts the
     # argument text). Chain candidates span their whole chain range.
-    def candidate_range(cand):
-        lit, ctx = cand
-        if ctx[0] == "__chain__":
-            return ctx[1][0], ctx[1][1]
-        return lit.start, lit.end
-
     candidates = [
         cand
         for cand in candidates
         if not any(
-            other is not cand and candidate_range(other)[0] <= candidate_range(cand)[0]
-            and candidate_range(other)[1] >= candidate_range(cand)[1]
+            other is not cand and other[0].start <= cand[0].start and other[0].end >= cand[0].end
             for other in candidates
         )
     ]
@@ -668,28 +566,9 @@ def migrate_file(path: pathlib.Path, dry_run: bool = False) -> tuple[dict[str, s
     segments = []
     wants_imports: set[str] = set()
     for lit, ctx in candidates:
-        if ctx[0] == "__chain__":
-            chain = ctx[1]
-            c_start, c_end, fmt, args = chain
-            key = key_for(fmt)
-            use_composable = is_composable_context(masked, lit)
-            if use_composable:
-                if args:
-                    call = f"stringResource(R.string.{key}, {', '.join(args)})"
-                else:
-                    call = f"stringResource(R.string.{key})"
-                wants_imports.add("androidx.compose.ui.res.stringResource")
-            else:
-                if args:
-                    call = f"li.songe.gkd.sdp.app.getString(R.string.{key}, {', '.join(args)})"
-                else:
-                    call = f"li.songe.gkd.sdp.app.getString(R.string.{key})"
-                    wants_imports.add("li.songe.gkd.sdp.R")
-            resources[key] = fmt
-            segments.append((c_start, c_end, call))
-            continue
         call_name, named_arg, idx = ctx
         key = key_for(lit.raw)
+        wants_imports.add("li.songe.gkd.sdp.R")
         if lit.is_template and not lit.dollar_raw:
             fmt, args = decode_template(lit.raw)
             use_composable = is_composable_context(masked, lit)
@@ -713,22 +592,6 @@ def migrate_file(path: pathlib.Path, dry_run: bool = False) -> tuple[dict[str, s
             resources[key] = lit.raw.replace("%", "%%").replace("\\n", "\n").replace("\\t", "\t").replace("\\\"", "\"")
             segments.append((lit.start, lit.end, call))
             continue
-        # plain literal; maybe inside a concatenation
-        between = paren_text(masked, lit)
-        if between and "+" in between:
-            concat = decode_concat(between)
-            if concat and idx == 0:
-                fmt, args = concat
-                use_composable = is_composable_context(masked, lit)
-                if use_composable:
-                    call = f"stringResource(R.string.{key}, {', '.join(args)})"
-                    wants_imports.add("androidx.compose.ui.res.stringResource")
-                else:
-                    call = f"li.songe.gkd.sdp.app.getString(R.string.{key}, {', '.join(args)})"
-                    wants_imports.add("li.songe.gkd.sdp.R")
-                resources[key] = fmt
-                segments.append((lit.start, lit.end, call))
-                continue
         use_composable = is_composable_context(masked, lit)
         if use_composable:
             call = f"stringResource(R.string.{key})"
@@ -745,18 +608,6 @@ def migrate_file(path: pathlib.Path, dry_run: bool = False) -> tuple[dict[str, s
         path.write_text(text, encoding="utf-8")
     return resources, len(segments)
 
-
-def paren_text(masked: str, lit: Literal) -> str:
-    depth = 0
-    for i in range(lit.start - 1, -1, -1):
-        ch = masked[i]
-        if ch == ")":
-            depth += 1
-        elif ch == "(":
-            if depth == 0:
-                return masked[i + 1: lit.start]
-            depth -= 1
-    return ""
 
 
 def main():

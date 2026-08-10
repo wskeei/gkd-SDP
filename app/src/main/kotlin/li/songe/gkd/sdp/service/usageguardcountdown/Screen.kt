@@ -66,6 +66,7 @@ import li.songe.gkd.sdp.util.UsageGuardCountdownOverlaySession
 import li.songe.gkd.sdp.util.px
 import kotlin.math.roundToInt
 import androidx.compose.ui.res.stringResource
+import li.songe.gkd.sdp.R
 
 @Composable
 internal fun UsageGuardCountdownOverlayContent(

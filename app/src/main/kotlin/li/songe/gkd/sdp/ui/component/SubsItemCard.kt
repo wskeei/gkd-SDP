@@ -153,7 +153,7 @@ fun SubsItemCard(
                                 modifier = Modifier.semantics {
                                     contentDescription = li.songe.gkd.sdp.app.getString(R.string.s_213bcdc0f2, subscription.version)
                                 },
-                                text = li.songe.gkd.sdp.app.getString(R.string.s_858598e1e1, (subscription.version.toString())),
+                                text = li.songe.gkd.sdp.app.getString(R.string.s_7a38d8cbd2) + (subscription.version.toString()),
                                 style = MaterialTheme.typography.labelSmall,
                             )
                         } else {

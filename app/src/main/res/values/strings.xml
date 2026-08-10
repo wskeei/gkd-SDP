@@ -28,6 +28,7 @@
     <string name="s_05dc33f232" formatted="false">距离上次结束使用</string>
     <string name="s_067f4e9588" formatted="false">四个快速时长</string>
     <string name="s_06802d0346" formatted="false">应用组已添加</string>
+    <string name="s_06b0c3e743" formatted="false">规则匹配</string>
     <string name="s_06e3aae567" formatted="false">已添加的应用不可移除；如需移除，请删除整个应用组后重建。</string>
     <string name="s_0748ac7579" formatted="false">基础只读范围</string>
     <string name="s_0748da8850" formatted="false">该时间规则已锁定，无法修改</string>
@@ -50,6 +51,7 @@
     <string name="s_0c81c7ca27" formatted="false">把默认模式、理由门槛和常用时长收紧到你真正会用的那组值。</string>
     <string name="s_0c96adb235" formatted="false">关闭后立即倒计时，并按 15/10/5/3/2/1 分钟分阶段提醒</string>
     <string name="s_0cc07c757c">已抓取: %1$s</string>
+    <string name="s_0cde7c26f2">%1$s｜</string>
     <string name="s_0ce42bb010">确定要删除规则组「%1$s」吗？组内的所有规则也会被删除。</string>
     <string name="s_0ce6ca1568">本次所在时段：%1$s</string>
     <string name="s_0d9a428066" formatted="false">添加应用规则</string>
@@ -60,6 +62,7 @@
     <string name="s_0f4580b7db" formatted="false">自动重开始终启用，无法关闭；会恢复规则、使用申请开关与无障碍权限守护</string>
     <string name="s_0f8458ec0b" formatted="false">白名单应用（点击移除）</string>
     <string name="s_0fd5f2bdd6" formatted="false">下列权限应默认授予，但可能因某些操作如系统升级，备份迁移等被限制</string>
+    <string name="s_0fe5a98e9f" formatted="false">已禁用</string>
     <string name="s_10181905a0" formatted="false">加入白名单</string>
     <string name="s_102626a5cc">已关闭 %1$s 条规则</string>
     <string name="s_1031d055e8" formatted="false">未找到匹配的联系人</string>
@@ -206,7 +209,6 @@ ${1}/${2}/${3}
     <string name="s_2d646aa66b" formatted="false">删除规则组</string>
     <string name="s_2e268f4e64" formatted="false">白名单内关闭服务</string>
     <string name="s_2e4c2a37c1" formatted="false">这不是快速启动模板</string>
-    <string name="s_2e56559e95">规则标识：groupType=%1$s, groupKey=%2$s, index=%1$s, %2$s</string>
     <string name="s_2e8b6dcd1b" formatted="false">时间规则已删除</string>
     <string name="s_2f752c005e" formatted="false">移除</string>
     <string name="s_302471b81d" formatted="false">复盘范围</string>
@@ -227,7 +229,6 @@ ${i}全局/${k}应用/${u}规则/${n}触发
     <string name="s_30a60b1367" formatted="false">快速时长</string>
     <string name="s_30a9fec1a4" formatted="false">朋友资料</string>
     <string name="s_30e4e17387" formatted="false">拦截来源：应用时间规则</string>
-    <string name="s_3152c08fb5" formatted="false">即使当前无障碍已经关闭，也可以先开启守护。检测到关闭后会立即显示倒计时，并在 15、25、30、33、35、36 分钟分别提醒一次（间隔为 15/10/5/3/2/1 分钟）。第 36 分钟最后一次提醒后仍未恢复，会显示全屏悬浮窗。关闭守护会受数字自律锁定、每日关闭限额和自动重开保护约束。</string>
     <string name="s_31669c3d6f" formatted="false">拦截来源</string>
     <string name="s_3219dbb398" formatted="false">上传文件中</string>
     <string name="s_327d59b5bd" formatted="false">下载中</string>
@@ -254,6 +255,7 @@ ${i}全局/${k}应用/${u}规则/${n}触发
     <string name="s_357a190b67" formatted="false">将包含：应用版本与系统类别、功能开关、权限能力状态、最多 500 条脱敏诊断事件、脱敏崩溃摘要。</string>
     <string name="s_35f7c52ddd" formatted="false">批量重置规则开关</string>
     <string name="s_362f11dc2a" formatted="false">浏览器适配</string>
+    <string name="s_36524f9faf" formatted="false">即使当前无障碍已经关闭，也可以先开启守护。检测到关闭后会立即显示倒计时，</string>
     <string name="s_367b8716dd" formatted="false">时间已到</string>
     <string name="s_3685fc478e">自动化启动失败：%1$s</string>
     <string name="s_3714fd1374" formatted="false">打开应用详情页面</string>
@@ -294,7 +296,6 @@ ${i}全局/${k}应用/${u}规则/${n}触发
     <string name="s_40635c4228" formatted="false">编辑类别</string>
     <string name="s_407094d575" formatted="false">目标规则组已锁定，无法修改其时间规则</string>
     <string name="s_40d80a0879" formatted="false">请输入有效的锁定时长</string>
-    <string name="s_41145b031b" formatted="false">类型: {1}</string>
     <string name="s_4194ebb566">确定要删除应用组「%1$s」吗？相关的时间规则也会被删除。</string>
     <string name="s_41ae4345a1" formatted="false">轨迹服务正在运行</string>
     <string name="s_41d7664f15" formatted="false">未使用间隔</string>
@@ -315,6 +316,7 @@ ${i}全局/${k}应用/${u}规则/${n}触发
     <string name="s_451b1366af" formatted="false">多</string>
     <string name="s_451bb58ff2" formatted="false">查看规则组</string>
     <string name="s_4562024dde" formatted="false">应用</string>
+    <string name="s_458dd653a4" formatted="false">内容变化</string>
     <string name="s_45d0618f98">请先授予「%1$s」</string>
     <string name="s_464d02f662" formatted="false">未抓取到联系人</string>
     <string name="s_469f2dcd8a" formatted="false">已设置为独立无障碍白名单</string>
@@ -325,7 +327,6 @@ ${i}全局/${k}应用/${u}规则/${n}触发
     <string name="s_47d3fa79b4">纵轴：%1$s（%2$s） · 时间轴最多显示 6 个标签</string>
     <string name="s_48594302d1" formatted="false">为防止误触，应用内不支持在此关闭无障碍。若确需关闭，请前往 Android 系统无障碍设置。</string>
     <string name="s_488fdbc26e">作者：%1$s, 版本号：v%2$s, 更新时间：%3$s</string>
-    <string name="s_489c4cd278">%1$s：{2}</string>
     <string name="s_48ec1b5fd3" formatted="false">规则误触可定位关闭</string>
     <string name="s_48ff47e21f" formatted="false">界面日志</string>
     <string name="s_491a7f5bd7" formatted="false">（已锁定）</string>
@@ -483,7 +484,6 @@ ${i}全局/${k}应用/${u}规则/${n}触发
     <string name="s_6a1b839874" formatted="false">轨迹提示</string>
     <string name="s_6a43e3e09d" formatted="false">HTTP服务</string>
     <string name="s_6a863491d4">更新 %1$s 条订阅</string>
-    <string name="s_6aac4e3a33" formatted="false">关闭后将停止无障碍权限提醒、倒计时和全屏提示。如果已加入自动重开保护，守护会在下一次检查时恢复。</string>
     <string name="s_6b0ad26edf" formatted="false">启用优化</string>
     <string name="s_6b4f72a6e0" formatted="false">编辑白名单</string>
     <string name="s_6b582fbb9d" formatted="false">清除订阅</string>
@@ -556,6 +556,7 @@ ${i}全局/${k}应用/${u}规则/${n}触发
     <string name="s_7917327c68" formatted="false">检测到权限受限制，请前往解除</string>
     <string name="s_79cc871ca9" formatted="false">开始</string>
     <string name="s_7a1cbaff45" formatted="false">记录服务(无权限)</string>
+    <string name="s_7a38d8cbd2" formatted="false">v</string>
     <string name="s_7aa6790ed4" formatted="false">规则已锁定</string>
     <string name="s_7adaf20edf">%1$s / %2$s</string>
     <string name="s_7b15e5e8e7" formatted="false">清除</string>
@@ -576,7 +577,6 @@ ${i}全局/${k}应用/${u}规则/${n}触发
     <string name="s_7e8190abeb" formatted="false">安装记录热力图</string>
     <string name="s_7e9ca9ca7e" formatted="false">当前操作需要「写入外部存储权限」
 请先前往权限页面授权</string>
-    <string name="s_7ea330e955">%1$s｜{2}</string>
     <string name="s_7f04c8536d" formatted="false">进入规则汇总页面</string>
     <string name="s_7f96c93415" formatted="false">请先设置 cookie 后再上传</string>
     <string name="s_7f9cc8a658" formatted="false">请输入应用组名称</string>
@@ -601,7 +601,6 @@ ${i}全局/${k}应用/${u}规则/${n}触发
     <string name="s_837212d5ad" formatted="false">🚫 禁止时间段</string>
     <string name="s_83caf1badc" formatted="false">快照</string>
     <string name="s_841a72191f">下次配额重置：%1$s</string>
-    <string name="s_858598e1e1" formatted="false">v{1}</string>
     <string name="s_85e76f58dc" formatted="false">(内置)</string>
     <string name="s_860cb31951" formatted="false">选择模板</string>
     <string name="s_86539a3eb0" formatted="false">当前没有已启用的规则组，请先前往订阅页面启用规则。</string>
@@ -800,7 +799,6 @@ HTTP 内容可能在传输中被读取或修改；授权仅适用于此 scheme�
     <string name="s_ae05880411" formatted="false">反选</string>
     <string name="s_ae2399c597" formatted="false">默认授权</string>
     <string name="s_aebc195621" formatted="false">当前内容未保存，是否放弃编辑？</string>
-    <string name="s_af2816cc17">最近判定：%1$s · %2$s · {3}</string>
     <string name="s_b06217b584" formatted="false">Shizuku 服务连接部分失败</string>
     <string name="s_b0871a4a6b" formatted="false">保存时长选项</string>
     <string name="s_b0b9270849" formatted="false">新版本</string>
@@ -882,11 +880,14 @@ HTTP 内容可能在传输中被读取或修改；授权仅适用于此 scheme�
     <string name="s_c46c8c9e4d" formatted="false">应用组</string>
     <string name="s_c487de4445" formatted="false">最少理由字数已保存</string>
     <string name="s_c493338e8c" formatted="false">自定义</string>
+    <string name="s_c5277e6e6f" formatted="false">状态变化</string>
+    <string name="s_c52c529934">最近判定：%1$s · %2$s · </string>
     <string name="s_c54815f2f8" formatted="false">请先授予「写入安全设置权限」</string>
     <string name="s_c5c9cefa90" formatted="false">同意并开启</string>
     <string name="s_c5f42f5a0f" formatted="false">HTTP设置</string>
     <string name="s_c5fd22b186" formatted="false">当前为自动化模式，无障碍将自动关闭</string>
     <string name="s_c6191f388a">时间规则 (%1$s)</string>
+    <string name="s_c61e3028fc" formatted="false">如果已加入自动重开保护，守护会在下一次检查时恢复。</string>
     <string name="s_c62e341470" formatted="false">详细数据</string>
     <string name="s_c6d8dd919b" formatted="false">未检测到界面切换，捕获失败</string>
     <string name="s_c6e062fed0" formatted="false">添加浏览器</string>
@@ -894,6 +895,7 @@ HTTP 内容可能在传输中被读取或修改；授权仅适用于此 scheme�
     <string name="s_c754ba8092" formatted="false">专注模式已结束</string>
     <string name="s_c7dddf757a" formatted="false">隐藏状态栏</string>
     <string name="s_c8b05a26f8">id=%1$s</string>
+    <string name="s_c95c313099" formatted="false">第 36 分钟最后一次提醒后仍未恢复，会显示全屏悬浮窗。</string>
     <string name="s_c9a939b41d" formatted="false">锁定后无法关闭或删除此规则。</string>
     <string name="s_c9be3b4423" formatted="false">移除在此页面的禁用</string>
     <string name="s_c9d242c96c" formatted="false">格式版本：旧版未加密备份（已安全转换为 v2）</string>
@@ -914,6 +916,7 @@ HTTP 内容可能在传输中被读取或修改；授权仅适用于此 scheme�
     <string name="s_ccecf0f93b" formatted="false">常驻通知</string>
     <string name="s_cd05c7b50f" formatted="false">查看文本</string>
     <string name="s_cd13b6f64a" formatted="false">上一周期暂无有效样本</string>
+    <string name="s_cd42ed46a6" formatted="false">类型: </string>
     <string name="s_cd732f6643" formatted="false">移除模式覆盖</string>
     <string name="s_cd7a98be77">添加通知栏快捷开关
 
@@ -985,6 +988,7 @@ HTTP 内容可能在传输中被读取或修改；授权仅适用于此 scheme�
     <string name="s_da3b95b64a" formatted="false">敏感范围，默认关闭</string>
     <string name="s_da6a6dc1af" formatted="false">应用规则</string>
     <string name="s_daf67e7a09" formatted="false">删除时间规则</string>
+    <string name="s_db67ff730b" formatted="false">关闭后将停止无障碍权限提醒、倒计时和全屏提示。</string>
     <string name="s_db8d309a8e" formatted="false">正在刷新订阅，请稍后操作</string>
     <string name="s_db9c6063a5">更新 %1$s 条，跳过 %2$s 条(已锁定)</string>
     <string name="s_dbb4430dc0" formatted="false">未选择文件</string>
@@ -999,6 +1003,7 @@ HTTP 内容可能在传输中被读取或修改；授权仅适用于此 scheme�
     <string name="s_dd8a138761" formatted="false">选择要延长的时长。锁定期间规则将无法关闭。</string>
     <string name="s_dd98d5a5d3" formatted="false">锁定后无法关闭、删除或修改此规则。</string>
     <string name="s_dda4842aee">%1$s · %2$s</string>
+    <string name="s_de27714146">%1$s：</string>
     <string name="s_de4579c740" formatted="false">批量配置全屏拦截</string>
     <string name="s_dea3d845c4">解析订阅文件失败
 %1$s</string>
@@ -1030,6 +1035,7 @@ HTTP 内容可能在传输中被读取或修改；授权仅适用于此 scheme�
     <string name="s_e330f2e53c" formatted="false">在浏览器下连接调试</string>
     <string name="s_e3e710b8a5" formatted="false">选择应用组</string>
     <string name="s_e40a06c88b" formatted="false">关闭搜索</string>
+    <string name="s_e4ccf19996" formatted="false">并在 15、25、30、33、35、36 分钟分别提醒一次（间隔为 15/10/5/3/2/1 分钟）。</string>
     <string name="s_e4efcf3ca4">应用：%1$s</string>
     <string name="s_e60faf5b29" formatted="false">你干嘛~ 哎呦~</string>
     <string name="s_e6bbd743b3" formatted="false">应用拦截</string>
@@ -1052,6 +1058,7 @@ HTTP 内容可能在传输中被读取或修改；授权仅适用于此 scheme�
     <string name="s_e907fcd7c0" formatted="false">已选择备份，请在“设置 → 备份恢复”输入密码并确认导入</string>
     <string name="s_e9e6e68873">已添加: %1$s</string>
     <string name="s_ea10de41b6" formatted="false">应用语言</string>
+    <string name="s_ea63fc76c4">规则标识：groupType=%1$s, groupKey=%2$s, </string>
     <string name="s_ea6dccc0a6" formatted="false">自定义时长</string>
     <string name="s_ea72227d80" formatted="false">请输入特征事件选择器</string>
     <string name="s_ea8e8dbcb9" formatted="false">添加应用</string>
@@ -1074,6 +1081,7 @@ HTTP 内容可能在传输中被读取或修改；授权仅适用于此 scheme�
     <string name="s_ef3d433a35" formatted="false">事件数据</string>
     <string name="s_ef5f9af603" formatted="false">显示按钮点击保存快照</string>
     <string name="s_ef92a87fbc" formatted="false">专注结束</string>
+    <string name="s_efcaa30b99" formatted="false">关闭守护会受数字自律锁定、每日关闭限额和自动重开保护约束。</string>
     <string name="s_f0250d57b9" formatted="false">添加类别</string>
     <string name="s_f02e943954" formatted="false">取消选择</string>
     <string name="s_f04090805c" formatted="false">搜索</string>
@@ -1138,7 +1146,6 @@ HTTP 内容可能在传输中被读取或修改；授权仅适用于此 scheme�
     <string name="s_fdfd732b8c" formatted="false">准备开始抓取...</string>
     <string name="s_fe7b16b5c0" formatted="false">删除订阅</string>
     <string name="s_ff93ad0e4e" formatted="false">首页</string>
-    <string name="s_ff942d85f0" formatted="false">规则匹配{1}</string>
     <string name="s_ffa17c3049" formatted="false">解除限制</string>
     <string name="s_ffcf0a1eb0" formatted="false">文件不存在</string>
     <string name="s_fff8cc4d94" formatted="false">未修改</string>

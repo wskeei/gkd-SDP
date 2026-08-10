@@ -232,7 +232,10 @@ private fun FocusLockAccessibilityGuardEnableDialog(
         title = { Text(stringResource(R.string.s_b23186d5e5)) },
         text = {
             Text(
-                stringResource(R.string.s_3152c08fb5),
+                stringResource(R.string.s_36524f9faf) +
+                    stringResource(R.string.s_e4ccf19996) +
+                    stringResource(R.string.s_c95c313099) +
+                    stringResource(R.string.s_efcaa30b99),
             )
         },
         confirmButton = {
@@ -258,7 +261,8 @@ private fun FocusLockAccessibilityGuardDisableDialog(
         title = { Text(stringResource(R.string.s_61c6738b36)) },
         text = {
             Text(
-                stringResource(R.string.s_6aac4e3a33),
+                stringResource(R.string.s_db67ff730b) +
+                    stringResource(R.string.s_c61e3028fc),
             )
         },
         confirmButton = {

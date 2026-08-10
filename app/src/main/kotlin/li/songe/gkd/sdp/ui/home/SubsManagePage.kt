@@ -242,7 +242,7 @@ fun useSubsManagePage(): ScaffoldExt {
                                         LocalContentColor.current
                                     }
                                 ),
-                                contentDescription = li.songe.gkd.sdp.app.getString(R.string.s_ff942d85f0, if (enableMatch) "已启用" else "已禁用"),
+                                contentDescription = li.songe.gkd.sdp.app.getString(R.string.s_06b0c3e743) + if (enableMatch) li.songe.gkd.sdp.app.getString(R.string.s_25d2843150) else li.songe.gkd.sdp.app.getString(R.string.s_0fe5a98e9f),
                                 onClickLabel = li.songe.gkd.sdp.app.getString(R.string.s_d7ee5b2dac),
                                 onClick = throttle { switchStoreEnableMatch() },
                             )
