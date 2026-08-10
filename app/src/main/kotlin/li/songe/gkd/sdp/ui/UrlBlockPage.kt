@@ -19,7 +19,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -51,11 +51,11 @@ fun UrlBlockPage() {
     val mainVm = LocalMainViewModel.current
     val vm = viewModel<UrlBlockVm>()
     
-    val allGroups by vm.allGroupsFlow.collectAsState()
-    val allUrlRules by vm.allUrlRulesFlow.collectAsState()
-    val allTimeRules by vm.allTimeRulesFlow.collectAsState()
-    val globalLock by vm.globalLockFlow.collectAsState()
-    val browsers by vm.browsersFlow.collectAsState()
+    val allGroups by vm.allGroupsFlow.collectAsStateWithLifecycle()
+    val allUrlRules by vm.allUrlRulesFlow.collectAsStateWithLifecycle()
+    val allTimeRules by vm.allTimeRulesFlow.collectAsStateWithLifecycle()
+    val globalLock by vm.globalLockFlow.collectAsStateWithLifecycle()
+    val browsers by vm.browsersFlow.collectAsStateWithLifecycle()
 
     var showGlobalLockSheet by remember { mutableStateOf(false) }
     var showGroupLockSheet by remember { mutableStateOf(false) }

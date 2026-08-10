@@ -19,7 +19,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -43,7 +43,7 @@ fun AppPickerDialog(
     var selectedApps by remember(currentApps) { mutableStateOf(currentApps.toSet()) }
     var searchQuery by remember { mutableStateOf("") }
     var showSystemApps by remember { mutableStateOf(false) }
-    val appInfoMap by appInfoMapFlow.collectAsState()
+    val appInfoMap by appInfoMapFlow.collectAsStateWithLifecycle()
 
     // 过滤应用列表
     val filteredApps = remember(appInfoMap, searchQuery, showSystemApps, excludedApps) {

@@ -5,7 +5,6 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -50,13 +49,13 @@ sealed class BottomNavItem(
 }
 
 @Serializable
-data object HomeRoute : NavKey
+data class HomeRoute(val tabKey: Int = BottomNavItem.Control.key) : NavKey
 
 @Composable
-fun HomePage() {
+fun HomePage(route: HomeRoute) {
     val mainVm = LocalMainViewModel.current
     viewModel<HomeVm>() // init state
-    val tab by mainVm.tabFlow.collectAsState()
+    val tab = route.tabKey
     val pages = arrayOf(useControlPage(), useSubsManagePage(), useAppListPage(), useSettingsPage())
     val page = pages.find { p -> p.navItem.key == tab } ?: pages.first()
 

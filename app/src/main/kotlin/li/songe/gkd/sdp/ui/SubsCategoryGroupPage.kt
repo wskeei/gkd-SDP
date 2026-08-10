@@ -19,7 +19,7 @@ import androidx.compose.material3.MenuDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -76,11 +76,11 @@ data class SubsCategoryGroupRoute(val subsId: Long, val categoryKey: Int) : NavK
 fun SubsCategoryGroupPage(route: SubsCategoryGroupRoute) {
     val mainVm = LocalMainViewModel.current
     val vm = viewModel { SubsCategoryGroupVm(route) }
-    val subs = vm.subsFlow.collectAsState().value
-    val apps = vm.appsFlow.collectAsState().value
-    val category = vm.categoryFlow.collectAsState().value
-    val subsConfigs = vm.subsConfigsFlow.collectAsState().value
-    val categoryConfig = vm.categoryConfigFlow.collectAsState().value
+    val subs = vm.subsFlow.collectAsStateWithLifecycle().value
+    val apps = vm.appsFlow.collectAsStateWithLifecycle().value
+    val category = vm.categoryFlow.collectAsStateWithLifecycle().value
+    val subsConfigs = vm.subsConfigsFlow.collectAsStateWithLifecycle().value
+    val categoryConfig = vm.categoryConfigFlow.collectAsStateWithLifecycle().value
     val scrollKey = rememberSaveable { mutableIntStateOf(0) }
     val groupSize = apps.sumOf { it.groups.size }
     val (scrollBehavior, listState) = useListScrollState(scrollKey, groupSize)
@@ -304,14 +304,14 @@ fun SubsCategoryGroupPage(route: SubsCategoryGroupRoute) {
             item(ListPlaceholder.KEY, ListPlaceholder.TYPE) {
                 Spacer(modifier = Modifier.height(EmptyHeight))
                 if (apps.isEmpty()) {
-                    EmptyText(text = if (vm.showAllAppFlow.collectAsState().value) "暂无数据" else "暂无数据，或修改筛选")
+                    EmptyText(text = if (vm.showAllAppFlow.collectAsStateWithLifecycle().value) "暂无数据" else "暂无数据，或修改筛选")
                     Spacer(modifier = Modifier.height(EmptyHeight))
                 }
             }
         }
     }
 
-    if (vm.showEditCategoryFlow.collectAsState().value) {
+    if (vm.showEditCategoryFlow.collectAsStateWithLifecycle().value) {
         UpsertCategoryDialog(
             subs = subs,
             category = category,

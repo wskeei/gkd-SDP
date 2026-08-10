@@ -2,7 +2,6 @@ package li.songe.gkd.sdp.a11y
 
 import android.content.Intent
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.SharingStarted
@@ -15,6 +14,8 @@ import kotlinx.coroutines.sync.withLock
 import li.songe.gkd.sdp.META
 import li.songe.gkd.sdp.app
 import li.songe.gkd.sdp.appScope
+import li.songe.gkd.sdp.runtime.appDependencies
+import li.songe.gkd.sdp.runtime.MonotonicDeadlinePolicy
 import li.songe.gkd.sdp.data.UsageGuardAppProfile
 import li.songe.gkd.sdp.data.UsageGuardRecord
 import li.songe.gkd.sdp.data.UsageGuardRecordRepository
@@ -50,6 +51,7 @@ object UsageGuardEngine {
     private var expiryWatchAppId: String? = null
     private var expiryWatchRecordId: Long? = null
     private var expiryWatchExpiresAt: Long = 0L
+    private var expiryWatchDeadlineElapsed: Long = 0L
     private var expiryWatchJob: Job? = null
     private val appChangeToken = AtomicLong()
 
@@ -64,7 +66,7 @@ object UsageGuardEngine {
         .stateIn(appScope, SharingStarted.Eagerly, emptyList())
 
     init {
-        appScope.launch(Dispatchers.IO) {
+        appScope.launch(appDependencies.dispatchers.io) {
             combine(
                 storeFlow,
                 DbSet.usageGuardAppProfileDao.queryAll(),
@@ -83,7 +85,7 @@ object UsageGuardEngine {
         owner: SdpRuntimeFeatureCoordinator.RuntimeOwner? = null,
     ) {
         val token = appChangeToken.incrementAndGet()
-        appScope.launch(Dispatchers.IO) {
+        appScope.launch(appDependencies.dispatchers.io) {
             stateMutex.withLock {
                 if (!isCurrentRequest(packageName, owner, token)) return@withLock
                 try {
@@ -109,7 +111,7 @@ object UsageGuardEngine {
     }
 
     fun onRequestOverlayStopped(appId: String?) {
-        appScope.launch(Dispatchers.IO) {
+        appScope.launch(appDependencies.dispatchers.io) {
             stateMutex.withLock {
                 blockingOverlayState.clearRequest(appId)
                 val owner = sdpRuntimeFeatureCoordinator.currentOwner() ?: return@withLock
@@ -227,7 +229,7 @@ object UsageGuardEngine {
     }
 
     fun onRequestGranted(appId: String) {
-        appScope.launch(Dispatchers.IO) {
+        appScope.launch(appDependencies.dispatchers.io) {
             stateMutex.withLock {
                 blockingOverlayState.clearRequest(appId)
                 val owner = sdpRuntimeFeatureCoordinator.currentOwner() ?: return@withLock
@@ -249,7 +251,7 @@ object UsageGuardEngine {
 
     fun markRecordHomeButton(recordId: Long) {
         if (recordId <= 0L) return
-        appScope.launch(Dispatchers.IO) {
+        appScope.launch(appDependencies.dispatchers.io) {
             DbSet.usageGuardRecordDao.updateEndReason(
                 id = recordId,
                 endReason = UsageGuardRecord.END_REASON_HOME_BUTTON,
@@ -260,19 +262,19 @@ object UsageGuardEngine {
 
     fun terminateActiveUsage(appId: String, recordId: Long) {
         if (appId.isBlank() || recordId <= 0L) return
-        appScope.launch(Dispatchers.IO) {
+        appScope.launch(appDependencies.dispatchers.io) {
             stateMutex.withLock {
                 val activeRecord = DbSet.usageGuardRecordDao.getActiveRecord(appId) ?: return@withLock
                 if (activeRecord.id != recordId) return@withLock
 
-                val now = System.currentTimeMillis()
+                val now = appDependencies.clock.nowEpochMillis()
                 UsageGuardRecordRepository.closeRecordFromActiveUse(
                     id = activeRecord.id,
-                    endedAt = now,
+                    endedAt = now.coerceAtLeast(activeRecord.grantedAt),
                     endReason = UsageGuardRecord.END_REASON_USER_TERMINATED,
                 )
                 UsageGuardReviewWidget.refreshAll(app)
-                cancelExpiryWatch(appId)
+                cancelExpiryWatch(appId, clearDeadline = true)
                 stopCountdownOverlay(appId = appId)
                 lastProtectedAppId = null
                 A11yRuleEngine.performActionHome()
@@ -339,9 +341,9 @@ object UsageGuardEngine {
 
         val activeRecord = DbSet.usageGuardRecordDao.getActiveRecord(packageName)
         if (!isCurrentRequest(packageName, owner, token)) return
-        val now = System.currentTimeMillis()
+        val now = appDependencies.clock.nowEpochMillis()
         if (activeRecord == null) {
-            cancelExpiryWatch(packageName)
+            cancelExpiryWatch(packageName, clearDeadline = true)
             if (!isCurrentRequest(packageName, owner, token)) return
             val result = showRequestOverlay(
                 packageName,
@@ -362,19 +364,19 @@ object UsageGuardEngine {
             return
         }
 
-        if (activeRecord.expiresAt <= now) {
-            cancelExpiryWatch(packageName)
+        if (isExpiryReached(activeRecord, now)) {
+            cancelExpiryWatch(packageName, clearDeadline = true)
             if (!isCurrentRequest(packageName, owner, token)) return
             if (activeRecord.lastUsageEndedAt == null) {
                 UsageGuardRecordRepository.closeRecordFromActiveUse(
                     id = activeRecord.id,
-                    endedAt = now,
+                    endedAt = now.coerceAtLeast(activeRecord.grantedAt),
                     endReason = UsageGuardRecord.END_REASON_EXPIRED,
                 )
             } else {
                 DbSet.usageGuardRecordDao.closeRecord(
                     id = activeRecord.id,
-                    endedAt = now,
+                    endedAt = now.coerceAtLeast(activeRecord.grantedAt),
                     endReason = UsageGuardRecord.END_REASON_EXPIRED,
                 )
             }
@@ -429,12 +431,22 @@ object UsageGuardEngine {
         if (!isCurrentRequest(nextAppId, owner, token)) return
 
         stopCountdownOverlay(appId = previousAppId, owner = owner, token = token)
-        cancelExpiryWatch(previousAppId)
 
-        val active = DbSet.usageGuardRecordDao.getActiveRecord(previousAppId) ?: return
+        val active = DbSet.usageGuardRecordDao.getActiveRecord(previousAppId) ?: run {
+            cancelExpiryWatch(previousAppId, clearDeadline = true)
+            return
+        }
         if (!isCurrentRequest(nextAppId, owner, token)) return
-        val endedAt = System.currentTimeMillis()
-        when (UsageGuardUsageEndPolicy.onLeave(active.grantMode)) {
+        val endedAt = appDependencies.clock.nowEpochMillis().coerceAtLeast(active.grantedAt)
+        val leaveDecision = UsageGuardUsageEndPolicy.onLeave(active.grantMode)
+        // A resumable grant remains valid while the user is in another app.
+        // Keep its process-local monotonic deadline so a wall-clock rollback
+        // cannot extend the lease when the user returns.
+        cancelExpiryWatch(
+            appId = previousAppId,
+            clearDeadline = leaveDecision != UsageGuardUsageEndPolicy.LeaveDecision.MARK_ONLY,
+        )
+        when (leaveDecision) {
             UsageGuardUsageEndPolicy.LeaveDecision.MARK_AND_CLOSE ->
                 UsageGuardRecordRepository.closeRecordFromActiveUse(
                     id = active.id,
@@ -474,11 +486,12 @@ object UsageGuardEngine {
             cancelExpiryWatch(record.appId)
             return
         }
-        if (
+        val sameDeadline =
             expiryWatchAppId == record.appId &&
             expiryWatchRecordId == record.id &&
-            expiryWatchExpiresAt == record.expiresAt
-        ) {
+            expiryWatchExpiresAt == record.expiresAt &&
+            expiryWatchDeadlineElapsed > 0L
+        if (sameDeadline && expiryWatchJob?.isActive == true) {
             return
         }
 
@@ -486,9 +499,23 @@ object UsageGuardEngine {
         expiryWatchAppId = record.appId
         expiryWatchRecordId = record.id
         expiryWatchExpiresAt = record.expiresAt
-        expiryWatchJob = appScope.launch(Dispatchers.IO) {
-            val delayMs = (record.expiresAt - System.currentTimeMillis()).coerceAtLeast(0L)
-            delay(delayMs)
+        if (!sameDeadline) {
+            expiryWatchDeadlineElapsed = MonotonicDeadlinePolicy.deadlineFromWallClock(
+                nowEpochMillis = appDependencies.clock.nowEpochMillis(),
+                nowElapsedMillis = appDependencies.clock.elapsedRealtimeMillis(),
+                wallDeadlineMillis = record.expiresAt,
+            )
+        }
+        val deadlineElapsed = expiryWatchDeadlineElapsed
+        expiryWatchJob = appScope.launch(appDependencies.dispatchers.io) {
+            while (true) {
+                val delayMs = MonotonicDeadlinePolicy.remainingMillis(
+                    nowElapsedMillis = appDependencies.clock.elapsedRealtimeMillis(),
+                    deadlineElapsedMillis = deadlineElapsed,
+                )
+                if (delayMs == 0L) break
+                delay(delayMs)
+            }
             stateMutex.withLock {
                 if (!isCurrentRequest(record.appId, owner, token)) return@withLock
                 if (topActivityFlow.value.appId != record.appId) return@withLock
@@ -496,18 +523,20 @@ object UsageGuardEngine {
 
                 val activeRecord = DbSet.usageGuardRecordDao.getActiveRecord(record.appId) ?: return@withLock
                 if (activeRecord.id != record.id) return@withLock
-                if (activeRecord.expiresAt > System.currentTimeMillis()) return@withLock
                 if (!isCurrentRequest(record.appId, owner, token)) return@withLock
 
                 UsageGuardRecordRepository.closeRecordFromActiveUse(
                     id = activeRecord.id,
-                    endedAt = System.currentTimeMillis(),
+                    // Expiry is a monotonic deadline.  Persisting the current
+                    // wall clock here would allow a clock rollback to write an
+                    // end before the grant began.
+                    endedAt = activeRecord.expiresAt.coerceAtLeast(activeRecord.grantedAt),
                     endReason = UsageGuardRecord.END_REASON_EXPIRED,
                 )
                 UsageGuardReviewWidget.refreshAll(app)
 
                 stopCountdownOverlay(appId = record.appId, owner = owner, token = token)
-                cancelExpiryWatch(record.appId)
+                cancelExpiryWatch(record.appId, clearDeadline = true)
                 if (!isCurrentRequest(record.appId, owner, token)) return@withLock
                 val result = showTimeoutOverlay(
                     record.appId,
@@ -523,13 +552,35 @@ object UsageGuardEngine {
         }
     }
 
-    private fun cancelExpiryWatch(appId: String? = null) {
+    private fun isExpiryReached(record: UsageGuardRecord, nowEpochMillis: Long): Boolean {
+        val hasProcessDeadline =
+            expiryWatchAppId == record.appId &&
+                expiryWatchRecordId == record.id &&
+                expiryWatchExpiresAt == record.expiresAt &&
+                expiryWatchDeadlineElapsed > 0L
+        return if (hasProcessDeadline) {
+            MonotonicDeadlinePolicy.remainingMillis(
+                nowElapsedMillis = appDependencies.clock.elapsedRealtimeMillis(),
+                deadlineElapsedMillis = expiryWatchDeadlineElapsed,
+            ) == 0L
+        } else {
+            record.expiresAt <= nowEpochMillis
+        }
+    }
+
+    private fun cancelExpiryWatch(
+        appId: String? = null,
+        clearDeadline: Boolean = false,
+    ) {
         if (appId != null && expiryWatchAppId != appId) return
         expiryWatchJob?.cancel()
         expiryWatchJob = null
-        expiryWatchAppId = null
-        expiryWatchRecordId = null
-        expiryWatchExpiresAt = 0L
+        if (clearDeadline) {
+            expiryWatchAppId = null
+            expiryWatchRecordId = null
+            expiryWatchExpiresAt = 0L
+            expiryWatchDeadlineElapsed = 0L
+        }
     }
 
     private fun isCurrentRequest(
@@ -546,7 +597,7 @@ object UsageGuardEngine {
     private fun syncCountdownOverlay(
         activeRecord: UsageGuardRecord?,
         foregroundAppId: String,
-        now: Long = System.currentTimeMillis(),
+        now: Long = appDependencies.clock.nowEpochMillis(),
         owner: SdpRuntimeFeatureCoordinator.RuntimeOwner? = null,
         token: Long = appChangeToken.get(),
     ) {

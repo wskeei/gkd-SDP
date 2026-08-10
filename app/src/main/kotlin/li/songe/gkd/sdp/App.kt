@@ -53,6 +53,10 @@ import li.songe.gkd.sdp.util.initToast
 import li.songe.gkd.sdp.util.launchTry
 import li.songe.gkd.sdp.util.retryPendingDataCleanup
 import li.songe.gkd.sdp.util.toast
+import li.songe.gkd.sdp.runtime.AppDependencies
+import li.songe.gkd.sdp.runtime.SdpDispatchers
+import li.songe.gkd.sdp.runtime.SystemSdpClock
+import li.songe.gkd.sdp.runtime.installAppDependencies
 import org.lsposed.hiddenapibypass.HiddenApiBypass
 import kotlin.system.exitProcess
 
@@ -218,6 +222,13 @@ class App : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        installAppDependencies(
+            AppDependencies(
+                clock = SystemSdpClock,
+                dispatchers = SdpDispatchers(),
+                scope = appScope,
+            )
+        )
         LogUtils.d()
         Thread.setDefaultUncaughtExceptionHandler { t, e ->
             LogUtils.d("UncaughtExceptionHandler", t, e)

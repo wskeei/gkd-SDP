@@ -24,7 +24,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -88,8 +88,8 @@ fun SnapshotPage() {
     val colorScheme = MaterialTheme.colorScheme
     val vm = viewModel<SnapshotVm>()
 
-    val firstLoading by vm.firstLoadingFlow.collectAsState()
-    val snapshots by vm.snapshotsState.collectAsState()
+    val firstLoading by vm.firstLoadingFlow.collectAsStateWithLifecycle()
+    val snapshots by vm.snapshotsState.collectAsStateWithLifecycle()
     var selectedSnapshot by remember { mutableStateOf<Snapshot?>(null) }
     val resetKey = rememberSaveable { mutableIntStateOf(0) }
     val (scrollBehavior, listState) = useListScrollState(
@@ -339,7 +339,7 @@ private fun SnapshotCard(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
-                val appInfo = appInfoMapFlow.collectAsState().value[snapshot.appId]
+                val appInfo = appInfoMapFlow.collectAsStateWithLifecycle().value[snapshot.appId]
                 val showAppName = appInfo?.name ?: snapshot.appId
                 Text(
                     text = showAppName,

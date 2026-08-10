@@ -6,7 +6,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.flow.MutableStateFlow
 import li.songe.gkd.sdp.MainActivity
 import li.songe.gkd.sdp.util.stopCoroutine
@@ -18,7 +18,7 @@ data class AuthReason(
 
 @Composable
 fun AuthDialog(authReasonFlow: MutableStateFlow<AuthReason?>) {
-    val authAction = authReasonFlow.collectAsState().value
+    val authAction = authReasonFlow.collectAsStateWithLifecycle().value
     val context = LocalActivity.current as MainActivity
     if (authAction != null) {
         AlertDialog(

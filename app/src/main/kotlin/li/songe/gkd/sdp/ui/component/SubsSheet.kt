@@ -21,7 +21,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -62,7 +62,7 @@ fun SubsSheet(
     vm: ViewModel,
     sheetSubsIdFlow: MutableStateFlow<Long?>
 ) {
-    val subsItems by subsItemsFlow.collectAsState()
+    val subsItems by subsItemsFlow.collectAsStateWithLifecycle()
     val (subsId, setSubsId) = remember { mutableStateOf(sheetSubsIdFlow.value) }
     val subsItem = subsItems.find { it.id == subsId }
     if (subsItem == null) {
@@ -73,7 +73,7 @@ fun SubsSheet(
         }
     } else {
         val mainVm = LocalMainViewModel.current
-        val subsIdToRaw by subsMapFlow.collectAsState()
+        val subsIdToRaw by subsMapFlow.collectAsStateWithLifecycle()
         var swipeEnabled by remember { mutableStateOf(false) }
         val sheetState = rememberModalBottomSheetState(
             skipPartiallyExpanded = true,
@@ -344,7 +344,7 @@ fun SubsSheet(
                         }
                     }
                 } else {
-                    val loading by updateSubsMutex.state.collectAsState()
+                    val loading by updateSubsMutex.state.collectAsStateWithLifecycle()
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()

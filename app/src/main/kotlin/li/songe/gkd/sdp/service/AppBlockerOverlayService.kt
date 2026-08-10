@@ -48,6 +48,7 @@ import li.songe.gkd.sdp.ui.component.InterceptionSourceCard
 import li.songe.gkd.sdp.ui.component.InterceptionSourcePresentation
 import li.songe.gkd.sdp.ui.component.SelfControlElapsedCard
 import li.songe.gkd.sdp.ui.component.SelfControlInsightCurrentReference
+import li.songe.gkd.sdp.ui.share.ServiceOverlayLifecycleOwner
 import li.songe.gkd.sdp.ui.style.AppTheme
 import li.songe.gkd.sdp.util.SelfControlElapsedPolicy
 import li.songe.gkd.sdp.util.SelfControlInsightWindowPolicy
@@ -73,6 +74,7 @@ class AppBlockerOverlayService : LifecycleService(), SavedStateRegistryOwner {
 
     private val windowManager by lazy { getSystemService(WINDOW_SERVICE) as WindowManager }
     private var view: ComposeView? = null
+    private var overlayLifecycleOwner: ServiceOverlayLifecycleOwner? = null
     private var elapsedState by mutableStateOf<SelfControlElapsedPolicy.ElapsedState>(
         SelfControlElapsedPolicy.ElapsedState.Loading,
     )
@@ -188,8 +190,10 @@ class AppBlockerOverlayService : LifecycleService(), SavedStateRegistryOwner {
     ): Boolean {
         if (view != null) return false
 
+        val lifecycleOwner = ServiceOverlayLifecycleOwner()
+        overlayLifecycleOwner = lifecycleOwner
         view = ComposeView(this).apply {
-            setViewTreeLifecycleOwner(this@AppBlockerOverlayService)
+            setViewTreeLifecycleOwner(lifecycleOwner)
             setViewTreeSavedStateRegistryOwner(this@AppBlockerOverlayService)
             setContent {
                 AppTheme {
@@ -226,9 +230,12 @@ class AppBlockerOverlayService : LifecycleService(), SavedStateRegistryOwner {
         var mounted = false
         runCatching {
             windowManager.addView(view, params)
+            lifecycleOwner.onViewAdded()
             mounted = true
         }.onFailure { error ->
             view?.let { runCatching { windowManager.removeViewImmediate(it) } }
+            lifecycleOwner.onViewRemoved()
+            overlayLifecycleOwner = null
             view = null
             LogUtils.d("app blocker overlay mount rejected", error::class.java.simpleName)
             AppBlockerEngine.clearCooldown()
@@ -238,6 +245,8 @@ class AppBlockerOverlayService : LifecycleService(), SavedStateRegistryOwner {
     }
 
     override fun onDestroy() {
+        overlayLifecycleOwner?.onViewRemoved()
+        overlayLifecycleOwner = null
         super.onDestroy()
         view?.let { runCatching { windowManager.removeView(it) } }
         view = null

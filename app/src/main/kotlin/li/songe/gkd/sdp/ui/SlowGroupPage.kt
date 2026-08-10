@@ -13,7 +13,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -41,8 +41,8 @@ data object SlowGroupRoute : NavKey
 @Composable
 fun SlowGroupPage() {
     val mainVm = LocalMainViewModel.current
-    val ruleSummary by ruleSummaryFlow.collectAsState()
-    val appInfoCache by appInfoMapFlow.collectAsState()
+    val ruleSummary by ruleSummaryFlow.collectAsStateWithLifecycle()
+    val appInfoCache by appInfoMapFlow.collectAsStateWithLifecycle()
 
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
     Scaffold(

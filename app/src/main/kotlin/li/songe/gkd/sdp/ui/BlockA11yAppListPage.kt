@@ -18,7 +18,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -75,12 +75,12 @@ data object BlockA11yAppListRoute : NavKey
 
 @Composable
 fun BlockA11yAppListPage() {
-    val store by storeFlow.collectAsState()
+    val store by storeFlow.collectAsStateWithLifecycle()
     val mainVm = LocalMainViewModel.current
     val context = LocalActivity.current as MainActivity
     val vm = viewModel<BlockA11yAppListVm>()
-    val appInfos by vm.appInfosFlow.collectAsState()
-    val searchStr by vm.searchStrFlow.collectAsState()
+    val appInfos by vm.appInfosFlow.collectAsStateWithLifecycle()
+    val searchStr by vm.searchStrFlow.collectAsStateWithLifecycle()
     var showSearchBar by vm.showSearchBarFlow.asMutableState()
     var editable by vm.editableFlow.asMutableState()
     val (scrollBehavior, listState) = useListScrollState(vm.resetKey, canScroll = { !editable })
@@ -273,10 +273,10 @@ fun BlockA11yAppListPage() {
                 textFlow = vm.textFlow,
                 immediateFocus = true,
                 placeholderText = "请输入应用ID列表\n示例:\ncom.android.systemui\ncom.android.settings",
-                indicatorSize = vm.indicatorSizeFlow.collectAsState().value,
+                indicatorSize = vm.indicatorSizeFlow.collectAsStateWithLifecycle().value,
             )
         } else {
-            val blockA11yAppList by blockA11yAppListFlow.collectAsState()
+            val blockA11yAppList by blockA11yAppListFlow.collectAsStateWithLifecycle()
             LazyColumn(
                 modifier = Modifier.scaffoldPadding(contentPadding),
                 state = listState,

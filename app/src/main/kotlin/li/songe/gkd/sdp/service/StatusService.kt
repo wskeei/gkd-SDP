@@ -89,9 +89,9 @@ class StatusService : Service(), OnSimpleLife by DefaultSimpleLifeImpl() {
             META.appName
         }
         return if (appOpsRestrictedFlow.value) {
-            Triple(title, "权限受限，请解除限制", "gkd://page/3")
+            Triple(title, "权限受限，请解除限制", "gkd://settings/capabilities")
         } else if (shizukuWarn) {
-            Triple(title, "Shizuku 未连接，请授权或关闭优化", "gkd://page/1")
+            Triple(title, "Shizuku 未连接，请授权或关闭优化", "gkd://settings/privacy-data")
         } else if (!automationRunning && !abRunning) {
             if (currentAppUseA11y) {
                 val text = if (a11yServiceEnabledFlow.value) {
@@ -120,7 +120,7 @@ class StatusService : Service(), OnSimpleLife by DefaultSimpleLifeImpl() {
                 Triple(title, text, abNotif.uri)
             }
         } else if (!store.enableMatch) {
-            Triple(title, "暂停规则匹配", "gkd://page?tab=1")
+            Triple(title, "暂停规则匹配", "gkd://rules/subscriptions")
         } else if (store.useCustomNotifText) {
             Triple(
                 title,

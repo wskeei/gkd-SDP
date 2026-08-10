@@ -21,7 +21,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -62,7 +62,7 @@ fun AppOpsAllowPage() {
     val context = LocalActivity.current as MainActivity
     val vm = viewModel<AppOpsAllowVm>()
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
-    val appOpsRestricted by appOpsRestrictedFlow.collectAsState()
+    val appOpsRestricted by appOpsRestrictedFlow.collectAsStateWithLifecycle()
     Scaffold(modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection), topBar = {
         PerfTopAppBar(scrollBehavior = scrollBehavior, navigationIcon = {
             PerfIconButton(imageVector = PerfIcon.ArrowBack, onClick = {
@@ -131,8 +131,8 @@ fun AppOpsAllowPage() {
         }
     }
 
-    val showCopyDlg by vm.showCopyDlgFlow.collectAsState()
-    val commandText by gkdStartCommandTextFlow.collectAsState()
+    val showCopyDlg by vm.showCopyDlgFlow.collectAsStateWithLifecycle()
+    val commandText by gkdStartCommandTextFlow.collectAsStateWithLifecycle()
     LaunchedEffect(showCopyDlg) {
         if (showCopyDlg) refreshGkdStartCommandText()
     }
@@ -147,7 +147,7 @@ fun AppOpsAllowPage() {
 
 @Composable
 private fun RestrictItem(state: PermissionState) {
-    if (!state.stateFlow.collectAsState().value) {
+    if (!state.stateFlow.collectAsStateWithLifecycle().value) {
         Row {
             val lineHeightDp = LocalDensity.current.run { LocalTextStyle.current.lineHeight.toDp() }
             val size = 5.dp

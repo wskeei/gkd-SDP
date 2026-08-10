@@ -2,7 +2,6 @@
 
 import android.content.Intent
 import android.view.accessibility.AccessibilityNodeInfo
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -12,6 +11,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import li.songe.gkd.sdp.app
 import li.songe.gkd.sdp.appScope
+import li.songe.gkd.sdp.runtime.appDependencies
 import li.songe.gkd.sdp.data.FocusRule
 import li.songe.gkd.sdp.data.FocusSession
 import li.songe.gkd.sdp.db.DbSet
@@ -104,7 +104,7 @@ object FocusModeEngine {
 
     init {
         // 鐩戝惉瑙勫垯鍜屼細璇濆彉鍖?
-        appScope.launch(Dispatchers.IO) {
+        appScope.launch(appDependencies.dispatchers.io) {
             combine(
                 DbSet.focusRuleDao.queryEnabled(),
                 DbSet.focusSessionDao.getSession()
@@ -118,7 +118,7 @@ object FocusModeEngine {
         }
 
         // 鐩戝惉浼氳瘽杩囨湡骞惰嚜鍔ㄧ粨鏉?
-        appScope.launch(Dispatchers.IO) {
+        appScope.launch(appDependencies.dispatchers.io) {
             while (true) {
                 delay(30_000L)  // 姣?30 绉掓鏌ヤ竴娆?
 
@@ -192,9 +192,9 @@ object FocusModeEngine {
             return
         }
 
-        val now = System.currentTimeMillis()
+        val now = appDependencies.clock.elapsedRealtimeMillis()
         val lastTriggerTime = cooldownMap[packageName] ?: 0L
-        if (now - lastTriggerTime < COOLDOWN_MS) {
+        if (cooldownMap.containsKey(packageName) && now - lastTriggerTime < COOLDOWN_MS) {
             return
         }
 
@@ -273,7 +273,7 @@ object FocusModeEngine {
         isLocked: Boolean = false,
         lockDurationMinutes: Int = 0
     ) {
-        val now = System.currentTimeMillis()
+        val now = appDependencies.clock.nowEpochMillis()
         val endTime = now + durationMinutes * 60 * 1000L
         val lockEndTime = if (isLocked) now + lockDurationMinutes * 60 * 1000L else 0L
 

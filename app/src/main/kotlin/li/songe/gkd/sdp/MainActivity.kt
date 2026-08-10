@@ -33,7 +33,7 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -50,6 +50,7 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.entryProvider
+import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import com.dylanc.activityresult.launcher.PickContentLauncher
@@ -131,7 +132,7 @@ import li.songe.gkd.sdp.ui.SubsGlobalGroupListPage
 import li.songe.gkd.sdp.ui.SubsGlobalGroupListRoute
 import li.songe.gkd.sdp.ui.UpsertRuleGroupPage
 import li.songe.gkd.sdp.ui.UpsertRuleGroupRoute
-import li.songe.gkd.sdp.ui.UrlBlockPage
+import li.songe.gkd.sdp.ui.UrlBlockerRoute
 import li.songe.gkd.sdp.ui.UrlBlockRoute
 import li.songe.gkd.sdp.ui.UsageGuardPage
 import li.songe.gkd.sdp.ui.UsageGuardRoute
@@ -280,6 +281,8 @@ class MainActivity : ComponentActivity() {
             updateTopTaskAppId(META.appId)
         }
         setContent {
+            val saveableBackStack = rememberNavBackStack(HomeRoute())
+            mainVm.bindBackStack(saveableBackStack)
             val latestInsets = TopAppBarDefaults.windowInsets
             val density = LocalDensity.current
             if (latestInsets.getTop(density) > topBarWindowInsets.getTop(density)) {
@@ -294,10 +297,10 @@ class MainActivity : ComponentActivity() {
                             rememberSaveableStateHolderNavEntryDecorator(),
                             rememberViewModelStoreNavEntryDecorator(),
                         ),
-                        backStack = mainVm.backStack,
+                        backStack = saveableBackStack,
                         onBack = mainVm::popPage,
                         entryProvider = entryProvider {
-                            entry<HomeRoute> { HomePage() }
+                            entry<HomeRoute> { HomePage(it) }
                             entry<AuthA11yRoute> { AuthA11yPage() }
                             entry<AboutRoute> { AboutPage() }
                             entry<BlockA11yAppListRoute> { BlockA11yAppListPage() }
@@ -323,7 +326,7 @@ class MainActivity : ComponentActivity() {
                             entry<SubsCategoryGroupRoute> { SubsCategoryGroupPage(it) }
                             entry<FocusLockRoute> { FocusLockPage() }
                             entry<FocusModeRoute> { FocusModePage() }
-                            entry<UrlBlockRoute> { UrlBlockPage() }
+                            entry<UrlBlockRoute> { UrlBlockerRoute() }
                             entry<AppBlockerRoute> { AppBlockerPage() }
                             entry<UsageGuardRoute> { UsageGuardPage() }
                             entry<UsageGuardReviewRoute> { UsageGuardReviewPage() }
@@ -342,7 +345,7 @@ class MainActivity : ComponentActivity() {
                                     slideOutHorizontally(targetOffsetX = { it })
                         },
                     )
-                    if (!mainVm.termsAcceptedFlow.collectAsState().value) {
+                    if (!mainVm.termsAcceptedFlow.collectAsStateWithLifecycle().value) {
                         TermsAcceptDialog()
                     } else {
                         UiAutomationAlreadyRegisteredDlg()
@@ -446,10 +449,10 @@ fun syncFixState() {
 
 @Composable
 private fun ShizukuErrorDialog(stateFlow: MutableStateFlow<Throwable?>) {
-    val state = stateFlow.collectAsState().value
+    val state = stateFlow.collectAsStateWithLifecycle().value
     if (state != null) {
         val errorText = remember(state) { DiagnosticLogger.userMessage(state) }
-        val appInfoCache = appInfoMapFlow.collectAsState().value
+        val appInfoCache = appInfoMapFlow.collectAsStateWithLifecycle().value
         val installed = appInfoCache.contains(shizukuAppId)
         AlertDialog(
             onDismissRequest = { stateFlow.value = null },
@@ -528,13 +531,13 @@ val accessRestrictedSettingsShowFlow = MutableStateFlow(false)
 
 @Composable
 fun AccessRestrictedSettingsDlg() {
-    val a11yRunning by A11yService.isRunning.collectAsState()
+    val a11yRunning by A11yService.isRunning.collectAsStateWithLifecycle()
     LaunchedEffect(a11yRunning) {
         if (a11yRunning) {
             accessRestrictedSettingsShowFlow.value = false
         }
     }
-    val accessRestrictedSettingsShow by accessRestrictedSettingsShowFlow.collectAsState()
+    val accessRestrictedSettingsShow by accessRestrictedSettingsShowFlow.collectAsStateWithLifecycle()
     val mainVm = LocalMainViewModel.current
     val isA11yPage = mainVm.topRoute is AuthA11yRoute
     LaunchedEffect(isA11yPage, accessRestrictedSettingsShow) {
@@ -575,7 +578,7 @@ fun AccessRestrictedSettingsDlg() {
 
 @Composable
 fun UiAutomationAlreadyRegisteredDlg() {
-    if (automationRegisteredExceptionFlow.collectAsState().value != null) {
+    if (automationRegisteredExceptionFlow.collectAsStateWithLifecycle().value != null) {
         AlertDialog(
             onDismissRequest = {
                 automationRegisteredExceptionFlow.value = null

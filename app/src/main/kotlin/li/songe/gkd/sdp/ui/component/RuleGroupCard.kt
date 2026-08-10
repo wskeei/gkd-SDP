@@ -19,7 +19,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -73,7 +73,7 @@ fun RuleGroupCard(
 
     var highlighted by remember { mutableStateOf(false) }
     if (focusGroupFlow != null) {
-        val focusGroup by focusGroupFlow.collectAsState()
+        val focusGroup by focusGroupFlow.collectAsStateWithLifecycle()
         if (subs.id == focusGroup?.first && group.key == focusGroup?.third && if (group is RawSubscription.RawAppGroup) appId == focusGroup?.second else focusGroup?.second == null) {
             LaunchedEffect(isSelectedMode) {
                 if (isSelectedMode) {

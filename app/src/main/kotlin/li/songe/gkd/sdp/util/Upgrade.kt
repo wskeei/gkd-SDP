@@ -10,7 +10,7 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -146,7 +146,7 @@ class UpdateStatus(val scope: CoroutineScope) {
 
     @Composable
     fun UpgradeDialog() {
-        newVersionFlow.collectAsState().value?.let { newVersionVal ->
+        newVersionFlow.collectAsStateWithLifecycle().value?.let { newVersionVal ->
             val text = remember(newVersionVal) {
                 val logs = newVersionVal.versionLogs.takeWhile { v ->
                     v.code > META.versionCode
@@ -205,7 +205,7 @@ class UpdateStatus(val scope: CoroutineScope) {
             )
         }
 
-        downloadStatusFlow.collectAsState().value?.let { downloadStatusVal ->
+        downloadStatusFlow.collectAsStateWithLifecycle().value?.let { downloadStatusVal ->
             when (downloadStatusVal) {
                 is LoadStatus.Loading -> {
                     AlertDialog(

@@ -123,7 +123,7 @@ val screenshotNotif = Notif(
     id = 101,
     title = "截屏服务正在运行",
     text = "保存快照时截取屏幕",
-    uri = "gkd://page/1",
+    uri = "gkd://settings/privacy-data",
     stopService = ScreenshotService::class,
 )
 
@@ -131,14 +131,14 @@ val buttonNotif = Notif(
     id = 102,
     title = "快照按钮服务正在运行",
     text = "点击按钮捕获快照",
-    uri = "gkd://page/1",
+    uri = "gkd://settings/privacy-data",
     stopService = ButtonService::class,
 )
 
 val httpNotif = Notif(
     id = 103,
     title = "HTTP服务正在运行",
-    uri = "gkd://page/1",
+    uri = "gkd://settings/privacy-data",
     stopService = HttpService::class,
 )
 
@@ -154,27 +154,27 @@ val snapshotNotif = Notif(
     title = "快照已保存",
     ongoing = false,
     autoCancel = true,
-    uri = "gkd://page/2",
+    uri = "gkd://snapshots",
 )
 
 val recordNotif = Notif(
     id = 106,
     title = "记录服务正在运行",
-    uri = "gkd://page/1",
+    uri = "gkd://settings/privacy-data",
     stopService = ActivityService::class,
 )
 
 val eventNotif = Notif(
     id = 107,
     title = "事件服务正在运行",
-    uri = "gkd://page/1",
+    uri = "gkd://settings/privacy-data",
     stopService = EventService::class,
 )
 
 val trackNotif = Notif(
     id = 108,
     title = "轨迹服务正在运行",
-    uri = "gkd://page?tab=3",
+    uri = "gkd://settings",
     stopService = TrackService::class,
 )
 
@@ -200,7 +200,7 @@ fun accessibilityGuardNotif(index: Int): Notif {
         text = AccessibilityGuardNotificationPolicy.text(index),
         ongoing = false,
         autoCancel = true,
-        uri = "gkd://page?tab=0",
+        uri = "gkd://overview",
         priority = NotificationCompat.PRIORITY_HIGH,
         category = NotificationCompat.CATEGORY_ERROR,
     )
@@ -219,7 +219,7 @@ private fun accessibilityGuardStatusNotif(
         autoCancel = false,
         priority = NotificationCompat.PRIORITY_HIGH,
         category = NotificationCompat.CATEGORY_ERROR,
-        uri = "gkd://page/4",
+        uri = "gkd://self-control",
         whenEpochMs = status.targetEpochMs,
         usesChronometer = hasCountdown,
         chronometerCountDown = hasCountdown,

@@ -15,7 +15,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.contentColorFor
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -63,8 +63,8 @@ class ActivityService : OverlayWindowService(
                 .padding(4.dp)
         ) {
             CompositionLocalProvider(LocalContentColor provides contentColorFor(bgColor)) {
-                val topActivity by topActivityFlow.collectAsState()
-                val hasAuth by activityOkFlow.collectAsState()
+                val topActivity by topActivityFlow.collectAsStateWithLifecycle()
+                val hasAuth by activityOkFlow.collectAsStateWithLifecycle()
                 ClosableTitle(
                     title = if (hasAuth) "记录服务" else "记录服务(无权限)"
                 )

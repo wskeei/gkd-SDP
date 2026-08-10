@@ -10,7 +10,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
@@ -47,7 +47,7 @@ fun QueryPkgAuthCard(
             textAlign = TextAlign.Center,
         )
         TextButton(
-            enabled = !updateAppMutex.state.collectAsState().value,
+            enabled = !updateAppMutex.state.collectAsStateWithLifecycle().value,
             onClick = throttle(fn = mainVm.viewModelScope.launchAsFn {
                 requiredPermission(context, canQueryPkgState)
             })

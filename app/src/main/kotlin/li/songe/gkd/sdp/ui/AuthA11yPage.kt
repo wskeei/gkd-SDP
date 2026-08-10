@@ -26,7 +26,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -79,14 +79,14 @@ data object AuthA11yRoute : NavKey
 fun AuthA11yPage() {
     val mainVm = LocalMainViewModel.current
     val vm = viewModel<AuthA11yVm>()
-    val showCopyDlg by vm.showCopyDlgFlow.collectAsState()
-    val commandText by gkdStartCommandTextFlow.collectAsState()
+    val showCopyDlg by vm.showCopyDlgFlow.collectAsStateWithLifecycle()
+    val commandText by gkdStartCommandTextFlow.collectAsStateWithLifecycle()
     LaunchedEffect(showCopyDlg) {
         if (showCopyDlg) refreshGkdStartCommandText()
     }
-    val writeSecureSettings by writeSecureSettingsState.stateFlow.collectAsState()
-    val a11yRunning by A11yService.isRunning.collectAsState()
-    val automatorMode by mainVm.automatorModeFlow.collectAsState()
+    val writeSecureSettings by writeSecureSettingsState.stateFlow.collectAsStateWithLifecycle()
+    val a11yRunning by A11yService.isRunning.collectAsStateWithLifecycle()
+    val automatorMode by mainVm.automatorModeFlow.collectAsStateWithLifecycle()
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
     Scaffold(modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection), topBar = {
         PerfTopAppBar(scrollBehavior = scrollBehavior, navigationIcon = {
@@ -284,7 +284,7 @@ fun AuthA11yPage() {
                     ),
                 )
                 AnimatedBooleanContent(
-                    targetState = shizukuUsedFlow.collectAsState().value,
+                    targetState = shizukuUsedFlow.collectAsStateWithLifecycle().value,
                     contentTrue = {
                         Text(
                             modifier = Modifier

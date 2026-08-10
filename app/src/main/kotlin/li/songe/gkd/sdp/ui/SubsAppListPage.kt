@@ -13,7 +13,7 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -68,9 +68,9 @@ fun SubsAppListPage(route: SubsAppListRoute) {
     val context = LocalActivity.current as MainActivity
     val vm = viewModel { SubsAppListVm(route) }
 
-    val appTripleList by vm.appItemListFlow.collectAsState()
-    val searchStr by vm.searchStrFlow.collectAsState()
-    val constraints by li.songe.gkd.sdp.util.FocusLockUtils.allConstraintsFlow.collectAsState()
+    val appTripleList by vm.appItemListFlow.collectAsStateWithLifecycle()
+    val searchStr by vm.searchStrFlow.collectAsStateWithLifecycle()
+    val constraints by li.songe.gkd.sdp.util.FocusLockUtils.allConstraintsFlow.collectAsStateWithLifecycle()
 
     var showSearchBar by rememberSaveable { mutableStateOf(false) }
     LaunchedEffect(key1 = showSearchBar, block = {
@@ -223,11 +223,11 @@ fun SubsAppListPage(route: SubsAppListRoute) {
             }
             item(ListPlaceholder.KEY, ListPlaceholder.TYPE) {
                 Spacer(modifier = Modifier.height(EmptyHeight))
-                val firstLoading by vm.firstLoadingFlow.collectAsState()
+                val firstLoading by vm.firstLoadingFlow.collectAsStateWithLifecycle()
                 if (appTripleList.isEmpty() && !firstLoading) {
                     EmptyText(
                         text = if (searchStr.isNotEmpty()) {
-                            if (vm.showAllAppFlow.collectAsState().value) "暂无搜索结果" else "暂无搜索结果，或修改筛选"
+                            if (vm.showAllAppFlow.collectAsStateWithLifecycle().value) "暂无搜索结果" else "暂无搜索结果，或修改筛选"
                         } else {
                             "暂无规则"
                         }

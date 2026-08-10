@@ -6,7 +6,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.graphics.Color
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -63,7 +63,7 @@ private fun buildDialogOptions(
 
 @Composable
 fun BuildDialog(stateFlow: MutableStateFlow<AlertDialogOptions?>) {
-    val options by stateFlow.collectAsState()
+    val options by stateFlow.collectAsStateWithLifecycle()
     options?.let {
         AlertDialog(
             text = it.text,

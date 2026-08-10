@@ -26,6 +26,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation3.runtime.NavKey
 import kotlinx.serialization.Serializable
 import li.songe.gkd.sdp.ui.share.LocalMainViewModel
@@ -41,10 +42,10 @@ fun AppInstallMonitorPage() {
     val mainVm = LocalMainViewModel.current
     val vm: AppInstallMonitorVm = viewModel()
     
-    val monitoredApps by vm.monitoredAppsFlow.collectAsState()
-    val heatmapData by vm.heatmapDataFlow.collectAsState()
-    val selectedDateLogs by vm.selectedDateLogs.collectAsState()
-    val presentApps by vm.presentAppsOnDate.collectAsState()
+    val monitoredApps by vm.monitoredAppsFlow.collectAsStateWithLifecycle()
+    val heatmapData by vm.heatmapDataFlow.collectAsStateWithLifecycle()
+    val selectedDateLogs by vm.selectedDateLogs.collectAsStateWithLifecycle()
+    val presentApps by vm.presentAppsOnDate.collectAsStateWithLifecycle()
     
     var showAddDialog by remember { mutableStateOf(false) }
     var selectedDate by remember { mutableStateOf<String?>(null) }
@@ -345,11 +346,11 @@ private fun AddMonitoredAppDialog(
     onAdd: (packageName: String, displayName: String) -> Unit
 ) {
     val vm: AppInstallMonitorVm = viewModel()
-    val installedApps by vm.installedAppsFlow.collectAsState()
-    val appIcons by vm.appIconsFlow.collectAsState() // 获取图标 Map
-    val searchKeyword by vm.searchKeyword.collectAsState()
-    val showSystemApps by vm.showSystemApps.collectAsState()
-    val monitoredApps by vm.monitoredAppsFlow.collectAsState()
+    val installedApps by vm.installedAppsFlow.collectAsStateWithLifecycle()
+    val appIcons by vm.appIconsFlow.collectAsStateWithLifecycle() // 获取图标 Map
+    val searchKeyword by vm.searchKeyword.collectAsStateWithLifecycle()
+    val showSystemApps by vm.showSystemApps.collectAsStateWithLifecycle()
+    val monitoredApps by vm.monitoredAppsFlow.collectAsStateWithLifecycle()
     
     var selectedTab by remember { mutableIntStateOf(0) }
     

@@ -21,7 +21,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -95,10 +95,10 @@ fun SubsGlobalGroupExcludePage(route: SubsGlobalGroupExcludeRoute) {
     val mainVm = LocalMainViewModel.current
     val context = LocalActivity.current as MainActivity
     val vm = viewModel { SubsGlobalGroupExcludeVm(route) }
-    val subs = vm.subsFlow.collectAsState().value
-    val group = vm.groupFlow.collectAsState().value ?: return
-    val excludeData = vm.excludeDataFlow.collectAsState().value
-    val showAppInfos = vm.showAppInfosFlow.collectAsState().value
+    val subs = vm.subsFlow.collectAsStateWithLifecycle().value
+    val group = vm.groupFlow.collectAsStateWithLifecycle().value ?: return
+    val excludeData = vm.excludeDataFlow.collectAsStateWithLifecycle().value
+    val showAppInfos = vm.showAppInfosFlow.collectAsStateWithLifecycle().value
 
     var searchStr by vm.searchStrFlow.asMutableState()
     var editable by vm.editableFlow.asMutableState()
@@ -315,7 +315,7 @@ fun SubsGlobalGroupExcludePage(route: SubsGlobalGroupExcludeRoute) {
                             )
                         }
                         val blockMatch =
-                            blockMatchAppListFlow.collectAsState().value.contains(appInfo.id)
+                            blockMatchAppListFlow.collectAsStateWithLifecycle().value.contains(appInfo.id)
                         if (blockMatch) {
                             PerfIcon(
                                 modifier = Modifier
@@ -365,7 +365,7 @@ fun SubsGlobalGroupExcludePage(route: SubsGlobalGroupExcludeRoute) {
                 item(ListPlaceholder.KEY, ListPlaceholder.TYPE) {
                     Spacer(modifier = Modifier.height(EmptyHeight))
                     if (showAppInfos.isEmpty() && searchStr.isNotEmpty()) {
-                        EmptyText(text = if (vm.appFilter.showAllAppFlow.collectAsState().value) "暂无搜索结果" else "暂无搜索结果，或修改筛选")
+                        EmptyText(text = if (vm.appFilter.showAllAppFlow.collectAsStateWithLifecycle().value) "暂无搜索结果" else "暂无搜索结果，或修改筛选")
                         Spacer(modifier = Modifier.height(EmptyHeight / 2))
                     }
                 }

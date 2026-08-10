@@ -28,7 +28,7 @@ import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
@@ -92,9 +92,9 @@ fun useSubsManagePage(): ScaffoldExt {
     val mainVm = LocalMainViewModel.current
 
     val vm = viewModel<HomeVm>()
-    val subItems by subsItemsFlow.collectAsState()
-    val subsIdToRaw by subsMapFlow.collectAsState()
-    val constraints by FocusLockUtils.allConstraintsFlow.collectAsState()
+    val subItems by subsItemsFlow.collectAsStateWithLifecycle()
+    val subsIdToRaw by subsMapFlow.collectAsStateWithLifecycle()
+    val constraints by FocusLockUtils.allConstraintsFlow.collectAsStateWithLifecycle()
 
     var orderSubItems by remember {
         mutableStateOf(subItems)
@@ -103,7 +103,7 @@ fun useSubsManagePage(): ScaffoldExt {
         orderSubItems = subItems
     }
 
-    val refreshing by updateSubsMutex.state.collectAsState()
+    val refreshing by updateSubsMutex.state.collectAsStateWithLifecycle()
     val pullToRefreshState = rememberPullToRefreshState()
     var isSelectedMode by remember { mutableStateOf(false) }
     var selectedIds by remember { mutableStateOf(emptySet<Long>()) }
@@ -128,7 +128,7 @@ fun useSubsManagePage(): ScaffoldExt {
             onClose = { showSettingsDlg = false },
             title = "订阅设置",
             content = {
-                val store by storeFlow.collectAsState()
+                val store by storeFlow.collectAsStateWithLifecycle()
                 TextMenu(
                     title = "更新订阅",
                     option = UpdateTimeOption.objects.findOption(store.updateSubsInterval)
@@ -214,7 +214,7 @@ fun useSubsManagePage(): ScaffoldExt {
                                 )
                             }
                         } else {
-                            val ruleSummary by ruleSummaryFlow.collectAsState()
+                            val ruleSummary by ruleSummaryFlow.collectAsStateWithLifecycle()
                             AnimatedVisibility(
                                 visible = ruleSummary.slowGroupCount > 0,
                                 enter = scaleIn(),
@@ -231,7 +231,7 @@ fun useSubsManagePage(): ScaffoldExt {
                             val scope = rememberCoroutineScope()
                             val enableMatch by remember {
                                 storeFlow.mapState(scope) { s -> s.enableMatch }
-                            }.collectAsState()
+                            }.collectAsStateWithLifecycle()
                             PerfIconButton(
                                 id = if (enableMatch) R.drawable.ic_flash_on else R.drawable.ic_flash_off,
                                 colors = IconButtonDefaults.iconButtonColors(

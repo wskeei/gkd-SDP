@@ -8,10 +8,10 @@ import org.junit.Test
 class UsageGuardRequestLayoutContractTest {
     @Test
     fun requestFormKeepsElapsedInsightAboveTagsAndRatioInsideDurationSection() {
-        val source = sourceFile(
-            "app/src/main/kotlin/li/songe/gkd/sdp/service/UsageGuardRequestOverlayService.kt",
-        ).readText()
-        val form = source.substringAfter("private fun UsageGuardRequestContent(")
+        val screen = sourceFile("app/src/main/kotlin/li/songe/gkd/sdp/service/usageguardrequest/Screen.kt").readText()
+        val sections = sourceFile("app/src/main/kotlin/li/songe/gkd/sdp/service/usageguardrequest/Sections.kt").readText()
+        val source = screen + "\n" + sections
+        val form = source.substringAfter("internal fun UsageGuardRequestContent(")
 
         val elapsed = form.indexOf("SelfControlElapsedCard(")
         val tags = form.indexOf("Text(\"选择标签\"")
@@ -34,10 +34,14 @@ class UsageGuardRequestLayoutContractTest {
     @Test
     fun requestFormConsumesImeInsetsAndRelocatesEveryInputField() {
         val source = sourceFile(
-            "app/src/main/kotlin/li/songe/gkd/sdp/service/UsageGuardRequestOverlayService.kt",
+            "app/src/main/kotlin/li/songe/gkd/sdp/service/usageguardrequest/Screen.kt",
         ).readText()
-        val form = source.substringAfter("private fun UsageGuardRequestContent(")
+        val sections = sourceFile(
+            "app/src/main/kotlin/li/songe/gkd/sdp/service/usageguardrequest/Sections.kt",
+        ).readText()
+        val form = (source + "\n" + sections).substringAfter("internal fun UsageGuardRequestContent(")
         val windowParams = source
+            .plus(sourceFile("app/src/main/kotlin/li/songe/gkd/sdp/service/usageguardrequest/ServiceHost.kt").readText())
             .substringAfter("val params = WindowManager.LayoutParams(")
             .substringBefore("runCatching { windowManager.addView")
 
@@ -67,12 +71,11 @@ class UsageGuardRequestLayoutContractTest {
     }
 
     private fun sourceFile(relativePath: String): File {
-        var directory = File(System.getProperty("user.dir"))
-        repeat(6) {
-            val candidate = File(directory, relativePath)
-            if (candidate.isFile) return candidate
-            directory = directory.parentFile ?: return File(relativePath)
+        val userDir = requireNotNull(System.getProperty("user.dir"))
+        var directory = File(userDir).absoluteFile
+        while (!File(directory, "settings.gradle.kts").isFile || !File(directory, "app/src").isDirectory) {
+            directory = directory.parentFile ?: error("Repository root marker not found from $userDir")
         }
-        return File(relativePath)
+        return File(directory, relativePath).also { check(it.isFile) { "Missing source: $relativePath" } }
     }
 }

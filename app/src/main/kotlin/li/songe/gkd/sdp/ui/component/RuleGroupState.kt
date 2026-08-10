@@ -3,7 +3,7 @@ package li.songe.gkd.sdp.ui.component
 import androidx.activity.compose.BackHandler
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
@@ -270,11 +270,11 @@ class RuleGroupState(
 
     @Composable
     fun Render() {
-        val showGroupState = showGroupFlow.collectAsState().value
+        val showGroupState = showGroupFlow.collectAsStateWithLifecycle().value
         val showSubs = useSubs(showGroupState?.subsId)
         val showGroup = useSubsGroup(showSubs, showGroupState?.groupKey, showGroupState?.appId)
         if (showGroupState?.groupKey != null && showSubs != null && showGroup != null) {
-            val subsConfig = showSubsConfigFlow.collectAsState().value
+            val subsConfig = showSubsConfigFlow.collectAsStateWithLifecycle().value
             val excludeData = remember(subsConfig?.exclude) {
                 ExcludeData.parse(subsConfig?.exclude)
             }
@@ -380,7 +380,7 @@ class RuleGroupState(
             )
         }
 
-        val excludeGroupState = editExcludeGroupFlow.collectAsState().value
+        val excludeGroupState = editExcludeGroupFlow.collectAsStateWithLifecycle().value
         val excludeSubs = useSubs(excludeGroupState?.subsId)
         val excludeGroup =
             useSubsGroup(excludeSubs, excludeGroupState?.groupKey, excludeGroupState?.appId)

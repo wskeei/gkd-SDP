@@ -2,7 +2,7 @@ package li.songe.gkd.sdp.ui.share
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.remember
 import kotlinx.coroutines.ExperimentalForInheritanceCoroutinesApi
 import kotlinx.coroutines.flow.FlowCollector
@@ -12,7 +12,7 @@ import kotlinx.coroutines.flow.update
 
 @Composable
 fun <T> MutableStateFlow<T>.asMutableState(): MutableState<T> {
-    val state = collectAsState()
+    val state = collectAsStateWithLifecycle()
     return remember(this) {
         val stateFlow = this
         object : MutableState<T> {

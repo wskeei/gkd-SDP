@@ -16,7 +16,7 @@ import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -60,7 +60,7 @@ fun UpsertRuleGroupPage(route: UpsertRuleGroupRoute) {
     val mainVm = LocalMainViewModel.current
     val context = LocalActivity.current as MainActivity
     val vm = viewModel { UpsertRuleGroupVm(route) }
-    val text by vm.textFlow.collectAsState()
+    val text by vm.textFlow.collectAsStateWithLifecycle()
 
     val checkIfSaveText = throttle(mainVm.viewModelScope.launchAsFn(Dispatchers.Default) {
         if (vm.hasTextChanged()) {
@@ -128,7 +128,7 @@ fun UpsertRuleGroupPage(route: UpsertRuleGroupRoute) {
                 .fillMaxSize(),
         ) {
             CompositionLocalProvider(LocalTextStyle provides MaterialTheme.typography.bodyLarge) {
-                val imeShowing by context.imePlayingFlow.collectAsState()
+                val imeShowing by context.imePlayingFlow.collectAsStateWithLifecycle()
                 val modifier = Modifier
                     .autoFocus()
                     .fillMaxSize()
