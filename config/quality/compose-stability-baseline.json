@@ -1,0 +1,9 @@
+{
+  "unstableClassCount": 0,
+  "coreStableTypes": [
+    "UsageRequestUiState",
+    "SelfControlInsightChartPoint",
+    "SettingsEntry",
+    "CapabilityNode"
+  ]
+}
