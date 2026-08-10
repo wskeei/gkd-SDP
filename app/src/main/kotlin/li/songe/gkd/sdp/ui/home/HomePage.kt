@@ -2,14 +2,9 @@ package li.songe.gkd.sdp.ui.home
 
 import androidx.compose.runtime.Composable
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.navigation3.runtime.NavKey
-import kotlinx.serialization.Serializable
 import li.songe.gkd.sdp.ui.overview.OverviewScreen
 import li.songe.gkd.sdp.ui.rules.RulesScreen
 import li.songe.gkd.sdp.ui.selfcontrol.SelfControlHubScreen
-
-@Serializable
-data class HomeRoute(val tabKey: Int = HomeDestination.OVERVIEW.key) : NavKey
 
 @Composable
 fun HomePage(route: HomeRoute) {

@@ -347,7 +347,7 @@ class MainViewModel(
     fun toggleAccessibilityGuard(activity: MainActivity) {
         val enabled = storeFlow.value.accessibilityGuardEnabled
         runMainPost {
-            launchTry {
+            viewModelScope.launchTry {
                 if (enabled) {
                     // The one-way protection keeps the guard on while locked;
                     // the controller re-checks eligibility before committing.
