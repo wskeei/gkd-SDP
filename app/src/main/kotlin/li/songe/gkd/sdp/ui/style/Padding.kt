@@ -9,12 +9,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
-import li.songe.gkd.sdp.ui.style.DimensionTokens
 
-val DimensionTokens.SpacingBase = DimensionTokens.SpacingBase
-val DimensionTokens.SpacingMd = DimensionTokens.SpacingMd
 val EmptyHeight = 80.dp
-val DimensionTokens.SpacingMd = DimensionTokens.SpacingMd
 
 fun Modifier.itemPadding() = this.padding(DimensionTokens.SpacingBase, DimensionTokens.SpacingMd)
 
