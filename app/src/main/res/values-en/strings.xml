@@ -979,4 +979,5 @@ Note: you can also do this in Subscription → Rule category</string>
     <string name="s_ffcf0a1eb0" formatted="false">File does not exist</string>
     <string name="s_fff8cc4d94" formatted="false">Unchanged</string>
     <string name="snapshot_button" formatted="false">Snapshot button</string>
+    <string name="subscription_rules_tab">Subscription rules</string>
 </resources>

@@ -48,6 +48,7 @@ import li.songe.gkd.sdp.ui.component.InputSubsLinkOption
 import li.songe.gkd.sdp.ui.component.RuleGroupState
 import li.songe.gkd.sdp.ui.component.UploadOptions
 import li.songe.gkd.sdp.ui.home.BottomNavItem
+import li.songe.gkd.sdp.ui.home.HomeDestination
 import li.songe.gkd.sdp.ui.home.HomeRoute
 import li.songe.gkd.sdp.navigation.AppDestination
 import li.songe.gkd.sdp.navigation.AppNavigationRequests
@@ -219,6 +220,16 @@ class MainViewModel(
 
     val resetPageScrollEvent = MutableSharedFlow<BottomNavItem>()
     private var lastClickTabTime = 0L
+    fun handleClickDestination(destination: HomeDestination) {
+        val t = System.currentTimeMillis()
+        val currentTab = (backStack.firstOrNull() as? HomeRoute)?.tabKey
+        if (destination.key == currentTab && t - lastClickTabTime < 500) {
+            viewModelScope.launch { resetPageScrollEvent.emit(BottomNavItem.Control) }
+        }
+        navigator.navigateHome(destination.key)
+        lastClickTabTime = t
+    }
+
     fun handleClickTab(navItem: BottomNavItem) {
         val t = System.currentTimeMillis()
         val currentTab = (backStack.firstOrNull() as? HomeRoute)?.tabKey

@@ -981,4 +981,5 @@ HTTP 内容可能在传输中被读取或修改；授权仅适用于此 scheme�
     <string name="s_ffcf0a1eb0" formatted="false">文件不存在</string>
     <string name="s_fff8cc4d94" formatted="false">未修改</string>
     <string name="snapshot_button" formatted="false">快照按钮</string>
+    <string name="subscription_rules_tab" formatted="false">订阅规则</string>
 </resources>
