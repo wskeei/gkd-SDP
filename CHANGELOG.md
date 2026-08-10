@@ -63,11 +63,14 @@ All notable GKD-SDP changes are documented here. The format follows
   instrumentation tests, Room 32→33 migration coverage, and test-quality
   policy checks.
 - Add Compose screenshot regression references, Kover business-policy
-  coverage gates, managed-device definitions, and four-variant CI builds.
+  coverage gates, managed-device definitions, performance threshold
+  contracts, and four-variant CI builds.
 - Add navigation, capability, backup, data deletion, settings search, review
-  dashboard, and usage-request instrumentation coverage on API 26/API 35
-  managed devices.
-- Add Baseline Profile and startup macrobenchmark gates.
+  dashboard, and usage-request instrumentation coverage.
+- Managed-device and macrobenchmark execution remains deferred until a
+  compatible AGP/plugin combination and KVM-capable CI runner are available;
+  the device definitions and performance verification contracts are
+  committed.
 
 ### Known limitations
 
