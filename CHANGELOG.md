@@ -18,7 +18,7 @@ All notable GKD-SDP changes are documented here. The format follows
   import support and rollback recovery.
 - Add whitelist support bundles that summarize diagnostics without including
   databases, raw settings, subscriptions, request reasons, URLs, screenshots,
-  node text, contacts, cookies, or tokens.
+  accessibility node content, contacts, cookies, or tokens.
 - Align review ranges to rolling 24-hour, 7-day, and 30-day windows with the
   matching 1-hour, 6-hour, and 1-day buckets.
 
@@ -46,8 +46,8 @@ All notable GKD-SDP changes are documented here. The format follows
 - Fail closed for malformed archives, backup decryption, remote session,
   command-token, WebView origin, and exported-component entry points.
 - Keep diagnostic, crash, support-bundle, privacy summary, and deletion
-  surfaces free of request reasons, URLs, selectors, node text, contacts,
-  absolute paths, and credentials.
+  surfaces free of request reasons, URLs, selectors, accessibility node
+  content, contacts, absolute paths, and credentials.
 
 ### Security
 
