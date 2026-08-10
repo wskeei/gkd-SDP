@@ -300,6 +300,7 @@ dependencies {
     implementation(libs.compose.activity)
     implementation(libs.compose.material3)
     implementation(libs.compose.adaptive)
+    debugImplementation(libs.compose.ui.test.manifest)
 
     implementation(libs.androidx.navigation3.ui)
     implementation(libs.androidx.navigation3.runtime)
@@ -308,6 +309,9 @@ dependencies {
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso)
+    androidTestImplementation(libs.androidx.room.testing)
+    androidTestImplementation(libs.androidx.test.rules)
+    androidTestImplementation(libs.androidx.test.runner)
 
     compileOnly(project(":hidden_api"))
     implementation(libs.rikka.shizuku.api)
