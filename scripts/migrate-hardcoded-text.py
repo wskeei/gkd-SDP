@@ -391,13 +391,14 @@ def collect_chain(
     """Merge a `"A" + expr + "C"` chain into one format resource.
 
     Returns (start, end, fmt, args) when [lit] begins a concatenation chain,
-    otherwise None. Expression parts become %N$s arguments.
+    otherwise None. Expression parts (including if/when with inner literals)
+    become %N$s arguments.
     """
     if not re.match(r"\s*\+", text[lit.end:]):
         return None
-    parts: list[tuple[str, list[str]]] = []
+    parts: list[tuple[str, str]] = []  # ("lit"|"expr", raw)
     pos = lit.end
-    current = lit.raw
+    current = ("lit", lit.raw)
     saw_part = False
     while True:
         m = re.match(r"\s*\+\s*", text[pos:])
@@ -406,20 +407,19 @@ def collect_chain(
         pos += m.end()
         nxt_lits = find_literals(text[pos:])
         if nxt_lits and nxt_lits[0].start == 0:
-            parts.append((current, []))
-            current = nxt_lits[0].raw
+            parts.append(current)
+            current = ("lit", nxt_lits[0].raw)
             pos = pos + nxt_lits[0].end
             saw_part = True
             continue
-        # expression part until the next top-level '+'
         expr_start = pos
         depth = 0
         while pos < len(text):
             ch = text[pos]
             if ch == '"':
                 inner = find_literals(text[pos:])
-                if inner and inner[0].start == pos:
-                    pos = inner[0].end
+                if inner and inner[0].start == 0:
+                    pos = pos + inner[0].end
                     continue
             if ch in "([{":
                 depth += 1
@@ -427,34 +427,42 @@ def collect_chain(
                 depth = max(0, depth - 1)
             elif ch in "+," and depth == 0:
                 break
+            elif ch == ")" and depth == 0:
+                break
             elif ch == "\n" and depth <= 0:
                 break
             pos += 1
         expr = text[expr_start:pos].strip()
         if expr:
-            parts.append((current, []))
-            current = expr
+            parts.append(current)
+            current = ("expr", expr)
             saw_part = True
             if pos < len(text) and text[pos] == "+":
                 continue
-            parts.append((current, []))
-            current = ""
+            parts.append(current)
+            current = ("", "")
             break
         break
     if not saw_part:
         return None
-    if current:
-        parts.append((current, []))
+    if current[0]:
+        parts.append(current)
     fmt_parts: list[str] = []
     args: list[str] = []
-    for part, _ in parts:
-        if "${" in part or re.search(r"(?<!\\)\$[A-Za-z_]", part):
-            f, a = decode_template(part)
+    for kind, raw in parts:
+        if kind == "expr":
+            args.append(raw)
+            fmt_parts.append("{%d}" % len(args))
+            continue
+        if "${" in raw or re.search(r"(?<!\\)\$[A-Za-z_]", raw):
+            f, a = decode_template(raw)
             fmt_parts.append(f)
             args.extend(a)
         else:
-            fmt_parts.append(part)
+            fmt_parts.append(raw)
     return lit.start, pos, "".join(fmt_parts), args
+
+
 
 
 def decode_template(raw: str) -> tuple[str, list[str]]:

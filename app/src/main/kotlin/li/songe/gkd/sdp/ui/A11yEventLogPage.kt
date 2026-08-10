@@ -182,7 +182,7 @@ fun A11yEventLogPage() {
                     )
                     .padding(horizontal = 4.dp)
                 Column {
-                    Text(text = app.getString(R.string.s_2fc8b11635)
+                    Text(text = app.getString(R.string.s_41145b031b, if (eventLog.isStateChanged) "状态变化" else "内容变化"))
                     Spacer(modifier = Modifier.height(12.dp))
                     Text(text = app.getString(R.string.s_be8af550f3))
                     Row {

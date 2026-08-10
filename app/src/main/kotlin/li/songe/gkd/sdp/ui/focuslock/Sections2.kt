@@ -89,7 +89,7 @@ fun SelfControlRuntimeStatusCard() {
             )
             runtime.lastDecision?.let { decision ->
                 Text(
-                    text = app.getString(R.string.s_8dfc55724a, decision.feature, decision.decision),
+                    text = app.getString(R.string.s_af2816cc17, decision.feature, decision.decision, li.songe.gkd.sdp.util.SelfControlElapsedPolicy.formatAbsolute(decision.atEpochMs)),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )

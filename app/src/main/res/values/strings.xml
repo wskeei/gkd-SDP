@@ -209,7 +209,6 @@ youtube.com</string>
     <string name="s_2e56559e95">规则标识：groupType=%1$s, groupKey=%2$s, index=%1$s, %2$s</string>
     <string name="s_2e8b6dcd1b" formatted="false">时间规则已删除</string>
     <string name="s_2f752c005e" formatted="false">移除</string>
-    <string name="s_2fc8b11635" formatted="false">类型: if (eventLog.isStateChanged) &quot;状态变化&quot; else &quot;内容变化&quot;)</string>
     <string name="s_302471b81d" formatted="false">复盘范围</string>
     <string name="s_3036ac5688">通知文案支持变量替换，规则如下
 %1$s 全局规则数
@@ -294,8 +293,8 @@ youtube.com</string>
     <string name="s_404e6e3b68" formatted="false">更新微信联系人</string>
     <string name="s_40635c4228" formatted="false">编辑类别</string>
     <string name="s_407094d575" formatted="false">目标规则组已锁定，无法修改其时间规则</string>
-    <string name="s_4087da19c9">%1$s：SelfControlElapsedPolicy.formatAbsolute(state.anchorAtEpochMs)</string>
     <string name="s_40d80a0879" formatted="false">请输入有效的锁定时长</string>
+    <string name="s_41145b031b" formatted="false">类型: {1}</string>
     <string name="s_4194ebb566">确定要删除应用组「%1$s」吗？相关的时间规则也会被删除。</string>
     <string name="s_41ae4345a1" formatted="false">轨迹服务正在运行</string>
     <string name="s_41d7664f15" formatted="false">未使用间隔</string>
@@ -326,6 +325,7 @@ youtube.com</string>
     <string name="s_47d3fa79b4">纵轴：%1$s（%2$s） · 时间轴最多显示 6 个标签</string>
     <string name="s_48594302d1" formatted="false">为防止误触，应用内不支持在此关闭无障碍。若确需关闭，请前往 Android 系统无障碍设置。</string>
     <string name="s_488fdbc26e">作者：%1$s, 版本号：v%2$s, 更新时间：%3$s</string>
+    <string name="s_489c4cd278">%1$s：{2}</string>
     <string name="s_48ec1b5fd3" formatted="false">规则误触可定位关闭</string>
     <string name="s_48ff47e21f" formatted="false">界面日志</string>
     <string name="s_491a7f5bd7" formatted="false">（已锁定）</string>
@@ -532,7 +532,6 @@ youtube.com</string>
     <string name="s_74b0d1f601" formatted="false">未锁定</string>
     <string name="s_74c1843061" formatted="false">Shizuku 状态</string>
     <string name="s_74c7776c98" formatted="false">单独应用</string>
-    <string name="s_74ff399df0" formatted="false">v(subscription.version.toString())</string>
     <string name="s_750642ccd6" formatted="false">深色模式</string>
     <string name="s_75358e224d" formatted="false">隐藏悬浮条不会暂停本次使用；提前终止会将倒计时归零并立即回到桌面。</string>
     <string name="s_756f3b92c0" formatted="false">Shizuku 断开，重启应用以释放自动化服务</string>
@@ -577,6 +576,7 @@ youtube.com</string>
     <string name="s_7e8190abeb" formatted="false">安装记录热力图</string>
     <string name="s_7e9ca9ca7e" formatted="false">当前操作需要「写入外部存储权限」
 请先前往权限页面授权</string>
+    <string name="s_7ea330e955">%1$s｜{2}</string>
     <string name="s_7f04c8536d" formatted="false">进入规则汇总页面</string>
     <string name="s_7f96c93415" formatted="false">请先设置 cookie 后再上传</string>
     <string name="s_7f9cc8a658" formatted="false">请输入应用组名称</string>
@@ -601,9 +601,9 @@ youtube.com</string>
     <string name="s_837212d5ad" formatted="false">🚫 禁止时间段</string>
     <string name="s_83caf1badc" formatted="false">快照</string>
     <string name="s_841a72191f">下次配额重置：%1$s</string>
+    <string name="s_858598e1e1" formatted="false">v{1}</string>
     <string name="s_85e76f58dc" formatted="false">(内置)</string>
     <string name="s_860cb31951" formatted="false">选择模板</string>
-    <string name="s_8623e293b4">%1$s｜usageGuardWidgetSummary.hint</string>
     <string name="s_86539a3eb0" formatted="false">当前没有已启用的规则组，请先前往订阅页面启用规则。</string>
     <string name="s_86613e925d" formatted="false">局部关闭</string>
     <string name="s_86629471c3" formatted="false">网址匹配模式</string>
@@ -646,7 +646,6 @@ youtube.com</string>
     <string name="s_8d864071da" formatted="false">显示无障碍事件</string>
     <string name="s_8dc09bd1b4" formatted="false">订阅id不对应</string>
     <string name="s_8de957a7b7" formatted="false">未分组</string>
-    <string name="s_8dfc55724a">最近判定：%1$s · %2$s · li.songe.gkd.sdp.util.SelfControlElapsedPolicy.formatAbsolute(decision.atEpochMs)</string>
     <string name="s_8e1d999ba4" formatted="false">无可重置规则</string>
     <string name="s_8e2d76bc89" formatted="false">确定要删除这条规则吗？</string>
     <string name="s_8e9d261743" formatted="false">所属规则组</string>
@@ -801,6 +800,7 @@ HTTP 内容可能在传输中被读取或修改；授权仅适用于此 scheme�
     <string name="s_ae05880411" formatted="false">反选</string>
     <string name="s_ae2399c597" formatted="false">默认授权</string>
     <string name="s_aebc195621" formatted="false">当前内容未保存，是否放弃编辑？</string>
+    <string name="s_af2816cc17">最近判定：%1$s · %2$s · {3}</string>
     <string name="s_b06217b584" formatted="false">Shizuku 服务连接部分失败</string>
     <string name="s_b0871a4a6b" formatted="false">保存时长选项</string>
     <string name="s_b0b9270849" formatted="false">新版本</string>
@@ -867,7 +867,6 @@ HTTP 内容可能在传输中被读取或修改；授权仅适用于此 scheme�
     <string name="s_c136c74156" formatted="false">正在抓取中，请稍候</string>
     <string name="s_c184e4944d" formatted="false">打开设置弹窗</string>
     <string name="s_c1d113df7d" formatted="false">搜索应用列表</string>
-    <string name="s_c1ebbe1ce7" formatted="false">规则匹配if (enableMatch) &quot;已启用&quot; else &quot;已禁用&quot;</string>
     <string name="s_c1ef062e06" formatted="false">复制成功</string>
     <string name="s_c1f18f4e0a" formatted="false">下载更新</string>
     <string name="s_c27031c740" formatted="false">软件安装监测</string>
@@ -1139,6 +1138,7 @@ HTTP 内容可能在传输中被读取或修改；授权仅适用于此 scheme�
     <string name="s_fdfd732b8c" formatted="false">准备开始抓取...</string>
     <string name="s_fe7b16b5c0" formatted="false">删除订阅</string>
     <string name="s_ff93ad0e4e" formatted="false">首页</string>
+    <string name="s_ff942d85f0" formatted="false">规则匹配{1}</string>
     <string name="s_ffa17c3049" formatted="false">解除限制</string>
     <string name="s_ffcf0a1eb0" formatted="false">文件不存在</string>
     <string name="s_fff8cc4d94" formatted="false">未修改</string>

@@ -243,7 +243,7 @@ fun useSubsManagePage(): ScaffoldExt {
                                         LocalContentColor.current
                                     }
                                 ),
-                                contentDescription = app.getString(R.string.s_c1ebbe1ce7),
+                                contentDescription = app.getString(R.string.s_ff942d85f0, if (enableMatch) "已启用" else "已禁用"),
                                 onClickLabel = app.getString(R.string.s_d7ee5b2dac),
                                 onClick = throttle { switchStoreEnableMatch() },
                             )

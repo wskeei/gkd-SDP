@@ -155,7 +155,7 @@ fun SubsItemCard(
                                 modifier = Modifier.semantics {
                                     contentDescription = app.getString(R.string.s_213bcdc0f2, subscription.version)
                                 },
-                                text = stringResource(R.string.s_74ff399df0),
+                                text = stringResource(R.string.s_858598e1e1, (subscription.version.toString())),
                                 style = MaterialTheme.typography.labelSmall,
                             )
                         } else {
