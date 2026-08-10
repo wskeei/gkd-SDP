@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.ui.graphics.Color
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -54,7 +55,7 @@ fun AppConfirmationDialog(
         title = {
             Text(
                 text = title,
-                color = if (destructive) MaterialTheme.colorScheme.error else null,
+                color = if (destructive) MaterialTheme.colorScheme.error else Color.Unspecified,
             )
         },
         text = {

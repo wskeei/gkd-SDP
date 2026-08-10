@@ -2,7 +2,7 @@ package li.songe.gkd.sdp.ui.style
 
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.LocalMotionDurationScale
+import androidx.compose.ui.LocalMotionDurationScale
 import androidx.compose.animation.core.tween
 import androidx.compose.runtime.Composable
 import kotlin.math.roundToInt
