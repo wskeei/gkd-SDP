@@ -44,16 +44,13 @@ import li.songe.gkd.sdp.ui.style.surfaceCardColors
 import androidx.compose.ui.res.stringResource
 import li.songe.gkd.sdp.R
 import li.songe.gkd.sdp.app
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Serializable
 data object UrlBlockRoute : NavKey
-
 @Composable
 fun UrlBlockPage() {
     val mainVm = LocalMainViewModel.current
     val vm = viewModel<UrlBlockVm>()
-    
     val allGroups by vm.allGroupsFlow.collectAsStateWithLifecycle()
     val allUrlRules by vm.allUrlRulesFlow.collectAsStateWithLifecycle()
     val allTimeRules by vm.allTimeRulesFlow.collectAsStateWithLifecycle()
