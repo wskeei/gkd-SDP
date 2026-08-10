@@ -25,6 +25,8 @@ plugins {
     alias(libs.plugins.remap) apply false
     alias(libs.plugins.loc) apply false
     alias(libs.plugins.littlerobots.version)
+    alias(libs.plugins.kotlinx.kover) apply false
+    alias(libs.plugins.compose.screenshot) apply false
 }
 
 // ./gradlew versionCatalogUpdate --interactive

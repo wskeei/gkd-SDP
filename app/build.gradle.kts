@@ -113,12 +113,15 @@ plugins {
     alias(libs.plugins.google.ksp)
     alias(libs.plugins.remap)
     alias(libs.plugins.loc)
+    alias(libs.plugins.kotlinx.kover)
+    alias(libs.plugins.compose.screenshot)
 }
 
 android {
     namespace = rootProject.ext["android.namespace"].toString()
     compileSdk = rootProject.ext["android.compileSdk"] as Int
     buildToolsVersion = rootProject.ext["android.buildToolsVersion"].toString()
+    experimentalProperties["android.experimental.enableScreenshotTest"] = true
 
     defaultConfig {
         minSdk = rootProject.ext["android.minSdk"] as Int
@@ -227,6 +230,71 @@ android {
         "**/custom.config.conf",
         "**/custom.config.yaml",
     )
+
+    testOptions {
+        managedDevices {
+            localDevices {
+                create("pixel2Api26") {
+                    device = "Pixel 2"
+                    apiLevel = 26
+                    systemImageSource = "aosp"
+                    testedAbi = "x86_64"
+                }
+                create("pixel6Api35") {
+                    device = "Pixel 6"
+                    apiLevel = 35
+                    systemImageSource = "aosp"
+                    testedAbi = "x86_64"
+                }
+            }
+        }
+    }
+
+    kover {
+        reports {
+            filters {
+                includes {
+                    classes(
+                        "li.songe.gkd.sdp.capability.*",
+                        "li.songe.gkd.sdp.settings.*",
+                        "li.songe.gkd.sdp.usage.*",
+                        "li.songe.gkd.sdp.runtime.*",
+                        "li.songe.gkd.sdp.util.*Policy*",
+                        "li.songe.gkd.sdp.remote.*Policy*",
+                        "li.songe.gkd.sdp.store.*Policy*",
+                        "li.songe.gkd.sdp.privacy.DataDeletionCoordinator*",
+                    )
+                }
+                excludes {
+                    classes(
+                        "androidx.compose.**",
+                        "li.songe.gkd.sdp.ui.**",
+                        "li.songe.gkd.sdp.service.**",
+                        "li.songe.gkd.sdp.receiver.**",
+                        "li.songe.gkd.sdp.widget.**",
+                        "li.songe.gkd.sdp.db.**",
+                        "li.songe.gkd.sdp.data.**",
+                    )
+                }
+            }
+            verify {
+                rule {
+                    minBound(
+                        80,
+                        kotlinx.kover.gradle.plugin.dsl.CoverageUnit.LINE,
+                        kotlinx.kover.gradle.plugin.dsl.AggregationType.COVERED_PERCENTAGE,
+                    )
+                }
+                rule {
+                    minBound(
+                        70,
+                        kotlinx.kover.gradle.plugin.dsl.CoverageUnit.BRANCH,
+                        kotlinx.kover.gradle.plugin.dsl.AggregationType.COVERED_PERCENTAGE,
+                    )
+                }
+            }
+        }
+    }
 }
 
 if (project.hasProperty("GKD_RENAME_APK_FLAG")) {
@@ -300,6 +368,9 @@ dependencies {
     implementation(libs.compose.activity)
     implementation(libs.compose.material3)
     implementation(libs.compose.adaptive)
+    screenshotTestImplementation(libs.compose.tooling)
+    screenshotTestImplementation(libs.screenshot.validation.api)
+    debugImplementation(libs.compose.ui.test.manifest)
 
     implementation(libs.androidx.navigation3.ui)
     implementation(libs.androidx.navigation3.runtime)
@@ -308,6 +379,9 @@ dependencies {
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso)
+    androidTestImplementation(libs.androidx.room.testing)
+    androidTestImplementation(libs.androidx.test.rules)
+    androidTestImplementation(libs.androidx.test.runner)
 
     compileOnly(project(":hidden_api"))
     implementation(libs.rikka.shizuku.api)

@@ -1,0 +1,8 @@
+li.songe.gkd.sdp.capability.*
+li.songe.gkd.sdp.settings.*
+li.songe.gkd.sdp.usage.*
+li.songe.gkd.sdp.runtime.*
+li.songe.gkd.sdp.util.*Policy*
+li.songe.gkd.sdp.remote.*Policy*
+li.songe.gkd.sdp.store.*Policy*
+li.songe.gkd.sdp.privacy.DataDeletionCoordinator*

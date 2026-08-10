@@ -49,6 +49,9 @@ jobs:
       - name: Verify UI file boundaries
         run: python3 scripts/verify-ui-file-boundaries.py
 
+      - name: Verify test quality policy
+        run: python3 scripts/verify-test-quality-policy.py
+
       - name: Test release tooling contracts
         run: |
           bash scripts/test-verify-release-metadata.sh
@@ -110,7 +113,8 @@ jobs:
           ./gradlew \
             :app:assembleGkdDebug \
             :app:assemblePlayDebug \
-            :app:assembleGkdRelease
+            :app:assembleGkdRelease \
+            :app:assemblePlayRelease
 
       - name: Upload build outputs
         if: ${{ always() }}
@@ -120,6 +124,75 @@ jobs:
           retention-days: 7
           if-no-files-found: error
           path: app/build/outputs/apk/
+
+  coverage:
+    name: coverage
+    needs: quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out source
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+
+      - name: Set up Java
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
+        with:
+          distribution: zulu
+          java-version: ${{ env.JAVA_VERSION }}
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@90ddb51e90a5fd9ba75f40cf85156b7b41bf76a3 # v6
+        with:
+          cache-provider: basic
+
+      - name: Verify and report coverage
+        run: |
+          ./gradlew \
+            :app:koverVerifyGkdDebug \
+            :app:koverXmlReportGkdDebug \
+            :app:koverHtmlReportGkdDebug
+
+      - name: Upload coverage reports
+        if: ${{ always() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: ci-coverage-reports-${{ github.run_id }}
+          retention-days: 7
+          if-no-files-found: ignore
+          path: app/build/reports/kover/
+
+  visual-regression:
+    name: visual-regression
+    needs: quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out source
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+
+      - name: Set up Java
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
+        with:
+          distribution: zulu
+          java-version: ${{ env.JAVA_VERSION }}
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@90ddb51e90a5fd9ba75f40cf85156b7b41bf76a3 # v6
+        with:
+          cache-provider: basic
+
+      - name: Validate screenshot references
+        run: ./gradlew :app:validateGkdDebugScreenshotTest
+
+      - name: Upload screenshot reports
+        if: ${{ always() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: ci-screenshot-reports-${{ github.run_id }}
+          retention-days: 7
+          if-no-files-found: ignore
+          path: app/build/reports/screenshotTest/
+
 
   dependency-review:
     name: dependency-review
