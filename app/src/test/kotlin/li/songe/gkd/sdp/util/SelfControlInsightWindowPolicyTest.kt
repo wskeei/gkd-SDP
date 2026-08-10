@@ -22,7 +22,7 @@ class SelfControlInsightWindowPolicyTest {
     )
 
     @Test
-    fun rollingWindowIncludesStartAndNowButExcludesOlderAndFutureSamples() {
+    fun rollingWindowIncludesStartButExcludesNowAndFutureSamples() {
         val samples = listOf(
             sample(1, atDaysAgo = 1, gapMinutes = 10),
             sample(2, atDaysAgo = 7, gapMinutes = 20),
@@ -61,7 +61,7 @@ class SelfControlInsightWindowPolicyTest {
         )
 
         assertTrue(series.points.size <= 24)
-        assertEquals(25, series.stats.sampleCount)
+        assertEquals(24, series.stats.sampleCount)
     }
 
     @Test
@@ -112,8 +112,8 @@ class SelfControlInsightWindowPolicyTest {
     @Test
     fun statsUseRawRowsAndPointsRemainStableByTimeThenId() {
         val samples = listOf(
-            sample(2, atDaysAgo = 0, gapMinutes = 10),
-            sample(1, atDaysAgo = 0, gapMinutes = 20),
+            SelfControlInsightWindowPolicy.IntervalSample(2L, now - 1L, 10L * 60_000L, 30),
+            SelfControlInsightWindowPolicy.IntervalSample(1L, now - 2L, 20L * 60_000L, 30),
             sample(3, atDaysAgo = 2, gapMinutes = 30),
         )
         val series = SelfControlInsightWindowPolicy.aggregate(
@@ -153,7 +153,7 @@ class SelfControlInsightWindowPolicyTest {
 
     @Test
     fun aggregationStartsOnlyAfterWindowPointLimit() {
-        val samples = (0 until 25).map { index ->
+        val samples = (0 until 26).map { index ->
             SelfControlInsightWindowPolicy.IntervalSample(
                 id = index.toLong() + 1,
                 occurredAtEpochMs = now - index * 10L,
@@ -178,7 +178,7 @@ class SelfControlInsightWindowPolicyTest {
 
     @Test
     fun eachWindowUsesItsOwnPointLimit() {
-        val sevenDaySamples = (0 until 29).map { index ->
+        val sevenDaySamples = (0 until 30).map { index ->
             SelfControlInsightWindowPolicy.IntervalSample(
                 id = index.toLong() + 1,
                 occurredAtEpochMs = now - index * 10L,
@@ -186,7 +186,7 @@ class SelfControlInsightWindowPolicyTest {
                 requestedDurationMinutes = 1,
             )
         }
-        val thirtyDaySamples = (0 until 31).map { index ->
+        val thirtyDaySamples = (0 until 32).map { index ->
             SelfControlInsightWindowPolicy.IntervalSample(
                 id = index.toLong() + 100,
                 occurredAtEpochMs = now - index * 10L,
@@ -232,18 +232,18 @@ class SelfControlInsightWindowPolicyTest {
             SelfControlInsightWindowPolicy.Metric.USAGE_RATIO,
         )
 
-        assertEquals(40, series.rawSampleCount)
-        assertEquals(2, series.stats.sampleCount)
+        assertEquals(39, series.rawSampleCount)
+        assertEquals(1, series.stats.sampleCount)
         assertEquals(38, series.excludedSampleCount)
-        assertEquals(2, series.points.size)
+        assertEquals(1, series.points.size)
         assertFalse(series.aggregationApplied)
     }
 
     @Test
     fun sameTimestampRowsRemainStableAndCarryDistinctSourceIds() {
         val samples = listOf(
-            SelfControlInsightWindowPolicy.IntervalSample(9L, now, 60_000L, 1),
-            SelfControlInsightWindowPolicy.IntervalSample(8L, now, 120_000L, 1),
+            SelfControlInsightWindowPolicy.IntervalSample(9L, now - 1L, 60_000L, 1),
+            SelfControlInsightWindowPolicy.IntervalSample(8L, now - 2L, 120_000L, 1),
         )
 
         val series = SelfControlInsightWindowPolicy.aggregate(

@@ -80,7 +80,7 @@ object SelfControlInsightWindowPolicy {
         val start = windowStartEpochMs(nowEpochMs, window)
         return samples
             .asSequence()
-            .filter { it.occurredAtEpochMs in start..nowEpochMs }
+            .filter { it.occurredAtEpochMs >= start && it.occurredAtEpochMs < nowEpochMs }
             .sortedWith(compareBy<IntervalSample> { it.occurredAtEpochMs }.thenBy { it.id })
             .toList()
     }
