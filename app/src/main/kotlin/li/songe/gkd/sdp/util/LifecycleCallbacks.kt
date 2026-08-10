@@ -9,6 +9,8 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import li.songe.loc.Loc
+import li.songe.gkd.sdp.R
+import li.songe.gkd.sdp.app
 
 typealias CbFn = () -> Unit
 
@@ -55,10 +57,10 @@ interface OnSimpleLife {
         @Loc loc: String = "",
     ) {
         onCreated {
-            toast("${name}已启动", loc = loc, delayMillis = delayMillis)
+            toast(app.getString(R.string.s_0927c7b920, name), loc = loc, delayMillis = delayMillis)
         }
         onDestroyed {
-            toast("${name}已关闭", loc = loc)
+            toast(app.getString(R.string.s_421b5975e0, name), loc = loc)
         }
     }
 

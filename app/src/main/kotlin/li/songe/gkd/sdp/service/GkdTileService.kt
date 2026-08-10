@@ -30,6 +30,7 @@ import li.songe.gkd.sdp.util.launchTry
 import li.songe.gkd.sdp.util.mapState
 import li.songe.gkd.sdp.util.runMainPost
 import li.songe.gkd.sdp.util.toast
+import li.songe.gkd.sdp.R
 
 class GkdTileService : BaseTileService() {
     override val activeFlow = combine(A11yService.isRunning, uiAutomationFlow) { a11y, automator ->
@@ -57,7 +58,7 @@ private suspend fun enableOrRepairA11yService() {
     if (A11yService.isRunning.value) return
     if (!writeSecureSettingsState.updateAndGet()) {
         if (!writeSecureSettingsState.value) {
-            toast("请先授予「写入安全设置权限」")
+            toast(app.getString(R.string.s_c54815f2f8))
             return
         }
     }
@@ -73,7 +74,7 @@ private suspend fun enableOrRepairA11yService() {
     delay(A11Y_AWAIT_START_TIME)
     // https://github.com/orgs/gkd-kit/discussions/799
     if (!A11yService.isRunning.value) {
-        toast("开启无障碍失败")
+        toast(app.getString(R.string.s_f744422fe2))
         accessRestrictedSettingsShowFlow.value = true
     }
 }
@@ -142,7 +143,7 @@ private suspend fun fixA11yService() {
         app.putSecureA11yServices(names)
         delay(A11Y_AWAIT_START_TIME)
         if (currentAppUseA11y && !A11yService.isRunning.value) {
-            toast("重启无障碍失败")
+            toast(app.getString(R.string.s_96c7288776))
             accessRestrictedSettingsShowFlow.value = true
         }
     }

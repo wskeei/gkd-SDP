@@ -23,6 +23,9 @@ import li.songe.gkd.sdp.ui.component.TextSwitch
 import li.songe.gkd.sdp.util.BackupUtils
 import li.songe.gkd.sdp.util.UriUtils
 import li.songe.gkd.sdp.util.toast
+import androidx.compose.ui.res.stringResource
+import li.songe.gkd.sdp.R
+import li.songe.gkd.sdp.app
 
 @Composable
 internal fun SettingsBackupDialogs(
@@ -98,7 +101,7 @@ private fun BackupWorkflowDialog(
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 BackupWorkflowStageContent(workflow, workflowState)
-                if (workflow.busy) Text("正在处理，请勿关闭应用…")
+                if (workflow.busy) Text(stringResource(R.string.s_1ac3e91414))
                 workflow.errorText?.let { Text(it, color = MaterialTheme.colorScheme.error) }
             }
         },
@@ -109,7 +112,7 @@ private fun BackupWorkflowDialog(
                 onClick = { launchBackupWorkflowAction(context, backupScope, workflowState, workflow) },
             )
         },
-        dismissButton = { TextButton(enabled = !workflow.busy, onClick = dismiss) { Text("取消") } },
+        dismissButton = { TextButton(enabled = !workflow.busy, onClick = dismiss) { Text(stringResource(R.string.s_4d0b4688c7)) } },
     )
 }
 
@@ -136,11 +139,11 @@ private fun BackupWorkflowStageContent(
 ) {
     when (workflow.stage) {
         BackupWorkflowStage.EXPORT_CATEGORIES -> {
-            Text("前五类默认启用；包含截图、无障碍事件与微信联系人的敏感类别默认关闭。")
+            Text(stringResource(R.string.s_5bf9577af0))
             BackupCatalog.categories.forEach { category ->
                 TextSwitch(
                     title = backupCategoryTitle(category.id),
-                    subtitle = if (category.sensitive) "包含截图/节点或联系人数据；只在明确需要时开启" else backupCategorySubtitle(category.id),
+                    subtitle = if (category.sensitive) app.getString(R.string.s_e317d798a8) else backupCategorySubtitle(category.id),
                     checked = category.id in workflow.selectedCategoryIds,
                     onCheckedChange = { checked ->
                         workflowState.value = workflow.copy(
@@ -162,41 +165,41 @@ private fun BackupWorkflowStageContent(
             )
             SettingsPasswordField(
                 value = workflow.password,
-                label = "备份密码",
+                label = stringResource(R.string.s_54ed97d204),
                 onValueChange = { workflowState.value = workflow.copy(password = it, errorText = null) },
             )
             if (workflow.stage == BackupWorkflowStage.EXPORT_PASSWORD) {
                 SettingsPasswordField(
                     value = workflow.repeatedPassword,
-                    label = "再次输入密码",
+                    label = stringResource(R.string.s_f27a153008),
                     onValueChange = { workflowState.value = workflow.copy(repeatedPassword = it, errorText = null) },
                 )
                 if (workflow.repeatedPassword.isNotEmpty() && workflow.password != workflow.repeatedPassword) {
-                    Text("两次输入的密码不一致", color = MaterialTheme.colorScheme.error)
+                    Text(stringResource(R.string.s_3e2b222d98), color = MaterialTheme.colorScheme.error)
                 }
             }
         }
         BackupWorkflowStage.EXPORT_SUMMARY -> {
-            Text("将写入加密备份 v2：")
-            workflow.selectedCategoryIds.forEach { Text("• ${backupCategoryTitle(it)}") }
-            Text("格式：GKDSDPBK2 / PBKDF2-SHA256 / AES-256-GCM")
-            Text("预计大小：不超过 65 MiB；实际大小由系统文件选择器显示。")
-            Text("不会包含诊断日志、崩溃文件、缓存、支持包、私有 Store、会话令牌、密钥或命令脚本。")
+            Text(stringResource(R.string.s_e8c1720f03))
+            workflow.selectedCategoryIds.forEach { Text(app.getString(R.string.s_28b124759e, backupCategoryTitle(it))) }
+            Text(stringResource(R.string.s_58bad7a807))
+            Text(stringResource(R.string.s_d2e08cab80))
+            Text(stringResource(R.string.s_6ed70747fd))
         }
         BackupWorkflowStage.IMPORT_PREVIEW -> {
             val prepared = requireNotNull(workflow.preparedImport)
             Text(
                 when (prepared.sourceFormat) {
-                    BackupSourceFormat.ENCRYPTED_V2 -> "格式版本：加密备份 v${prepared.payload.manifest.formatVersion}"
-                    BackupSourceFormat.LEGACY_V1 -> "格式版本：旧版未加密备份（已安全转换为 v2）"
+                    BackupSourceFormat.ENCRYPTED_V2 -> stringResource(R.string.s_82275eff6f, prepared.payload.manifest.formatVersion)
+                    BackupSourceFormat.LEGACY_V1 -> stringResource(R.string.s_c9d242c96c)
                 },
             )
-            Text("包含类别：")
-            prepared.payload.manifest.categoryIds.forEach { Text("• ${backupCategoryTitle(it)}") }
-            Text("替换方式：只替换备份包含的类别，未包含类别保持不变。")
-            Text("冲突预览：")
+            Text(stringResource(R.string.s_f3c459c9c3))
+            prepared.payload.manifest.categoryIds.forEach { Text(app.getString(R.string.s_28b124759e, backupCategoryTitle(it))) }
+            Text(stringResource(R.string.s_9eba7fa3e2))
+            Text(stringResource(R.string.s_b3af13eb8f))
             prepared.conflicts.forEach { conflict ->
-                Text("${backupCategoryTitle(conflict.categoryId)}：新增 ${conflict.added}，覆盖 ${conflict.overwritten}，删除 ${conflict.deleted}")
+                Text(app.getString(R.string.s_a237a78c90, backupCategoryTitle(conflict.categoryId), conflict.added, conflict.overwritten, conflict.deleted))
             }
         }
     }
@@ -227,7 +230,7 @@ private fun launchBackupWorkflowAction(
                         filename = "gkd-sdp-backup-v2-${System.currentTimeMillis()}.gkdbak",
                     )
                     if (targetUri == null) {
-                        workflowState.value = BackupWorkflowState(stage = BackupWorkflowStage.EXPORT_PASSWORD, selectedCategoryIds = selectedCategoryIds, errorText = "未选择保存位置，请重新输入密码后导出")
+                        workflowState.value = BackupWorkflowState(stage = BackupWorkflowStage.EXPORT_PASSWORD, selectedCategoryIds = selectedCategoryIds, errorText = app.getString(R.string.s_6349c9a19f))
                         return@launch
                     }
                     when (val result = withContext(Dispatchers.IO) { BackupUtils.exportBackUpData(selectedCategoryIds, password) }) {
@@ -237,9 +240,9 @@ private fun launchBackupWorkflowAction(
                             file.delete()
                             if (copied.isSuccess) {
                                 workflowState.value = null
-                                toast("加密备份已保存")
+                                toast(app.getString(R.string.s_fad8721370))
                             } else {
-                                workflowState.value = BackupWorkflowState(stage = BackupWorkflowStage.EXPORT_PASSWORD, selectedCategoryIds = selectedCategoryIds, errorText = "写入目标文件失败，请重新输入密码并选择保存位置")
+                                workflowState.value = BackupWorkflowState(stage = BackupWorkflowStage.EXPORT_PASSWORD, selectedCategoryIds = selectedCategoryIds, errorText = app.getString(R.string.s_13df62ffcf))
                             }
                         }
                         is BackupResult.Failure -> {
@@ -285,14 +288,14 @@ private fun launchBackupWorkflowAction(
                 }
                 val refreshedImport = (refreshed as BackupResult.Success).value
                 if (refreshedImport.previewStateHash != preparedImport.previewStateHash || refreshedImport.conflicts != preparedImport.conflicts) {
-                    workflowState.value = BackupWorkflowState(stage = BackupWorkflowStage.IMPORT_PREVIEW, sourceUri = sourceUri, preparedImport = refreshedImport, errorText = "当前数据已变化，冲突预览已刷新，请再次确认导入")
+                    workflowState.value = BackupWorkflowState(stage = BackupWorkflowStage.IMPORT_PREVIEW, sourceUri = sourceUri, preparedImport = refreshedImport, errorText = app.getString(R.string.s_53c71581fe))
                     return@launch
                 }
                 when (val result = withContext(Dispatchers.IO) { BackupUtils.applyImport(refreshedImport, confirmed = true) }) {
                     is BackupResult.Success -> {
                         workflowState.value = null
                         BackupUtils.pendingImportUriFlow.value = null
-                        toast("备份导入完成")
+                        toast(app.getString(R.string.s_74010fe072))
                     }
                     is BackupResult.Failure -> {
                         workflowState.value = BackupWorkflowState(stage = BackupWorkflowStage.IMPORT_PREVIEW, sourceUri = sourceUri, preparedImport = refreshedImport, errorText = backupErrorText(result.code))

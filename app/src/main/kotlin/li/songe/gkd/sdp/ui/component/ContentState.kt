@@ -21,6 +21,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
 import li.songe.gkd.sdp.ui.style.DimensionTokens
+import androidx.compose.ui.res.stringResource
+import li.songe.gkd.sdp.R
 
 /**
  * The only page content states. Screens render through [ContentStateBox] so
@@ -121,7 +123,7 @@ fun ContentStateBox(
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Text(
-                    text = "出错了（${state.errorCode}）",
+                    text = stringResource(R.string.s_f6a8a7f4ed, state.errorCode),
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.error,
                     textAlign = TextAlign.Center,
@@ -135,7 +137,7 @@ fun ContentStateBox(
                 )
                 if (state.onRetry != null) {
                     TextButton(onClick = state.onRetry) {
-                        Text("重试")
+                        Text(stringResource(R.string.s_e2d53a6d3a))
                     }
                 }
                 if (state.recoveryText != null && state.onRecovery != null) {

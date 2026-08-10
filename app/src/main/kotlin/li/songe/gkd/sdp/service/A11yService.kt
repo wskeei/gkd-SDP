@@ -30,6 +30,8 @@ import li.songe.gkd.sdp.util.componentName
 import li.songe.gkd.sdp.util.runMainPost
 import li.songe.gkd.sdp.util.toast
 import kotlin.coroutines.resume
+import li.songe.gkd.sdp.R
+import li.songe.gkd.sdp.app
 
 @SuppressLint("AccessibilityPolicy")
 abstract class A11yService : AccessibilityService(), OnA11yLife by DefaultA11yLifeImpl(),
@@ -115,15 +117,15 @@ abstract class A11yService : AccessibilityService(), OnA11yLife by DefaultA11yLi
                 AccessibilityGuardRuntime.clearTemporaryShutdownExpected()
                 updateEnableAutomator(true)
             } else {
-                toast("当前为自动化模式，无障碍将自动关闭", forced = true)
+                toast(app.getString(R.string.s_c5fd22b186), forced = true)
                 runMainPost(1) { shutdown(true) }
             }
         }
         onDestroyed {
             if (tempShutdownFlag) {
-                toast("无障碍局部关闭")
+                toast(app.getString(R.string.s_6b683e741b))
             } else {
-                toast("无障碍已关闭")
+                toast(app.getString(R.string.s_a6fa6ad6cb))
                 updateEnableAutomator(false)
             }
         }
@@ -143,7 +145,7 @@ abstract class A11yService : AccessibilityService(), OnA11yLife by DefaultA11yLi
         onDestroyed { ruleEngine.onA11yDisconnected() }
         onA11yConnected {
             connected = true
-            toast("无障碍已启动")
+            toast(app.getString(R.string.s_c0e820383d))
             if (currentAppUseA11y) {
                 AccessibilityGuardRuntime.clearTemporaryShutdownExpected()
                 ruleEngine.onA11yConnected()
@@ -152,7 +154,7 @@ abstract class A11yService : AccessibilityService(), OnA11yLife by DefaultA11yLi
         onCreated {
             runMainPost(3000) {
                 if (!(destroyed || connected)) {
-                    toast("无障碍启动超时，请尝试关闭重启", forced = true)
+                    toast(app.getString(R.string.s_4fd3d72b67), forced = true)
                 }
             }
         }
@@ -199,7 +201,7 @@ private fun A11yService.useAliveOverlayView() {
         } catch (e: Throwable) {
             aliveView = null
             LogUtils.d(e)
-            toast("添加无障碍保活失败\n请尝试重启无障碍")
+            toast(app.getString(R.string.s_1d51cdc0f2))
         }
     }
     onA11yConnected { addA11View() }

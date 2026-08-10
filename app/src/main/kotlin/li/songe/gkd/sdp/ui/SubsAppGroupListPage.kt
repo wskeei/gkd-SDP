@@ -60,6 +60,9 @@ import li.songe.gkd.sdp.util.throttle
 import li.songe.gkd.sdp.util.toJson5String
 import li.songe.gkd.sdp.util.toast
 import li.songe.gkd.sdp.util.updateSubscription
+import androidx.compose.ui.res.stringResource
+import li.songe.gkd.sdp.R
+import li.songe.gkd.sdp.app
 
 @Serializable
 data class SubsAppGroupListRoute(
@@ -161,8 +164,8 @@ fun SubsAppGroupListPage(route: SubsAppGroupListRoute) {
                                 imageVector = PerfIcon.Delete,
                                 onClick = throttle(vm.viewModelScope.launchAsFn {
                                     mainVm.dialogFlow.waitResult(
-                                        title = "删除规则",
-                                        text = "删除当前所选规则?",
+                                        title = app.getString(R.string.s_f9ad34b946),
+                                        text = app.getString(R.string.s_e0d623ba29),
                                         error = true,
                                     )
                                     val keys = selectedDataSet.mapNotNull { g -> g.groupKey }
@@ -194,7 +197,7 @@ fun SubsAppGroupListPage(route: SubsAppGroupListRoute) {
                                             keys
                                         )
                                     }
-                                    toast("删除成功")
+                                    toast(app.getString(R.string.s_86e8d12a79))
                                 })
                             )
                         }
@@ -215,7 +218,7 @@ fun SubsAppGroupListPage(route: SubsAppGroupListRoute) {
                     ) {
                         DropdownMenuItem(
                             text = {
-                                Text(text = "全选")
+                                Text(text = app.getString(R.string.s_3e44b2a933))
                             },
                             onClick = {
                                 expanded = false
@@ -229,7 +232,7 @@ fun SubsAppGroupListPage(route: SubsAppGroupListRoute) {
                         )
                         DropdownMenuItem(
                             text = {
-                                Text(text = "反选")
+                                Text(text = app.getString(R.string.s_ae05880411))
                             },
                             onClick = {
                                 expanded = false
@@ -259,7 +262,7 @@ fun SubsAppGroupListPage(route: SubsAppGroupListRoute) {
                         )
                     )
                 },
-                contentDescription = "添加规则",
+                contentDescription = app.getString(R.string.s_d2fc32282a),
                 imageVector = PerfIcon.Add,
             )
         }
@@ -306,7 +309,7 @@ fun SubsAppGroupListPage(route: SubsAppGroupListRoute) {
             item(ListPlaceholder.KEY, ListPlaceholder.TYPE) {
                 Spacer(modifier = Modifier.height(EmptyHeight))
                 if (app.groups.isEmpty()) {
-                    EmptyText(text = "暂无规则")
+                    EmptyText(text = stringResource(R.string.s_cff584d9ab))
                 }
             }
         }

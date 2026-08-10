@@ -73,6 +73,9 @@ import li.songe.gkd.sdp.util.launchAsFn
 import li.songe.gkd.sdp.util.throttle
 import li.songe.gkd.sdp.util.toJson5String
 import li.songe.gkd.sdp.util.toast
+import androidx.compose.ui.res.stringResource
+import li.songe.gkd.sdp.R
+import li.songe.gkd.sdp.app
 
 @Serializable
 data object A11yEventLogRoute : NavKey
@@ -97,7 +100,7 @@ fun A11yEventLogPage() {
             },
             title = {
                 Text(
-                    text = "事件日志",
+                    text = app.getString(R.string.s_12b64fb2df),
                     modifier = Modifier.noRippleClickable { vm.resetKey.intValue++ },
                 )
             },
@@ -107,12 +110,12 @@ fun A11yEventLogPage() {
                         imageVector = PerfIcon.Delete,
                         onClick = throttle(fn = vm.viewModelScope.launchAsFn {
                             mainVm.dialogFlow.waitResult(
-                                title = "删除日志",
-                                text = "确定删除所有事件日志?",
+                                title = app.getString(R.string.s_0c42f43e47),
+                                text = app.getString(R.string.s_b13a1d7e01),
                                 error = true,
                             )
                             DbSet.a11yEventLogDao.deleteAll()
-                            toast("删除成功")
+                            toast(app.getString(R.string.s_86e8d12a79))
                         })
                     )
                 }
@@ -144,7 +147,7 @@ fun A11yEventLogPage() {
                 item(ListPlaceholder.KEY, ListPlaceholder.TYPE) {
                     Spacer(modifier = Modifier.height(EmptyHeight))
                     if (logCount == 0 && list.loadState.refresh !is LoadState.Loading) {
-                        EmptyText(text = "暂无数据")
+                        EmptyText(text = stringResource(R.string.s_b246458f20))
                     }
                 }
             }
@@ -170,7 +173,7 @@ fun A11yEventLogPage() {
         }
         AlertDialog(
             onDismissRequest = onDismissRequest,
-            title = { Text(text = "事件详情") },
+            title = { Text(text = app.getString(R.string.s_60f0ae8cbf)) },
             text = {
                 val textModifier = Modifier
                     .background(
@@ -179,9 +182,9 @@ fun A11yEventLogPage() {
                     )
                     .padding(horizontal = 4.dp)
                 Column {
-                    Text(text = "类型: " + if (eventLog.isStateChanged) "状态变化" else "内容变化")
+                    Text(text = app.getString(R.string.s_cd42ed46a6) + if (eventLog.isStateChanged) app.getString(R.string.s_c5277e6e6f) else app.getString(R.string.s_458dd653a4))
                     Spacer(modifier = Modifier.height(12.dp))
-                    Text(text = "应用ID")
+                    Text(text = app.getString(R.string.s_be8af550f3))
                     Row {
                         Text(
                             text = eventLog.appId,
@@ -193,7 +196,7 @@ fun A11yEventLogPage() {
                         })
                     }
                     Spacer(modifier = Modifier.height(12.dp))
-                    Text(text = "事件数据")
+                    Text(text = app.getString(R.string.s_ef3d433a35))
                     Box(
                         modifier = Modifier.fillMaxWidth()
                     ) {
@@ -226,7 +229,7 @@ fun A11yEventLogPage() {
                                 "[${key}=${v}]"
                             }
                         }
-                        Text(text = "特征选择器")
+                        Text(text = app.getString(R.string.s_17f4155b4b))
                         Row(
                             modifier = Modifier.fillMaxWidth()
                         ) {
@@ -244,7 +247,7 @@ fun A11yEventLogPage() {
             },
             confirmButton = {
                 TextButton(onClick = onDismissRequest) {
-                    Text(text = "关闭")
+                    Text(text = app.getString(R.string.s_6c14bd7f6f))
                 }
             },
         )

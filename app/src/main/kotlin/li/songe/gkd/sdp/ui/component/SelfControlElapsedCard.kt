@@ -17,6 +17,8 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
 import li.songe.gkd.sdp.util.SelfControlElapsedPolicy
 import li.songe.gkd.sdp.util.SelfControlInsightWindowPolicy
+import androidx.compose.ui.res.stringResource
+import li.songe.gkd.sdp.R
 
 @Composable
 fun SelfControlElapsedCard(
@@ -48,7 +50,7 @@ fun SelfControlElapsedCard(
             when (state) {
                 SelfControlElapsedPolicy.ElapsedState.Loading -> {
                     Text(
-                        text = "正在读取上次记录…",
+                        text = stringResource(R.string.s_5bf8fdca8e),
                         style = MaterialTheme.typography.bodyMedium,
                     )
                 }
@@ -69,7 +71,7 @@ fun SelfControlElapsedCard(
 
                 SelfControlElapsedPolicy.ElapsedState.Unavailable -> {
                     Text(
-                        text = "暂时无法读取上次记录",
+                        text = stringResource(R.string.s_9e99477b43),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(top = 8.dp),
@@ -78,7 +80,7 @@ fun SelfControlElapsedCard(
 
                 SelfControlElapsedPolicy.ElapsedState.MissingActualEnd -> {
                     Text(
-                        text = "暂无可确认的上次结束时间",
+                        text = stringResource(R.string.s_196c9660e0),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(top = 8.dp),
@@ -154,7 +156,7 @@ private fun RunningElapsedContent(
         modifier = Modifier.padding(top = 4.dp),
     )
     Text(
-        text = "${if (state.firstOccurrence) copy.firstTimeLabel else copy.previousTimeLabel}：" +
+        text = stringResource(R.string.s_de27714146, if (state.firstOccurrence) copy.firstTimeLabel else copy.previousTimeLabel) +
             SelfControlElapsedPolicy.formatAbsolute(state.anchorAtEpochMs),
         style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,

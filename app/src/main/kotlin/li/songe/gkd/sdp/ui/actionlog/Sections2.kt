@@ -49,6 +49,9 @@ import li.songe.gkd.sdp.util.subsItemsFlow
 import li.songe.gkd.sdp.util.subsMapFlow
 import li.songe.gkd.sdp.util.throttle
 import li.songe.gkd.sdp.util.toast
+import androidx.compose.ui.res.stringResource
+import li.songe.gkd.sdp.R
+import li.songe.gkd.sdp.app
 
 @Composable
 internal fun ActionLogCard(
@@ -162,7 +165,7 @@ private fun ActionLogCardBody(
                 )
                 val outcomePresentation = ActionLogPresentation.from(actionLog)
                 Text(
-                    text = "${outcomePresentation.outcomeTitle} · ${outcomePresentation.outcomeDescription}",
+                    text = stringResource(R.string.s_6027bb300c, outcomePresentation.outcomeTitle, outcomePresentation.outcomeDescription),
                     style = MaterialTheme.typography.labelMedium,
                     color = if (actionLog.outcome == ActionLog.OUTCOME_INTERCEPTED) {
                         MaterialTheme.colorScheme.error
@@ -182,7 +185,7 @@ private fun ActionLogCardBody(
                         )
                     } else {
                         Text(
-                            text = "null",
+                            text = app.getString(R.string.s_2be88ca424),
                             color = LocalContentColor.current.copy(alpha = 0.5f),
                         )
                     }
@@ -192,14 +195,14 @@ private fun ActionLogCardBody(
                                 if (subsItemsFlow.value.any { it.id == actionLog.subsId }) {
                                     mainVm.sheetSubsIdFlow.value = actionLog.subsId
                                 } else {
-                                    toast("订阅不存在")
+                                    toast(app.getString(R.string.s_9e5cc3140b))
                                 }
                             })
                         ) {
                             Text(
                                 text = actionLog.subsNameSnapshot
                                     ?: subscription?.name
-                                    ?: "id=${actionLog.subsId}"
+                                    ?: stringResource(R.string.s_fbc86835e2, actionLog.subsId)
                             )
                             val lineHeightDp = LocalDensity.current.run {
                                 LocalTextStyle.current.lineHeight.toDp()
@@ -211,7 +214,7 @@ private fun ActionLogCardBody(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text(
-                                    text = "v${item.first.subsVersion}",
+                                    text = stringResource(R.string.s_f498bf1ba7, item.first.subsVersion),
                                     style = MaterialTheme.typography.labelMedium,
                                     color = MaterialTheme.colorScheme.tertiary,
                                     modifier = Modifier

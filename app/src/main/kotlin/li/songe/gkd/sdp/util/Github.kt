@@ -42,6 +42,9 @@ import li.songe.gkd.sdp.ui.component.autoFocus
 import li.songe.gkd.sdp.ui.share.LocalMainViewModel
 import li.songe.json5.Json5
 import java.io.File
+import androidx.compose.ui.res.stringResource
+import li.songe.gkd.sdp.R
+import li.songe.gkd.sdp.app
 
 private fun HttpMessageBuilder.setCommonHeaders(cookie: String) {
     header("Cookie", cookie)
@@ -216,7 +219,7 @@ fun EditGithubCookieDlg() {
                     horizontalArrangement = Arrangement.SpaceBetween,
                     modifier = Modifier.fillMaxWidth(),
                 ) {
-                    Text(text = "Github Cookie")
+                    Text(text = stringResource(R.string.s_ac245bfc80))
                     PerfIconButton(
                         imageVector = PerfIcon.HelpOutline,
                         onClick = throttle {
@@ -231,7 +234,7 @@ fun EditGithubCookieDlg() {
                     onValueChange = {
                         value = it.filter { c -> c != '\n' && c != '\r' }
                     },
-                    placeholder = { Text(text = "请输入 Github Cookie") },
+                    placeholder = { Text(text = app.getString(R.string.s_46de88b050)) },
                     modifier = Modifier
                         .fillMaxWidth()
                         .autoFocus(),
@@ -242,14 +245,14 @@ fun EditGithubCookieDlg() {
                 TextButton(onClick = {
                     mainVm.showEditCookieDlgFlow.value = false
                     mainVm.githubCookieFlow.value = value.trim()
-                    toast("更新成功")
+                    toast(app.getString(R.string.s_e2cff77372))
                 }) {
-                    Text(text = "确认")
+                    Text(text = stringResource(R.string.s_b56d9ac6c5))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { mainVm.showEditCookieDlgFlow.value = false }) {
-                    Text(text = "取消")
+                    Text(text = stringResource(R.string.s_4d0b4688c7))
                 }
             }
         )

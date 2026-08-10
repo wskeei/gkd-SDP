@@ -45,6 +45,9 @@ import li.songe.gkd.sdp.ui.style.getJson5AnnotatedString
 import li.songe.gkd.sdp.util.copyText
 import li.songe.gkd.sdp.util.throttle
 import li.songe.gkd.sdp.util.toast
+import androidx.compose.ui.res.stringResource
+import li.songe.gkd.sdp.R
+import li.songe.gkd.sdp.app
 
 @Composable
 fun RuleGroupDialog(
@@ -65,7 +68,7 @@ fun RuleGroupDialog(
 
     AlertDialog(
         onDismissRequest = onDismissRequest,
-        title = { Text(text = "规则组详情") },
+        title = { Text(text = stringResource(R.string.s_2b5f43357d)) },
         text = {
             Box(
                 modifier = Modifier.fillMaxWidth()
@@ -80,7 +83,7 @@ fun RuleGroupDialog(
                         .background(MaterialTheme.colorScheme.secondaryContainer)
                         .verticalScroll(rememberScrollState())
                         .clearAndSetSemantics {
-                            contentDescription = "规则组内容"
+                            contentDescription = app.getString(R.string.s_542a10514e)
                         }
                 ) {
                     SelectionContainer {
@@ -172,7 +175,7 @@ fun RuleGroupDialog(
                 }
                 PerfIconButton(
                     imageVector = PerfIcon.Block,
-                    onClickLabel = "编辑规则排除名单",
+                    onClickLabel = stringResource(R.string.s_8c9888b12e),
                     onClick = throttle(onClickEditExclude),
                 )
                 AnimatedVisibility(
@@ -180,7 +183,7 @@ fun RuleGroupDialog(
                 ) {
                     PerfIconButton(
                         imageVector = ResetSettings,
-                        onClickLabel = "重置开关状态至默认值",
+                        onClickLabel = stringResource(R.string.s_08279aa97c),
                         onClick = throttle(onClickResetSwitch ?: {}),
                     )
                 }

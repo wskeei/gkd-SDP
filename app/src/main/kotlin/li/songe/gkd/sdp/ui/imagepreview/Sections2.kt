@@ -52,6 +52,8 @@ import li.songe.gkd.sdp.util.throttle
 import me.saket.telephoto.zoomable.ZoomableContentLocation
 import me.saket.telephoto.zoomable.rememberZoomableState
 import me.saket.telephoto.zoomable.zoomable
+import li.songe.gkd.sdp.R
+import li.songe.gkd.sdp.app
 
 @Composable
 internal fun UriImage(
@@ -162,7 +164,7 @@ internal fun UriImage(
                         modifier = Modifier.pointerInput(uri) {
                             detectTapGestures(onTap = { reload() })
                         },
-                        text = "加载失败, 点击重试",
+                        text = app.getString(R.string.s_ceac8790d1),
                         color = MaterialTheme.colorScheme.error,
                         style = MaterialTheme.typography.bodyMedium
                     )

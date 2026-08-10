@@ -34,6 +34,8 @@ import li.songe.gkd.sdp.util.subsMapFlow
 import li.songe.gkd.sdp.util.throttle
 import li.songe.gkd.sdp.util.toast
 import li.songe.gkd.sdp.util.updateSubscription
+import li.songe.gkd.sdp.R
+import li.songe.gkd.sdp.app
 
 data class ShowGroupState(
     val subsId: Long,
@@ -207,7 +209,7 @@ suspend fun batchUpdateGroupEnable(
     if (enable == false && diffDataList.isNotEmpty()) {
         val attempt = AutoReenableDisableGuard.tryConsumeForDisable()
         if (!attempt.allowed) {
-            toast("今日关闭次数已用完（${attempt.limit} 次），将于明日 00:00 重置")
+            toast(app.getString(R.string.s_b0bb6964b5, attempt.limit))
             return emptyList()
         }
     }
@@ -318,7 +320,7 @@ class RuleGroupState(
                                             ).stringify()
                                         )
                                     )
-                                    toast("已重置局部开关至初始状态")
+                                    toast(app.getString(R.string.s_9f8659b8b5))
                                 }
                             } else {
                                 null
@@ -327,7 +329,7 @@ class RuleGroupState(
                             subsConfig.enable?.let {
                                 mainVm.viewModelScope.launchAsFn {
                                     DbSet.subsConfigDao.update(subsConfig.copy(enable = null))
-                                    toast("已重置开关至初始状态")
+                                    toast(app.getString(R.string.s_59ec2d9a54))
                                 }
                             }
                         }
@@ -335,7 +337,7 @@ class RuleGroupState(
                         subsConfig.enable?.let {
                             mainVm.viewModelScope.launchAsFn {
                                 DbSet.subsConfigDao.update(subsConfig.copy(enable = null))
-                                toast("已重置开关至初始状态")
+                                toast(app.getString(R.string.s_59ec2d9a54))
                             }
                         }
                     }
@@ -343,8 +345,8 @@ class RuleGroupState(
                 onClickDelete = mainVm.viewModelScope.launchAsFn {
                     dismissGroupShow()
                     val r = mainVm.dialogFlow.getResult(
-                        title = "删除规则组",
-                        text = "确定删除 ${showGroup.name} ?",
+                        title = app.getString(R.string.s_2d646aa66b),
+                        text = app.getString(R.string.s_e14c6a817a, showGroup.name),
                         error = true,
                     )
                     if (!r) {
@@ -375,7 +377,7 @@ class RuleGroupState(
                             showGroupState.groupKey
                         )
                     }
-                    toast("删除成功")
+                    toast(app.getString(R.string.s_86e8d12a79))
                 }
             )
         }
@@ -392,8 +394,8 @@ class RuleGroupState(
                     val newValue = changedExcludeData
                     if (newValue != null) {
                         mainVm.dialogFlow.waitResult(
-                            title = "提示",
-                            text = "当前内容未保存，是否放弃编辑？",
+                            title = app.getString(R.string.s_ab3656a956),
+                            text = app.getString(R.string.s_aebc195621),
                         )
                     }
                     dismissExcludeGroupShow()
@@ -411,14 +413,14 @@ class RuleGroupState(
                             title = {
                                 TowLineText(
                                     title = excludeGroup.name,
-                                    subtitle = "编辑禁用",
+                                    subtitle = app.getString(R.string.s_427bec7575),
                                 )
                             },
                             actions = {
                                 PerfIconButton(imageVector = PerfIcon.Save, onClick = throttle {
                                     val newValue = changedExcludeData
                                     if (newValue == null) {
-                                        toast("无修改")
+                                        toast(app.getString(R.string.s_a2a69342dd))
                                         dismissExcludeGroupShow()
                                     } else {
                                         val newSubsConfig =
@@ -433,7 +435,7 @@ class RuleGroupState(
                                         dismissExcludeGroupShow()
                                         mainVm.viewModelScope.launchTry {
                                             DbSet.subsConfigDao.insert(newSubsConfig)
-                                            toast("更新成功")
+                                            toast(app.getString(R.string.s_e2cff77372))
                                         }
                                     }
                                 })

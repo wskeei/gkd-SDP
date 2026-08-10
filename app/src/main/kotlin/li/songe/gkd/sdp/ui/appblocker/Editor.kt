@@ -38,6 +38,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import li.songe.gkd.sdp.app
 import li.songe.gkd.sdp.ui.component.AppPickerDialog
+import androidx.compose.ui.res.stringResource
+import li.songe.gkd.sdp.R
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
@@ -107,8 +109,8 @@ internal fun GroupEditorSheet(
             OutlinedTextField(
                 value = vm.groupName,
                 onValueChange = { vm.groupName = it },
-                label = { Text("应用组名称") },
-                placeholder = { Text("如：娱乐应用") },
+                label = { Text(stringResource(R.string.s_67f4598335)) },
+                placeholder = { Text(app.getString(R.string.s_6deabd286d)) },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
                 enabled = !isLocked && !isAppendMode
@@ -117,7 +119,7 @@ internal fun GroupEditorSheet(
             if (isExistingGroup) {
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = "已添加的应用不可移除；如需移除，请删除整个应用组后重建。",
+                    text = stringResource(R.string.s_06e3aae567),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -130,13 +132,13 @@ internal fun GroupEditorSheet(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text(
-                    text = "应用列表 (${vm.groupApps.size})",
+                    text = stringResource(R.string.s_71e649ba01, vm.groupApps.size),
                     style = MaterialTheme.typography.bodyMedium,
                     modifier = Modifier.weight(1f)
                 )
                 if (canOpenAppPicker) {
                     TextButton(onClick = { showAppPicker = true }) {
-                        Text(if (isAppendMode) "添加应用" else "选择")
+                        Text(if (isAppendMode) stringResource(R.string.s_ea8e8dbcb9) else stringResource(R.string.s_70b208202c))
                     }
                 }
             }
@@ -177,7 +179,7 @@ internal fun GroupEditorSheet(
                     onClick = onSave,
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text("保存")
+                    Text(stringResource(R.string.s_fadf24dbc5))
                 }
             } else {
                 Button(
@@ -188,7 +190,7 @@ internal fun GroupEditorSheet(
                         contentColor = MaterialTheme.colorScheme.onSecondaryContainer
                     )
                 ) {
-                    Text("确定")
+                    Text(app.getString(R.string.s_f526c89937))
                 }
             }
 

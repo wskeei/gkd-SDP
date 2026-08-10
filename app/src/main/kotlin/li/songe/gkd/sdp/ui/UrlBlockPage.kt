@@ -41,6 +41,9 @@ import li.songe.gkd.sdp.ui.share.LocalMainViewModel
 import li.songe.gkd.sdp.ui.style.itemPadding
 import li.songe.gkd.sdp.ui.style.scaffoldPadding
 import li.songe.gkd.sdp.ui.style.surfaceCardColors
+import androidx.compose.ui.res.stringResource
+import li.songe.gkd.sdp.R
+import li.songe.gkd.sdp.app
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Serializable
@@ -75,13 +78,13 @@ fun UrlBlockPage() {
                         onClick = { mainVm.popPage() },
                     )
                 },
-                title = { Text(text = "网址拦截") },
+                title = { Text(text = app.getString(R.string.s_dcbbbab7a5)) },
                 actions = {
                     // 浏览器适配按钮
                     IconButton(onClick = { vm.showBrowserList = true }) {
                         Icon(
                             PerfIcon.Settings,
-                            contentDescription = "浏览器适配",
+                            contentDescription = app.getString(R.string.s_362f11dc2a),
                             tint = MaterialTheme.colorScheme.onSurface
                         )
                     }
@@ -89,7 +92,7 @@ fun UrlBlockPage() {
                     IconButton(onClick = { showGlobalLockSheet = true }) {
                         Icon(
                             PerfIcon.Lock,
-                            contentDescription = "全局锁定",
+                            contentDescription = app.getString(R.string.s_0261a6c710),
                             tint = if (globalLock?.isCurrentlyLocked == true) {
                                 MaterialTheme.colorScheme.error
                             } else {
@@ -111,14 +114,14 @@ fun UrlBlockPage() {
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Text(
-                            text = "自动重开始终启用，无法关闭。",
+                            text = stringResource(R.string.s_b2d1d6afd6),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.primary,
                             fontWeight = FontWeight.SemiBold
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            text = "间隔可调：0~240 分钟；每 3 天仅可修改一次。",
+                            text = stringResource(R.string.s_ebf718dc74),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -146,13 +149,13 @@ fun UrlBlockPage() {
                             Spacer(modifier = Modifier.width(12.dp))
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
-                                    text = "全局锁定中",
+                                    text = stringResource(R.string.s_1640da6876),
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.Bold
                                 )
                                 val remainingMinutes = ((globalLock!!.lockEndTime - System.currentTimeMillis()) / 60000).coerceAtLeast(0)
                                 Text(
-                                    text = "剩余 ${if (remainingMinutes >= 60) "${remainingMinutes / 60}小时${remainingMinutes % 60}分钟" else "${remainingMinutes}分钟"}",
+                                    text = stringResource(R.string.s_039836663c, )${remainingMinutes / 60}小时${remainingMinutes % 60}分钟stringResource(R.string.s_97dccf7b6e)${remainingMinutes}分钟stringResource(R.string.s_c2b7df6201),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.error
                                 )
@@ -173,7 +176,7 @@ fun UrlBlockPage() {
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "规则组 (${allGroups.size})",
+                        text = stringResource(R.string.s_bb218a940b, allGroups.size),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold
                     )
@@ -183,7 +186,7 @@ fun UrlBlockPage() {
                     }) {
                         Icon(PerfIcon.Add, contentDescription = null)
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("添加")
+                        Text(stringResource(R.string.s_94191ce210))
                     }
                 }
             }
@@ -191,7 +194,7 @@ fun UrlBlockPage() {
             if (allGroups.isEmpty()) {
                 item(key = "no_groups") {
                     Text(
-                        text = "暂无规则组",
+                        text = stringResource(R.string.s_5414239fa2),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                         modifier = Modifier.itemPadding()
@@ -268,7 +271,7 @@ fun UrlBlockPage() {
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "独立规则",
+                        text = stringResource(R.string.s_f6b45b5f13),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold
                     )
@@ -278,7 +281,7 @@ fun UrlBlockPage() {
                     }) {
                         Icon(PerfIcon.Add, contentDescription = null)
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("添加")
+                        Text(stringResource(R.string.s_94191ce210))
                     }
                 }
             }
@@ -289,7 +292,7 @@ fun UrlBlockPage() {
             if (standaloneRules.isEmpty()) {
                 item(key = "no_rules") {
                     Text(
-                        text = "暂无独立规则",
+                        text = stringResource(R.string.s_30808f105b),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                         modifier = Modifier.itemPadding()
@@ -425,8 +428,8 @@ fun UrlBlockPage() {
     // 全局锁定 Sheet
     if (showGlobalLockSheet) {
         UrlLockSheet(
-            title = if (globalLock?.isCurrentlyLocked == true) "延长全局锁定" else "全局锁定",
-            description = "锁定后无法删除或修改任何规则/组，但可以新增。",
+            title = if (globalLock?.isCurrentlyLocked == true) stringResource(R.string.s_a04aff06d0) else stringResource(R.string.s_0261a6c710),
+            description = stringResource(R.string.s_63c9be57f7),
             currentLockEndTime = globalLock?.lockEndTime,
             vm = vm,
             onDismiss = { showGlobalLockSheet = false },
@@ -440,8 +443,8 @@ fun UrlBlockPage() {
     // 规则组锁定 Sheet
     if (showGroupLockSheet && lockTargetGroup != null) {
         UrlLockSheet(
-            title = if (lockTargetGroup!!.isCurrentlyLocked) "延长锁定" else "锁定规则组",
-            description = "锁定后无法关闭、删除或修改此规则组。",
+            title = if (lockTargetGroup!!.isCurrentlyLocked) stringResource(R.string.s_eae5fd957e) else stringResource(R.string.s_b9a0e4b4ab),
+            description = stringResource(R.string.s_bbacb690bd),
             currentLockEndTime = if (lockTargetGroup!!.isCurrentlyLocked) lockTargetGroup!!.lockEndTime else null,
             vm = vm,
             onDismiss = {
@@ -459,8 +462,8 @@ fun UrlBlockPage() {
     // 时间规则锁定 Sheet
     if (showTimeRuleLockSheet && lockTargetTimeRule != null) {
         UrlLockSheet(
-            title = if (lockTargetTimeRule!!.isCurrentlyLocked) "延长锁定" else "锁定时间规则",
-            description = "锁定后无法关闭、删除或修改此时间规则。",
+            title = if (lockTargetTimeRule!!.isCurrentlyLocked) stringResource(R.string.s_eae5fd957e) else stringResource(R.string.s_744ffb01f4),
+            description = stringResource(R.string.s_d21804ab1a),
             currentLockEndTime = if (lockTargetTimeRule!!.isCurrentlyLocked) lockTargetTimeRule!!.lockEndTime else null,
             vm = vm,
             onDismiss = {
@@ -482,8 +485,8 @@ fun UrlBlockPage() {
     // 网址规则锁定 Sheet
     if (showUrlRuleLockSheet && lockTargetUrlRule != null) {
         UrlLockSheet(
-            title = if (lockTargetUrlRule!!.isCurrentlyLocked) "延长锁定" else "锁定规则",
-            description = "锁定后无法关闭或删除此规则。",
+            title = if (lockTargetUrlRule!!.isCurrentlyLocked) stringResource(R.string.s_eae5fd957e) else stringResource(R.string.s_2201b864c9),
+            description = stringResource(R.string.s_c9a939b41d),
             currentLockEndTime = if (lockTargetUrlRule!!.isCurrentlyLocked) lockTargetUrlRule!!.lockEndTime else null,
             vm = vm,
             onDismiss = {

@@ -7,6 +7,8 @@ import li.songe.gkd.sdp.a11y.topActivityFlow
 import li.songe.gkd.sdp.util.LogUtils
 import li.songe.gkd.sdp.util.toast
 import kotlin.system.measureTimeMillis
+import li.songe.gkd.sdp.R
+import li.songe.gkd.sdp.app
 
 @Serializable
 data class NodeInfo(
@@ -76,7 +78,7 @@ fun info2nodeList(root: AccessibilityNodeInfo?): List<NodeInfo> {
             }
             if (times > MAX_KEEP_SIZE) {
                 // https://github.com/gkd-kit/gkd/issues/28
-                toast("节点数量至多保留$MAX_KEEP_SIZE,丢弃后续节点")
+                toast(app.getString(R.string.s_e073a2b7df, MAX_KEEP_SIZE))
                 LogUtils.d(
                     "节点数量过多",
                     root.packageName,

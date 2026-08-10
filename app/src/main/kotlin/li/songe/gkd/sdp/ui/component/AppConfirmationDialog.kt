@@ -19,6 +19,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import li.songe.gkd.sdp.ui.style.DimensionTokens
+import androidx.compose.ui.res.stringResource
+import li.songe.gkd.sdp.R
+import li.songe.gkd.sdp.app
 
 object FullDeletionPolicy {
     /** Exact phrase required to confirm a full data wipe. */
@@ -57,7 +60,7 @@ fun AppConfirmationDialog(
         },
         text = {
             Column {
-                Text("对象：$objectName")
+                Text(stringResource(R.string.s_1bbac91b90, objectName))
                 Spacer(modifier = Modifier.height(DimensionTokens.SpacingSm))
                 Text(
                     text = description,
@@ -67,14 +70,14 @@ fun AppConfirmationDialog(
                 if (requiresPhrase) {
                     Spacer(modifier = Modifier.height(DimensionTokens.SpacingBase))
                     AppFormField(
-                        label = "输入“${FullDeletionPolicy.FullDeletionPhrase}”以确认",
+                        label = stringResource(R.string.s_aba4ea9027, FullDeletionPolicy.FullDeletionPhrase),
                         value = phraseInput,
                         onValueChange = { phraseInput = it },
                         supportingText = null,
                         errorText = if (phraseConfirmed || phraseInput.isBlank()) {
                             null
                         } else {
-                            "输入内容不匹配"
+                            app.getString(R.string.s_89c340d11d)
                         },
                     )
                 }
@@ -98,7 +101,7 @@ fun AppConfirmationDialog(
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("取消")
+                Text(stringResource(R.string.s_4d0b4688c7))
             }
         },
     )

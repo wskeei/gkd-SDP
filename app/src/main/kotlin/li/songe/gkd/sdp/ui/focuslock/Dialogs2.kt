@@ -30,6 +30,9 @@ import li.songe.gkd.sdp.ui.share.LocalMainViewModel
 import li.songe.gkd.sdp.util.AutoReenablePolicy
 import li.songe.gkd.sdp.util.format
 import li.songe.gkd.sdp.util.toast
+import androidx.compose.ui.res.stringResource
+import li.songe.gkd.sdp.R
+import li.songe.gkd.sdp.app
 
 internal class FocusLockDialogState {
     var showLockSheet by mutableStateOf(false)
@@ -129,7 +132,7 @@ internal fun FocusLockPageDialogs(
                 scope.launch {
                     when (AccessibilityGuardController.enable(activity)) {
                         AccessibilityGuardController.EnableResult.RequiresA11yMode -> {
-                            toast("请先切换到无障碍模式")
+                            toast(app.getString(R.string.s_ce953b779c))
                             mainVm.navigatePage(AuthA11yRoute)
                         }
                         AccessibilityGuardController.EnableResult.UnavailableChannel,
@@ -149,9 +152,9 @@ internal fun FocusLockPageDialogs(
                 scope.launch {
                     when (val result = AccessibilityGuardController.disable()) {
                         AccessibilityGuardController.DisableResult.BlockedByLock ->
-                            toast("数字自律锁定生效中，无法关闭无障碍权限守护")
+                            toast(app.getString(R.string.s_5c6b661917))
                         is AccessibilityGuardController.DisableResult.BlockedByQuota ->
-                            toast("今日关闭次数已用完（${result.limit} 次），将于明日 00:00 重置")
+                            toast(app.getString(R.string.s_ba1f755996, result.limit))
                         AccessibilityGuardController.DisableResult.Disabled,
                         AccessibilityGuardController.DisableResult.NoChange -> Unit
                     }
@@ -205,16 +208,16 @@ private fun FocusLockOverlayPermissionDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("需要悬浮窗权限") },
-        text = { Text("全屏拦截功能需要悬浮窗权限才能正常显示。请前往设置开启。") },
+        title = { Text(stringResource(R.string.s_b600d981ce)) },
+        text = { Text(stringResource(R.string.s_923ae7391e)) },
         confirmButton = {
             TextButton(onClick = onOpenSettings) {
-                Text("去设置")
+                Text(stringResource(R.string.s_1f2998c9c8))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("取消")
+                Text(stringResource(R.string.s_4d0b4688c7))
             }
         },
     )
@@ -227,23 +230,24 @@ private fun FocusLockAccessibilityGuardEnableDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("开启无障碍权限守护") },
+        title = { Text(stringResource(R.string.s_b23186d5e5)) },
         text = {
             Text(
-                "即使当前无障碍已经关闭，也可以先开启守护。检测到关闭后会立即显示倒计时，" +
-                    "并在 15、25、30、33、35、36 分钟分别提醒一次（间隔为 15/10/5/3/2/1 分钟）。" +
-                    "第 36 分钟最后一次提醒后仍未恢复，会显示全屏悬浮窗。" +
-                    "关闭守护会受数字自律锁定、每日关闭限额和自动重开保护约束。",
+                stringResource(R.string.s_36524f9faf) +
+                    stringResource(R.string.s_e4ccf19996, ) +
+                    stringResource(R.string.s_c95c313099, "并在 15、25、30、33、35、36 分钟分别提醒一次（间隔为 15/10/5/3/2/1 分钟）。" +) +
+                    stringResource(R.string.s_efcaa30b99, "并在 15、25、30、33、35、36 分钟分别提醒一次（间隔为 15/10/5/3/2/1 分钟）。" +
+                    "第 36 分钟最后一次提醒后仍未恢复，会显示全屏悬浮窗。" +),
             )
         },
         confirmButton = {
             TextButton(onClick = onConfirm) {
-                Text("同意并开启")
+                Text(stringResource(R.string.s_c5c9cefa90))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("取消")
+                Text(stringResource(R.string.s_4d0b4688c7))
             }
         },
     )
@@ -256,21 +260,21 @@ private fun FocusLockAccessibilityGuardDisableDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("关闭无障碍权限守护") },
+        title = { Text(stringResource(R.string.s_61c6738b36)) },
         text = {
             Text(
-                "关闭后将停止无障碍权限提醒、倒计时和全屏提示。" +
-                    "如果已加入自动重开保护，守护会在下一次检查时恢复。",
+                stringResource(R.string.s_db67ff730b) +
+                    stringResource(R.string.s_c61e3028fc, ),
             )
         },
         confirmButton = {
             TextButton(onClick = onConfirm) {
-                Text("关闭守护")
+                Text(stringResource(R.string.s_9df1323aef))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("取消")
+                Text(stringResource(R.string.s_4d0b4688c7))
             }
         },
     )
@@ -311,23 +315,23 @@ private fun FocusLockAutoReenableDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("自动重开间隔") },
+        title = { Text(stringResource(R.string.s_7fd2ebc2a8)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("自动重开始终启用，无法关闭。会恢复已关闭的规则、使用申请开关与已加入保护的无障碍权限守护。")
-                Text("下一次自动重开：${uiState.nextEnforceAt.format("MM-dd HH:mm")}")
-                Text("今日已用/总额：${uiState.dailyDisableUsed}/${uiState.dailyDisableLimit}")
-                Text("剩余次数：${uiState.dailyDisableRemaining}")
-                Text("下一次重置时间：${uiState.nextDailyResetAt.format("MM-dd HH:mm")}")
+                Text(stringResource(R.string.s_99858cff31))
+                Text(stringResource(R.string.s_ecfd65f5cd, )MM-dd HH:mm")}")
+                Text(stringResource(R.string.s_f70a7d4f0a, uiState.dailyDisableUsed, uiState.dailyDisableLimit))
+                Text(stringResource(R.string.s_3e67db9f62, uiState.dailyDisableRemaining))
+                Text(stringResource(R.string.s_e084dbb887, )MM-dd HH:mm")}")
                 if (!uiState.canEditInterval) {
-                    Text("冷却中，下次可修改：$nextEditableText")
+                    Text(stringResource(R.string.s_d135a965d5, nextEditableText))
                 }
                 OutlinedTextField(
                     value = inputText,
                     onValueChange = { value ->
                         if (value.all { it.isDigit() }) inputText = value
                     },
-                    label = { Text("间隔（分钟）") },
+                    label = { Text(stringResource(R.string.s_6c7f21d273)) },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     singleLine = true,
                     enabled = uiState.canEditInterval,
@@ -335,7 +339,7 @@ private fun FocusLockAutoReenableDialog(
                 )
                 if (!intervalInputValid) {
                     Text(
-                        text = "请输入 0~240 的整数分钟",
+                        text = stringResource(R.string.s_a52cfc2df4),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.error,
                     )
@@ -345,14 +349,14 @@ private fun FocusLockAutoReenableDialog(
                     onValueChange = { value ->
                         if (value.all { it.isDigit() }) dailyLimitText = value
                     },
-                    label = { Text("每日关闭限额（次）") },
+                    label = { Text(stringResource(R.string.s_d73b70ee9b)) },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     singleLine = true,
                     isError = !dailyLimitInputValid,
                 )
                 if (!dailyLimitInputValid) {
                     Text(
-                        text = "请输入 1~5 的整数次数",
+                        text = stringResource(R.string.s_1d80e402d6),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.error,
                     )
@@ -374,12 +378,12 @@ private fun FocusLockAutoReenableDialog(
                     onDismiss()
                 },
             ) {
-                Text("保存")
+                Text(stringResource(R.string.s_fadf24dbc5))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("取消")
+                Text(stringResource(R.string.s_4d0b4688c7))
             }
         },
     )

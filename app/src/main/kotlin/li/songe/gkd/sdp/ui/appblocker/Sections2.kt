@@ -39,6 +39,8 @@ import li.songe.gkd.sdp.ui.component.PerfIcon
 import li.songe.gkd.sdp.ui.style.itemPadding
 import li.songe.gkd.sdp.ui.style.surfaceCardColors
 import li.songe.gkd.sdp.util.AppBlockerDecisionPolicy
+import androidx.compose.ui.res.stringResource
+import li.songe.gkd.sdp.R
 
 @Composable
 @android.annotation.SuppressLint("NonObservableLocale")
@@ -85,19 +87,19 @@ internal fun AppGroupCard(
     if (showDeleteConfirm) {
         AlertDialog(
             onDismissRequest = { showDeleteConfirm = false },
-            title = { Text("删除应用组") },
-            text = { Text("确定要删除应用组「${group.name}」吗？相关的时间规则也会被删除。") },
+            title = { Text(stringResource(R.string.s_ec2c341e25)) },
+            text = { Text(stringResource(R.string.s_4194ebb566, group.name)) },
             confirmButton = {
                 TextButton(onClick = {
                     onDelete()
                     showDeleteConfirm = false
                 }) {
-                    Text("删除")
+                    Text(stringResource(R.string.s_3755f56f2f))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showDeleteConfirm = false }) {
-                    Text("取消")
+                    Text(stringResource(R.string.s_4d0b4688c7))
                 }
             }
         )
@@ -130,7 +132,7 @@ private fun AppGroupCardHeader(
                     Spacer(modifier = Modifier.width(8.dp))
                     Icon(
                         PerfIcon.Lock,
-                        contentDescription = "已锁定",
+                        contentDescription = stringResource(R.string.s_3cc7a5af4c),
                         tint = MaterialTheme.colorScheme.error,
                     )
                 }
@@ -138,7 +140,7 @@ private fun AppGroupCardHeader(
             Spacer(modifier = Modifier.height(4.dp))
             Row {
                 Text(
-                    text = "${group.getAppList().size} 个应用",
+                    text = app.getString(R.string.s_1e09b684d4, group.getAppList().size),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                 )
@@ -149,14 +151,14 @@ private fun AppGroupCardHeader(
                     ).format(java.util.Date(group.lockEndTime))
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "🔒 锁定至 $lockEndTime",
+                        text = app.getString(R.string.s_f30b55361a, lockEndTime),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.error,
                     )
                 }
             }
             Text(
-                text = "${rules.count { it.enabled }} 条启用时间规则",
+                text = stringResource(R.string.s_11c0847151, rules.count { it.enabled),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -174,12 +176,12 @@ private fun AppGroupCardHeader(
 private fun AppGroupStatus(group: AppGroup, rules: List<BlockTimeRule>) {
     when {
         !group.enabled -> Text(
-            text = "应用组已关闭",
+            text = stringResource(R.string.s_e7693b5362),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.error,
         )
         rules.isEmpty() || rules.none { it.enabled } -> Text(
-            text = "尚未生效：请添加时间规则",
+            text = stringResource(R.string.s_472d6f2b45),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.error,
         )
@@ -189,12 +191,12 @@ private fun AppGroupStatus(group: AppGroup, rules: List<BlockTimeRule>) {
                     !AppBlockerDecisionPolicy.isValidTime(it.endTime) ||
                     !AppBlockerDecisionPolicy.isValidDays(it.daysOfWeek))
         } -> Text(
-            text = "有时间规则格式无效，请编辑修正",
+            text = stringResource(R.string.s_d5bc80c5db),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.error,
         )
         rules.none { it.enabled && it.isActiveNow() } -> Text(
-            text = "已配置，当前时段不拦截",
+            text = stringResource(R.string.s_9f3c6b0775),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -208,7 +210,7 @@ private fun AppGroupAppList(appList: List<String>) {
     HorizontalDivider()
     Spacer(modifier = Modifier.height(8.dp))
     Text(
-        text = "应用列表 (${appList.size})",
+        text = stringResource(R.string.s_614197f94d, appList.size),
         style = MaterialTheme.typography.labelMedium,
         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
     )
@@ -243,7 +245,7 @@ private fun AppGroupRuleList(rules: List<BlockTimeRule>) {
     HorizontalDivider()
     Spacer(modifier = Modifier.height(8.dp))
     Text(
-        text = "时间规则 (${rules.size})",
+        text = stringResource(R.string.s_68fd9e7f42, rules.size),
         style = MaterialTheme.typography.labelMedium,
         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
     )
@@ -258,25 +260,25 @@ private fun AppGroupRuleList(rules: List<BlockTimeRule>) {
             Column(modifier = Modifier.weight(1f)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                        text = if (rule.isAllowMode) "✓" else "🚫",
+                        text = if (rule.isAllowMode) app.getString(R.string.s_698a879938) else app.getString(R.string.s_1fee3b4a52),
                         style = MaterialTheme.typography.bodySmall,
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
-                        text = "${rule.formatTimeRange()} ${rule.formatDaysOfWeek()}",
+                        text = app.getString(R.string.s_e713116e5e, rule.formatTimeRange(), rule.formatDaysOfWeek()),
                         style = MaterialTheme.typography.bodyMedium,
                     )
                 }
                 if (rule.isAllowMode) {
                     Text(
-                        text = "允许时间段",
+                        text = app.getString(R.string.s_6d17c9576a),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.primary,
                     )
                 }
                 if (rule.isCurrentlyLocked) {
                     Text(
-                        text = "已锁定",
+                        text = app.getString(R.string.s_3cc7a5af4c),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.error,
                     )
@@ -311,12 +313,12 @@ private fun AppGroupActions(
             TextButton(onClick = onAddApps) {
                 Icon(PerfIcon.Add, contentDescription = null)
                 Spacer(modifier = Modifier.width(4.dp))
-                Text("添加应用")
+                Text(stringResource(R.string.s_ea8e8dbcb9))
             }
             TextButton(onClick = onAddRule) {
                 Icon(PerfIcon.Add, contentDescription = null)
                 Spacer(modifier = Modifier.width(4.dp))
-                Text("添加规则")
+                Text(stringResource(R.string.s_d2fc32282a))
             }
         }
         TextButton(onClick = onLock) {
@@ -330,13 +332,13 @@ private fun AppGroupActions(
                 },
             )
             Spacer(modifier = Modifier.width(4.dp))
-            Text(if (group.isCurrentlyLocked) "延长锁定" else "锁定")
+            Text(if (group.isCurrentlyLocked) stringResource(R.string.s_eae5fd957e) else stringResource(R.string.s_0b707d6dcc))
         }
         if (!group.isCurrentlyLocked) {
             TextButton(onClick = onDelete) {
                 Icon(PerfIcon.Delete, contentDescription = null)
                 Spacer(modifier = Modifier.width(4.dp))
-                Text("删除")
+                Text(stringResource(R.string.s_3755f56f2f))
             }
         }
     }

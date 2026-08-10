@@ -71,6 +71,9 @@ import li.songe.gkd.sdp.util.shFolder
 import li.songe.gkd.sdp.util.throttle
 import li.songe.gkd.sdp.util.toast
 import li.songe.gkd.sdp.store.writeTextAtomically
+import androidx.compose.ui.res.stringResource
+import li.songe.gkd.sdp.R
+import li.songe.gkd.sdp.app
 
 @Serializable
 data object AuthA11yRoute : NavKey
@@ -96,7 +99,7 @@ fun AuthA11yPage() {
                     mainVm.popPage()
                 })
         }, title = {
-            Text(text = "工作模式")
+            Text(text = app.getString(R.string.s_f8b4c14ff9))
         })
     }) { contentPadding ->
         Column(
@@ -130,7 +133,7 @@ fun AuthA11yPage() {
                     modifier = Modifier
                         .padding(horizontal = cardHorizontalPadding)
                         .padding(start = 4.dp),
-                    text = "基础",
+                    text = stringResource(R.string.s_5f83e7f6a1),
                     style = MaterialTheme.typography.titleSmall
                 )
                 TextListItem(
@@ -150,7 +153,7 @@ fun AuthA11yPage() {
                             modifier = Modifier
                                 .padding(horizontal = cardHorizontalPadding)
                                 .padding(start = 8.dp, top = 4.dp),
-                            text = "已持有「无障碍权限」可继续使用",
+                            text = app.getString(R.string.s_3075b35472),
                             style = MaterialTheme.typography.bodySmall,
                         )
                     },
@@ -166,7 +169,7 @@ fun AuthA11yPage() {
                                 onClick = throttle { openA11ySettings() },
                             ) {
                                 Text(
-                                    text = "手动授权",
+                                    text = app.getString(R.string.s_34fd164246),
                                     style = MaterialTheme.typography.bodyLarge,
                                 )
                             }
@@ -178,7 +181,7 @@ fun AuthA11yPage() {
                                         mainVm.navigateWebPage(ShortUrlSet.URL2)
                                     })
                                     .padding(horizontal = 4.dp),
-                                text = "无法开启无障碍?",
+                                text = app.getString(R.string.s_2735ce6e46),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.primary,
                             )
@@ -189,7 +192,7 @@ fun AuthA11yPage() {
                     modifier = Modifier
                         .padding(horizontal = cardHorizontalPadding)
                         .padding(start = 4.dp, top = 8.dp),
-                    text = "增强",
+                    text = stringResource(R.string.s_1dd014a84e),
                     style = MaterialTheme.typography.titleSmall,
                 )
                 TextListItem(
@@ -209,7 +212,7 @@ fun AuthA11yPage() {
                             modifier = Modifier
                                 .padding(horizontal = cardHorizontalPadding)
                                 .padding(start = 8.dp, top = 4.dp),
-                            text = "已持有「写入安全设置权限」 优先使用此项",
+                            text = app.getString(R.string.s_5ae6bc88fe),
                             style = MaterialTheme.typography.bodySmall,
                         )
                     },
@@ -222,7 +225,7 @@ fun AuthA11yPage() {
                             ShizukuAuthButton()
                             TextButton(onClick = { vm.showCopyDlgFlow.value = true }) {
                                 Text(
-                                    text = "命令授权",
+                                    text = app.getString(R.string.s_92cab38651),
                                     style = MaterialTheme.typography.bodyLarge,
                                 )
                             }
@@ -234,16 +237,16 @@ fun AuthA11yPage() {
                         .padding(horizontal = cardHorizontalPadding),
                     onClick = throttle {
                         if (!writeSecureSettings) {
-                            toast("请先授予「${writeSecureSettingsState.name}」")
+                            toast(app.getString(R.string.s_45d0618f98, writeSecureSettingsState.name))
                         }
                         mainVm.dialogFlow.updateDialogOptions(
-                            title = "无感保活",
-                            text = "添加通知栏快捷开关\n\n1. 下拉通知栏至「快捷开关」标界面\n2. 找到名称为 ${META.appName} 的快捷开关\n3. 添加此开关到通知面板 \n\n只要此快捷开关在通知面板可见\n无论是系统杀后台还是自身崩溃\n简单下拉打开通知即可重启"
+                            title = app.getString(R.string.s_ad2ea87ca3),
+                            text = app.getString(R.string.s_cd7a98be77, META.appName)
                         )
                     }
                 ) {
                     Text(
-                        text = "无感保活",
+                        text = stringResource(R.string.s_ad2ea87ca3),
                         style = MaterialTheme.typography.bodyLarge,
                     )
                 }
@@ -290,7 +293,7 @@ fun AuthA11yPage() {
                             modifier = Modifier
                                 .padding(horizontal = cardHorizontalPadding)
                                 .padding(start = 8.dp, top = 8.dp),
-                            text = "已连接 Shizuku 服务，可继续使用",
+                            text = app.getString(R.string.s_787a6e40ac),
                             style = MaterialTheme.typography.bodySmall,
                         )
                     },
@@ -309,7 +312,7 @@ fun AuthA11yPage() {
                     },
                 ) {
                     Text(
-                        text = "局部无障碍",
+                        text = stringResource(R.string.s_3721fe11a2),
                         style = MaterialTheme.typography.bodyLarge,
                     )
                 }
@@ -339,14 +342,14 @@ private fun ShizukuAuthButton(
         onClick = throttle(vm.viewModelScope.launchAsFn(Dispatchers.IO) {
             mainVm.guardShizukuContext()
             if (writeSecureSettingsState.value) {
-                toast("授权成功")
+                toast(stringResource(R.string.s_027b905228))
                 updateEnableAutomator(true)
                 fixRestartAutomatorService()
             }
         })
     ) {
         Text(
-            text = "Shizuku 授权",
+            text = stringResource(R.string.s_0f0c48af67),
             style = MaterialTheme.typography.bodyLarge,
         )
     }

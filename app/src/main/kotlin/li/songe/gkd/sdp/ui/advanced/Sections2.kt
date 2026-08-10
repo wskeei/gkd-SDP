@@ -58,6 +58,8 @@ import li.songe.gkd.sdp.util.copyText
 import li.songe.gkd.sdp.util.launchAsFn
 import li.songe.gkd.sdp.util.throttle
 import li.songe.gkd.sdp.util.toast
+import androidx.compose.ui.res.stringResource
+import li.songe.gkd.sdp.app
 
 internal fun remoteScopeLabel(scope: RemoteScope): String = when (scope) {
     RemoteScope.SERVER_INFO -> "服务信息"
@@ -87,7 +89,7 @@ internal fun AdvancedPageContent(
             PerfTopAppBar(
                 scrollBehavior = scrollBehavior,
                 navigationIcon = { PerfIconButton(imageVector = PerfIcon.ArrowBack, onClick = mainVm::popPage) },
-                title = { Text("高级设置") },
+                title = { Text(app.getString(R.string.s_dd07e641ca)) },
             )
         },
     ) { contentPadding ->
@@ -113,24 +115,24 @@ private fun AdvancedShizukuSection(
         modifier = Modifier.fillMaxWidth().titleItemPadding(showTop = false),
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
-        Text("Shizuku", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary)
+        Text(stringResource(R.string.s_8ecb7f0457), style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary)
         PerfIcon(
             modifier = Modifier
                 .clip(MaterialTheme.shapes.extraSmall)
-                .clickable(onClickLabel = "打开 Shizuku 状态弹窗", onClick = throttle { showShizukuState.value = true })
+                .clickable(onClickLabel = stringResource(R.string.s_3b8328c91c), onClick = throttle { showShizukuState.value = true })
                 .iconTextSize(textStyle = MaterialTheme.typography.titleSmall),
             imageVector = PerfIcon.Api,
             tint = MaterialTheme.colorScheme.primary,
-            contentDescription = "Shizuku 状态",
+            contentDescription = stringResource(R.string.s_74c1843061),
         )
     }
     val shizukuGranted by shizukuGrantedState.stateFlow.collectAsStateWithLifecycle()
     AnimatedVisibility(store.enableShizuku && !shizukuGranted) {
-        AuthCard(title = "未授权", subtitle = "点击授权以优化体验", onAuthClick = mainVm::requestShizuku)
+        AuthCard(title = stringResource(R.string.s_86bddceb9d), subtitle = stringResource(R.string.s_a7bd6fc9bb), onAuthClick = mainVm::requestShizuku)
     }
     TextSwitch(
-        title = "启用优化",
-        subtitle = "提升权限优化体验",
+        title = stringResource(R.string.s_6b0ad26edf),
+        subtitle = stringResource(R.string.s_a3e561c7c6),
         suffix = "了解更多",
         suffixUnderline = true,
         onSuffixClick = { mainVm.navigateWebPage(ShortUrlSet.URL14) },
@@ -157,18 +159,18 @@ private fun AdvancedHttpSection(
     val httpServerRunning = server != null
     val localNetworkIps by HttpService.localNetworkIpsFlow.collectAsStateWithLifecycle()
     val remoteSession by HttpService.remoteSessionStateFlow.collectAsStateWithLifecycle()
-    Text("HTTP", modifier = Modifier.titleItemPadding(), style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary)
+    Text(stringResource(R.string.s_f40b27d6b8), modifier = Modifier.titleItemPadding(), style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary)
     TextSwitch(
-        title = "HTTP服务",
-        subtitle = "在浏览器下连接调试",
+        title = stringResource(R.string.s_6a43e3e09d),
+        subtitle = stringResource(R.string.s_e330f2e53c),
         suffixIcon = {
             PerfCustomIconButton(
                 size = 32.dp,
                 iconSize = 20.dp,
-                onClickLabel = "打开HTTP设置弹窗",
+                onClickLabel = app.getString(R.string.s_66b10cf5e5),
                 onClick = { showHttpSettingDlg.value = !showHttpSettingDlg.value },
                 id = R.drawable.ic_page_info,
-                contentDescription = "HTTP设置",
+                contentDescription = app.getString(R.string.s_c5f42f5a0f),
                 tint = if (showHttpSettingDlg.value) MaterialTheme.colorScheme.primary else LocalContentColor.current,
             )
         },
@@ -209,8 +211,8 @@ private fun AdvancedHttpRunningContent(
                     "监听范围：局域网｜剩余 $remainingMinutes 分钟"
                 },
             )
-            remoteSession.pairingCode?.let { Text("一次性配对码：$it（60 秒内有效）") }
-            remoteSession.clientSummary?.let { Text("已连接客户端：$it") }
+            remoteSession.pairingCode?.let { Text(app.getString(R.string.s_cc0dd8de47, it)) }
+            remoteSession.clientSummary?.let { Text(app.getString(R.string.s_759c95ad54, it)) }
             Row {
                 val localUrl = "http://127.0.0.1:${store.httpServerPort}"
                 Text(
@@ -219,11 +221,11 @@ private fun AdvancedHttpRunningContent(
                     style = LocalTextStyle.current.copy(textDecoration = TextDecoration.Underline),
                     modifier = Modifier.clickable(onClick = throttle {
                         copyText(localUrl)
-                        toast("已复制本机地址")
+                        toast(app.getString(R.string.s_6c0be6e7b0))
                     }),
                 )
                 Spacer(modifier = Modifier.width(2.dp))
-                Text("点击复制")
+                Text(stringResource(R.string.s_93794c92ab))
             }
             if (remoteSession.mode == RemoteListenMode.LAN) {
                 localNetworkIps.forEach { host ->
@@ -234,19 +236,19 @@ private fun AdvancedHttpRunningContent(
                         style = LocalTextStyle.current.copy(textDecoration = TextDecoration.Underline),
                         modifier = Modifier.clickable(onClick = throttle {
                             copyText(lanUrl)
-                            toast("已复制局域网地址")
+                            toast(app.getString(R.string.s_7774d11343))
                         }),
                     )
                 }
-                TextButton(onClick = HttpService::disconnectLanSession) { Text("立即断开局域网会话") }
+                TextButton(onClick = HttpService::disconnectLanSession) { Text(stringResource(R.string.s_6579a5ba64)) }
             } else {
-                TextButton(onClick = HttpService::startLanSession) { Text("开启 15 分钟局域网调试") }
+                TextButton(onClick = HttpService::startLanSession) { Text(app.getString(R.string.s_f989d9d7f9)) }
             }
-            Text("授权范围", style = MaterialTheme.typography.titleSmall)
+            Text(stringResource(R.string.s_00e778c519), style = MaterialTheme.typography.titleSmall)
             RemoteScope.entries.forEach { scope ->
                 TextSwitch(
                     title = remoteScopeLabel(scope),
-                    subtitle = if (scope in setOf(RemoteScope.SERVER_INFO, RemoteScope.SNAPSHOT_LIST)) "基础只读范围" else "敏感范围，默认关闭",
+                    subtitle = if (scope in setOf(RemoteScope.SERVER_INFO, RemoteScope.SNAPSHOT_LIST)) app.getString(R.string.s_0748ac7579) else app.getString(R.string.s_da3b95b64a),
                     checked = scope in remoteSession.enabledScopes,
                     onCheckedChange = { HttpService.setRemoteScope(scope, it) },
                 )
@@ -263,27 +265,27 @@ private fun AdvancedHttpSettingsContent(
 ) {
     Column {
         SettingItem(
-            title = "服务端口",
+            title = stringResource(R.string.s_6f77ee7c5c),
             subtitle = store.httpServerPort.toString(),
             imageVector = PerfIcon.Edit,
-            onClickLabel = "编辑服务端口",
+            onClickLabel = stringResource(R.string.s_07a62b1e96),
             onClick = { showHttpSettingDlg.value = false; showEditPortDlg.value = true },
         )
         TextSwitch(
-            title = "清除订阅",
-            subtitle = "关闭服务时删除内存订阅",
+            title = stringResource(R.string.s_6b582fbb9d),
+            subtitle = stringResource(R.string.s_97424615a7),
             checked = store.autoClearMemorySubs,
             onCheckedChange = { storeFlow.update { it.copy(autoClearMemorySubs = !it.autoClearMemorySubs) } },
         )
         val cleartextOrigins by CleartextOriginAuthorizations.originsFlow.collectAsStateWithLifecycle()
         if (cleartextOrigins.isNotEmpty()) {
-            Text("已授权明文来源", style = MaterialTheme.typography.titleSmall)
+            Text(stringResource(R.string.s_d2a4e522d4), style = MaterialTheme.typography.titleSmall)
             cleartextOrigins.sorted().forEach { origin ->
                 SettingItem(
                     title = origin,
-                    subtitle = "点击撤销；后续更新请求会立即拒绝",
+                    subtitle = app.getString(R.string.s_7cce6f6775),
                     imageVector = PerfIcon.Delete,
-                    onClickLabel = "撤销明文来源授权",
+                    onClickLabel = app.getString(R.string.s_8bba24fe03),
                     onClick = { CleartextOriginAuthorizations.revoke(origin) },
                 )
             }
@@ -299,51 +301,51 @@ private fun AdvancedSnapshotSection(
     store: SettingsStore,
     showCaptureScreenshotDlg: MutableState<Boolean>,
 ) {
-    Text("快照", modifier = Modifier.titleItemPadding(), style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary)
-    SettingItem(title = "快照记录", subtitle = "应用界面节点信息及截图", onClick = { mainVm.navigatePage(SnapshotPageRoute) })
+    Text(stringResource(R.string.s_83caf1badc), modifier = Modifier.titleItemPadding(), style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary)
+    SettingItem(title = stringResource(R.string.s_26c9e586fc), subtitle = stringResource(R.string.s_8eddb6bd87), onClick = { mainVm.navigatePage(SnapshotPageRoute) })
     AdvancedSnapshotServiceControls(context, vm)
     TextSwitch(
-        title = "音量快照",
-        subtitle = "音量变化时保存快照",
+        title = stringResource(R.string.s_97f98cd922),
+        subtitle = stringResource(R.string.s_7790dc931f),
         checked = store.captureVolumeChange,
         onCheckedChange = { storeFlow.value = store.copy(captureVolumeChange = it) },
     )
     TextSwitch(
-        title = "截屏快照",
-        subtitle = "截屏时保存快照",
+        title = stringResource(R.string.s_ee5db675e1),
+        subtitle = stringResource(R.string.s_492729f7f9),
         checked = store.captureScreenshot,
         suffixIcon = {
             PerfCustomIconButton(
                 size = 32.dp,
                 iconSize = 20.dp,
-                onClickLabel = "打开配置截屏快照弹窗",
+                onClickLabel = app.getString(R.string.s_c41137ca16),
                 onClick = throttle { showCaptureScreenshotDlg.value = true },
                 id = R.drawable.ic_page_info,
-                contentDescription = "截屏快照设置",
+                contentDescription = app.getString(R.string.s_bd7b6c1ed1),
             )
         },
         onCheckedChange = {
             storeFlow.value = store.copy(captureScreenshot = it)
             if (it && store.screenshotTargetAppId.isEmpty() || store.screenshotEventSelector.isEmpty()) {
-                toast("请配置目标应用和特征事件选择器")
+                toast(app.getString(R.string.s_c456ae2487))
             }
         },
     )
     TextSwitch(
-        title = "隐藏状态栏",
-        subtitle = "隐藏快照截图状态栏",
+        title = stringResource(R.string.s_c7dddf757a),
+        subtitle = stringResource(R.string.s_37fbc765c6),
         checked = store.hideSnapshotStatusBar,
         onCheckedChange = { storeFlow.value = store.copy(hideSnapshotStatusBar = it) },
     )
     TextSwitch(
-        title = "保存提示",
-        subtitle = "提示「正在保存快照」",
+        title = stringResource(R.string.s_108a9199f2),
+        subtitle = stringResource(R.string.s_24feb0f040),
         checked = store.showSaveSnapshotToast,
         onCheckedChange = { storeFlow.value = store.copy(showSaveSnapshotToast = it) },
     )
     SettingItem(
-        title = "Github Cookie",
-        subtitle = "生成快照/日志链接",
+        title = stringResource(R.string.s_ac245bfc80),
+        subtitle = stringResource(R.string.s_58a79cef99),
         suffix = "获取教程",
         suffixUnderline = true,
         onSuffixClick = { mainVm.navigateWebPage(ShortUrlSet.URL1) },
@@ -357,8 +359,8 @@ private fun AdvancedSnapshotServiceControls(context: MainActivity, vm: AdvancedV
     if (!AndroidTarget.R) {
         val screenshotRunning by ScreenshotService.isRunning.collectAsStateWithLifecycle()
         TextSwitch(
-            title = "截屏服务",
-            subtitle = "生成快照需要获取屏幕截图",
+            title = stringResource(R.string.s_df95c4025b),
+            subtitle = stringResource(R.string.s_0933e86c0e),
             checked = screenshotRunning,
             onCheckedChange = vm.viewModelScope.launchAsFn<Boolean> {
                 if (it) {
@@ -375,8 +377,8 @@ private fun AdvancedSnapshotServiceControls(context: MainActivity, vm: AdvancedV
         )
     }
     TextSwitch(
-        title = "快照按钮",
-        subtitle = "显示按钮点击保存快照",
+        title = stringResource(R.string.s_addb3c2ba2),
+        subtitle = stringResource(R.string.s_ef5f9af603),
         checked = ButtonService.isRunning.collectAsStateWithLifecycle().value,
         onCheckedChange = vm.viewModelScope.launchAsFn<Boolean> {
             if (it) {
@@ -393,11 +395,11 @@ private fun AdvancedSnapshotServiceControls(context: MainActivity, vm: AdvancedV
 
 @Composable
 private fun AdvancedLogSection(context: MainActivity, mainVm: MainViewModel, vm: AdvancedVm) {
-    Text("日志", modifier = Modifier.titleItemPadding(), style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary)
-    SettingItem(title = "界面日志", subtitle = "界面切换日志", onClick = { mainVm.navigatePage(ActivityLogRoute) })
+    Text(stringResource(R.string.s_4de50894b8), modifier = Modifier.titleItemPadding(), style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary)
+    SettingItem(title = stringResource(R.string.s_48ff47e21f), subtitle = stringResource(R.string.s_3e5e447fd3), onClick = { mainVm.navigatePage(ActivityLogRoute) })
     TextSwitch(
-        title = "界面服务",
-        subtitle = "显示当前界面信息",
+        title = stringResource(R.string.s_fcfcb10e4c),
+        subtitle = stringResource(R.string.s_6c572506c2),
         checked = ActivityService.isRunning.collectAsStateWithLifecycle().value,
         onCheckedChange = vm.viewModelScope.launchAsFn<Boolean> {
             if (it) {
@@ -410,10 +412,10 @@ private fun AdvancedLogSection(context: MainActivity, mainVm: MainViewModel, vm:
             }
         },
     )
-    SettingItem(title = "事件日志", subtitle = "无障碍事件日志", onClick = { mainVm.navigatePage(A11yEventLogRoute) })
+    SettingItem(title = stringResource(R.string.s_12b64fb2df), subtitle = stringResource(R.string.s_69dc314d81), onClick = { mainVm.navigatePage(A11yEventLogRoute) })
     TextSwitch(
-        title = "事件服务",
-        subtitle = "显示无障碍事件",
+        title = stringResource(R.string.s_25af58e687),
+        subtitle = stringResource(R.string.s_8d864071da),
         checked = EventService.isRunning.collectAsStateWithLifecycle().value,
         onCheckedChange = vm.viewModelScope.launchAsFn<Boolean> {
             if (it) {

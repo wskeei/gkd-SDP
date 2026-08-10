@@ -40,6 +40,9 @@ import li.songe.gkd.sdp.ui.share.LocalMainViewModel
 import li.songe.gkd.sdp.ui.style.itemPadding
 import li.songe.gkd.sdp.ui.style.scaffoldPadding
 import li.songe.gkd.sdp.ui.style.surfaceCardColors
+import androidx.compose.ui.res.stringResource
+import li.songe.gkd.sdp.R
+import li.songe.gkd.sdp.app
 
 @Composable
 fun AppBlockerPageSections() {
@@ -101,8 +104,8 @@ fun AppBlockerPageSections() {
     // 全局锁定 Sheet
     if (showGlobalLockSheet) {
         LockSheet(
-            title = if (globalLock?.isCurrentlyLocked == true) "延长全局锁定" else "全局锁定",
-            description = "锁定后无法删除或修改任何应用/组/规则，但可以新增。",
+            title = if (globalLock?.isCurrentlyLocked == true) stringResource(R.string.s_a04aff06d0) else stringResource(R.string.s_0261a6c710),
+            description = stringResource(R.string.s_109aa38d7b),
             currentLockEndTime = globalLock?.lockEndTime,
             vm = vm,
             onDismiss = { showGlobalLockSheet = false },
@@ -116,8 +119,8 @@ fun AppBlockerPageSections() {
     // 应用组锁定 Sheet
     if (showGroupLockSheet && lockTargetGroup != null) {
         LockSheet(
-            title = if (lockTargetGroup!!.isCurrentlyLocked) "延长锁定" else "锁定应用组",
-            description = "锁定后无法关闭、删除或修改此应用组。",
+            title = if (lockTargetGroup!!.isCurrentlyLocked) stringResource(R.string.s_eae5fd957e) else stringResource(R.string.s_e13f066999),
+            description = stringResource(R.string.s_77e7c35757),
             currentLockEndTime = if (lockTargetGroup!!.isCurrentlyLocked) lockTargetGroup!!.lockEndTime else null,
             vm = vm,
             onDismiss = {
@@ -135,8 +138,8 @@ fun AppBlockerPageSections() {
     // 规则锁定 Sheet
     if (showRuleLockSheet && lockTargetRule != null) {
         LockSheet(
-            title = if (lockTargetRule!!.isCurrentlyLocked) "延长锁定" else "锁定规则",
-            description = "锁定后无法关闭、删除或修改此规则。",
+            title = if (lockTargetRule!!.isCurrentlyLocked) stringResource(R.string.s_eae5fd957e) else stringResource(R.string.s_2201b864c9),
+            description = stringResource(R.string.s_dd98d5a5d3),
             currentLockEndTime = if (lockTargetRule!!.isCurrentlyLocked) lockTargetRule!!.lockEndTime else null,
             vm = vm,
             onDismiss = {
@@ -172,12 +175,12 @@ private fun AppBlockerPageScaffold(
                         onClick = onNavigateBack,
                     )
                 },
-                title = { Text(text = "应用拦截") },
+                title = { Text(text = app.getString(R.string.s_e6bbd743b3)) },
                 actions = {
                     IconButton(onClick = onShowGlobalLock) {
                         Icon(
                             PerfIcon.Lock,
-                            contentDescription = "全局锁定",
+                            contentDescription = app.getString(R.string.s_0261a6c710),
                             tint = if (globalLock?.isCurrentlyLocked == true) {
                                 MaterialTheme.colorScheme.error
                             } else {
@@ -226,7 +229,7 @@ private fun AppBlockerPageList(
         }
         item(key = "groups_header") {
             AppBlockerSectionHeader(
-                title = "应用组 (${allGroups.size})",
+                title = stringResource(R.string.s_b5f6acf594, allGroups.size),
                 onAdd = {
                     vm.resetGroupForm()
                     vm.showGroupEditor = true
@@ -268,7 +271,7 @@ private fun AppBlockerPageList(
         }
         item(key = "app_rules_header") {
             AppBlockerSectionHeader(
-                title = "单独应用",
+                title = stringResource(R.string.s_74c7776c98),
                 onAdd = {
                     vm.resetRuleForm()
                     vm.ruleTargetType = BlockTimeRule.TARGET_TYPE_APP
@@ -309,14 +312,14 @@ private fun AppBlockerAutoReenableNotice() {
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
-                text = "自动重开始终启用，无法关闭。",
+                text = stringResource(R.string.s_b2d1d6afd6),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.primary,
                 fontWeight = FontWeight.SemiBold,
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text = "间隔可调：0~240 分钟；每 3 天仅可修改一次。",
+                text = stringResource(R.string.s_ebf718dc74),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -343,14 +346,14 @@ private fun AppBlockerGlobalLockStatus(globalLock: li.songe.gkd.sdp.data.AppBloc
             Spacer(modifier = Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "全局锁定中",
+                    text = stringResource(R.string.s_1640da6876),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                 )
                 val remainingMinutes =
                     ((globalLock.lockEndTime - System.currentTimeMillis()) / 60000).coerceAtLeast(0)
                 Text(
-                    text = "剩余 ${if (remainingMinutes >= 60) "${remainingMinutes / 60}小时${remainingMinutes % 60}分钟" else "${remainingMinutes}分钟"}",
+                    text = stringResource(R.string.s_039836663c, )${remainingMinutes / 60}小时${remainingMinutes % 60}分钟stringResource(R.string.s_97dccf7b6e)${remainingMinutes}分钟stringResource(R.string.s_c2b7df6201),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.error,
                 )
@@ -377,7 +380,7 @@ private fun AppBlockerSectionHeader(title: String, onAdd: () -> Unit) {
         TextButton(onClick = onAdd) {
             Icon(PerfIcon.Add, contentDescription = null)
             Spacer(modifier = Modifier.width(4.dp))
-            Text("添加")
+            Text(stringResource(R.string.s_94191ce210))
         }
     }
 }

@@ -16,6 +16,8 @@ import li.songe.gkd.sdp.util.SelfControlInsightWindowPolicy
 import li.songe.gkd.sdp.util.SelfControlIntervalPolicy
 import li.songe.gkd.sdp.util.UsageRequestRhythmPolicy
 import java.math.BigDecimal
+import li.songe.gkd.sdp.R
+import li.songe.gkd.sdp.app
 
 data class UsageRequestRhythmPresentation(
     val status: Status,
@@ -180,18 +182,18 @@ fun UsageDurationRatioFeedback(
             modifier = Modifier.padding(12.dp),
             verticalArrangement = Arrangement.spacedBy(6.dp),
         ) {
-            Text("间用比", style = MaterialTheme.typography.titleSmall)
+            Text(app.getString(R.string.s_4cec547cf2), style = MaterialTheme.typography.titleSmall)
             FlowRow(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(16.dp),
                 verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
                 Column {
-                    Text("本次", style = MaterialTheme.typography.bodySmall)
+                    Text(app.getString(R.string.s_7fd47e102e), style = MaterialTheme.typography.bodySmall)
                     Text(presentation.currentRatioText, style = MaterialTheme.typography.titleLarge)
                 }
                 Column {
-                    Text("${presentation.selectedWindow.label}平均", style = MaterialTheme.typography.bodySmall)
+                    Text(app.getString(R.string.s_34e7ba7c70, presentation.selectedWindow.label), style = MaterialTheme.typography.bodySmall)
                     Text(presentation.selectedWindowAverageText, style = MaterialTheme.typography.bodyMedium)
                 }
             }
@@ -200,11 +202,11 @@ fun UsageDurationRatioFeedback(
                 horizontalArrangement = Arrangement.spacedBy(16.dp),
                 verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
-                Text("未使用间隔 ${presentation.gapText}", style = MaterialTheme.typography.bodyMedium)
-                Text("申请时长 ${presentation.durationText}", style = MaterialTheme.typography.bodyMedium)
+                Text(app.getString(R.string.s_0db6dd2e7f, presentation.gapText), style = MaterialTheme.typography.bodyMedium)
+                Text(app.getString(R.string.s_d11b352c3e, presentation.durationText), style = MaterialTheme.typography.bodyMedium)
             }
             Text(
-                text = "同单位换算：${presentation.equationText ?: "—"}",
+                text = app.getString(R.string.s_aa41382aa4, )—app.getString(R.string.s_c2b7df6201),
                 style = MaterialTheme.typography.bodyMedium,
             )
             presentation.comparisonText?.let {

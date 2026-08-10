@@ -18,6 +18,8 @@ import androidx.compose.ui.unit.dp
 import li.songe.gkd.sdp.data.AppInfo
 import li.songe.gkd.sdp.ui.style.appItemPadding
 import li.songe.gkd.sdp.util.throttle
+import li.songe.gkd.sdp.R
+import li.songe.gkd.sdp.app
 
 @Composable
 fun AppCheckBoxCard(
@@ -29,10 +31,10 @@ fun AppCheckBoxCard(
         modifier = Modifier
             .clickable(onClick = throttle(onCheckedChange))
             .clearAndSetSemantics {
-                contentDescription = "应用：${appInfo.name}"
+                contentDescription = app.getString(R.string.s_e4efcf3ca4, appInfo.name)
                 stateDescription = if (checked) "已加入名单" else "未加入名单"
                 onClick(
-                    label = if (checked) "从名单中移除" else "加入名单",
+                    label = if (checked) app.getString(R.string.s_a3178e4e3d) else app.getString(R.string.s_1223d7f545),
                     action = null
                 )
             }

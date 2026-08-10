@@ -34,6 +34,9 @@ import li.songe.gkd.sdp.util.launchAsFn
 import li.songe.gkd.sdp.util.mapState
 import li.songe.gkd.sdp.util.subsMapFlow
 import li.songe.gkd.sdp.util.toast
+import androidx.compose.ui.res.stringResource
+import li.songe.gkd.sdp.R
+import li.songe.gkd.sdp.app
 
 @Composable
 internal fun ActionLogDialog(
@@ -101,7 +104,7 @@ internal fun ActionLogDialog(
             shape = RoundedCornerShape(16.dp),
         ) {
             ItemText(
-                text = "查看规则组",
+                text = stringResource(R.string.s_451bb58ff2),
                 onClick = {
                     onDismissRequest()
                     if (actionLog.groupType == SubsConfig.AppGroupType) {
@@ -164,22 +167,22 @@ private fun ActionLogDialogSummary(
             modifier = Modifier.padding(top = 4.dp),
         )
         Text(
-            text = "具体规则：$displayRuleName",
+            text = stringResource(R.string.s_58d05e17f9, displayRuleName),
             style = MaterialTheme.typography.bodyMedium,
             modifier = Modifier.padding(top = 4.dp),
         )
         Text(
-            text = "订阅：$displaySubscriptionName · v${actionLog.subsVersion}",
+            text = stringResource(R.string.s_4c646a2268, displaySubscriptionName, actionLog.subsVersion),
             style = MaterialTheme.typography.bodySmall,
             modifier = Modifier.padding(top = 4.dp),
         )
         Text(
-            text = "规则组：$displayGroupName",
+            text = stringResource(R.string.s_2b4543cfce, displayGroupName),
             style = MaterialTheme.typography.bodySmall,
             modifier = Modifier.padding(top = 2.dp),
         )
         Text(
-            text = "规则标识：groupType=${actionLog.groupType}, groupKey=${actionLog.groupKey}, " +
+            text = stringResource(R.string.s_ea63fc76c4, actionLog.groupType, actionLog.groupKey) +
                 "index=${actionLog.ruleIndex}, ${actionLog.ruleKey?.let { "key=$it" } ?: "未设置 key"}",
             style = MaterialTheme.typography.bodySmall,
             modifier = Modifier.padding(top = 2.dp),
@@ -207,7 +210,7 @@ private fun ActionLogDialogActions(
         }
         if (appChecked != null) {
             ItemText(
-                text = if (appChecked) "在此应用禁用" else "移除在此应用的禁用",
+                text = if (appChecked) stringResource(R.string.s_cda4925583) else stringResource(R.string.s_d898e0730a),
                 onClick = vm.viewModelScope.launchAsFn {
                     val effectiveConfig = subsConfig ?: SubsConfig(
                         type = SubsConfig.GlobalGroupType,
@@ -223,7 +226,7 @@ private fun ActionLogDialogActions(
                             ).stringify(),
                         ),
                     )
-                    toast("更新成功")
+                    toast(app.getString(R.string.s_e2cff77372))
                 },
             )
             HorizontalDivider()
@@ -233,7 +236,7 @@ private fun ActionLogDialogActions(
     if (actionLog.activityId != null) {
         val disabled = oldExclude.activityIds.contains(actionLog.appId to actionLog.activityId)
         ItemText(
-            text = if (disabled) "移除在此页面的禁用" else "在此页面禁用",
+            text = if (disabled) stringResource(R.string.s_c9be3b4423) else stringResource(R.string.s_d66870c055),
             onClick = vm.viewModelScope.launchAsFn {
                 val effectiveConfig = if (actionLog.groupType == SubsConfig.AppGroupType) {
                     subsConfig ?: SubsConfig(
@@ -254,7 +257,7 @@ private fun ActionLogDialogActions(
                         exclude = oldExclude.switch(actionLog.appId, actionLog.activityId).stringify(),
                     ),
                 )
-                toast("更新成功")
+                toast(app.getString(R.string.s_e2cff77372))
             },
         )
         HorizontalDivider()

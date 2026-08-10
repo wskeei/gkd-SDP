@@ -23,6 +23,8 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import kotlin.math.max
+import li.songe.gkd.sdp.R
+import li.songe.gkd.sdp.app
 
 @Composable
 fun DigitalSelfDisciplineTrendChart(
@@ -58,7 +60,7 @@ fun DigitalSelfDisciplineTrendChart(
             val maxValue = presentation.points.maxOf { it.value }
             val axisUnit = DigitalSelfDisciplineReviewPresentation.axisUnitLabel(presentation.metric)
             Text(
-                text = "纵轴：${presentation.metricLabel}（$axisUnit） · 时间轴最多显示 6 个标签",
+                text = app.getString(R.string.s_47d3fa79b4, presentation.metricLabel, axisUnit),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -67,12 +69,12 @@ fun DigitalSelfDisciplineTrendChart(
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
                 Text(
-                    text = "最大 ${DigitalSelfDisciplineReviewPresentation.formatTrendValue(maxValue, presentation.metric)}",
+                    text = app.getString(R.string.s_d49e418af8, DigitalSelfDisciplineReviewPresentation.formatTrendValue(maxValue, presentation.metric)),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Text(
-                    text = "最小 ${DigitalSelfDisciplineReviewPresentation.formatTrendValue(minValue, presentation.metric)}",
+                    text = app.getString(R.string.s_37feaa9b99, DigitalSelfDisciplineReviewPresentation.formatTrendValue(minValue, presentation.metric)),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -123,10 +125,10 @@ fun DigitalSelfDisciplineTrendChart(
             TextButton(
                 onClick = { detailsExpanded = !detailsExpanded },
                 modifier = Modifier.semantics {
-                    contentDescription = if (detailsExpanded) "收起趋势文字明细" else "查看趋势文字明细"
+                    contentDescription = if (detailsExpanded) app.getString(R.string.s_e182c1f7ff) else app.getString(R.string.s_55071d1cf5)
                 },
             ) {
-                Text(if (detailsExpanded) "收起趋势文字明细" else "查看趋势文字明细")
+                Text(if (detailsExpanded) app.getString(R.string.s_e182c1f7ff) else app.getString(R.string.s_55071d1cf5))
             }
             if (detailsExpanded) {
                 Column(

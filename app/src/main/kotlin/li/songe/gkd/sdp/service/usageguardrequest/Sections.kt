@@ -30,6 +30,9 @@ import li.songe.gkd.sdp.ui.component.UsageRequestRhythmPresentation
 import li.songe.gkd.sdp.util.SelfControlElapsedPolicy
 import li.songe.gkd.sdp.util.SelfControlInsightWindowPolicy
 import li.songe.gkd.sdp.util.UsageGuardPolicy
+import androidx.compose.ui.res.stringResource
+import li.songe.gkd.sdp.R
+import li.songe.gkd.sdp.app
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -47,11 +50,11 @@ internal fun UsageRequestHeaderAndRhythm(
     supportsUsageRatio: Boolean,
 ) {
     Text(
-        text = "使用申请",
+        text = stringResource(R.string.s_356c996618),
         style = MaterialTheme.typography.headlineMedium,
     )
     Text(
-        text = "申请打开 $appName",
+        text = stringResource(R.string.s_d5da946f96, appName),
         style = MaterialTheme.typography.titleMedium,
     )
     Text(
@@ -93,7 +96,7 @@ internal fun UsageRequestTags(
     val newTagText = form.newTagText
     val showAddTagEditor = form.showAddTagEditor
 
-    Text("选择标签", style = MaterialTheme.typography.titleSmall)
+    Text(stringResource(R.string.s_608b8e137e), style = MaterialTheme.typography.titleSmall)
     FlowRow(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -126,7 +129,7 @@ internal fun UsageRequestTags(
         enabled = !isSubmitting,
         onClick = { showAddTagEditor.value = !showAddTagEditor.value },
     ) {
-        Text(if (showAddTagEditor.value) "收起添加标签" else "没有合适的标签？添加标签")
+        Text(if (showAddTagEditor.value) stringResource(R.string.s_8f68cd6535) else stringResource(R.string.s_12460118b0))
     }
     if (showAddTagEditor.value) {
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -136,7 +139,7 @@ internal fun UsageRequestTags(
                 modifier = Modifier
                     .weight(1f)
                     .then(newTagInputModifier),
-                label = { Text("添加标签") },
+                label = { Text(stringResource(R.string.s_df06c7a718)) },
                 singleLine = true,
                 enabled = !isSubmitting,
             )
@@ -151,7 +154,7 @@ internal fun UsageRequestTags(
                     showAddTagEditor.value = false
                 },
             ) {
-                Text("加入")
+                Text(stringResource(R.string.s_b7db442622))
             }
         }
     }
@@ -183,14 +186,14 @@ internal fun UsageRequestReasonAndDuration(
         modifier = Modifier
             .fillMaxWidth()
             .then(reasonInputModifier),
-        label = { Text("申请理由") },
+        label = { Text(stringResource(R.string.s_781d71bd97)) },
         supportingText = {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
-                Text("至少 $minReasonLength 个字")
-                Text("${reasonText.value.trim().length} 字")
+                Text(app.getString(R.string.s_58d3737769, minReasonLength))
+                Text(app.getString(R.string.s_cf989beabc, reasonText.value.trim().length))
             }
         },
         isError = reasonError.value != null,
@@ -205,7 +208,7 @@ internal fun UsageRequestReasonAndDuration(
         )
     }
 
-    Text("申请时长", style = MaterialTheme.typography.titleSmall)
+    Text(stringResource(R.string.s_7c0311beef), style = MaterialTheme.typography.titleSmall)
     FlowRow(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -220,7 +223,7 @@ internal fun UsageRequestReasonAndDuration(
                     customMinutesText.value = ""
                     showCustomDuration.value = false
                 },
-                label = { Text("${minutes}分钟") },
+                label = { Text(app.getString(R.string.s_5f4ec4b0ec, minutes)) },
             )
         }
     }
@@ -229,7 +232,7 @@ internal fun UsageRequestReasonAndDuration(
         enabled = !isSubmitting,
         onClick = { showCustomDuration.value = !showCustomDuration.value },
     ) {
-        Text(if (showCustomDuration.value) "收起自定义时长" else "自定义时长")
+        Text(if (showCustomDuration.value) stringResource(R.string.s_bda66bc5a5) else stringResource(R.string.s_ea6dccc0a6))
     }
     if (showCustomDuration.value) {
         OutlinedTextField(
@@ -243,7 +246,7 @@ internal fun UsageRequestReasonAndDuration(
             modifier = Modifier
                 .fillMaxWidth()
                 .then(customDurationInputModifier),
-            label = { Text("自定义分钟数") },
+            label = { Text(stringResource(R.string.s_a6f825af51)) },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             singleLine = true,
             isError = durationError.value != null,
@@ -312,13 +315,13 @@ internal fun UsageRequestActions(
         },
         modifier = Modifier.fillMaxWidth(),
     ) {
-        Text("开始使用")
+        Text(stringResource(R.string.s_60ff133549))
     }
     TextButton(
         enabled = !isSubmitting,
         onClick = onCancel,
         modifier = Modifier.fillMaxWidth(),
     ) {
-        Text("取消")
+        Text(stringResource(R.string.s_4d0b4688c7))
     }
 }

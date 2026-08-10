@@ -21,6 +21,9 @@ import li.songe.gkd.sdp.ui.component.*
 import li.songe.gkd.sdp.ui.style.scaffoldPadding
 import li.songe.gkd.sdp.util.UsageGuardPolicy
 import li.songe.gkd.sdp.util.UsageGuardUiStatePolicy
+import androidx.compose.ui.res.stringResource
+import li.songe.gkd.sdp.R
+import li.songe.gkd.sdp.app
 @Composable
 internal fun UsageGuardSettingsList(
     mainVm: MainViewModel,
@@ -77,7 +80,7 @@ private fun UsageGuardSettingsScaffold(state: UsageGuardSettingsRenderState) {
                         onClick = { state.mainVm.popPage() },
                     )
                 },
-                title = { Text("使用申请") },
+                title = { Text(app.getString(R.string.s_356c996618)) },
             )
         },
     ) { padding ->
@@ -101,11 +104,11 @@ private fun UsageGuardRulesSection(state: UsageGuardSettingsRenderState) {
     val durationOptionTexts = state.durationOptionTexts
     val customTagText = state.customTagText
     SectionCard(
-        title = "规则与申请偏好",
-        subtitle = "把默认模式、理由门槛和常用时长收紧到你真正会用的那组值。",
+        title = stringResource(R.string.s_4b7e05a71a),
+        subtitle = stringResource(R.string.s_0c81c7ca27),
     ) {
         PreferenceBlock(
-            title = "生效范围",
+            title = stringResource(R.string.s_a6a2d4845d),
             supporting = "选中应用适合精细控制；全局模式适合高压场景。",
         ) {
             FlowRow(
@@ -115,18 +118,18 @@ private fun UsageGuardRulesSection(state: UsageGuardSettingsRenderState) {
                 FilterChip(
                     selected = settings.usageGuardScopeMode == UsageGuardPolicy.SCOPE_SELECTED_ONLY,
                     onClick = { vm.updateScopeMode(UsageGuardPolicy.SCOPE_SELECTED_ONLY) },
-                    label = { Text("仅选中应用") },
+                    label = { Text(stringResource(R.string.s_2a5a0db475)) },
                 )
                 FilterChip(
                     selected = settings.usageGuardScopeMode == UsageGuardPolicy.SCOPE_GLOBAL_EXCEPT_WHITELIST,
                     onClick = { vm.updateScopeMode(UsageGuardPolicy.SCOPE_GLOBAL_EXCEPT_WHITELIST) },
-                    label = { Text("全局生效") },
+                    label = { Text(stringResource(R.string.s_3af2ad9aac)) },
                 )
             }
         }
         HorizontalDivider()
         PreferenceBlock(
-            title = "默认授权模式",
+            title = stringResource(R.string.s_cb1d1e7bde),
             supporting = "严格模式离开即失效，普通模式在到时前可继续返回。",
         ) {
             FlowRow(
@@ -136,18 +139,18 @@ private fun UsageGuardRulesSection(state: UsageGuardSettingsRenderState) {
                 FilterChip(
                     selected = settings.usageGuardDefaultGrantMode == UsageGuardPolicy.GRANT_MODE_STRICT,
                     onClick = { vm.updateDefaultGrantMode(UsageGuardPolicy.GRANT_MODE_STRICT) },
-                    label = { Text("严格模式") },
+                    label = { Text(stringResource(R.string.s_cce3d12ecc)) },
                 )
                 FilterChip(
                     selected = settings.usageGuardDefaultGrantMode == UsageGuardPolicy.GRANT_MODE_RESUMABLE,
                     onClick = { vm.updateDefaultGrantMode(UsageGuardPolicy.GRANT_MODE_RESUMABLE) },
-                    label = { Text("普通模式") },
+                    label = { Text(stringResource(R.string.s_e8a4554eb3)) },
                 )
             }
         }
         HorizontalDivider()
         PreferenceBlock(
-            title = "理由门槛",
+            title = stringResource(R.string.s_be695b05b4),
             supporting = "保存后会直接影响申请弹窗的最少字数要求。",
         ) {
             Row(
@@ -160,7 +163,7 @@ private fun UsageGuardRulesSection(state: UsageGuardSettingsRenderState) {
                         if (value.all(Char::isDigit)) minReasonLengthText.value = value
                     },
                     modifier = Modifier.width(132.dp),
-                    label = { Text("最少字数") },
+                    label = { Text(stringResource(R.string.s_dec2ec4618)) },
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 )
@@ -171,13 +174,13 @@ private fun UsageGuardRulesSection(state: UsageGuardSettingsRenderState) {
                         )
                     },
                 ) {
-                    Text("保存")
+                    Text(stringResource(R.string.s_fadf24dbc5))
                 }
             }
         }
         HorizontalDivider()
         PreferenceBlock(
-            title = "四个快速时长",
+            title = stringResource(R.string.s_067f4e9588),
             supporting = "申请弹窗会优先展示这四个固定时长，把自定义留在次级入口。",
         ) {
             FlowRow(
@@ -195,7 +198,7 @@ private fun UsageGuardRulesSection(state: UsageGuardSettingsRenderState) {
                             }
                         },
                         modifier = Modifier.width(112.dp),
-                        label = { Text("选项 ${index + 1}") },
+                        label = { Text(app.getString(R.string.s_fc0d628dd8, index + 1)) },
                         singleLine = true,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     )
@@ -207,12 +210,12 @@ private fun UsageGuardRulesSection(state: UsageGuardSettingsRenderState) {
                     vm.updateDurationOptions(durationOptionTexts.value.map { it.toIntOrNull() ?: 0 })
                 },
             ) {
-                Text("保存时长选项")
+                Text(stringResource(R.string.s_b0871a4a6b))
             }
         }
         HorizontalDivider()
         PreferenceBlock(
-            title = "常用标签库",
+            title = stringResource(R.string.s_9d227c591a),
             supporting = "预设标签负责快速说明动机，自定义标签只保留你真正常用的词。",
         ) {
             FlowRow(
@@ -225,7 +228,7 @@ private fun UsageGuardRulesSection(state: UsageGuardSettingsRenderState) {
                         onClick = { if (!tag.isPreset) vm.deleteCustomTag(tag) },
                         label = {
                             Text(
-                                if (tag.isPreset) tag.name else "${tag.name} ×",
+                                if (tag.isPreset) tag.name else app.getString(R.string.s_fd325af405, tag.name),
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
                             )
@@ -242,7 +245,7 @@ private fun UsageGuardRulesSection(state: UsageGuardSettingsRenderState) {
                     value = customTagText.value,
                     onValueChange = { customTagText.value = it },
                     modifier = Modifier.width(132.dp),
-                    label = { Text("新增标签") },
+                    label = { Text(stringResource(R.string.s_71f86583e1)) },
                     singleLine = true,
                 )
                 Button(
@@ -251,7 +254,7 @@ private fun UsageGuardRulesSection(state: UsageGuardSettingsRenderState) {
                         customTagText.value = ""
                     },
                 ) {
-                    Text("添加")
+                    Text(stringResource(R.string.s_94191ce210))
                 }
             }
         }
@@ -274,8 +277,8 @@ private fun UsageGuardAppsSection(state: UsageGuardSettingsRenderState) {
     val resumableBoardBounds = state.resumableBoardBounds
     val draggingAppId = state.draggingAppId
     SectionCard(
-        title = "应用管理",
-        subtitle = "图标化浏览优先于长列表，点按图标后再切换模式或移出列表。",
+        title = stringResource(R.string.s_52fa962ab3),
+        subtitle = stringResource(R.string.s_34a4bd22d5),
     ) {
         if (settings.usageGuardScopeMode == UsageGuardPolicy.SCOPE_SELECTED_ONLY) {
             Row(
@@ -284,7 +287,7 @@ private fun UsageGuardAppsSection(state: UsageGuardSettingsRenderState) {
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text("仅选中应用", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+                    Text(stringResource(R.string.s_2a5a0db475), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
                     Text(
                         if (draggingAppId.value == null) {
                             "点按图标可改模式，长按拖到另一列可直接切换。"
@@ -295,12 +298,12 @@ private fun UsageGuardAppsSection(state: UsageGuardSettingsRenderState) {
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
-                TextButton(onClick = { showSelectedPicker.value = true }) { Text("选择受控应用") }
+                TextButton(onClick = { showSelectedPicker.value = true }) { Text(stringResource(R.string.s_e0c8442c8f)) }
             }
             Spacer(modifier = Modifier.height(12.dp))
             SelectedAppModeBoard(
-                title = "严格模式",
-                subtitle = "离开应用后重新申请",
+                title = stringResource(R.string.s_cce3d12ecc),
+                subtitle = stringResource(R.string.s_a12b6a9ddd),
                 appIds = groupedApps.strictAppIds,
                 appInfoMap = appInfoMap,
                 onBoardBoundsChanged = { strictBoardBounds.value = it },
@@ -324,8 +327,8 @@ private fun UsageGuardAppsSection(state: UsageGuardSettingsRenderState) {
             )
             Spacer(modifier = Modifier.height(16.dp))
             SelectedAppModeBoard(
-                title = "普通模式",
-                subtitle = "到时前可继续返回",
+                title = stringResource(R.string.s_e8a4554eb3),
+                subtitle = stringResource(R.string.s_c288fd13e0),
                 appIds = groupedApps.resumableAppIds,
                 appInfoMap = appInfoMap,
                 onBoardBoundsChanged = { resumableBoardBounds.value = it },
@@ -354,14 +357,14 @@ private fun UsageGuardAppsSection(state: UsageGuardSettingsRenderState) {
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text("白名单应用", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+                    Text(stringResource(R.string.s_8a87deaa49), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
                     Text(
-                        "这些应用在全局模式下可直接跳过使用申请。",
+                        stringResource(R.string.s_4c57a177b2),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
-                TextButton(onClick = { showWhitelistPicker.value = true }) { Text("选择白名单") }
+                TextButton(onClick = { showWhitelistPicker.value = true }) { Text(stringResource(R.string.s_4adcd23b06)) }
             }
             Spacer(modifier = Modifier.height(12.dp))
             IconAppFlow(
@@ -379,14 +382,14 @@ private fun UsageGuardAppsSection(state: UsageGuardSettingsRenderState) {
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text("模式覆盖", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+                    Text(stringResource(R.string.s_3bddb65762), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
                     Text(
-                        "为个别全局受控应用单独指定严格或普通模式。",
+                        stringResource(R.string.s_a597b31e88),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
-                TextButton(onClick = { showOverridePicker.value = true }) { Text("选择覆盖应用") }
+                TextButton(onClick = { showOverridePicker.value = true }) { Text(stringResource(R.string.s_3ab400ba10)) }
             }
             Spacer(modifier = Modifier.height(12.dp))
             IconAppFlow(
@@ -407,8 +410,8 @@ private fun UsageGuardHistorySection(state: UsageGuardSettingsRenderState) {
     val history = state.history
     val appInfoMap = state.appInfoMap
     SectionCard(
-        title = "记录浏览",
-        subtitle = "默认查看今天的申请记录，切换日期时只保留所选那一天的内容。",
+        title = stringResource(R.string.s_242a10d8a9),
+        subtitle = stringResource(R.string.s_20b86aa7ab),
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -416,9 +419,9 @@ private fun UsageGuardHistorySection(state: UsageGuardSettingsRenderState) {
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text("按日期筛选", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+                Text(stringResource(R.string.s_2cf75123ae), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
                 Text(
-                    "当前查看 ${selectedDate.value.format(usageGuardDateFormatter)}",
+                    stringResource(R.string.s_5a46f954cd, selectedDate.value.format(usageGuardDateFormatter)),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -441,7 +444,7 @@ private fun UsageGuardHistorySection(state: UsageGuardSettingsRenderState) {
         }
         Spacer(modifier = Modifier.height(12.dp))
         if (history.isEmpty()) {
-            Text("所选日期暂无记录", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(stringResource(R.string.s_3e964b109c), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         } else {
             history.forEachIndexed { index, record ->
                 HistoryRow(record = record, appName = appInfoMap[record.appId]?.name ?: record.appName)

@@ -20,6 +20,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import li.songe.gkd.sdp.data.UrlTimeRule
+import androidx.compose.ui.res.stringResource
+import li.songe.gkd.sdp.R
 
 @Composable
 internal fun UrlBlockerTemplatePickerDialog(
@@ -28,7 +30,7 @@ internal fun UrlBlockerTemplatePickerDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("选择时间模板") },
+        title = { Text(stringResource(R.string.s_be8a21a3ed)) },
         text = {
             LazyColumn {
                 items(UrlTimeRule.Companion.TEMPLATES) { template ->
@@ -57,7 +59,7 @@ internal fun UrlBlockerTemplatePickerDialog(
         },
         confirmButton = {
             TextButton(onClick = onDismiss) {
-                Text("取消")
+                Text(stringResource(R.string.s_4d0b4688c7))
             }
         }
     )

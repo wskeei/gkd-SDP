@@ -28,6 +28,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import li.songe.gkd.sdp.ui.style.DimensionTokens
 import kotlin.math.roundToInt
+import androidx.compose.ui.res.stringResource
+import li.songe.gkd.sdp.R
+import li.songe.gkd.sdp.app
 
 /** One time bucket shown in a chart. */
 data class ChartBucket(
@@ -96,7 +99,7 @@ fun AppDataChart(
                 style = MaterialTheme.typography.titleMedium,
             )
             TextButton(onClick = { showTable = !showTable }) {
-                Text(if (showTable) "收起数据" else "查看数据")
+                Text(if (showTable) stringResource(R.string.s_ca41e1bef4) else stringResource(R.string.s_8afda7e678))
             }
         }
         Text(
@@ -160,7 +163,7 @@ fun AppDataChart(
             text = if (detailRow != null) {
                 AppDataTablePolicy.pointDetailText(detailRow)
             } else {
-                "点选柱形查看明细"
+                stringResource(R.string.s_32d6755cac)
             },
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -181,7 +184,7 @@ fun AppDataChart(
                         modifier = Modifier.weight(1f),
                     )
                     Text(
-                        text = "${row.valueText}${row.unit}",
+                        text = app.getString(R.string.s_896022e814, row.valueText, row.unit),
                         style = MaterialTheme.typography.bodyMedium,
                     )
                     Spacer(modifier = Modifier.width(DimensionTokens.SpacingBase))

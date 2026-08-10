@@ -72,6 +72,9 @@ import li.songe.gkd.sdp.ui.style.scaffoldPadding
 import li.songe.gkd.sdp.util.launchAsFn
 import li.songe.gkd.sdp.util.throttle
 import li.songe.gkd.sdp.util.toast
+import androidx.compose.ui.res.stringResource
+import li.songe.gkd.sdp.R
+import li.songe.gkd.sdp.app
 
 @Composable
 fun ActionLogPageSections(route: ActionLogRoute) {
@@ -98,7 +101,7 @@ fun ActionLogPageSections(route: ActionLogRoute) {
                 )
             },
             title = {
-                val title = "触发记录"
+                val title = app.getString(R.string.s_50532745b5)
                 val titleModifier = Modifier.noRippleClickable {
                     resetKey.intValue++
                 }
@@ -128,14 +131,14 @@ fun ActionLogPageSections(route: ActionLogRoute) {
                         imageVector = PerfIcon.Delete,
                         onClick = throttle(fn = mainVm.viewModelScope.launchAsFn {
                             val text = if (subsId != null) {
-                                "确定删除当前订阅所有触发记录?"
+                                app.getString(R.string.s_1e540d190c)
                             } else if (appId != null) {
-                                "确定删除当前应用所有触发记录?"
+                                app.getString(R.string.s_c3a7a48256)
                             } else {
-                                "确定删除所有触发记录?"
+                                app.getString(R.string.s_cffd230efd)
                             }
                             mainVm.dialogFlow.waitResult(
-                                title = "删除记录",
+                                title = app.getString(R.string.s_8f22c9908e),
                                 text = text,
                                 error = true,
                             )
@@ -146,7 +149,7 @@ fun ActionLogPageSections(route: ActionLogRoute) {
                             } else {
                                 DbSet.actionLogDao.deleteAll()
                             }
-                            toast("删除成功")
+                            toast(app.getString(R.string.s_86e8d12a79))
                         })
                     )
                 }
@@ -163,12 +166,12 @@ fun ActionLogPageSections(route: ActionLogRoute) {
                 Tab(
                     selected = selectedTab == 0,
                     onClick = { vm.selectedTabIndex.value = 0 },
-                    text = { Text("记录列表") }
+                    text = { Text(stringResource(R.string.s_8731a78cdd)) }
                 )
                 Tab(
                     selected = selectedTab == 1,
                     onClick = { vm.selectedTabIndex.value = 1 },
-                    text = { Text("统计图表") }
+                    text = { Text(stringResource(R.string.s_ad5386cf16)) }
                 )
             }
 
@@ -201,7 +204,7 @@ fun ActionLogPageSections(route: ActionLogRoute) {
                         item(ListPlaceholder.KEY, ListPlaceholder.TYPE) {
                             Spacer(modifier = Modifier.height(EmptyHeight))
                             if (list.itemCount == 0 && list.loadState.refresh !is LoadState.Loading) {
-                                EmptyText(text = "暂无数据")
+                                EmptyText(text = stringResource(R.string.s_b246458f20))
                             }
                         }
                     }
@@ -229,7 +232,7 @@ internal fun ActionLogStatsView(vm: ActionLogVm) {
     val statsUiState by vm.statsUiStateFlow.collectAsStateWithLifecycle()
     if (!statsUiState.hasAnyStats) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            EmptyText(text = "暂无统计数据")
+            EmptyText(text = stringResource(R.string.s_9cf5deae81))
         }
         return
     }
@@ -253,7 +256,7 @@ internal fun ActionLogStatsView(vm: ActionLogVm) {
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(
-                        text = "触发趋势（最近14个自然日）",
+                        text = app.getString(R.string.s_d7e65414e9),
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.primary
                     )
@@ -286,7 +289,7 @@ internal fun ActionLogStatsView(vm: ActionLogVm) {
 
         item {
             Text(
-                text = "详细数据",
+                text = app.getString(R.string.s_c62e341470),
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                 style = MaterialTheme.typography.titleSmall
             )
@@ -301,7 +304,7 @@ internal fun ActionLogStatsView(vm: ActionLogVm) {
             ) {
                 Text(text = stat.date, style = MaterialTheme.typography.bodyMedium)
                 Text(
-                    text = "${stat.count} 次触发",
+                    text = stringResource(R.string.s_f768d9701d, stat.count),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.secondary
                 )

@@ -69,6 +69,8 @@ import li.songe.gkd.sdp.util.launchAsFn
 import li.songe.gkd.sdp.util.switchItem
 import li.songe.gkd.sdp.util.throttle
 import li.songe.gkd.sdp.util.toast
+import androidx.compose.ui.res.stringResource
+import li.songe.gkd.sdp.app
 
 @Serializable
 data object BlockA11yAppListRoute : NavKey
@@ -88,8 +90,8 @@ fun BlockA11yAppListPage() {
         context.justHideSoftInput()
         if (vm.textChanged) {
             mainVm.dialogFlow.waitResult(
-                title = "提示",
-                text = "当前内容未保存，是否放弃编辑？",
+                title = app.getString(R.string.s_ab3656a956),
+                text = app.getString(R.string.s_aebc195621),
             )
         }
         editable = false
@@ -107,8 +109,8 @@ fun BlockA11yAppListPage() {
                                 if (vm.textChanged) {
                                     context.justHideSoftInput()
                                     mainVm.dialogFlow.waitResult(
-                                        title = "提示",
-                                        text = "当前内容未保存，是否放弃编辑？",
+                                        title = app.getString(R.string.s_ab3656a956),
+                                        text = app.getString(R.string.s_aebc195621),
                                     )
                                 }
                                 editable = !editable
@@ -146,7 +148,7 @@ fun BlockA11yAppListPage() {
                             )
                         Text(
                             modifier = titleModifier,
-                            text = "无障碍白名单",
+                            text = app.getString(R.string.s_fb2cc4f730),
                         )
                     }
                 },
@@ -161,9 +163,9 @@ fun BlockA11yAppListPage() {
                                     if (vm.textChanged) {
                                         blockA11yAppListFlow.value =
                                             AppListString.decode(vm.textFlow.value)
-                                        toast("更新成功")
+                                        toast(app.getString(R.string.s_e2cff77372))
                                     } else {
-                                        toast("未修改")
+                                        toast(app.getString(R.string.s_fff8cc4d94))
                                     }
                                     context.justHideSoftInput()
                                     editable = false
@@ -174,8 +176,8 @@ fun BlockA11yAppListPage() {
                             Row {
                                 PerfIconButton(
                                     imageVector = if (store.blockA11yAppListFollowMatch) PerfIcon.Lock else LockOpenRight,
-                                    contentDescription = if (store.blockA11yAppListFollowMatch) "已设置为跟随应用白名单" else "已设置为独立无障碍白名单",
-                                    onClickLabel = "切换模式",
+                                    contentDescription = if (store.blockA11yAppListFollowMatch) app.getString(R.string.s_6cbc419758) else app.getString(R.string.s_469f2dcd8a),
+                                    onClickLabel = app.getString(R.string.s_a144b06fd1),
                                     onClick = throttle {
                                         showSearchBar = false
                                         storeFlow.update { it.copy(blockA11yAppListFollowMatch = !it.blockA11yAppListFollowMatch) }
@@ -214,7 +216,7 @@ fun BlockA11yAppListPage() {
                                         expanded = expanded,
                                         onDismissRequest = { expanded = false }
                                     ) {
-                                        MenuGroupCard(inTop = true, title = "排序") {
+                                        MenuGroupCard(inTop = true, title = app.getString(R.string.s_dc35af8d69)) {
                                             var sortType by vm.sortTypeFlow.asMutableState()
                                             AppSortOption.objects.forEach { option ->
                                                 MenuItemRadioButton(
@@ -224,7 +226,7 @@ fun BlockA11yAppListPage() {
                                                 )
                                             }
                                         }
-                                        MenuGroupCard(inTop = true, title = "筛选") {
+                                        MenuGroupCard(inTop = true, title = app.getString(R.string.s_dcce9a144a)) {
                                             var appGroupType by vm.appGroupTypeFlow.asMutableState()
                                             AppGroupOption.normalObjects.forEach { option ->
                                                 val newValue = option.invert(appGroupType)
@@ -246,12 +248,12 @@ fun BlockA11yAppListPage() {
         floatingActionButton = {
             AnimationFloatingActionButton(
                 visible = !editable && scrollBehavior.isFullVisible && !store.blockA11yAppListFollowMatch,
-                onClickLabel = "进入白名单文本编辑模式",
+                onClickLabel = app.getString(R.string.s_668b6cf3f0),
                 onClick = {
                     editable = !editable
                 },
                 imageVector = PerfIcon.Edit,
-                contentDescription = "编辑白名单文本"
+                contentDescription = app.getString(R.string.s_f6628af38b)
             )
         },
     ) { contentPadding ->
@@ -261,7 +263,7 @@ fun BlockA11yAppListPage() {
             ) {
                 Spacer(modifier = Modifier.height(EmptyHeight))
                 Text(
-                    text = "已设置为跟随应用白名单",
+                    text = stringResource(R.string.s_6cbc419758),
                     textAlign = TextAlign.Center,
                     modifier = Modifier.fillMaxWidth(),
                     color = MaterialTheme.colorScheme.tertiary,
@@ -295,7 +297,7 @@ fun BlockA11yAppListPage() {
                 item(ListPlaceholder.KEY, ListPlaceholder.TYPE) {
                     Spacer(modifier = Modifier.height(EmptyHeight))
                     if (appInfos.isEmpty() && searchStr.isNotEmpty()) {
-                        EmptyText(text = "暂无搜索结果")
+                        EmptyText(text = app.getString(R.string.s_8f8274c754))
                         Spacer(modifier = Modifier.height(EmptyHeight / 2))
                     }
                 }

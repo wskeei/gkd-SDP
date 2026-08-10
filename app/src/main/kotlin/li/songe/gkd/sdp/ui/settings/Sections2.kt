@@ -32,6 +32,8 @@ import li.songe.gkd.sdp.ui.share.asMutableState
 import li.songe.gkd.sdp.ui.style.EmptyHeight
 import li.songe.gkd.sdp.ui.style.titleItemPadding
 import li.songe.gkd.sdp.util.*
+import androidx.compose.ui.res.stringResource
+import li.songe.gkd.sdp.app
 
 @Composable
 internal fun SettingsContent(
@@ -99,21 +101,21 @@ private fun SettingsGeneralSection(
     showA11ySection: Boolean,
     shizukuOk: Boolean,
 ) {
-    Text("常规", modifier = Modifier.titleItemPadding(showTop = false), style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary)
+    Text(stringResource(R.string.s_f1484fa78b), modifier = Modifier.titleItemPadding(showTop = false), style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary)
     TextSwitch(
-        title = "触发提示",
+        title = stringResource(R.string.s_5bf7ff408f),
         subtitle = store.actionToast,
         checked = store.toastWhenClick,
-        onClickLabel = "打开触发提示弹窗",
+        onClickLabel = stringResource(R.string.s_2313ce7d22),
         onClick = { showToastInputDlg.value = true },
         suffixIcon = {
             PerfCustomIconButton(
                 size = 32.dp,
                 iconSize = 20.dp,
-                onClickLabel = "打开提示设置弹窗",
+                onClickLabel = app.getString(R.string.s_be1e5b4074),
                 onClick = { vm.showToastSettingsDlgFlow.update { !it } },
                 id = R.drawable.ic_page_info,
-                contentDescription = "提示设置",
+                contentDescription = app.getString(R.string.s_aaa3b3883f),
                 tint = if (showToastSettingsDlg) MaterialTheme.colorScheme.primary else LocalContentColor.current,
             )
         },
@@ -122,27 +124,27 @@ private fun SettingsGeneralSection(
     AnimatedVisibility(showToastSettingsDlg) {
         Column {
             TextSwitch(
-                title = "提示样式",
-                subtitle = "使用系统样式",
+                title = app.getString(R.string.s_29ea25d303),
+                subtitle = app.getString(R.string.s_565e1ff87a),
                 suffix = "查看限制",
                 onSuffixClick = {
                     mainVm.dialogFlow.updateDialogOptions(
-                        title = "限制说明",
-                        text = "系统 Toast 存在频率限制, 触发过于频繁会被系统强制不显示\n\n如果只使用开屏一类低频率规则可使用系统提示, 否则建议关闭此项使用自定义样式提示",
+                        title = app.getString(R.string.s_1b2219a307),
+                        text = app.getString(R.string.s_5118a80944),
                     )
                 },
                 checked = store.useSystemToast,
                 onCheckedChange = { storeFlow.value = store.copy(useSystemToast = it) },
             )
             TextSwitch(
-                title = "轨迹提示",
-                subtitle = "显示触发位置信息",
+                title = app.getString(R.string.s_6a1b839874),
+                subtitle = app.getString(R.string.s_e78582fda3),
                 checked = TrackService.isRunning.collectAsStateWithLifecycle().value,
                 onCheckedChange = vm.viewModelScope.launchAsFn<Boolean> {
                     if (it) {
                         mainVm.dialogFlow.waitResult(
-                            title = "使用须知",
-                            text = "开启「轨迹提示」后点击或滑动后会在屏幕上使用悬浮窗绘制轨迹(一段时间后消失)，如果新触摸事件恰好在悬浮窗区域内，可能会被目标应用拒绝，从而导致点击或滑动无响应",
+                            title = app.getString(R.string.s_59e2c8e61d),
+                            text = app.getString(R.string.s_881aca9e23),
                             confirmText = "继续",
                         )
                         requiredPermission(context, foregroundServiceSpecialUseState)
@@ -156,22 +158,22 @@ private fun SettingsGeneralSection(
     }
     val subsStatus by vm.subsStatusFlow.collectAsStateWithLifecycle()
     TextSwitch(
-        title = "通知文案",
-        subtitle = if (store.useCustomNotifText) "${store.customNotifTitle} / ${store.customNotifText}" else subsStatus,
+        title = stringResource(R.string.s_ce7c7d71a7),
+        subtitle = if (store.useCustomNotifText) stringResource(R.string.s_bedcb574bc, store.customNotifTitle, store.customNotifText) else subsStatus,
         checked = store.useCustomNotifText,
-        onClickLabel = "打开修改通知文案弹窗",
+        onClickLabel = stringResource(R.string.s_ac04fdc8b3),
         onClick = { showNotifTextInputDlg.value = true },
         onCheckedChange = { storeFlow.value = store.copy(useCustomNotifText = it) },
     )
     TextSwitch(
-        title = "后台隐藏",
-        subtitle = "在「最近任务」隐藏卡片",
+        title = stringResource(R.string.s_8c91b02262),
+        subtitle = stringResource(R.string.s_95a85cd30d),
         checked = store.excludeFromRecents,
         onCheckedChange = vm.viewModelScope.launchAsFn<Boolean> {
             if (it) {
                 mainVm.dialogFlow.waitResult(
-                    title = "后台隐藏",
-                    text = "隐藏卡片后可能导致部分设备无法给任务卡片加锁后台，建议先加锁后再隐藏，若已加锁或没有锁后台机制请继续",
+                    title = app.getString(R.string.s_8c91b02262),
+                    text = app.getString(R.string.s_7834885df6),
                     confirmText = "继续",
                 )
             }
@@ -179,10 +181,10 @@ private fun SettingsGeneralSection(
         },
     )
     if (showA11ySection) {
-        Text("无障碍", modifier = Modifier.fillMaxWidth().titleItemPadding(), style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary)
+        Text(stringResource(R.string.s_04c62c8f3d), modifier = Modifier.fillMaxWidth().titleItemPadding(), style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary)
         TextSwitch(
-            title = "局部关闭",
-            subtitle = "白名单内关闭服务",
+            title = stringResource(R.string.s_86613e925d),
+            subtitle = stringResource(R.string.s_2e268f4e64),
             checked = store.enableBlockA11yAppList && shizukuOk,
             onCheckedChange = vm.viewModelScope.launchAsFn<Boolean> {
                 if (it) showA11yBlockDlg.value = true else {
@@ -191,28 +193,28 @@ private fun SettingsGeneralSection(
                 }
             },
         )
-        SettingItem(title = "白名单", onClickLabel = "进入无障碍白名单页面", onClick = { mainVm.navigatePage(BlockA11yAppListRoute) })
+        SettingItem(title = stringResource(R.string.s_8f74cd015b), onClickLabel = stringResource(R.string.s_7e4c9176ba), onClick = { mainVm.navigatePage(BlockA11yAppListRoute) })
     }
 }
 
 @Composable
 private fun SettingsAppearanceSection(store: SettingsStore) {
-    Text("外观", modifier = Modifier.titleItemPadding(), style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary)
+    Text(stringResource(R.string.s_09b58aa342), modifier = Modifier.titleItemPadding(), style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary)
     TextMenu(
-        title = "深色模式",
+        title = stringResource(R.string.s_750642ccd6),
         option = DarkThemeOption.objects.findOption(store.enableDarkTheme),
         onOptionChange = { storeFlow.update { s -> s.copy(enableDarkTheme = it.value) } },
     )
     if (AndroidTarget.S) {
-        TextSwitch(title = "动态配色", checked = store.enableDynamicColor, onCheckedChange = { storeFlow.update { s -> s.copy(enableDynamicColor = it) } })
+        TextSwitch(title = stringResource(R.string.s_a75357bc35), checked = store.enableDynamicColor, onCheckedChange = { storeFlow.update { s -> s.copy(enableDynamicColor = it) } })
     }
     TextMenu(
-        title = "界面密度",
+        title = stringResource(R.string.s_c2fd3fcdd3),
         option = DisplayDensityOption.objects.findOption(store.displayDensityScale),
         onOptionChange = { storeFlow.update { settings -> settings.copy(displayDensityScale = it.value) } },
     )
     TextMenu(
-        title = "应用语言",
+        title = stringResource(R.string.s_ea10de41b6),
         option = LanguageOption.objects.findOption(store.languageTag),
         onOptionChange = { storeFlow.update { settings -> settings.copy(languageTag = it.value) } },
     )
@@ -220,7 +222,7 @@ private fun SettingsAppearanceSection(store: SettingsStore) {
 
 @Composable
 private fun SettingsOtherSection(store: SettingsStore, mainVm: MainViewModel, vm: HomeVm) {
-    Text("其他", modifier = Modifier.titleItemPadding(), style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary)
+    Text(stringResource(R.string.s_1a26edf94a), modifier = Modifier.titleItemPadding(), style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary)
     val summary by ruleSummaryFlow.collectAsStateWithLifecycle()
     val constraints by FocusLockUtils.allConstraintsFlow.collectAsStateWithLifecycle()
     val activeLockCount = remember(summary, constraints) {
@@ -237,11 +239,11 @@ private fun SettingsOtherSection(store: SettingsStore, mainVm: MainViewModel, vm
             summary.appIdToAllGroups.values.flatten().count { locked(it.subsItem.id, it.appId, it.group.key) }
     }
     SettingItem(
-        title = "数字自律",
-        subtitle = if (activeLockCount > 0) "${activeLockCount} 项规则已锁定" else "未锁定",
+        title = stringResource(R.string.s_6337015d1f),
+        subtitle = if (activeLockCount > 0) stringResource(R.string.s_ed7465c7b9, activeLockCount) else stringResource(R.string.s_74b0d1f601),
         onClick = { mainVm.navigatePage(FocusLockRoute) },
     )
-    SettingItem(title = "高级设置", onClick = { mainVm.navigatePage(AdvancedPageRoute) })
-    SettingItem(title = "备份恢复", onClick = { vm.showBackupDlgFlow.value = true })
-    SettingItem(title = "关于", onClick = { mainVm.navigatePage(AboutRoute) })
+    SettingItem(title = stringResource(R.string.s_dd07e641ca), onClick = { mainVm.navigatePage(AdvancedPageRoute) })
+    SettingItem(title = stringResource(R.string.s_8233960bfd), onClick = { vm.showBackupDlgFlow.value = true })
+    SettingItem(title = stringResource(R.string.s_bed172efc9), onClick = { mainVm.navigatePage(AboutRoute) })
 }

@@ -53,6 +53,8 @@ import li.songe.gkd.sdp.ui.style.AppTheme
 import li.songe.gkd.sdp.util.LogUtils
 import li.songe.gkd.sdp.util.FocusTimeFormatter
 import li.songe.gkd.sdp.util.json
+import androidx.compose.ui.res.stringResource
+import li.songe.gkd.sdp.R
 
 class FocusOverlayService : LifecycleService(), SavedStateRegistryOwner {
 
@@ -258,7 +260,7 @@ private fun MainInterceptContent(
 
         if (isLocked) {
             Text(
-                text = "（已锁定，无法提前结束）",
+                text = stringResource(R.string.s_62da9fb9ac),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.error.copy(alpha = 0.8f)
             )
@@ -271,11 +273,11 @@ private fun MainInterceptContent(
                 onClick = onShowWhitelist,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text("打开白名单应用")
+                Text(stringResource(R.string.s_1a2443f7d2))
             }
         } else {
             Text(
-                text = "暂无白名单应用",
+                text = app.getString(R.string.s_877a0e2923),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f),
                 textAlign = TextAlign.Center
@@ -300,11 +302,11 @@ private fun WhitelistPickerContent(
             modifier = Modifier.fillMaxWidth()
         ) {
             IconButton(onClick = onBack) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回")
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.s_11d0241540))
             }
             Spacer(modifier = Modifier.width(8.dp))
             Text(
-                text = "选择白名单应用",
+                text = stringResource(R.string.s_a63ec9e8f8),
                 style = MaterialTheme.typography.titleLarge
             )
         }
@@ -313,7 +315,7 @@ private fun WhitelistPickerContent(
 
         if (whitelist.isEmpty()) {
             Text(
-                text = "暂无白名单应用",
+                text = stringResource(R.string.s_877a0e2923),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
                 modifier = Modifier.padding(16.dp)
@@ -324,7 +326,7 @@ private fun WhitelistPickerContent(
                 if (whitelist.isNotEmpty()) {
                     item {
                         Text(
-                            text = "白名单应用",
+                            text = app.getString(R.string.s_8a87deaa49),
                             style = MaterialTheme.typography.titleMedium,
                             modifier = Modifier.padding(vertical = 8.dp)
                         )

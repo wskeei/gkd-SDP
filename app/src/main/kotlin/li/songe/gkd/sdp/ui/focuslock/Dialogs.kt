@@ -30,6 +30,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import li.songe.gkd.sdp.util.format
+import androidx.compose.ui.res.stringResource
+import li.songe.gkd.sdp.R
 
 @Composable
 fun MindfulPauseSheet(
@@ -45,7 +47,7 @@ fun MindfulPauseSheet(
 
     Column(modifier = Modifier.padding(24.dp)) {
         Text(
-            text = if (isBatch) "批量配置全屏拦截" else "配置全屏拦截",
+            text = if (isBatch) stringResource(R.string.s_de4579c740) else stringResource(R.string.s_9118783aea),
             style = MaterialTheme.typography.titleLarge
         )
         Text(
@@ -61,7 +63,7 @@ fun MindfulPauseSheet(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Text("启用拦截", style = MaterialTheme.typography.titleMedium)
+            Text(stringResource(R.string.s_25d9aca60f), style = MaterialTheme.typography.titleMedium)
 
             val switchInteractionEnabled = !target.isLocked || !enabled
 
@@ -78,14 +80,14 @@ fun MindfulPauseSheet(
         OutlinedTextField(
             value = message,
             onValueChange = { message = it },
-            label = { Text("沉思语录") },
+            label = { Text(stringResource(R.string.s_d28f049f02)) },
             modifier = Modifier.fillMaxWidth(),
             maxLines = 2
         )
 
         Spacer(modifier = Modifier.height(8.dp))
         Text(
-            text = "说明: 触发拦截后将显示全屏提示，10秒后自动退出。",
+            text = stringResource(R.string.s_3e42de41c7),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -96,7 +98,7 @@ fun MindfulPauseSheet(
             onClick = { onConfirm(enabled, cooldown, message) },
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text("保存配置")
+            Text(stringResource(R.string.s_817af1870c))
         }
         Spacer(modifier = Modifier.height(16.dp))
     }
@@ -119,7 +121,7 @@ fun LockDurationSheet(
             .padding(24.dp)
     ) {
         Text(
-            text = if (isLocked) "延长锁定: $targetName" else "锁定: $targetName",
+            text = if (isLocked) stringResource(R.string.s_8a8478347d, targetName) else stringResource(R.string.s_9cb5b4660f, targetName),
             style = MaterialTheme.typography.titleLarge,
             modifier = Modifier.padding(bottom = 8.dp)
         )
@@ -128,7 +130,7 @@ fun LockDurationSheet(
             val date = java.util.Date(currentEndTime)
             val formatter = java.text.SimpleDateFormat("MM-dd HH:mm", java.util.Locale.getDefault())
             Text(
-                text = "当前锁定至: ${formatter.format(date)}",
+                text = stringResource(R.string.s_4bce9796c3, formatter.format(date)),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.padding(bottom = 8.dp)
@@ -136,7 +138,7 @@ fun LockDurationSheet(
         }
 
         Text(
-            text = if (isLocked) "选择要延长的时长。锁定期间规则将无法关闭。" else "锁定期间规则将无法关闭。请谨慎操作。",
+            text = if (isLocked) stringResource(R.string.s_dd8a138761) else stringResource(R.string.s_6806d16ee2),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(bottom = 24.dp)
@@ -188,7 +190,7 @@ fun LockDurationSheet(
                             else null
                 ) {
                     Text(
-                        text = "自定义",
+                        text = stringResource(R.string.s_c493338e8c),
                         color = if (vm.isCustomDuration)
                             MaterialTheme.colorScheme.primary
                         else
@@ -208,7 +210,7 @@ fun LockDurationSheet(
                                     vm.customDaysText = newValue
                                 }
                             },
-                            label = { Text("天") },
+                            label = { Text(stringResource(R.string.s_c3304d1e49)) },
                             singleLine = true,
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                             modifier = Modifier.weight(1f)
@@ -220,7 +222,7 @@ fun LockDurationSheet(
                                     vm.customHoursText = newValue
                                 }
                             },
-                            label = { Text("小时") },
+                            label = { Text(stringResource(R.string.s_99f6904ff3)) },
                             singleLine = true,
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                             modifier = Modifier.weight(1f)
@@ -235,7 +237,7 @@ fun LockDurationSheet(
             onClick = onConfirm,
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text(if (isLocked) "确定延长" else "确定锁定")
+            Text(if (isLocked) stringResource(R.string.s_89120c94be) else stringResource(R.string.s_3718c68dfd))
         }
         Spacer(modifier = Modifier.height(16.dp))
     }

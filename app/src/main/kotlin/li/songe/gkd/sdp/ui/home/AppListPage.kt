@@ -87,6 +87,8 @@ import li.songe.gkd.sdp.util.switchItem
 import li.songe.gkd.sdp.util.throttle
 import li.songe.gkd.sdp.util.updateAllAppInfo
 import li.songe.gkd.sdp.util.updateAppMutex
+import androidx.compose.ui.res.stringResource
+import li.songe.gkd.sdp.app
 
 @Composable
 fun useAppListPage(): ScaffoldExt {
@@ -171,7 +173,7 @@ fun useAppListPage(): ScaffoldExt {
                         if (localEditWhiteListMode) {
                             Text(
                                 modifier = titleModifier,
-                                text = "应用白名单",
+                                text = app.getString(R.string.s_7395ba05d0),
                             )
                         } else {
                             Text(
@@ -186,11 +188,11 @@ fun useAppListPage(): ScaffoldExt {
                     CompositionLocalProvider(LocalContentColor provides MaterialTheme.colorScheme.error) {
                         PerfIconButton(
                             imageVector = PerfIcon.WarningAmber,
-                            contentDescription = canQueryPkgState.name + "异常",
+                            contentDescription = canQueryPkgState.name + app.getString(R.string.s_5caf279339),
                             onClick = throttle {
                                 mainVm.dialogFlow.updateDialogOptions(
-                                    title = "权限异常",
-                                    text = "检测到已授予「${canQueryPkgState.name}」但实际获取应用数量稀少，已使用其它方式获取但可能不全，在应用列表下拉刷新可重新获取，若无法解决可尝试关闭权限后重新授予或重启设备"
+                                    title = app.getString(R.string.s_a15a6fbc16),
+                                    text = app.getString(R.string.s_9c818a85b3, canQueryPkgState.name)
                                 )
                             },
                         )
@@ -198,8 +200,8 @@ fun useAppListPage(): ScaffoldExt {
                 }
                 PerfIconButton(
                     imageVector = PerfIcon.Block,
-                    contentDescription = "切换白名单编辑模式",
-                    onClickLabel = if (editWhiteListMode) "退出编辑" else "进入编辑",
+                    contentDescription = app.getString(R.string.s_9d777a0892),
+                    onClickLabel = if (editWhiteListMode) app.getString(R.string.s_bbbcc7565b) else app.getString(R.string.s_f5f9da83dc),
                     colors = IconButtonDefaults.iconButtonColors(
                         contentColor = if (editWhiteListMode) {
                             CheckboxDefaults.colors().checkedBoxColor
@@ -225,12 +227,12 @@ fun useAppListPage(): ScaffoldExt {
                     },
                     id = R.drawable.ic_anim_search_close,
                     atEnd = showSearchBar,
-                    contentDescription = if (showSearchBar) "关闭搜索" else "搜索应用列表",
+                    contentDescription = if (showSearchBar) app.getString(R.string.s_e40a06c88b) else app.getString(R.string.s_c1d113df7d),
                 )
                 var expanded by remember { mutableStateOf(false) }
                 PerfIconButton(
                     imageVector = PerfIcon.Sort,
-                    contentDescription = "排序筛选",
+                    contentDescription = app.getString(R.string.s_e2b9cf1714),
                     onClick = {
                         expanded = true
                     }
@@ -243,7 +245,7 @@ fun useAppListPage(): ScaffoldExt {
                         expanded = expanded,
                         onDismissRequest = { expanded = false }
                     ) {
-                        MenuGroupCard(inTop = true, title = "排序") {
+                        MenuGroupCard(inTop = true, title = app.getString(R.string.s_dc35af8d69)) {
                             var sortType by vm.sortTypeFlow.asMutableState()
                             AppSortOption.objects.forEach { option ->
                                 MenuItemRadioButton(
@@ -253,7 +255,7 @@ fun useAppListPage(): ScaffoldExt {
                                 )
                             }
                         }
-                        MenuGroupCard(title = "分组") {
+                        MenuGroupCard(title = app.getString(R.string.s_97d8a6c05b)) {
                             var appGroupType by vm.appGroupTypeFlow.asMutableState()
                             AppGroupOption.normalObjects.forEach { option ->
                                 val newValue = option.invert(appGroupType)
@@ -265,9 +267,9 @@ fun useAppListPage(): ScaffoldExt {
                                 )
                             }
                         }
-                        MenuGroupCard(title = "筛选") {
+                        MenuGroupCard(title = app.getString(R.string.s_dcce9a144a)) {
                             MenuItemCheckbox(
-                                text = "白名单",
+                                text = app.getString(R.string.s_8f74cd015b),
                                 stateFlow = vm.showBlockAppFlow,
                             )
                         }
@@ -278,7 +280,7 @@ fun useAppListPage(): ScaffoldExt {
         floatingActionButton = {
             AnimationFloatingActionButton(
                 visible = editWhiteListMode,
-                contentDescription = "编辑白名单",
+                contentDescription = app.getString(R.string.s_6b4f72a6e0),
                 onClick = {
                     mainVm.navigatePage(EditBlockAppListRoute)
                 },
@@ -335,7 +337,7 @@ fun useAppListPage(): ScaffoldExt {
                 item(ListPlaceholder.KEY, ListPlaceholder.TYPE) {
                     Spacer(modifier = Modifier.height(EmptyHeight))
                     if (appInfos.isEmpty() && searchStr.isNotEmpty()) {
-                        EmptyText(text = if (vm.appFilter.showAllAppFlow.collectAsStateWithLifecycle().value) "暂无搜索结果" else "暂无搜索结果，或修改筛选")
+                        EmptyText(text = if (vm.appFilter.showAllAppFlow.collectAsStateWithLifecycle().value) stringResource(R.string.s_8f8274c754) else stringResource(R.string.s_9e7d3ee61c))
                         Spacer(modifier = Modifier.height(EmptyHeight / 2))
                     }
                 }
@@ -369,7 +371,7 @@ private fun AppItemCard(
                 contentDescription = if (editWhiteListMode) {
                     appInfo.name
                 } else {
-                    "应用：${appInfo.name}，${desc ?: appInfo.id}"
+                    app.getString(R.string.s_d916a8b463, appInfo.name, desc ?: appInfo.id)
                 }
                 if (inWhiteList) {
                     stateDescription = "已加入白名单"
@@ -377,7 +379,7 @@ private fun AppItemCard(
                     stateDescription = "未加入白名单"
                 }
                 onClick(
-                    label = if (editWhiteListMode) if (inWhiteList) "从白名单中移除" else "加入白名单" else "进入规则汇总页面",
+                    label = if (editWhiteListMode) if (inWhiteList) app.getString(R.string.s_056f9022c6) else app.getString(R.string.s_10181905a0) else app.getString(R.string.s_7f04c8536d),
                     action = null
                 )
             }

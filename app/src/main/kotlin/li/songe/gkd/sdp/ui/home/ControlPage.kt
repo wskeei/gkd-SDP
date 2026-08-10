@@ -91,6 +91,7 @@ import li.songe.gkd.sdp.util.throttle
 import li.songe.gkd.sdp.util.toast
 import li.songe.gkd.sdp.remote.RemoteListenMode
 import li.songe.gkd.sdp.remote.RemoteScope
+import li.songe.gkd.sdp.app
 
 @Composable
 fun useControlPage(): ScaffoldExt {
@@ -118,8 +119,8 @@ fun useControlPage(): ScaffoldExt {
             }, actions = {
                 PerfIconButton(
                     imageVector = PerfIcon.RocketLaunch,
-                    onClickLabel = "前往工作模式页面",
-                    contentDescription = "工作模式",
+                    onClickLabel = app.getString(R.string.s_bb296f3841),
+                    contentDescription = app.getString(R.string.s_f8b4c14ff9),
                     onClick = throttle {
                         mainVm.navigatePage(AuthA11yRoute)
                     },
@@ -144,7 +145,7 @@ fun useControlPage(): ScaffoldExt {
                     modifier = Modifier
                         .fillMaxWidth()
                         .semantics(mergeDescendants = true) {
-                            this.onClick(label = "前往解除限制页面", action = null)
+                            this.onClick(label = stringResource(R.string.s_25e98173d1), action = null)
                         },
                     shape = MaterialTheme.shapes.large,
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer),
@@ -162,7 +163,7 @@ fun useControlPage(): ScaffoldExt {
                         PerfIcon(imageVector = PerfIcon.WarningAmber)
                         Text(
                             modifier = Modifier.weight(1f),
-                            text = "检测到权限受限制，请前往解除",
+                            text = stringResource(R.string.s_7917327c68),
                             style = MaterialTheme.typography.bodyLarge,
                         )
                         PerfIcon(imageVector = PerfIcon.KeyboardArrowRight)
@@ -172,19 +173,19 @@ fun useControlPage(): ScaffoldExt {
             if (store.useA11y || actualA11yScopeAppList.contains(topAppIdFlow.collectAsStateWithLifecycle().value)) {
                 PageSwitchItemCard(
                     imageVector = PerfIcon.Memory,
-                    title = "服务状态",
+                    title = stringResource(R.string.s_d42da9e2ac),
                     subtitle = if (a11yRunning) {
-                        "无障碍正在运行"
+                        stringResource(R.string.s_f106cde067)
                     } else if (mainVm.a11yServiceEnabledFlow.collectAsStateWithLifecycle().value) {
-                        "无障碍发生故障"
+                        stringResource(R.string.s_653c78b0b0)
                     } else if (writeSecureSettings) {
                         if (store.enableAutomator && a11yPartDisabledFlow.collectAsStateWithLifecycle().value) {
-                            "无障碍局部关闭"
+                            stringResource(R.string.s_6b683e741b)
                         } else {
-                            "无障碍已关闭"
+                            stringResource(R.string.s_a6fa6ad6cb)
                         }
                     } else {
-                        "无障碍未授权"
+                        stringResource(R.string.s_9d1239c185)
                     },
                     checked = a11yRunning,
                     onCheckedChange = { newEnabled ->
@@ -206,16 +207,16 @@ fun useControlPage(): ScaffoldExt {
             } else {
                 PageSwitchItemCard(
                     imageVector = PerfIcon.Memory,
-                    title = "服务状态",
+                    title = stringResource(R.string.s_d42da9e2ac),
                     subtitle = if (uiAutomationFlow.collectAsStateWithLifecycle().value != null) {
-                        "自动化正在运行"
+                        stringResource(R.string.s_88ad0447cf)
                     } else if (!shizukuContextFlow.collectAsStateWithLifecycle().value.ok) {
-                        "自动化未授权"
+                        stringResource(R.string.s_5ad8b271e9)
                     } else {
                         if (store.enableAutomator && a11yPartDisabledFlow.collectAsStateWithLifecycle().value) {
-                            "自动化局部关闭"
+                            stringResource(R.string.s_544facd553)
                         } else {
-                            "自动化已关闭"
+                            stringResource(R.string.s_a8ece9678b)
                         }
                     },
                     checked = uiAutomationFlow.collectAsStateWithLifecycle().value != null,
@@ -230,14 +231,14 @@ fun useControlPage(): ScaffoldExt {
 
             PageSwitchItemCard(
                 imageVector = PerfIcon.Notifications,
-                title = "常驻通知",
-                subtitle = "显示运行状态及统计数据",
+                title = stringResource(R.string.s_ccecf0f93b),
+                subtitle = stringResource(R.string.s_8ffb15fe7b),
                 checked = manageRunning && store.enableStatusService,
                 onCheckedChange = vm.viewModelScope.launchAsFn<Boolean> {
                     if (it) {
                         StatusService.requestStart(context)
                     } else if (store.accessibilityGuardEnabled) {
-                        toast("请先关闭无障碍权限守护")
+                        toast(app.getString(R.string.s_f10262d528))
                     } else {
                         StatusService.stop()
                         storeFlow.value = store.copy(
@@ -251,7 +252,7 @@ fun useControlPage(): ScaffoldExt {
             if (HttpService.isRunning.collectAsStateWithLifecycle().value) {
                 val remoteSession by HttpService.remoteSessionStateFlow.collectAsStateWithLifecycle()
                 PageItemCard(
-                    title = "本地 Inspector",
+                    title = stringResource(R.string.s_b6ea16530e),
                     subtitle = if (remoteSession.mode == RemoteListenMode.LOCAL_ONLY) {
                         "仅本机监听｜${if (remoteSession.paired) "已配对" else "等待配对"}｜" +
                             "授权 ${remoteSession.enabledScopes.size}/${RemoteScope.entries.size}"
@@ -263,7 +264,7 @@ fun useControlPage(): ScaffoldExt {
                             "授权 ${remoteSession.enabledScopes.size}/${RemoteScope.entries.size}"
                     },
                     imageVector = PerfIcon.Api,
-                    onClickLabel = "打开本地 Inspector 设置",
+                    onClickLabel = stringResource(R.string.s_acf7e083eb),
                     onClick = { mainVm.navigatePage(AdvancedPageRoute) },
                 )
             }
@@ -272,44 +273,44 @@ fun useControlPage(): ScaffoldExt {
             val digitalSelfDisciplineToday by vm.digitalSelfDisciplineTodaySummaryFlow.collectAsStateWithLifecycle()
             val usageGuardWidgetSummary = UsageGuardReviewPolicy.widgetSummary(usageGuardSummary)
             PageItemCard(
-                title = "数字自律复盘",
-                subtitle = "${DigitalSelfDisciplineReviewPresentation.homeSummary(
+                title = stringResource(R.string.s_c7380c3c20),
+                subtitle = stringResource(R.string.s_0cde7c26f2, DigitalSelfDisciplineReviewPresentation.homeSummary(
                     digitalSelfDisciplineToday.requestCount,
                     digitalSelfDisciplineToday.interceptCount,
-                )}｜" +
+                )) +
                     usageGuardWidgetSummary.hint,
                 imageVector = PerfIcon.Equalizer,
-                onClickLabel = "打开数字自律复盘页面",
+                onClickLabel = stringResource(R.string.s_d971a601ba),
                 onClick = {
                     mainVm.navigatePage(UsageGuardReviewRoute)
                 },
             )
 
             PageItemCard(
-                title = "触发记录",
-                subtitle = "规则误触可定位关闭",
+                title = stringResource(R.string.s_50532745b5),
+                subtitle = stringResource(R.string.s_48ec1b5fd3),
                 imageVector = PerfIcon.History,
-                onClickLabel = "打开触发记录页面",
+                onClickLabel = stringResource(R.string.s_dcdd69a9d7),
                 onClick = {
                     mainVm.navigatePage(ActionLogRoute())
                 })
 
             if (ActivityService.isRunning.collectAsStateWithLifecycle().value) {
                 PageItemCard(
-                    title = "界面日志",
-                    subtitle = "记录打开的应用及界面",
+                    title = stringResource(R.string.s_48ff47e21f),
+                    subtitle = stringResource(R.string.s_8f63dbc430),
                     imageVector = PerfIcon.Layers,
-                    onClickLabel = "打开界面日志页面",
+                    onClickLabel = stringResource(R.string.s_01a10cb43a),
                     onClick = {
                         mainVm.navigatePage(ActivityLogRoute)
                     })
             }
 
             PageItemCard(
-                title = "了解 GKD",
-                subtitle = "查阅规则文档和常见问题",
+                title = stringResource(R.string.s_eaa2069ca8),
+                subtitle = stringResource(R.string.s_a9d3ec7ec4),
                 imageVector = PerfIcon.HelpOutline,
-                onClickLabel = "打开 GKD 文档页面",
+                onClickLabel = stringResource(R.string.s_11b5b7a56c),
                 onClick = {
                     mainVm.navigatePage(WebViewRoute(initUrl = HOME_PAGE_URL))
                 })
@@ -319,9 +320,9 @@ fun useControlPage(): ScaffoldExt {
         if (showA11yDisableInfoDialog) {
             AlertDialog(
                 onDismissRequest = { showA11yDisableInfoDialog = false },
-                title = { Text("不能在应用内关闭无障碍") },
+                title = { Text(stringResource(R.string.s_f90b38d994)) },
                 text = {
-                    Text("为防止误触，应用内不支持在此关闭无障碍。若确需关闭，请前往 Android 系统无障碍设置。")
+                    Text(stringResource(R.string.s_48594302d1))
                 },
                 confirmButton = {
                     TextButton(
@@ -330,12 +331,12 @@ fun useControlPage(): ScaffoldExt {
                             openA11ySettings()
                         },
                     ) {
-                        Text("前往设置")
+                        Text(stringResource(R.string.s_9ea2c95e8d))
                     }
                 },
                 dismissButton = {
                     TextButton(onClick = { showA11yDisableInfoDialog = false }) {
-                        Text("取消")
+                        Text(stringResource(R.string.s_4d0b4688c7))
                     }
                 },
             )
@@ -395,7 +396,7 @@ private fun PageSwitchItemCard(
         modifier = Modifier
             .fillMaxWidth()
             .semantics(mergeDescendants = true) {
-                this.onClick(label = "切换$title", action = null)
+                this.onClick(label = stringResource(R.string.s_282a6986b9, title), action = null)
             },
         shape = MaterialTheme.shapes.large,
         colors = surfaceCardColors,
@@ -484,13 +485,13 @@ private fun ServerStatusCard() {
                 modifier = Modifier.weight(1f)
             ) {
                 Text(
-                    text = "数据概览",
+                    text = stringResource(R.string.s_354077c764),
                     style = MaterialTheme.typography.bodyLarge,
                 )
                 val usedSubsItemCount by vm.usedSubsItemCountFlow.collectAsStateWithLifecycle()
                 AnimatedVisibility(usedSubsItemCount > 0) {
                     Text(
-                        text = "已开启 $usedSubsItemCount 条订阅",
+                        text = stringResource(R.string.s_a6eec0915a, usedSubsItemCount),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -518,7 +519,7 @@ private fun ServerStatusCard() {
                     modifier = Modifier
                         .padding(horizontal = 4.dp)
                         .clip(MaterialTheme.shapes.extraSmall)
-                        .clickable(onClickLabel = "前往应用的规则汇总页面", onClick = throttle {
+                        .clickable(onClickLabel = stringResource(R.string.s_3e9db10c1c), onClick = throttle {
                             latestRecordFlow.value?.let {
                                 mainVm.navigatePage(
                                     AppConfigRoute(

@@ -8,6 +8,8 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 import kotlin.math.abs
+import li.songe.gkd.sdp.R
+import li.songe.gkd.sdp.app
 
 /** Pure text and chart data for the digital self-discipline review page. */
 object DigitalSelfDisciplineReviewPresentation {
@@ -288,7 +290,7 @@ object DigitalSelfDisciplineReviewPresentation {
             visible
         } else {
             visible + RankedBar(
-                label = "其他",
+                label = app.getString(R.string.s_1a26edf94a),
                 countText = "${remaining.sumOf { it.count }} 次",
                 shareText = "${(remaining.sumOf { it.share } * 100.0).let { "%.1f".format(Locale.ROOT, it) }}%",
                 share = remaining.sumOf { it.share }.toFloat().coerceIn(0f, 1f),

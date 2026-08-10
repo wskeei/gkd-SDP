@@ -16,6 +16,8 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
+import li.songe.gkd.sdp.R
 
 /**
  * A tri-state toggle icon drawn via Canvas.
@@ -48,7 +50,7 @@ fun TriStateIcon(
     val animatedFraction by animateFloatAsState(
         targetValue = targetFraction,
         animationSpec = tween(durationMillis = animDurationMs),
-        label = "triStateThumbFraction",
+        label = stringResource(R.string.s_c9d8d56223),
     )
 
     Canvas(modifier = modifier.size(size)) {

@@ -86,6 +86,8 @@ import li.songe.gkd.sdp.util.updateSubsMutex
 import li.songe.gkd.sdp.util.usedSubsEntriesFlow
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
+import androidx.compose.ui.res.stringResource
+import li.songe.gkd.sdp.app
 
 @Composable
 fun useSubsManagePage(): ScaffoldExt {
@@ -126,18 +128,18 @@ fun useSubsManagePage(): ScaffoldExt {
     if (showSettingsDlg) {
         ScaffoldDialog(
             onClose = { showSettingsDlg = false },
-            title = "订阅设置",
+            title = stringResource(R.string.s_65f3531c34),
             content = {
                 val store by storeFlow.collectAsStateWithLifecycle()
                 TextMenu(
-                    title = "更新订阅",
+                    title = app.getString(R.string.s_ecae7085ce),
                     option = UpdateTimeOption.objects.findOption(store.updateSubsInterval)
                 ) {
                     storeFlow.update { s -> s.copy(updateSubsInterval = it.value) }
                 }
                 TextSwitch(
-                    title = "耗电警告",
-                    subtitle = "启用多条订阅时弹窗确认",
+                    title = app.getString(R.string.s_b151485175),
+                    subtitle = app.getString(R.string.s_19ce2aa525),
                     checked = store.subsPowerWarn,
                     onCheckedChange = throttle<Boolean> {
                         storeFlow.update { s -> s.copy(subsPowerWarn = it) }
@@ -164,7 +166,7 @@ fun useSubsManagePage(): ScaffoldExt {
                 if (isSelectedMode) {
                     PerfIconButton(
                         imageVector = PerfIcon.Close,
-                        contentDescription = "取消选择",
+                        contentDescription = app.getString(R.string.s_f02e943954),
                         onClick = { isSelectedMode = false },
                     )
                 }
@@ -193,15 +195,15 @@ fun useSubsManagePage(): ScaffoldExt {
                                 selectedIds
                             }
                             if (canDeleteIds.isNotEmpty()) {
-                                val text = "确定删除所选 ${canDeleteIds.size} 个订阅?".let { s ->
-                                    if (selectedIds.contains(LOCAL_SUBS_ID)) "$s\n\n注: 不包含本地订阅" else s
+                                val text = app.getString(R.string.s_0ee51f3213, canDeleteIds.size).let { s ->
+                                    if (selectedIds.contains(LOCAL_SUBS_ID)) app.getString(R.string.s_9f3eea9816, s) else s
                                 }
                                 PerfIconButton(
                                     imageVector = PerfIcon.Delete,
-                                    contentDescription = "删除选中订阅",
+                                    contentDescription = app.getString(R.string.s_7c50210d69),
                                     onClick = vm.viewModelScope.launchAsFn {
                                         mainVm.dialogFlow.waitResult(
-                                            title = "删除订阅",
+                                            title = app.getString(R.string.s_fe7b16b5c0),
                                             text = text,
                                             error = true,
                                         )
@@ -222,8 +224,8 @@ fun useSubsManagePage(): ScaffoldExt {
                             ) {
                                 PerfIconButton(
                                     imageVector = PerfIcon.Eco,
-                                    contentDescription = "缓慢查询规则列表",
-                                    onClickLabel = "查看列表",
+                                    contentDescription = app.getString(R.string.s_dee6fc9517),
+                                    onClickLabel = app.getString(R.string.s_00c3630ef4),
                                     onClick = throttle {
                                         mainVm.navigatePage(SlowGroupRoute)
                                     })
@@ -241,14 +243,14 @@ fun useSubsManagePage(): ScaffoldExt {
                                         LocalContentColor.current
                                     }
                                 ),
-                                contentDescription = "规则匹配" + if (enableMatch) "已启用" else "已禁用",
-                                onClickLabel = "切换开关",
+                                contentDescription = app.getString(R.string.s_06b0c3e743) + if (enableMatch) app.getString(R.string.s_25d2843150) else app.getString(R.string.s_0fe5a98e9f),
+                                onClickLabel = app.getString(R.string.s_d7ee5b2dac),
                                 onClick = throttle { switchStoreEnableMatch() },
                             )
                             PerfIconButton(
                                 id = R.drawable.ic_page_info,
-                                contentDescription = "订阅设置",
-                                onClickLabel = "打开设置弹窗",
+                                contentDescription = app.getString(R.string.s_65f3531c34),
+                                onClickLabel = app.getString(R.string.s_c184e4944d),
                                 onClick = {
                                     showSettingsDlg = true
                                 })
@@ -257,10 +259,10 @@ fun useSubsManagePage(): ScaffoldExt {
                 }
                 PerfIconButton(
                     imageVector = PerfIcon.MoreVert,
-                    contentDescription = "更多操作",
+                    contentDescription = app.getString(R.string.s_77836d3a99),
                     onClick = {
                         if (updateSubsMutex.mutex.isLocked) {
-                            toast("正在刷新订阅，请稍后操作")
+                            toast(app.getString(R.string.s_db8d309a8e))
                         } else {
                             expanded = true
                         }
@@ -276,7 +278,7 @@ fun useSubsManagePage(): ScaffoldExt {
                             if (isSelectedMode) {
                                 DropdownMenuItem(
                                     text = {
-                                        Text(text = "全选")
+                                        Text(text = app.getString(R.string.s_3e44b2a933))
                                     },
                                     onClick = {
                                         expanded = false
@@ -285,7 +287,7 @@ fun useSubsManagePage(): ScaffoldExt {
                                 )
                                 DropdownMenuItem(
                                     text = {
-                                        Text(text = "反选")
+                                        Text(text = app.getString(R.string.s_ae05880411))
                                     },
                                     onClick = {
                                         expanded = false
@@ -299,7 +301,7 @@ fun useSubsManagePage(): ScaffoldExt {
                                 )
                             } else {
                                 DropdownMenuItem(
-                                    text = { Text(text = "添加应用规则") },
+                                    text = { Text(text = app.getString(R.string.s_0d9a428066)) },
                                     onClick = throttle {
                                         expanded = false
                                         mainVm.navigatePage(
@@ -313,7 +315,7 @@ fun useSubsManagePage(): ScaffoldExt {
                                     },
                                 )
                                 DropdownMenuItem(
-                                    text = { Text(text = "添加全局规则") },
+                                    text = { Text(text = app.getString(R.string.s_d039ea532e)) },
                                     onClick = throttle {
                                         expanded = false
                                         mainVm.navigatePage(
@@ -334,12 +336,12 @@ fun useSubsManagePage(): ScaffoldExt {
         },
         floatingActionButton = {
             AnimationFloatingActionButton(
-                contentDescription = "添加订阅",
-                onClickLabel = "打开添加订阅弹窗",
+                contentDescription = app.getString(R.string.s_6debaa8885),
+                onClickLabel = app.getString(R.string.s_907c36fc94),
                 visible = !isSelectedMode,
                 onClick = {
                     if (updateSubsMutex.mutex.isLocked) {
-                        toast("正在刷新订阅,请稍后操作")
+                        toast(app.getString(R.string.s_2c20f3fd5e))
                     } else {
                         mainVm.viewModelScope.launchTry {
                             val url = mainVm.inputSubsLinkOption.getResult() ?: return@launchTry
@@ -420,12 +422,12 @@ fun useSubsManagePage(): ScaffoldExt {
                             onCheckedChange = mainVm.viewModelScope.launchAsFn { checked ->
                                 if (checked && storeFlow.value.subsPowerWarn && !subItem.isLocal && usedSubsEntriesFlow.value.any { !it.subsItem.isLocal }) {
                                     mainVm.dialogFlow.waitResult(
-                                        title = "耗电警告",
+                                        title = app.getString(R.string.s_b151485175),
                                         textContent = {
                                             Column {
-                                                Text(text = "启用多个远程订阅可能导致执行大量重复规则, 这可能造成规则执行卡顿以及多余耗电\n\n请认真考虑后再确认开启！！！\n")
+                                                Text(text = app.getString(R.string.s_e8c5028e79))
                                                 Text(
-                                                    text = "查看耗电说明",
+                                                    text = app.getString(R.string.s_9454e9b90d),
                                                     modifier = Modifier.clickable(onClick = throttle {
                                                         mainVm.dialogFlow.value = null
                                                         mainVm.navigatePage(
@@ -446,7 +448,7 @@ fun useSubsManagePage(): ScaffoldExt {
                                 if (subItem.enable && !checked) {
                                     val attempt = AutoReenableDisableGuard.tryConsumeForDisable()
                                     if (!attempt.allowed) {
-                                        toast("今日关闭次数已用完（${attempt.limit} 次），将于明日 00:00 重置")
+                                        toast(app.getString(R.string.s_b0bb6964b5, attempt.limit))
                                         return@launchAsFn
                                     }
                                 }

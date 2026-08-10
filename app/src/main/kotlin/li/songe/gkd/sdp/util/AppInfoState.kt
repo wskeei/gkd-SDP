@@ -30,6 +30,7 @@ import li.songe.gkd.sdp.data.toAppInfoAndIcon
 import li.songe.gkd.sdp.permission.canQueryPkgState
 import li.songe.gkd.sdp.shizuku.currentUserId
 import li.songe.gkd.sdp.shizuku.shizukuContextFlow
+import li.songe.gkd.sdp.R
 
 val userAppInfoMapFlow = MutableStateFlow(emptyMap<String, AppInfo>())
 val userAppIconMapFlow = MutableStateFlow(emptyMap<String, Drawable>())
@@ -245,7 +246,7 @@ fun updateAllAppInfo(): Unit = updateAppMutex.launchTry(appScope, Dispatchers.IO
     userAppInfoMapFlow.value = newAppMap
     userAppIconMapFlow.value = newIconMap
     if (!app.justStarted) {
-        toast("应用列表更新成功")
+        toast(app.getString(R.string.s_8674184633))
     }
     if (canQueryPkgState.value && mayAuthDenied && app.justStarted) {
         // 概率出现：即使有「读取应用列表权限」在刚启动时也只能获取到少量应用，延迟几秒再试一次

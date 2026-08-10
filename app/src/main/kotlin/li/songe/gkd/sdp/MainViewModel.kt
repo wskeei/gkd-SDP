@@ -86,6 +86,8 @@ import rikka.shizuku.Shizuku
 import java.nio.file.Files
 import kotlin.reflect.jvm.jvmName
 import kotlin.time.Duration.Companion.days
+import li.songe.gkd.sdp.R
+import li.songe.gkd.sdp.app
 
 class MainViewModel(
     val navigator: AppNavigator = AppNavigator(),
@@ -168,29 +170,29 @@ class MainViewModel(
                 client.get(url).bodyAsText()
             } catch (e: Exception) {
                 LogUtils.d(e)
-                toast("下载订阅文件失败\n${DiagnosticLogger.userMessage(e)}")
+                toast(app.getString(R.string.s_11d1976e38, DiagnosticLogger.userMessage(e)))
                 return@launchTry
             }
             val newSubsRaw = try {
                 RawSubscription.parse(text)
             } catch (e: Exception) {
                 LogUtils.d(e)
-                toast("解析订阅文件失败\n${DiagnosticLogger.userMessage(e)}")
+                toast(app.getString(R.string.s_dea3d845c4, DiagnosticLogger.userMessage(e)))
                 return@launchTry
             }
             if (oldItem == null) {
                 if (subItems.any { it.id == newSubsRaw.id }) {
-                    toast("订阅已存在")
+                    toast(app.getString(R.string.s_60cd8a5af2))
                     return@launchTry
                 }
             } else {
                 if (oldItem.id != newSubsRaw.id) {
-                    toast("订阅id不对应")
+                    toast(app.getString(R.string.s_8dc09bd1b4))
                     return@launchTry
                 }
             }
             if (newSubsRaw.id < 0) {
-                toast("订阅id不可为${newSubsRaw.id}\n负数id为内部使用")
+                toast(app.getString(R.string.s_1f4d53235c, newSubsRaw.id))
                 return@launchTry
             }
             val newItem = oldItem?.copy(updateUrl = url) ?: SubsItem(
@@ -230,7 +232,7 @@ class MainViewModel(
     }
 
     fun handleGkdUri(uri: Uri) {
-        val notFoundToast = { toast("未知URI\n${uri}") }
+        val notFoundToast = { toast(app.getString(R.string.s_55c1c91c04, uri)) }
         when (val parsed = DeepLinkParser.parse(uri.toString())) {
             is DeepLinkParseResult.Destination -> selectDestination(parsed.value)
             DeepLinkParseResult.Invalid -> when (WebOriginPolicy.legacyDeepLinkTarget(uri.toString())) {
@@ -292,7 +294,7 @@ class MainViewModel(
 
     fun switchEnableShizuku(value: Boolean) {
         if (updateBinderMutex.mutex.isLocked) {
-            toast("正在连接中，请稍后")
+            toast(app.getString(R.string.s_103787f23f))
             return
         }
         storeFlow.update { s -> s.copy(enableShizuku = value) }
@@ -301,7 +303,7 @@ class MainViewModel(
     fun requestShizuku() {
         if (shizukuContextFlow.value.ok) return
         if (updateBinderMutex.mutex.isLocked) {
-            toast("正在连接中，请稍后")
+            toast(app.getString(R.string.s_103787f23f))
             return
         }
         try {

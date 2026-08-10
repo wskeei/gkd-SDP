@@ -18,6 +18,8 @@ import li.songe.gkd.sdp.util.UsageGuardHistoryPolicy
 import li.songe.gkd.sdp.util.UsageGuardPolicy
 import li.songe.gkd.sdp.util.UsageGuardUiStatePolicy
 import li.songe.gkd.sdp.util.toast
+import li.songe.gkd.sdp.R
+import li.songe.gkd.sdp.app
 
 class UsageGuardVm : BaseViewModel() {
     val appProfilesFlow = DbSet.usageGuardAppProfileDao.queryAll().stateInit(emptyList())
@@ -70,13 +72,13 @@ class UsageGuardVm : BaseViewModel() {
 
     fun updateMinReasonLength(minLength: Int) {
         storeFlow.update { it.copy(usageGuardMinReasonLength = minLength.coerceAtLeast(1)) }
-        toast("最少理由字数已保存")
+        toast(app.getString(R.string.s_c487de4445))
     }
 
     fun updateDurationOptions(raw: List<Int>) {
         val normalized = UsageGuardUiStatePolicy.normalizeDurationOptions(raw)
         storeFlow.update { it.copy(usageGuardDurationOptionsMinutes = normalized) }
-        toast("申请时长选项已保存")
+        toast(app.getString(R.string.s_9de6b27eca))
     }
 
     fun saveSelectedTargets(appIds: List<String>) = viewModelScope.launch(Dispatchers.IO) {
@@ -96,7 +98,7 @@ class UsageGuardVm : BaseViewModel() {
                 )
             },
         )
-        toast("受控应用已保存")
+        toast(app.getString(R.string.s_e1f202e22a))
     }
 
     fun saveWhitelist(appIds: List<String>) = viewModelScope.launch(Dispatchers.IO) {
@@ -116,7 +118,7 @@ class UsageGuardVm : BaseViewModel() {
                 )
             },
         )
-        toast("白名单已保存")
+        toast(app.getString(R.string.s_288d57a99d))
     }
 
     fun saveAppGrantMode(appId: String, grantMode: Int) = viewModelScope.launch(Dispatchers.IO) {
@@ -131,7 +133,7 @@ class UsageGuardVm : BaseViewModel() {
             )
         )
         DbSet.usageGuardAppProfileDao.deleteUnusedProfiles(storeFlow.value.usageGuardDefaultGrantMode)
-        toast("应用模式已保存")
+        toast(app.getString(R.string.s_27e042df94))
     }
 
     fun moveSelectedAppToGrantMode(appId: String, grantMode: Int) {

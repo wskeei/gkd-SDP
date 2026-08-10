@@ -56,6 +56,8 @@ import li.songe.gkd.sdp.util.AppSortOption
 import li.songe.gkd.sdp.util.LOCAL_SUBS_IDS
 import li.songe.gkd.sdp.util.launchAsFn
 import li.songe.gkd.sdp.util.throttle
+import androidx.compose.ui.res.stringResource
+import li.songe.gkd.sdp.app
 
 
 @Serializable
@@ -111,7 +113,7 @@ fun SubsAppListPage(route: SubsAppListRoute) {
                 } else {
                     TowLineText(
                         title = useSubs(subsItemId)?.name ?: subsItemId.toString(),
-                        subtitle = "应用规则",
+                        subtitle = app.getString(R.string.s_da6a6dc1af),
                         modifier = Modifier.noRippleClickable {
                             vm.resetKey.intValue++
                         }
@@ -143,7 +145,7 @@ fun SubsAppListPage(route: SubsAppListRoute) {
                     modifier = Modifier.wrapContentSize(Alignment.TopStart)
                 ) {
                     DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-                        MenuGroupCard(inTop = true, title = "排序") {
+                        MenuGroupCard(inTop = true, title = app.getString(R.string.s_dc35af8d69)) {
                             var sortType by vm.sortTypeFlow.asMutableState()
                             AppSortOption.objects.forEach { option ->
                                 MenuItemRadioButton(
@@ -153,7 +155,7 @@ fun SubsAppListPage(route: SubsAppListRoute) {
                                 )
                             }
                         }
-                        MenuGroupCard(title = "分组") {
+                        MenuGroupCard(title = app.getString(R.string.s_97d8a6c05b)) {
                             var appGroupType by vm.appGroupTypeFlow.asMutableState()
                             AppGroupOption.allObjects.forEach { option ->
                                 val newValue = option.invert(appGroupType)
@@ -165,9 +167,9 @@ fun SubsAppListPage(route: SubsAppListRoute) {
                                 )
                             }
                         }
-                        MenuGroupCard(title = "筛选") {
+                        MenuGroupCard(title = app.getString(R.string.s_dcce9a144a)) {
                             MenuItemCheckbox(
-                                text = "白名单",
+                                text = app.getString(R.string.s_8f74cd015b),
                                 stateFlow = vm.showBlockAppFlow,
                             )
                         }
@@ -227,9 +229,9 @@ fun SubsAppListPage(route: SubsAppListRoute) {
                 if (appTripleList.isEmpty() && !firstLoading) {
                     EmptyText(
                         text = if (searchStr.isNotEmpty()) {
-                            if (vm.showAllAppFlow.collectAsStateWithLifecycle().value) "暂无搜索结果" else "暂无搜索结果，或修改筛选"
+                            if (vm.showAllAppFlow.collectAsStateWithLifecycle().value) stringResource(R.string.s_8f8274c754) else stringResource(R.string.s_9e7d3ee61c)
                         } else {
-                            "暂无规则"
+                            stringResource(R.string.s_cff584d9ab)
                         }
                     )
                     Spacer(modifier = Modifier.height(EmptyHeight / 2))

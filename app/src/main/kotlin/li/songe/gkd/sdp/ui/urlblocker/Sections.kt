@@ -40,6 +40,8 @@ import li.songe.gkd.sdp.data.UrlTimeRule
 import li.songe.gkd.sdp.ui.component.PerfIcon
 import li.songe.gkd.sdp.ui.style.itemPadding
 import li.songe.gkd.sdp.ui.style.surfaceCardColors
+import androidx.compose.ui.res.stringResource
+import li.songe.gkd.sdp.R
 
 @Composable
 fun UrlGroupCard(
@@ -89,19 +91,19 @@ fun UrlGroupCard(
     if (showDeleteConfirm) {
         AlertDialog(
             onDismissRequest = { showDeleteConfirm = false },
-            title = { Text("删除规则组") },
-            text = { Text("确定要删除规则组「${group.name}」吗？组内的所有规则也会被删除。") },
+            title = { Text(stringResource(R.string.s_2d646aa66b)) },
+            text = { Text(stringResource(R.string.s_0ce42bb010, group.name)) },
             confirmButton = {
                 TextButton(onClick = {
                     onDelete()
                     showDeleteConfirm = false
                 }) {
-                    Text("删除")
+                    Text(stringResource(R.string.s_3755f56f2f))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showDeleteConfirm = false }) {
-                    Text("取消")
+                    Text(stringResource(R.string.s_4d0b4688c7))
                 }
             }
         )
@@ -136,7 +138,7 @@ private fun UrlGroupCardBody(
                     Text(group.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                     if (group.isCurrentlyLocked) {
                         Spacer(modifier = Modifier.width(8.dp))
-                        Icon(PerfIcon.Lock, contentDescription = "已锁定", tint = MaterialTheme.colorScheme.error)
+                        Icon(PerfIcon.Lock, contentDescription = stringResource(R.string.s_3cc7a5af4c), tint = MaterialTheme.colorScheme.error)
                     }
                 }
                 if (group.isCurrentlyLocked) {
@@ -146,7 +148,7 @@ private fun UrlGroupCardBody(
                             .format(java.util.Date(group.lockEndTime))
                     }
                     Spacer(modifier = Modifier.height(4.dp))
-                    Text("🔒 锁定至 $lockEndTime", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
+                    Text(stringResource(R.string.s_f30b55361a, lockEndTime), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
                 }
             }
             Switch(
@@ -159,7 +161,7 @@ private fun UrlGroupCardBody(
             Spacer(modifier = Modifier.height(12.dp))
             HorizontalDivider()
             Spacer(modifier = Modifier.height(8.dp))
-            Text("包含的网址 (${urlRules.size})", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
+            Text(stringResource(R.string.s_70fa42d276, urlRules.size), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
             urlRules.forEach { urlRule ->
                 UrlInGroupRow(rule = urlRule, onEdit = { onEditUrlRule(urlRule) }, onDelete = { onDeleteUrlRule(urlRule) })
             }
@@ -168,7 +170,7 @@ private fun UrlGroupCardBody(
             Spacer(modifier = Modifier.height(12.dp))
             HorizontalDivider()
             Spacer(modifier = Modifier.height(8.dp))
-            Text("时间规则 (${rules.size})", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
+            Text(stringResource(R.string.s_68fd9e7f42, rules.size), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
             rules.forEach { rule ->
                 TimeRuleRow(rule = rule, onEdit = { onTimeRuleEdit(rule) }, onDelete = { onTimeRuleDelete(rule) }, onLock = { onTimeRuleLock(rule) })
             }
@@ -178,16 +180,16 @@ private fun UrlGroupCardBody(
         Spacer(modifier = Modifier.height(8.dp))
         Row(horizontalArrangement = Arrangement.End, modifier = Modifier.fillMaxWidth()) {
             if (!group.isCurrentlyLocked) {
-                TextButton(onClick = onAddUrlRule) { Icon(PerfIcon.Add, contentDescription = null); Spacer(modifier = Modifier.width(4.dp)); Text("网址") }
-                TextButton(onClick = onAddTimeRule) { Icon(PerfIcon.Add, contentDescription = null); Spacer(modifier = Modifier.width(4.dp)); Text("时间") }
+                TextButton(onClick = onAddUrlRule) { Icon(PerfIcon.Add, contentDescription = null); Spacer(modifier = Modifier.width(4.dp)); Text(stringResource(R.string.s_33fa921b9f)) }
+                TextButton(onClick = onAddTimeRule) { Icon(PerfIcon.Add, contentDescription = null); Spacer(modifier = Modifier.width(4.dp)); Text(stringResource(R.string.s_89b4aa6364)) }
             }
             TextButton(onClick = onLock) {
                 Icon(PerfIcon.Lock, contentDescription = null, tint = if (group.isCurrentlyLocked) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary)
                 Spacer(modifier = Modifier.width(4.dp))
-                Text(if (group.isCurrentlyLocked) "延长锁定" else "锁定")
+                Text(if (group.isCurrentlyLocked) stringResource(R.string.s_eae5fd957e) else stringResource(R.string.s_0b707d6dcc))
             }
             if (!group.isCurrentlyLocked) {
-                TextButton(onClick = onDelete) { Icon(PerfIcon.Delete, contentDescription = null); Spacer(modifier = Modifier.width(4.dp)); Text("删除") }
+                TextButton(onClick = onDelete) { Icon(PerfIcon.Delete, contentDescription = null); Spacer(modifier = Modifier.width(4.dp)); Text(stringResource(R.string.s_3755f56f2f)) }
             }
         }
     }
@@ -237,7 +239,7 @@ fun UrlItemCard(
                             Spacer(modifier = Modifier.width(8.dp))
                             Icon(
                                 PerfIcon.Lock,
-                                contentDescription = "已锁定",
+                                contentDescription = stringResource(R.string.s_3cc7a5af4c),
                                 tint = MaterialTheme.colorScheme.error
                             )
                         }
@@ -256,7 +258,7 @@ fun UrlItemCard(
                                 .format(java.util.Date(rule.lockEndTime))
                         }
                         Text(
-                            text = "🔒 锁定至 $lockEndTime",
+                            text = stringResource(R.string.s_f30b55361a, lockEndTime),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.error
                         )
@@ -276,7 +278,7 @@ fun UrlItemCard(
                 Spacer(modifier = Modifier.height(8.dp))
 
                 Text(
-                    text = "时间规则 (${timeRules.size})",
+                    text = stringResource(R.string.s_c6191f388a, timeRules.size),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                 )
@@ -304,7 +306,7 @@ fun UrlItemCard(
                     TextButton(onClick = onAddTimeRule) {
                         Icon(PerfIcon.Add, contentDescription = null)
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("时间规则")
+                        Text(stringResource(R.string.s_8102e48aad))
                     }
                 }
 
@@ -319,14 +321,14 @@ fun UrlItemCard(
                         }
                     )
                     Spacer(modifier = Modifier.width(4.dp))
-                    Text(if (rule.isCurrentlyLocked) "延长锁定" else "锁定")
+                    Text(if (rule.isCurrentlyLocked) stringResource(R.string.s_eae5fd957e) else stringResource(R.string.s_0b707d6dcc))
                 }
 
                 if (!rule.isCurrentlyLocked) {
                     TextButton(onClick = { showDeleteConfirm = true }) {
                         Icon(PerfIcon.Delete, contentDescription = null)
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("删除")
+                        Text(stringResource(R.string.s_3755f56f2f))
                     }
                 }
             }
@@ -336,19 +338,19 @@ fun UrlItemCard(
     if (showDeleteConfirm) {
         AlertDialog(
             onDismissRequest = { showDeleteConfirm = false },
-            title = { Text("删除规则") },
-            text = { Text("确定要删除这条规则吗？") },
+            title = { Text(stringResource(R.string.s_f9ad34b946)) },
+            text = { Text(stringResource(R.string.s_8e2d76bc89)) },
             confirmButton = {
                 TextButton(onClick = {
                     onDelete()
                     showDeleteConfirm = false
                 }) {
-                    Text("删除")
+                    Text(stringResource(R.string.s_3755f56f2f))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showDeleteConfirm = false }) {
-                    Text("取消")
+                    Text(stringResource(R.string.s_4d0b4688c7))
                 }
             }
         )

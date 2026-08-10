@@ -37,6 +37,7 @@ import li.songe.gkd.sdp.util.ruleSummaryFlow
 import li.songe.gkd.sdp.util.startForegroundServiceByClass
 import li.songe.gkd.sdp.util.stopServiceByClass
 import li.songe.gkd.sdp.util.toast
+import li.songe.gkd.sdp.R
 
 class StatusService : Service(), OnSimpleLife by DefaultSimpleLifeImpl() {
     private var accessibilityGuardCoordinator: AccessibilityGuardCoordinator? = null
@@ -195,7 +196,7 @@ class StatusService : Service(), OnSimpleLife by DefaultSimpleLifeImpl() {
         fun start() = startForegroundServiceByClass(StatusService::class)
         fun stop() {
             if (storeFlow.value.accessibilityGuardEnabled) {
-                toast("请先关闭无障碍权限守护")
+                toast(app.getString(R.string.s_f10262d528))
                 return
             }
             stopServiceByClass(StatusService::class)

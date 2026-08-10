@@ -36,6 +36,9 @@ import li.songe.gkd.sdp.data.FocusRule
 import li.songe.gkd.sdp.ui.component.PerfIcon
 import li.songe.gkd.sdp.ui.style.itemPadding
 import li.songe.gkd.sdp.ui.style.surfaceCardColors
+import androidx.compose.ui.res.stringResource
+import li.songe.gkd.sdp.R
+import li.songe.gkd.sdp.app
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -71,7 +74,7 @@ internal fun FocusRuleCard(
                         if (rule.isQuickStart) {
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                text = "快速启动",
+                                text = stringResource(R.string.s_bac4c36ee7),
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.secondary
                             )
@@ -80,14 +83,14 @@ internal fun FocusRuleCard(
                             Spacer(modifier = Modifier.width(8.dp))
                             Icon(
                                 PerfIcon.Lock,
-                                contentDescription = "已锁定",
+                                contentDescription = stringResource(R.string.s_3cc7a5af4c),
                                 tint = MaterialTheme.colorScheme.error
                             )
                         }
                         if (!rule.isQuickStart && rule.isActiveNow()) {
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                text = "进行中",
+                                text = stringResource(R.string.s_6f1972e48e),
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.primary
                             )
@@ -98,20 +101,20 @@ internal fun FocusRuleCard(
                     // 根据规则类型显示不同信息
                     if (rule.isQuickStart) {
                         Text(
-                            text = "时长：${rule.formatDuration()}",
+                            text = stringResource(R.string.s_55423fd0ff, rule.formatDuration()),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
                         )
                         if (rule.isLocked) {
                             Text(
-                                text = "启动后锁定",
+                                text = stringResource(R.string.s_2c393a9233),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.error.copy(alpha = 0.7f)
                             )
                         }
                     } else {
                         Text(
-                            text = "${rule.startTime} - ${rule.endTime}",
+                            text = app.getString(R.string.s_b209e2ce8a, rule.startTime, rule.endTime),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
                         )
@@ -126,7 +129,7 @@ internal fun FocusRuleCard(
                 if (rule.isQuickStart) {
                     // 快速启动：显示开始按钮
                     Button(onClick = onStart) {
-                        Text("开始")
+                        Text(stringResource(R.string.s_79cc871ca9))
                     }
                 } else {
                     // 定时规则：显示开关
@@ -149,14 +152,14 @@ internal fun FocusRuleCard(
                     TextButton(onClick = onLock) {
                         Icon(PerfIcon.Lock, contentDescription = null)
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text(if (rule.isCurrentlyLocked) "延长锁定" else "锁定")
+                        Text(if (rule.isCurrentlyLocked) stringResource(R.string.s_eae5fd957e) else stringResource(R.string.s_0b707d6dcc))
                     }
                 }
                 if (!rule.isCurrentlyLocked) {
                     TextButton(onClick = { showDeleteConfirm = true }) {
                         Icon(PerfIcon.Delete, contentDescription = null)
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("删除")
+                        Text(stringResource(R.string.s_3755f56f2f))
                     }
                 }
             }
@@ -166,19 +169,19 @@ internal fun FocusRuleCard(
     if (showDeleteConfirm) {
         AlertDialog(
             onDismissRequest = { showDeleteConfirm = false },
-            title = { Text("删除规则") },
-            text = { Text("确定要删除规则「${rule.name}」吗？") },
+            title = { Text(stringResource(R.string.s_f9ad34b946)) },
+            text = { Text(stringResource(R.string.s_7435e653ef, rule.name)) },
             confirmButton = {
                 TextButton(onClick = {
                     onDelete()
                     showDeleteConfirm = false
                 }) {
-                    Text("删除")
+                    Text(stringResource(R.string.s_3755f56f2f))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showDeleteConfirm = false }) {
-                    Text("取消")
+                    Text(stringResource(R.string.s_4d0b4688c7))
                 }
             }
         )

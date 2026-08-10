@@ -14,6 +14,8 @@ import li.songe.gkd.sdp.db.DbSet
 import li.songe.gkd.sdp.ui.share.BaseViewModel
 import li.songe.gkd.sdp.util.json
 import li.songe.gkd.sdp.util.toast
+import li.songe.gkd.sdp.R
+import li.songe.gkd.sdp.app
 
 class FocusModeVm : BaseViewModel() {
     companion object {
@@ -103,13 +105,13 @@ class FocusModeVm : BaseViewModel() {
 
     fun saveRule() = viewModelScope.launch(Dispatchers.IO) {
         if (ruleName.isBlank()) {
-            toast("请输入规则名称")
+            toast(app.getString(R.string.s_d4d9c40dc4))
             return@launch
         }
 
         // 快速启动模板验证时长
         if (ruleType == FocusRule.RULE_TYPE_QUICK_START && ruleTotalDurationMinutes < 5) {
-            toast("专注时长至少为 5 分钟")
+            toast(app.getString(R.string.s_637cf2032c))
             return@launch
         }
 
@@ -131,23 +133,23 @@ class FocusModeVm : BaseViewModel() {
         )
 
         DbSet.focusRuleDao.insert(rule)
-        toast(if (editingRule != null) "规则已更新" else "规则已添加")
+        toast(if (editingRule != null) app.getString(R.string.s_fccd13d79e) else app.getString(R.string.s_4a96cba3d5))
         resetRuleForm()
     }
 
     fun deleteRule(rule: FocusRule) = viewModelScope.launch(Dispatchers.IO) {
         if (rule.isCurrentlyLocked) {
-            toast("规则已锁定，无法删除")
+            toast(app.getString(R.string.s_7e2a3403ff))
             return@launch
         }
         DbSet.focusRuleDao.delete(rule)
-        toast("规则已删除")
+        toast(app.getString(R.string.s_91ba569081))
     }
 
     fun toggleRuleEnabled(rule: FocusRule) = viewModelScope.launch(Dispatchers.IO) {
         // 锁定状态下不允许关闭规则
         if (rule.enabled && rule.isCurrentlyLocked) {
-            toast("规则已锁定，无法关闭")
+            toast(app.getString(R.string.s_e27c087656))
             return@launch
         }
         DbSet.focusRuleDao.update(rule.copy(enabled = !rule.enabled))
@@ -155,7 +157,7 @@ class FocusModeVm : BaseViewModel() {
 
     fun startManualSession() = viewModelScope.launch(Dispatchers.IO) {
         if (totalDurationMinutes < 5) {
-            toast("专注时长至少为 5 分钟")
+            toast(app.getString(R.string.s_637cf2032c))
             return@launch
         }
 
@@ -166,17 +168,17 @@ class FocusModeVm : BaseViewModel() {
             isLocked = manualIsLocked,
             lockDurationMinutes = if (manualIsLocked) manualLockDurationMinutes else 0
         )
-        toast("专注模式已开始")
+        toast(app.getString(R.string.s_6905b9f1f9))
     }
 
     fun stopManualSession() = viewModelScope.launch(Dispatchers.IO) {
         val session = activeSessionFlow.value
         if (session?.isCurrentlyLocked == true) {
-            toast("专注模式已锁定，无法提前结束")
+            toast(app.getString(R.string.s_5291c7544f))
             return@launch
         }
         FocusModeEngine.stopManualSession()
-        toast("专注模式已结束")
+        toast(app.getString(R.string.s_c754ba8092))
     }
 
     fun lockRule(rule: FocusRule) = viewModelScope.launch(Dispatchers.IO) {
@@ -189,7 +191,7 @@ class FocusModeVm : BaseViewModel() {
         }
 
         if (durationMinutes <= 0) {
-            toast("请输入有效的锁定时长")
+            toast(app.getString(R.string.s_40d80a0879))
             return@launch
         }
 
@@ -210,7 +212,7 @@ class FocusModeVm : BaseViewModel() {
         )
 
         DbSet.focusRuleDao.update(updatedRule)
-        toast("规则已锁定")
+        toast(app.getString(R.string.s_7aa6790ed4))
     }
 
     fun addToRuleWhitelist(packageName: String) {
@@ -245,12 +247,12 @@ class FocusModeVm : BaseViewModel() {
      */
     fun startQuickRule(rule: FocusRule) = viewModelScope.launch(Dispatchers.IO) {
         if (!rule.isQuickStart) {
-            toast("这不是快速启动模板")
+            toast(app.getString(R.string.s_2e4c2a37c1))
             return@launch
         }
 
         if (rule.durationMinutes < 5) {
-            toast("专注时长至少为 5 分钟")
+            toast(app.getString(R.string.s_637cf2032c))
             return@launch
         }
 
@@ -261,6 +263,6 @@ class FocusModeVm : BaseViewModel() {
             isLocked = rule.isLocked,
             lockDurationMinutes = rule.lockDurationMinutes
         )
-        toast("专注模式已开始")
+        toast(app.getString(R.string.s_6905b9f1f9))
     }
 }

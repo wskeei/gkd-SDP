@@ -16,6 +16,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import li.songe.gkd.sdp.ui.style.DimensionTokens
 import li.songe.gkd.sdp.ui.style.ResponsiveTokens
+import androidx.compose.ui.res.stringResource
+import li.songe.gkd.sdp.R
 
 object AppActionBarPolicy {
     /** Compact windows anchor the bar to the screen bottom. */
@@ -61,7 +63,7 @@ fun AppActionBar(
             enabled = confirmEnabled && !submitting,
             modifier = Modifier.weight(1f),
         ) {
-            Text(if (submitting) "处理中…" else confirmText)
+            Text(if (submitting) stringResource(R.string.s_1cac8ac7f5) else confirmText)
         }
     }
     Column(modifier = Modifier.fillMaxWidth()) {

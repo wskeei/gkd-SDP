@@ -39,6 +39,8 @@ import li.songe.gkd.sdp.ui.component.PerfIcon
 import li.songe.gkd.sdp.ui.style.itemPadding
 import li.songe.gkd.sdp.ui.style.surfaceCardColors
 import li.songe.gkd.sdp.util.AppBlockerDecisionPolicy
+import androidx.compose.ui.res.stringResource
+import li.songe.gkd.sdp.R
 
 @Composable
 @android.annotation.SuppressLint("NonObservableLocale")
@@ -81,18 +83,18 @@ internal fun AppRulesCard(
                         overflow = TextOverflow.Ellipsis
                     )
                     Text(
-                        text = "${rules.size} 条时间规则",
+                        text = stringResource(R.string.s_58b598a013, rules.size),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                     )
                     Text(
-                        text = "${rules.count { it.enabled }} 条启用规则",
+                        text = stringResource(R.string.s_eb20a448b7, rules.count { it.enabled),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     when {
                         rules.none { it.enabled } -> Text(
-                            text = "尚未生效：请启用时间规则",
+                            text = app.getString(R.string.s_f3cf657a3f),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.error,
                         )
@@ -102,12 +104,12 @@ internal fun AppRulesCard(
                                     !AppBlockerDecisionPolicy.isValidTime(it.endTime) ||
                                     !AppBlockerDecisionPolicy.isValidDays(it.daysOfWeek))
                         } -> Text(
-                            text = "有时间规则格式无效，请编辑修正",
+                            text = app.getString(R.string.s_d5bc80c5db),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.error,
                         )
                         rules.none { it.enabled && it.isActiveNow() } -> Text(
-                            text = "已配置，当前时段不拦截",
+                            text = app.getString(R.string.s_9f3c6b0775),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -133,18 +135,18 @@ internal fun AppRulesCard(
                     Column(modifier = Modifier.weight(1f)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(
-                                text = if (rule.isAllowMode) "✓" else "🚫",
+                                text = if (rule.isAllowMode) app.getString(R.string.s_698a879938) else app.getString(R.string.s_1fee3b4a52),
                                 style = MaterialTheme.typography.bodySmall
                             )
                             Spacer(modifier = Modifier.width(4.dp))
                             Text(
-                                text = "${rule.formatTimeRange()} ${rule.formatDaysOfWeek()}",
+                                text = app.getString(R.string.s_e713116e5e, rule.formatTimeRange(), rule.formatDaysOfWeek()),
                                 style = MaterialTheme.typography.bodyMedium
                             )
                         }
                         if (rule.isAllowMode) {
                             Text(
-                                text = "允许时间段",
+                                text = app.getString(R.string.s_6d17c9576a),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.primary
                             )
@@ -154,7 +156,7 @@ internal fun AppRulesCard(
                             val lockEndTime = java.text.SimpleDateFormat("MM-dd HH:mm", java.util.Locale.getDefault())
                                 .format(java.util.Date(rule.lockEndTime))
                             Text(
-                                text = "🔒 锁定至 $lockEndTime",
+                                text = app.getString(R.string.s_f30b55361a, lockEndTime),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.error
                             )
@@ -165,7 +167,7 @@ internal fun AppRulesCard(
                     IconButton(onClick = { onLock(rule) }) {
                         Icon(
                             PerfIcon.Lock,
-                            contentDescription = if (rule.isCurrentlyLocked) "延长锁定" else "锁定",
+                            contentDescription = if (rule.isCurrentlyLocked) app.getString(R.string.s_eae5fd957e) else app.getString(R.string.s_0b707d6dcc),
                             tint = if (rule.isCurrentlyLocked) {
                                 MaterialTheme.colorScheme.error
                             } else {
@@ -179,7 +181,7 @@ internal fun AppRulesCard(
                         IconButton(onClick = { showDeleteConfirm = true }) {
                             Icon(
                                 PerfIcon.Delete,
-                                contentDescription = "删除",
+                                contentDescription = app.getString(R.string.s_3755f56f2f),
                                 tint = MaterialTheme.colorScheme.error
                             )
                         }
@@ -196,19 +198,19 @@ internal fun AppRulesCard(
                 if (showDeleteConfirm) {
                     AlertDialog(
                         onDismissRequest = { showDeleteConfirm = false },
-                        title = { Text("删除规则") },
-                        text = { Text("确定要删除这条时间规则吗？") },
+                        title = { Text(app.getString(R.string.s_f9ad34b946)) },
+                        text = { Text(app.getString(R.string.s_e09b9cc9e4)) },
                         confirmButton = {
                             TextButton(onClick = {
                                 onDelete(rule)
                                 showDeleteConfirm = false
                             }) {
-                                Text("删除")
+                                Text(app.getString(R.string.s_3755f56f2f))
                             }
                         },
                         dismissButton = {
                             TextButton(onClick = { showDeleteConfirm = false }) {
-                                Text("取消")
+                                Text(app.getString(R.string.s_4d0b4688c7))
                             }
                         }
                     )

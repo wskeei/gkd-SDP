@@ -62,6 +62,7 @@ import li.songe.gkd.sdp.util.launchAsFn
 import li.songe.gkd.sdp.util.switchItem
 import li.songe.gkd.sdp.util.throttle
 import li.songe.gkd.sdp.util.toast
+import li.songe.gkd.sdp.app
 
 @Serializable
 data object A11YScopeAppListRoute : NavKey
@@ -81,8 +82,8 @@ fun A11yScopeAppListPage() {
         context.justHideSoftInput()
         if (vm.textChanged) {
             mainVm.dialogFlow.waitResult(
-                title = "提示",
-                text = "当前内容未保存，是否放弃编辑？",
+                title = app.getString(R.string.s_ab3656a956),
+                text = app.getString(R.string.s_aebc195621),
             )
         }
         editable = false
@@ -100,8 +101,8 @@ fun A11yScopeAppListPage() {
                                 if (vm.textChanged) {
                                     context.justHideSoftInput()
                                     mainVm.dialogFlow.waitResult(
-                                        title = "提示",
-                                        text = "当前内容未保存，是否放弃编辑？",
+                                        title = app.getString(R.string.s_ab3656a956),
+                                        text = app.getString(R.string.s_aebc195621),
                                     )
                                 }
                                 editable = !editable
@@ -139,7 +140,7 @@ fun A11yScopeAppListPage() {
                             )
                         Text(
                             modifier = titleModifier,
-                            text = "局部无障碍",
+                            text = app.getString(R.string.s_3721fe11a2),
                         )
                     }
                 },
@@ -154,9 +155,9 @@ fun A11yScopeAppListPage() {
                                     if (vm.textChanged) {
                                         a11yScopeAppListFlow.value =
                                             AppListString.decode(vm.textFlow.value)
-                                        toast("更新成功")
+                                        toast(app.getString(R.string.s_e2cff77372))
                                     } else {
-                                        toast("未修改")
+                                        toast(app.getString(R.string.s_fff8cc4d94))
                                     }
                                     context.justHideSoftInput()
                                     editable = false
@@ -192,7 +193,7 @@ fun A11yScopeAppListPage() {
                                         expanded = expanded,
                                         onDismissRequest = { expanded = false }
                                     ) {
-                                        MenuGroupCard(inTop = true, title = "排序") {
+                                        MenuGroupCard(inTop = true, title = app.getString(R.string.s_dc35af8d69)) {
                                             var sortType by vm.sortTypeFlow.asMutableState()
                                             AppSortOption.objects.forEach { option ->
                                                 MenuItemRadioButton(
@@ -202,7 +203,7 @@ fun A11yScopeAppListPage() {
                                                 )
                                             }
                                         }
-                                        MenuGroupCard(inTop = true, title = "筛选") {
+                                        MenuGroupCard(inTop = true, title = app.getString(R.string.s_dcce9a144a)) {
                                             var appGroupType by vm.appGroupTypeFlow.asMutableState()
                                             AppGroupOption.normalObjects.forEach { option ->
                                                 val newValue = option.invert(appGroupType)
@@ -224,12 +225,12 @@ fun A11yScopeAppListPage() {
         floatingActionButton = {
             AnimationFloatingActionButton(
                 visible = !editable && scrollBehavior.isFullVisible,
-                onClickLabel = "进入文本编辑模式",
+                onClickLabel = app.getString(R.string.s_d803a05c20),
                 onClick = {
                     editable = !editable
                 },
                 imageVector = PerfIcon.Edit,
-                contentDescription = "编辑文本"
+                contentDescription = app.getString(R.string.s_a0b1fca23b)
             )
         },
     ) { contentPadding ->
@@ -262,7 +263,7 @@ fun A11yScopeAppListPage() {
                 item(ListPlaceholder.KEY, ListPlaceholder.TYPE) {
                     Spacer(modifier = Modifier.height(EmptyHeight))
                     if (appInfos.isEmpty() && searchStr.isNotEmpty()) {
-                        EmptyText(text = "暂无搜索结果")
+                        EmptyText(text = app.getString(R.string.s_8f8274c754))
                         Spacer(modifier = Modifier.height(EmptyHeight / 2))
                     }
                 }

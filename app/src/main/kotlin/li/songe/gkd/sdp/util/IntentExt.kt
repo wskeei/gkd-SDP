@@ -26,6 +26,7 @@ import li.songe.gkd.sdp.permission.requiredPermission
 import li.songe.gkd.sdp.service.AccessibilityGuardRuntime
 import java.io.File
 import kotlin.reflect.KClass
+import li.songe.gkd.sdp.R
 
 fun MainActivity.shareFile(file: File, title: String) {
     val uri = FileProvider.getUriForFile(
@@ -67,7 +68,7 @@ suspend fun MainActivity.saveFileToDownloads(file: File) {
         )
         targetFile.writeBytes(file.readBytes())
     }
-    toast("已保存 ${file.name} 到下载")
+    toast(app.getString(R.string.s_9376a4238e, file.name))
 }
 
 fun Context.tryStartActivity(intent: Intent): Boolean {
@@ -76,7 +77,7 @@ fun Context.tryStartActivity(intent: Intent): Boolean {
         return true
     } catch (e: Exception) {
         LogUtils.d("tryStartActivity", e)
-        toast("跳转失败\n${DiagnosticLogger.userMessage(e)}")
+        toast(app.getString(R.string.s_475787d680, DiagnosticLogger.userMessage(e)))
         return false
     }
 }
@@ -86,7 +87,7 @@ fun openWeChatScaner() {
         putExtra("LauncherUI.From.Scaner.Shortcut", true)
     }
     if (intent == null) {
-        toast("请检查微信是否安装或禁用")
+        toast(app.getString(R.string.s_60d171dc16))
         return
     }
     app.tryStartActivity(intent)
@@ -114,7 +115,7 @@ fun openUri(uri: String) {
         uri.toUri()
     } catch (e: Exception) {
         LogUtils.d("invalid URI", e)
-        toast("非法链接")
+        toast(app.getString(R.string.s_e7e0ffcd50))
         return
     }
     openUri(u)
@@ -132,7 +133,7 @@ fun openApp(appId: String) {
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         app.tryStartActivity(intent)
     } else {
-        toast("请检查此应用是否安装或禁用")
+        toast(app.getString(R.string.s_a7e6272535))
     }
 }
 
@@ -151,7 +152,7 @@ fun <T : Service> startForegroundServiceByClass(clazz: KClass<T>): Boolean {
     } catch (e: Throwable) {
         LogUtils.d(e)
         val prefix = if (isActivityVisible) "" else "${META.appName}: "
-        toast("${prefix}启动服务失败：${DiagnosticLogger.userMessage(e)}", forced = true)
+        toast(app.getString(R.string.s_73e7e97c6d, prefix, DiagnosticLogger.userMessage(e)), forced = true)
         return false
     }
 }

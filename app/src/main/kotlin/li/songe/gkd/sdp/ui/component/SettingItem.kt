@@ -20,6 +20,8 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import li.songe.gkd.sdp.ui.style.itemPadding
 import li.songe.gkd.sdp.util.throttle
+import li.songe.gkd.sdp.R
+import li.songe.gkd.sdp.app
 
 @Composable
 fun SettingItem(
@@ -47,7 +49,7 @@ fun SettingItem(
                 } else if (onClick != null) {
                     it.clickable(
                         onClick = throttle(fn = onClick),
-                        onClickLabel = onClickLabel ?: "进入${title}页面",
+                        onClickLabel = onClickLabel ?: app.getString(R.string.s_acc997ed84, title),
                     )
                 } else {
                     it

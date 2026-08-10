@@ -14,6 +14,8 @@ import li.songe.gkd.sdp.data.AppInfo
 import li.songe.gkd.sdp.data.UsageGuardAppProfile
 import li.songe.gkd.sdp.ui.component.AppPickerDialog
 import li.songe.gkd.sdp.util.UsageGuardPolicy
+import li.songe.gkd.sdp.R
+import li.songe.gkd.sdp.app
 
 @Composable
 internal fun UsageGuardDialogs(
@@ -78,7 +80,7 @@ internal fun UsageGuardDialogs(
                                 vm.moveSelectedAppToGrantMode(target.appId, UsageGuardPolicy.GRANT_MODE_STRICT)
                                 appAction.value = null
                             },
-                            label = { Text("严格模式") },
+                            label = { Text(app.getString(R.string.s_cce3d12ecc)) },
                         )
                         FilterChip(
                             selected = currentGrantMode == UsageGuardPolicy.GRANT_MODE_RESUMABLE,
@@ -86,7 +88,7 @@ internal fun UsageGuardDialogs(
                                 vm.moveSelectedAppToGrantMode(target.appId, UsageGuardPolicy.GRANT_MODE_RESUMABLE)
                                 appAction.value = null
                             },
-                            label = { Text("普通模式") },
+                            label = { Text(app.getString(R.string.s_e8a4554eb3)) },
                         )
                     }
                 }
@@ -102,9 +104,9 @@ internal fun UsageGuardDialogs(
                 ) {
                     Text(
                         when (target.scope) {
-                            UsageGuardActionScope.Selected -> "移出受控应用"
-                            UsageGuardActionScope.Whitelist -> "移出白名单"
-                            UsageGuardActionScope.Override -> "移除模式覆盖"
+                            UsageGuardActionScope.Selected -> app.getString(R.string.s_8b3aba89d1)
+                            UsageGuardActionScope.Whitelist -> app.getString(R.string.s_817ddac3d7)
+                            UsageGuardActionScope.Override -> app.getString(R.string.s_cd732f6643)
                         },
                     )
                 }

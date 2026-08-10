@@ -121,6 +121,8 @@ import li.songe.gkd.sdp.util.UriUtils
 import androidx.compose.runtime.MutableState
 import li.songe.gkd.sdp.MainViewModel
 import li.songe.gkd.sdp.store.SettingsStore
+import androidx.compose.ui.res.stringResource
+import li.songe.gkd.sdp.app
 
 @Composable
 internal fun SettingsTextDialogs(
@@ -147,17 +149,17 @@ private fun SettingsToastDialog(
         properties = DialogProperties(dismissOnClickOutside = false),
         title = {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
-                Text("触发提示")
+                Text(stringResource(R.string.s_5bf7ff408f))
                 PerfIconButton(
                     imageVector = PerfIcon.HelpOutline,
-                    contentDescription = "文案规则",
-                    onClickLabel = "打开文案规则弹窗",
+                    contentDescription = stringResource(R.string.s_d88d6e6c25),
+                    onClickLabel = stringResource(R.string.s_f93b6e228e),
                     onClick = throttle {
                         showToastInputDlg.value = false
                         val confirmAction = { mainVm.dialogFlow.value = null; showToastInputDlg.value = true }
                         mainVm.dialogFlow.updateDialogOptions(
-                            title = "文案规则",
-                            text = $$"触发文案支持变量替换，规则如下\n${1} 子规则名称\n${2} 规则名称\n${3} 触发次数\n\n示例模板\n${1}/${2}/${3}\n\n替换结果\n子规则a/规则A/3",
+                            title = app.getString(R.string.s_d88d6e6c25),
+                            text = $$app.getString(R.string.s_1941b8aa85, 1, 2, 3, 1, 2, 3),
                             confirmAction = confirmAction,
                             onDismissRequest = confirmAction,
                         )
@@ -168,9 +170,9 @@ private fun SettingsToastDialog(
         text = {
             OutlinedTextField(
                 value = value,
-                placeholder = { Text("请输入提示内容") },
+                placeholder = { Text(app.getString(R.string.s_29207cc695)) },
                 onValueChange = { value = it.take(maxCharLen) },
-                supportingText = { Text("${value.length} / $maxCharLen", modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.End) },
+                supportingText = { Text(app.getString(R.string.s_61485b8822, value.length, maxCharLen), modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.End) },
                 modifier = Modifier.fillMaxWidth().autoFocus(),
             )
         },
@@ -181,13 +183,13 @@ private fun SettingsToastDialog(
                 onClick = {
                     if (value != storeFlow.value.actionToast) {
                         storeFlow.update { it.copy(actionToast = value) }
-                        toast("更新成功")
+                        toast(app.getString(R.string.s_e2cff77372))
                     }
                     showToastInputDlg.value = false
                 },
-            ) { Text("确认") }
+            ) { Text(stringResource(R.string.s_b56d9ac6c5)) }
         },
-        dismissButton = { TextButton(onClick = { showToastInputDlg.value = false }) { Text("取消") } },
+        dismissButton = { TextButton(onClick = { showToastInputDlg.value = false }) { Text(stringResource(R.string.s_4d0b4688c7)) } },
     )
 }
 
@@ -205,17 +207,17 @@ private fun SettingsNotificationDialog(
         properties = DialogProperties(dismissOnClickOutside = false),
         title = {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
-                Text("通知文案")
+                Text(stringResource(R.string.s_ce7c7d71a7))
                 PerfIconButton(
                     imageVector = PerfIcon.HelpOutline,
-                    contentDescription = "文案规则",
-                    onClickLabel = "打开文案规则弹窗",
+                    contentDescription = stringResource(R.string.s_d88d6e6c25),
+                    onClickLabel = stringResource(R.string.s_f93b6e228e),
                     onClick = throttle {
                         showNotifTextInputDlg.value = false
                         val confirmAction = { mainVm.dialogFlow.value = null; showNotifTextInputDlg.value = true }
                         mainVm.dialogFlow.updateDialogOptions(
-                            title = "文案规则",
-                            text = $$"通知文案支持变量替换，规则如下\n${i} 全局规则数\n${k} 应用数\n${u} 应用规则数\n${n} 触发次数\n\n示例模板\n${i}全局/${k}应用/${u}规则/${n}触发\n\n替换结果\n0全局/1应用/2规则/3触发",
+                            title = app.getString(R.string.s_d88d6e6c25),
+                            text = $$app.getString(R.string.s_3036ac5688, i, k, u, n, i, k, u, n),
                             confirmAction = confirmAction,
                             onDismissRequest = confirmAction,
                         )
@@ -228,22 +230,22 @@ private fun SettingsNotificationDialog(
                 val titleMaxLen = 32
                 val textMaxLen = 64
                 CustomOutlinedTextField(
-                    label = { Text("主标题") },
+                    label = { Text(app.getString(R.string.s_e6dc2df4a4)) },
                     value = titleValue,
-                    placeholder = { Text("请输入内容，支持变量替换") },
+                    placeholder = { Text(app.getString(R.string.s_d8eb8652a1)) },
                     onValueChange = { titleValue = it.take(titleMaxLen).filter { c -> c !in "\n\r" } },
-                    supportingText = { Text("${titleValue.length} / $titleMaxLen", modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.End) },
+                    supportingText = { Text(app.getString(R.string.s_2990881615, titleValue.length, titleMaxLen), modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.End) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                     contentPadding = PaddingValues(12.dp),
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 CustomOutlinedTextField(
-                    label = { Text("副标题") },
+                    label = { Text(app.getString(R.string.s_8344831e7c)) },
                     value = textValue,
-                    placeholder = { Text("请输入内容，支持变量替换") },
+                    placeholder = { Text(app.getString(R.string.s_d8eb8652a1)) },
                     onValueChange = { textValue = it.take(textMaxLen) },
-                    supportingText = { Text("${textValue.length} / $textMaxLen", modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.End) },
+                    supportingText = { Text(app.getString(R.string.s_98362e17dd, textValue.length, textMaxLen), modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.End) },
                     maxLines = 4,
                     modifier = Modifier.fillMaxWidth().autoFocus(),
                     contentPadding = PaddingValues(12.dp),
@@ -256,12 +258,12 @@ private fun SettingsNotificationDialog(
                 context.justHideSoftInput()
                 if (store.customNotifTitle != titleValue || store.customNotifText != textValue) {
                     storeFlow.update { it.copy(customNotifTitle = titleValue, customNotifText = textValue) }
-                    toast("更新成功")
+                    toast(app.getString(R.string.s_e2cff77372))
                 }
                 showNotifTextInputDlg.value = false
-            }) { Text("确认") }
+            }) { Text(stringResource(R.string.s_b56d9ac6c5)) }
         },
-        dismissButton = { TextButton(onClick = { showNotifTextInputDlg.value = false }) { Text("取消") } },
+        dismissButton = { TextButton(onClick = { showNotifTextInputDlg.value = false }) { Text(stringResource(R.string.s_4d0b4688c7)) } },
     )
 }
 
@@ -278,12 +280,12 @@ internal fun BlockA11yDialog(onDismissRequest: () -> Unit) = FullscreenDialog(on
                 navigationIcon = {
                     PerfIconButton(
                         imageVector = PerfIcon.Close,
-                        onClickLabel = "关闭弹窗",
+                        onClickLabel = app.getString(R.string.s_81f18d4d48),
                         onClick = onDismissRequest,
                     )
                 },
                 title = {
-                    Text(text = "局部关闭")
+                    Text(text = app.getString(R.string.s_86613e925d))
                 },
             )
         },
@@ -298,7 +300,7 @@ internal fun BlockA11yDialog(onDismissRequest: () -> Unit) = FullscreenDialog(on
                         storeFlow.update { it.copy(enableBlockA11yAppList = true) }
                     }
                 ) {
-                    Text(text = "继续")
+                    Text(text = app.getString(R.string.s_1fc1afc5c5))
                 }
                 Spacer(modifier = Modifier.width(itemHorizontalPadding))
             }
@@ -312,23 +314,23 @@ internal fun BlockA11yDialog(onDismissRequest: () -> Unit) = FullscreenDialog(on
                 .padding(horizontal = itemHorizontalPadding)
         ) {
             CompositionLocalProvider(LocalTextStyle provides MaterialTheme.typography.bodyMedium) {
-                Text(text = "「局部关闭」可在白名单应用内关闭服务，来解决界面异常，游戏掉帧或无障碍检测的问题")
+                Text(text = stringResource(R.string.s_be7bf1f6b3))
                 Spacer(modifier = Modifier.height(16.dp))
-                Text(text = "使用须知", style = MaterialTheme.typography.titleMedium)
+                Text(text = stringResource(R.string.s_59e2c8e61d), style = MaterialTheme.typography.titleMedium)
                 Column(
                     verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
-                    RequiredTextItem(text = "切换服务会造成短暂触摸卡顿，请自行测试后再编辑白名单")
-                    RequiredTextItem(text = "使用其它无障碍应用可能导致优化无效，可在服务关闭后自行确认")
-                    RequiredTextItem(text = "必须确保服务关闭后的持续后台运行，否则会被系统暂停或结束运行导致重启失败")
+                    RequiredTextItem(text = stringResource(R.string.s_cbdc0c0a7a))
+                    RequiredTextItem(text = stringResource(R.string.s_ace5fab374))
+                    RequiredTextItem(text = stringResource(R.string.s_610a7f9c61))
                 }
                 Spacer(modifier = Modifier.height(16.dp))
-                Text(text = "使用条件", style = MaterialTheme.typography.titleMedium)
+                Text(text = stringResource(R.string.s_b412fa069d), style = MaterialTheme.typography.titleMedium)
                 Column(
                     verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
                     RequiredTextItem(
-                        text = "Shizuku 授权",
+                        text = stringResource(R.string.s_0f0c48af67),
                         enabled = !shizukuContext.ok,
                         imageVector = if (shizukuContext.ok) PerfIcon.Check else PerfIcon.ArrowForward,
                         onClick = mainVm.viewModelScope.launchAsFn(Dispatchers.IO) {
@@ -336,7 +338,7 @@ internal fun BlockA11yDialog(onDismissRequest: () -> Unit) = FullscreenDialog(on
                         },
                     )
                     RequiredTextItem(
-                        text = "开启「常驻通知」",
+                        text = stringResource(R.string.s_6325cb01af),
                         enabled = !statusRunning,
                         imageVector = if (statusRunning) PerfIcon.Check else PerfIcon.ArrowForward,
                         onClick = mainVm.viewModelScope.launchAsFn {
@@ -344,40 +346,40 @@ internal fun BlockA11yDialog(onDismissRequest: () -> Unit) = FullscreenDialog(on
                         },
                     )
                     RequiredTextItem(
-                        text = "省电策略设置为无限制",
+                        text = stringResource(R.string.s_37cf171b6d),
                         enabled = !ignoreBatteryOptimizations,
                         imageVector = if (ignoreBatteryOptimizations) PerfIcon.Check else PerfIcon.ArrowForward,
-                        onClickLabel = "打开忽略电池优化设置页面",
+                        onClickLabel = stringResource(R.string.s_b2c141c8e1),
                         onClick = mainVm.viewModelScope.launchAsFn {
                             requiredPermission(context, ignoreBatteryOptimizationsState)
                         },
                     )
                     RequiredTextItem(
-                        text = "(可选) 允许自启动",
+                        text = stringResource(R.string.s_a31eb38058),
                         enabled = true,
                         imageVector = PerfIcon.OpenInNew,
-                        onClickLabel = "打开应用详情页面",
+                        onClickLabel = stringResource(R.string.s_3714fd1374),
                         onClick = {
                             openAppDetailsSettings()
                         },
                     )
                     RequiredTextItem(
-                        text = "(可选) 在「最近任务」锁定",
+                        text = stringResource(R.string.s_5e5ac93cc0),
                         enabled = true,
                         imageVector = PerfIcon.OpenInNew,
-                        onClickLabel = "打开应用详情页面",
+                        onClickLabel = stringResource(R.string.s_3714fd1374),
                         onClick = {
                             val m = shizukuContextFlow.value.inputManager
                             if (m != null) {
                                 m.key(KeyEvent.KEYCODE_APP_SWITCH)
                             } else {
-                                toast("请先授权 Shizuku")
+                                toast(app.getString(R.string.s_7b29e9051a))
                             }
                         },
                     )
                 }
                 Spacer(modifier = Modifier.height(16.dp))
-                Text(text = "某些场景下服务刚启动时概率不工作，如多次遇到此情况则不建议使用此功能")
+                Text(text = stringResource(R.string.s_d0cd80bc26))
             }
             Spacer(modifier = Modifier.height(EmptyHeight))
         }

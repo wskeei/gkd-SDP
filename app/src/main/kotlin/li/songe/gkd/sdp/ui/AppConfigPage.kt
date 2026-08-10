@@ -74,6 +74,9 @@ import li.songe.gkd.sdp.util.launchAsFn
 import li.songe.gkd.sdp.util.switchItem
 import li.songe.gkd.sdp.util.throttle
 import li.songe.gkd.sdp.util.toJson5String
+import androidx.compose.ui.res.stringResource
+import li.songe.gkd.sdp.R
+import li.songe.gkd.sdp.app
 
 @Serializable
 data class AppConfigRoute(
@@ -217,7 +220,7 @@ fun AppConfigPage(route: AppConfigRoute) {
                             if (isSelectedMode) {
                                 DropdownMenuItem(
                                     text = {
-                                        Text(text = "全选")
+                                        Text(text = app.getString(R.string.s_3e44b2a933))
                                     },
                                     onClick = {
                                         expanded = false
@@ -226,7 +229,7 @@ fun AppConfigPage(route: AppConfigRoute) {
                                 )
                                 DropdownMenuItem(
                                     text = {
-                                        Text(text = "反选")
+                                        Text(text = app.getString(R.string.s_ae05880411))
                                     },
                                     onClick = {
                                         expanded = false
@@ -234,7 +237,7 @@ fun AppConfigPage(route: AppConfigRoute) {
                                     }
                                 )
                             } else {
-                                MenuGroupCard(inTop = true, title = "排序") {
+                                MenuGroupCard(inTop = true, title = app.getString(R.string.s_dc35af8d69)) {
                                     val handleItem: (RuleSortOption) -> Unit = throttle { v ->
                                         storeFlow.update { s -> s.copy(appRuleSort = v.value) }
                                     }
@@ -248,9 +251,9 @@ fun AppConfigPage(route: AppConfigRoute) {
                                         )
                                     }
                                 }
-                                MenuGroupCard(title = "筛选") {
+                                MenuGroupCard(title = app.getString(R.string.s_dcce9a144a)) {
                                     MenuItemCheckbox(
-                                        text = "未启用",
+                                        text = app.getString(R.string.s_8bb38ef00c),
                                         stateFlow = vm.showDisabledRuleFlow,
                                     )
                                 }
@@ -273,7 +276,7 @@ fun AppConfigPage(route: AppConfigRoute) {
                     )
                 },
                 imageVector = PerfIcon.Add,
-                contentDescription = "添加规则"
+                contentDescription = app.getString(R.string.s_d2fc32282a)
             )
         },
     ) { contentPadding ->
@@ -378,7 +381,7 @@ fun AppConfigPage(route: AppConfigRoute) {
             item(ListPlaceholder.KEY, ListPlaceholder.TYPE) {
                 Spacer(modifier = Modifier.height(EmptyHeight))
                 if (groupSize == 0 && !firstLoading) {
-                    EmptyText(text = if (vm.showDisabledRuleFlow.collectAsStateWithLifecycle().value) "暂无数据" else "暂无数据，或修改筛选")
+                    EmptyText(text = if (vm.showDisabledRuleFlow.collectAsStateWithLifecycle().value) stringResource(R.string.s_b246458f20) else stringResource(R.string.s_53e5dc587c))
                 }
             }
         }

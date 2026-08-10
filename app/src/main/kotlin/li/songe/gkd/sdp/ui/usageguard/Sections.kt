@@ -80,6 +80,8 @@ import li.songe.gkd.sdp.util.UsageGuardPolicy
 import li.songe.gkd.sdp.util.UsageGuardReviewPolicy
 import li.songe.gkd.sdp.util.UsageGuardUiStatePolicy
 import li.songe.gkd.sdp.util.appInfoMapFlow
+import androidx.compose.ui.res.stringResource
+import li.songe.gkd.sdp.R
 
 @Composable
 fun UsageGuardPageSections() {
@@ -196,7 +198,7 @@ internal fun SelectedAppModeBoard(
         Text(title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
         Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         if (appIds.isEmpty()) {
-            Text("这一列还没有应用", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(stringResource(R.string.s_1fa7fa3095), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         } else {
             FlowRow(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 appIds.forEach { appId ->
@@ -315,7 +317,7 @@ internal fun HistoryRow(record: UsageGuardRecord, appName: String) {
         Text(record.tagNames.joinToString(" · "), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
         Text(record.reasonText, style = MaterialTheme.typography.bodyMedium)
         Text(
-            "申请 ${record.requestedDurationMinutes} 分钟 · 实用 ${UsageGuardReviewPolicy.formatUsedDuration(UsageGuardReviewPolicy.effectiveUsedSeconds(record))}",
+            stringResource(R.string.s_d159fb78f0, record.requestedDurationMinutes, UsageGuardReviewPolicy.formatUsedDuration(UsageGuardReviewPolicy.effectiveUsedSeconds(record))),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )

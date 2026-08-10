@@ -64,6 +64,9 @@ import li.songe.gkd.sdp.util.appInfoMapFlow
 import li.songe.gkd.sdp.util.launchAsFn
 import li.songe.gkd.sdp.util.throttle
 import li.songe.gkd.sdp.util.toast
+import androidx.compose.ui.res.stringResource
+import li.songe.gkd.sdp.R
+import li.songe.gkd.sdp.app
 
 @Serializable
 data object ActivityLogRoute : NavKey
@@ -90,7 +93,7 @@ fun ActivityLogPage() {
             },
             title = {
                 Text(
-                    text = "界面日志",
+                    text = app.getString(R.string.s_48ff47e21f),
                     modifier = Modifier.noRippleClickable { resetKey.intValue++ },
                 )
             },
@@ -100,12 +103,12 @@ fun ActivityLogPage() {
                         imageVector = PerfIcon.Delete,
                         onClick = throttle(fn = vm.viewModelScope.launchAsFn {
                             mainVm.dialogFlow.waitResult(
-                                title = "删除日志",
-                                text = "确定删除所有界面日志?",
+                                title = app.getString(R.string.s_0c42f43e47),
+                                text = app.getString(R.string.s_76e76680f1),
                                 error = true,
                             )
                             DbSet.activityLogDao.deleteAll()
-                            toast("删除成功")
+                            toast(app.getString(R.string.s_86e8d12a79))
                         })
                     )
                 }
@@ -131,7 +134,7 @@ fun ActivityLogPage() {
             item(ListPlaceholder.KEY, ListPlaceholder.TYPE) {
                 Spacer(modifier = Modifier.height(EmptyHeight))
                 if (logCount == 0 && list.loadState.refresh !is LoadState.Loading) {
-                    EmptyText(text = "暂无数据")
+                    EmptyText(text = stringResource(R.string.s_b246458f20))
                 }
             }
         }
@@ -230,7 +233,7 @@ private fun ActivityLogCard(
                         )
                     } else {
                         Text(
-                            text = "null",
+                            text = app.getString(R.string.s_2be88ca424),
                             color = LocalContentColor.current.copy(alpha = 0.5f),
                         )
                     }

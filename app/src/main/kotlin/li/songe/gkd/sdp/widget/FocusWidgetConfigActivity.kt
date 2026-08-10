@@ -20,6 +20,9 @@ import androidx.compose.ui.unit.dp
 import li.songe.gkd.sdp.data.FocusRule
 import li.songe.gkd.sdp.db.DbSet
 import li.songe.gkd.sdp.ui.style.AppTheme
+import androidx.compose.ui.res.stringResource
+import li.songe.gkd.sdp.R
+import li.songe.gkd.sdp.app
 
 class FocusWidgetConfigActivity : ComponentActivity() {
     private var appWidgetId = AppWidgetManager.INVALID_APPWIDGET_ID
@@ -91,7 +94,7 @@ fun FocusWidgetConfigScreen(onSave: (Set<Long>) -> Unit) {
     Scaffold(
         topBar = {
             TopAppBar(
-                 title = { Text("选择专注规则") }
+                 title = { Text(app.getString(R.string.s_63ef694432)) }
             )
         }
     ) { padding ->
@@ -133,7 +136,7 @@ fun FocusWidgetConfigScreen(onSave: (Set<Long>) -> Unit) {
                     .fillMaxWidth()
                     .padding(16.dp)
             ) {
-                Text("保存")
+                Text(stringResource(R.string.s_fadf24dbc5))
             }
         }
     }

@@ -56,6 +56,9 @@ import li.songe.gkd.sdp.util.subsMapFlow
 import li.songe.gkd.sdp.util.throttle
 import li.songe.gkd.sdp.util.toast
 import li.songe.gkd.sdp.util.updateSubsMutex
+import androidx.compose.ui.res.stringResource
+import li.songe.gkd.sdp.R
+import li.songe.gkd.sdp.app
 
 @Composable
 fun SubsSheet(
@@ -134,7 +137,7 @@ fun SubsSheet(
                     Column(
                         modifier = childModifier.clearAndSetSemantics {
                             contentDescription =
-                                "作者：${subscription.author ?: "未知"}, 版本号：v${subscription.version}, 更新时间：${subsItem.mtimeStr}"
+                                app.getString(R.string.s_9005e9a091, )未知app.getString(R.string.s_9b6b2c90c1, subscription.version, subsItem.mtimeStr)
                         }
                     ) {
                         Row(
@@ -143,11 +146,11 @@ fun SubsSheet(
                             horizontalArrangement = Arrangement.SpaceBetween,
                         ) {
                             Text(
-                                text = "作者",
+                                text = stringResource(R.string.s_698bea5124),
                                 style = MaterialTheme.typography.labelLarge,
                             )
                             Text(
-                                text = "v${subscription.version}",
+                                text = stringResource(R.string.s_82b86f78a2, subscription.version),
                                 style = MaterialTheme.typography.labelMedium,
                                 color = MaterialTheme.colorScheme.tertiary,
                                 modifier = Modifier
@@ -163,7 +166,7 @@ fun SubsSheet(
                         ) {
                             if (!subsItem.isLocal) {
                                 Text(
-                                    text = subscription.author ?: "未知",
+                                    text = subscription.author ?: stringResource(R.string.s_d9c32a4c3d),
                                     style = MaterialTheme.typography.labelMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant.let {
                                         if (subscription.author == null) {
@@ -193,7 +196,7 @@ fun SubsSheet(
                     if (subscription.globalGroups.isNotEmpty() || subsItem.isLocal) {
                         Row(
                             modifier = Modifier
-                                .clickable(onClickLabel = "查看全局规则列表", onClick = throttle {
+                                .clickable(onClickLabel = stringResource(R.string.s_cb45543dcb), onClick = throttle {
                                     setSubsId(null)
                                     sheetSubsIdFlow.value = null
                                     mainVm.navigatePage(SubsGlobalGroupListRoute(subsItem.id))
@@ -206,11 +209,11 @@ fun SubsSheet(
                                 modifier = Modifier.weight(1f)
                             ) {
                                 Text(
-                                    text = "全局规则",
+                                    text = stringResource(R.string.s_9effd4ccc9),
                                     style = MaterialTheme.typography.labelLarge,
                                 )
                                 Text(
-                                    text = if (subscription.globalGroups.isNotEmpty()) "共 ${subscription.globalGroups.size} 全局规则" else "暂无",
+                                    text = if (subscription.globalGroups.isNotEmpty()) stringResource(R.string.s_966f4322a8, subscription.globalGroups.size) else stringResource(R.string.s_5dbd015496),
                                     style = MaterialTheme.typography.labelMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant.let {
                                         if (subscription.globalGroups.isEmpty()) {
@@ -229,7 +232,7 @@ fun SubsSheet(
                     if (subscription.appGroups.isNotEmpty() || subsItem.isLocal) {
                         Row(
                             modifier = Modifier
-                                .clickable(onClickLabel = "查看应用规则列表", onClick = throttle {
+                                .clickable(onClickLabel = stringResource(R.string.s_03b83abff2), onClick = throttle {
                                     setSubsId(null)
                                     sheetSubsIdFlow.value = null
                                     mainVm.navigatePage(SubsAppListRoute(subsItem.id))
@@ -242,11 +245,11 @@ fun SubsSheet(
                                 modifier = Modifier.weight(1f)
                             ) {
                                 Text(
-                                    text = "应用规则",
+                                    text = stringResource(R.string.s_da6a6dc1af),
                                     style = MaterialTheme.typography.labelLarge,
                                 )
                                 Text(
-                                    text = if (subscription.appGroups.isNotEmpty()) "共 ${subscription.apps.size} 应用 ${subscription.appGroups.size} 规则" else "暂无",
+                                    text = if (subscription.appGroups.isNotEmpty()) stringResource(R.string.s_eac59394f9, subscription.apps.size, subscription.appGroups.size) else stringResource(R.string.s_5dbd015496),
                                     style = MaterialTheme.typography.labelMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant.let {
                                         if (subscription.appGroups.isEmpty()) {
@@ -266,7 +269,7 @@ fun SubsSheet(
                     if (subscription.categories.isNotEmpty() || subsItem.isLocal) {
                         Row(
                             modifier = Modifier
-                                .clickable(onClickLabel = "查看规则类别列表", onClick = throttle {
+                                .clickable(onClickLabel = stringResource(R.string.s_51b193fac4), onClick = throttle {
                                     setSubsId(null)
                                     sheetSubsIdFlow.value = null
                                     mainVm.navigatePage(SubsCategoryRoute(subsItem.id))
@@ -279,11 +282,11 @@ fun SubsSheet(
                                 modifier = Modifier.weight(1f)
                             ) {
                                 Text(
-                                    text = "规则类别",
+                                    text = stringResource(R.string.s_53c76c1349),
                                     style = MaterialTheme.typography.labelLarge,
                                 )
                                 Text(
-                                    text = if (subscription.categories.isNotEmpty()) "共 ${subscription.categories.size} 类别" else "暂无",
+                                    text = if (subscription.categories.isNotEmpty()) stringResource(R.string.s_f6140ad79e, subscription.categories.size) else stringResource(R.string.s_5dbd015496),
                                     style = MaterialTheme.typography.labelMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant.let {
                                         if (subscription.categories.isEmpty()) {
@@ -302,9 +305,9 @@ fun SubsSheet(
                     if (!subsItem.isLocal && subsItem.updateUrl != null) {
                         Row(
                             modifier = Modifier
-                                .clickable(onClickLabel = "编辑订阅链接", onClick = throttle {
+                                .clickable(onClickLabel = stringResource(R.string.s_29741d0a11), onClick = throttle {
                                     if (updateSubsMutex.mutex.isLocked) {
-                                        toast("正在刷新订阅,请稍后操作")
+                                        toast(app.getString(R.string.s_2c20f3fd5e))
                                         return@throttle
                                     }
                                     mainVm.viewModelScope.launchTry {
@@ -321,7 +324,7 @@ fun SubsSheet(
                                 modifier = Modifier.weight(1f),
                             ) {
                                 Text(
-                                    text = "订阅链接",
+                                    text = stringResource(R.string.s_b1a934b247),
                                     style = MaterialTheme.typography.labelLarge,
                                 )
                                 Text(
@@ -332,7 +335,7 @@ fun SubsSheet(
                                     overflow = TextOverflow.MiddleEllipsis,
                                     modifier = Modifier
                                         .clearAndSetSemantics {}
-                                        .clickable(onClickLabel = "查看订阅链接", onClick = {
+                                        .clickable(onClickLabel = stringResource(R.string.s_dc010e5ae7), onClick = {
                                             mainVm.textFlow.value = subsItem.updateUrl
                                         })
                                 )
@@ -356,12 +359,12 @@ fun SubsSheet(
                             CircularProgressIndicator()
                         } else {
                             Text(
-                                text = "文件加载错误或不存在",
+                                text = app.getString(R.string.s_c3159c4450),
                                 style = MaterialTheme.typography.labelLarge,
                                 color = MaterialTheme.colorScheme.error,
                             )
                             TextButton(onClick = throttle { checkSubsUpdate(showToast = true) }) {
-                                Text(text = "重新加载")
+                                Text(text = app.getString(R.string.s_5982c44c18))
                             }
                         }
                     }
@@ -390,8 +393,8 @@ fun SubsSheet(
                             onClick = throttle(
                                 vm.viewModelScope.launchAsFn {
                                     mainVm.dialogFlow.waitResult(
-                                        title = "删除订阅",
-                                        text = "确定删除 ${subscription?.name ?: subsItem.id} ?",
+                                        title = app.getString(R.string.s_fe7b16b5c0),
+                                        text = app.getString(R.string.s_59fbf95a82, subscription?.name ?: subsItem.id),
                                         error = true,
                                     )
                                     sheetSubsIdFlow.value = null

@@ -45,6 +45,9 @@ import li.songe.gkd.sdp.data.BrowserConfig
 import li.songe.gkd.sdp.ui.component.AppPickerDialog
 import li.songe.gkd.sdp.ui.component.PerfIcon
 import li.songe.gkd.sdp.util.appInfoMapFlow
+import androidx.compose.ui.res.stringResource
+import li.songe.gkd.sdp.R
+import li.songe.gkd.sdp.app
 
 @Composable
 fun UrlLockSheet(
@@ -80,7 +83,7 @@ fun UrlLockSheet(
                 val remaining = currentLockEndTime - System.currentTimeMillis()
                 val remainingMinutes = (remaining / 60000).coerceAtLeast(0)
                 Text(
-                    text = "当前剩余: ${if (remainingMinutes >= 60) "${remainingMinutes / 60}小时${remainingMinutes % 60}分钟" else "${remainingMinutes}分钟"}",
+                    text = stringResource(R.string.s_a6179baa57, )${remainingMinutes / 60}小时${remainingMinutes % 60}分钟stringResource(R.string.s_97dccf7b6e)${remainingMinutes}分钟stringResource(R.string.s_c2b7df6201),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.padding(bottom = 16.dp)
@@ -95,7 +98,7 @@ fun UrlLockSheet(
             }
 
             Text(
-                text = "选择时长",
+                text = stringResource(R.string.s_80e9287545),
                 style = MaterialTheme.typography.labelMedium,
                 modifier = Modifier.padding(bottom = 8.dp)
             )
@@ -137,7 +140,7 @@ fun UrlLockSheet(
                     onCheckedChange = { vm.isCustomLockDuration = it }
                 )
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("自定义时长", style = MaterialTheme.typography.bodyMedium)
+                Text(stringResource(R.string.s_ea6dccc0a6), style = MaterialTheme.typography.bodyMedium)
             }
 
             if (vm.isCustomLockDuration) {
@@ -149,7 +152,7 @@ fun UrlLockSheet(
                     OutlinedTextField(
                         value = vm.customLockDaysText,
                         onValueChange = { vm.customLockDaysText = it },
-                        label = { Text("天") },
+                        label = { Text(stringResource(R.string.s_c3304d1e49)) },
                         modifier = Modifier.weight(1f),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         singleLine = true
@@ -157,7 +160,7 @@ fun UrlLockSheet(
                     OutlinedTextField(
                         value = vm.customLockHoursText,
                         onValueChange = { vm.customLockHoursText = it },
-                        label = { Text("小时") },
+                        label = { Text(stringResource(R.string.s_99f6904ff3)) },
                         modifier = Modifier.weight(1f),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         singleLine = true
@@ -171,7 +174,7 @@ fun UrlLockSheet(
                 onClick = onLock,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text("确认锁定")
+                Text(stringResource(R.string.s_648f1e98b5))
             }
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -206,12 +209,12 @@ fun BrowserListSheet(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "浏览器适配",
+                    text = stringResource(R.string.s_362f11dc2a),
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold
                 )
                 IconButton(onClick = onAdd) {
-                    Icon(PerfIcon.Add, contentDescription = "添加浏览器")
+                    Icon(PerfIcon.Add, contentDescription = stringResource(R.string.s_c6e062fed0))
                 }
             }
 
@@ -236,7 +239,7 @@ fun BrowserListSheet(
                                 if (browser.isBuiltin) {
                                     Spacer(modifier = Modifier.width(4.dp))
                                     Text(
-                                        text = "(内置)",
+                                        text = app.getString(R.string.s_85e76f58dc),
                                         style = MaterialTheme.typography.labelSmall,
                                         color = MaterialTheme.colorScheme.tertiary
                                     )
@@ -255,7 +258,7 @@ fun BrowserListSheet(
                             IconButton(onClick = { onDelete(browser) }) {
                                 Icon(
                                     PerfIcon.Delete,
-                                    contentDescription = "删除",
+                                    contentDescription = app.getString(R.string.s_3755f56f2f),
                                     tint = MaterialTheme.colorScheme.error.copy(alpha = 0.7f)
                                 )
                             }
@@ -295,7 +298,7 @@ fun BrowserEditSheet(
                 .padding(24.dp)
         ) {
             Text(
-                text = if (isEditing) "编辑浏览器" else "添加浏览器",
+                text = if (isEditing) stringResource(R.string.s_96a8d40541) else stringResource(R.string.s_c6e062fed0),
                 style = MaterialTheme.typography.titleLarge,
                 modifier = Modifier.padding(bottom = 16.dp)
             )
@@ -303,8 +306,8 @@ fun BrowserEditSheet(
             OutlinedTextField(
                 value = vm.browserName,
                 onValueChange = { vm.browserName = it },
-                label = { Text("浏览器名称") },
-                placeholder = { Text("如: Chrome") },
+                label = { Text(stringResource(R.string.s_5c07ed58a8)) },
+                placeholder = { Text(app.getString(R.string.s_874487d6ea)) },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true
             )
@@ -315,8 +318,8 @@ fun BrowserEditSheet(
                 OutlinedTextField(
                     value = vm.browserPackageName,
                     onValueChange = { if (!isBuiltin) vm.browserPackageName = it },
-                    label = { Text("包名 *") },
-                    placeholder = { Text("如: com.android.chrome") },
+                    label = { Text(stringResource(R.string.s_a495040b76)) },
+                    placeholder = { Text(app.getString(R.string.s_6d322b1bac)) },
                     modifier = Modifier.weight(1f),
                     singleLine = true,
                     enabled = !isBuiltin
@@ -324,7 +327,7 @@ fun BrowserEditSheet(
                 if (!isBuiltin) {
                     Spacer(modifier = Modifier.width(8.dp))
                     TextButton(onClick = { showAppPicker = true }) {
-                        Text("选择应用")
+                        Text(stringResource(R.string.s_9ec480c1e4))
                     }
                 }
             }
@@ -334,8 +337,8 @@ fun BrowserEditSheet(
             OutlinedTextField(
                 value = vm.browserUrlBarId,
                 onValueChange = { vm.browserUrlBarId = it },
-                label = { Text("地址栏节点 ID *") },
-                placeholder = { Text("如: com.android.chrome:id/url_bar") },
+                label = { Text(stringResource(R.string.s_fa0e1bf898)) },
+                placeholder = { Text(app.getString(R.string.s_341bcd0a2b)) },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true
             )
@@ -343,7 +346,7 @@ fun BrowserEditSheet(
             Spacer(modifier = Modifier.height(8.dp))
 
             Text(
-                text = "提示: 可使用 GKD 的快照功能查看浏览器地址栏的节点 ID",
+                text = stringResource(R.string.s_5a9f8deb3e),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
             )
@@ -354,7 +357,7 @@ fun BrowserEditSheet(
                 onClick = onSave,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text(if (isEditing) "保存修改" else "添加浏览器")
+                Text(if (isEditing) stringResource(R.string.s_60b4ae9082) else stringResource(R.string.s_c6e062fed0))
             }
 
             Spacer(modifier = Modifier.height(16.dp))

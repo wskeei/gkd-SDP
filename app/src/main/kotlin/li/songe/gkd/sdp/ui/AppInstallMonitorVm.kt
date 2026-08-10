@@ -27,6 +27,7 @@ import li.songe.gkd.sdp.util.toast
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.*
+import li.songe.gkd.sdp.R
 
 internal fun resolveCurrentInstallState(
     packageName: String,
@@ -312,24 +313,24 @@ class AppInstallMonitorVm : BaseViewModel() {
     
     fun addMonitoredApp(packageName: String, displayName: String) = viewModelScope.launch(Dispatchers.IO) {
         if (packageName.isBlank() || displayName.isBlank()) {
-            toast("请填写完整信息")
+            toast(app.getString(R.string.s_3745f91a8c))
             return@launch
         }
         
         val existing = DbSet.monitoredAppDao.getByPackageName(packageName)
         if (existing != null) {
-            toast("该应用已在监控列表中")
+            toast(app.getString(R.string.s_d8f6d7b5a9))
             return@launch
         }
         
         DbSet.monitoredAppDao.insert(MonitoredApp(packageName, displayName))
-        toast("已添加: $displayName")
+        toast(app.getString(R.string.s_e9e6e68873, displayName))
         refreshInstalledStatus()
     }
     
     fun deleteMonitoredApp(app: MonitoredApp) = viewModelScope.launch(Dispatchers.IO) {
         DbSet.monitoredAppDao.delete(app)
-        toast("已移除: ${app.displayName}")
+        toast(app.getString(R.string.s_151577da08, app.displayName))
     }
     
     fun exportToCsv() = viewModelScope.launch(Dispatchers.IO) {
@@ -337,7 +338,7 @@ class AppInstallMonitorVm : BaseViewModel() {
             val logs = DbSet.appInstallLogDao.queryAll().stateIn(viewModelScope, SharingStarted.Eagerly, emptyList()).value
             
             if (logs.isEmpty()) {
-                toast("暂无数据可导出")
+                toast(app.getString(R.string.s_73fb671025))
                 return@launch
             }
             
@@ -379,7 +380,7 @@ class AppInstallMonitorVm : BaseViewModel() {
             })
             
         } catch (e: Exception) {
-            toast("导出失败：${DiagnosticLogger.userMessage(e)}")
+            toast(app.getString(R.string.s_9839a9c90b, DiagnosticLogger.userMessage(e)))
         }
     }
 }
