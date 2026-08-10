@@ -28,6 +28,7 @@ import li.songe.gkd.sdp.permission.AuthReason
 import li.songe.gkd.sdp.permission.shizukuGrantedState
 import li.songe.gkd.sdp.remote.WebOriginPolicy
 import li.songe.gkd.sdp.service.A11yService
+import li.songe.gkd.sdp.service.AccessibilityGuardController
 import li.songe.gkd.sdp.shizuku.shizukuContextFlow
 import li.songe.gkd.sdp.shizuku.uiAutomationFlow
 import li.songe.gkd.sdp.shizuku.updateBinderMutex
