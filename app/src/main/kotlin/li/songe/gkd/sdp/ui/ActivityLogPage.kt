@@ -58,7 +58,7 @@ import li.songe.gkd.sdp.ui.share.LocalMainViewModel
 import li.songe.gkd.sdp.ui.share.noRippleClickable
 import li.songe.gkd.sdp.ui.style.EmptyHeight
 import li.songe.gkd.sdp.ui.style.iconTextSize
-import li.songe.gkd.sdp.ui.style.itemHorizontalPadding
+import li.songe.gkd.sdp.ui.style.DimensionTokens.SpacingBase
 import li.songe.gkd.sdp.ui.style.scaffoldPadding
 import li.songe.gkd.sdp.util.appInfoMapFlow
 import li.songe.gkd.sdp.util.launchAsFn
@@ -153,15 +153,15 @@ private fun ActivityLogCard(
         modifier = Modifier
             .fillMaxWidth()
             .padding(
-                start = itemHorizontalPadding / 2,
-                end = itemHorizontalPadding / 2,
+                start = DimensionTokens.SpacingBase / 2,
+                end = DimensionTokens.SpacingBase / 2,
                 top = verticalPadding
             )
     ) {
         if (isDiffApp) {
             Row(
                 modifier = Modifier
-                    .padding(start = itemHorizontalPadding / 4)
+                    .padding(start = DimensionTokens.SpacingBase / 4)
                     .clip(MaterialTheme.shapes.extraSmall)
                     .clickable(onClick = throttle {
                         mainVm.navigatePage(
@@ -193,7 +193,7 @@ private fun ActivityLogCard(
         }
         Row(
             modifier = Modifier
-                .padding(start = itemHorizontalPadding / 4)
+                .padding(start = DimensionTokens.SpacingBase / 4)
                 .clickable(onClick = {
                     mainVm.textFlow.value = listOfNotNull(
                         appInfoMapFlow.value[activityLog.appId]?.name,
@@ -203,7 +203,7 @@ private fun ActivityLogCard(
                 })
                 .fillMaxWidth()
                 .height(IntrinsicSize.Min)
-                .padding(start = itemHorizontalPadding / 4)
+                .padding(start = DimensionTokens.SpacingBase / 4)
         ) {
             Spacer(modifier = Modifier.width(2.dp))
             Spacer(

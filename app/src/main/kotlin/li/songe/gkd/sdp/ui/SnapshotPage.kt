@@ -62,8 +62,8 @@ import li.songe.gkd.sdp.ui.share.ListPlaceholder
 import li.songe.gkd.sdp.ui.share.LocalMainViewModel
 import li.songe.gkd.sdp.ui.share.noRippleClickable
 import li.songe.gkd.sdp.ui.style.EmptyHeight
-import li.songe.gkd.sdp.ui.style.itemHorizontalPadding
-import li.songe.gkd.sdp.ui.style.itemVerticalPadding
+import li.songe.gkd.sdp.ui.style.DimensionTokens.SpacingBase
+import li.songe.gkd.sdp.ui.style.DimensionTokens.SpacingMd
 import li.songe.gkd.sdp.ui.style.scaffoldPadding
 import li.songe.gkd.sdp.util.IMPORT_SHORT_URL
 import li.songe.gkd.sdp.util.ImageUtils
@@ -323,7 +323,7 @@ private fun SnapshotCard(
             .clickable(onClick = onClick)
             .fillMaxWidth()
             .height(IntrinsicSize.Min)
-            .padding(horizontal = itemHorizontalPadding, vertical = itemVerticalPadding / 2)
+            .padding(horizontal = DimensionTokens.SpacingBase, vertical = DimensionTokens.SpacingMd / 2)
     ) {
         Spacer(
             modifier = Modifier

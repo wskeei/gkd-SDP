@@ -102,7 +102,7 @@ import li.songe.gkd.sdp.ui.share.LocalMainViewModel
 import li.songe.gkd.sdp.ui.share.asMutableState
 import li.songe.gkd.sdp.ui.style.EmptyHeight
 import li.songe.gkd.sdp.ui.style.iconTextSize
-import li.songe.gkd.sdp.ui.style.itemHorizontalPadding
+import li.songe.gkd.sdp.ui.style.DimensionTokens.SpacingBase
 import li.songe.gkd.sdp.ui.style.titleItemPadding
 import li.songe.gkd.sdp.util.AndroidTarget
 import li.songe.gkd.sdp.util.BackupUtils
@@ -301,7 +301,7 @@ internal fun BlockA11yDialog(onDismissRequest: () -> Unit) = FullscreenDialog(on
                 ) {
                     Text(text = li.songe.gkd.sdp.app.getString(R.string.s_1fc1afc5c5))
                 }
-                Spacer(modifier = Modifier.width(itemHorizontalPadding))
+                Spacer(modifier = Modifier.width(DimensionTokens.SpacingBase))
             }
         },
     ) { contentPadding ->
@@ -310,7 +310,7 @@ internal fun BlockA11yDialog(onDismissRequest: () -> Unit) = FullscreenDialog(on
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
                 .padding(contentPadding)
-                .padding(horizontal = itemHorizontalPadding)
+                .padding(horizontal = DimensionTokens.SpacingBase)
         ) {
             CompositionLocalProvider(LocalTextStyle provides MaterialTheme.typography.bodyMedium) {
                 Text(text = li.songe.gkd.sdp.app.getString(R.string.s_be7bf1f6b3))

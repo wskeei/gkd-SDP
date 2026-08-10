@@ -102,7 +102,7 @@ import li.songe.gkd.sdp.ui.share.LocalMainViewModel
 import li.songe.gkd.sdp.ui.share.asMutableState
 import li.songe.gkd.sdp.ui.style.EmptyHeight
 import li.songe.gkd.sdp.ui.style.iconTextSize
-import li.songe.gkd.sdp.ui.style.itemHorizontalPadding
+import li.songe.gkd.sdp.ui.style.DimensionTokens.SpacingBase
 import li.songe.gkd.sdp.ui.style.titleItemPadding
 import li.songe.gkd.sdp.util.AndroidTarget
 import li.songe.gkd.sdp.util.BackupUtils

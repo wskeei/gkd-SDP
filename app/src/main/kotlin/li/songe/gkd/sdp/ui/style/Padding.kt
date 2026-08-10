@@ -9,22 +9,23 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
+import li.songe.gkd.sdp.ui.style.DimensionTokens
 
-val itemHorizontalPadding = DimensionTokens.SpacingBase
-val itemVerticalPadding = DimensionTokens.SpacingMd
+val DimensionTokens.SpacingBase = DimensionTokens.SpacingBase
+val DimensionTokens.SpacingMd = DimensionTokens.SpacingMd
 val EmptyHeight = 80.dp
-val cardHorizontalPadding = DimensionTokens.SpacingMd
+val DimensionTokens.SpacingMd = DimensionTokens.SpacingMd
 
-fun Modifier.itemPadding() = this.padding(itemHorizontalPadding, itemVerticalPadding)
+fun Modifier.itemPadding() = this.padding(DimensionTokens.SpacingBase, DimensionTokens.SpacingMd)
 
 fun Modifier.titleItemPadding(showTop: Boolean = true) = this.padding(
-    itemHorizontalPadding,
-    if (showTop) itemVerticalPadding + itemVerticalPadding / 2 else 0.dp,
-    itemHorizontalPadding,
-    itemVerticalPadding - itemVerticalPadding / 2
+    DimensionTokens.SpacingBase,
+    if (showTop) DimensionTokens.SpacingMd + DimensionTokens.SpacingMd / 2 else 0.dp,
+    DimensionTokens.SpacingBase,
+    DimensionTokens.SpacingMd - DimensionTokens.SpacingMd / 2
 )
 
-fun Modifier.appItemPadding() = this.padding(itemHorizontalPadding, itemVerticalPadding)
+fun Modifier.appItemPadding() = this.padding(DimensionTokens.SpacingBase, DimensionTokens.SpacingMd)
 
 fun Modifier.scaffoldPadding(values: PaddingValues): Modifier {
     return padding(

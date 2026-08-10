@@ -45,7 +45,7 @@ import li.songe.gkd.sdp.ui.SubsCategoryRoute
 import li.songe.gkd.sdp.ui.SubsGlobalGroupListRoute
 import li.songe.gkd.sdp.ui.share.LocalMainViewModel
 import li.songe.gkd.sdp.ui.style.EmptyHeight
-import li.songe.gkd.sdp.ui.style.itemHorizontalPadding
+import li.songe.gkd.sdp.ui.style.DimensionTokens.SpacingBase
 import li.songe.gkd.sdp.util.LOCAL_SUBS_ID
 import li.songe.gkd.sdp.util.checkSubsUpdate
 import li.songe.gkd.sdp.util.deleteSubscription
@@ -117,7 +117,7 @@ fun SubsSheet(
             val childModifier = remember {
                 Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = itemHorizontalPadding, vertical = 8.dp)
+                    .padding(horizontal = DimensionTokens.SpacingBase, vertical = 8.dp)
             }
             Column(
                 modifier = Modifier

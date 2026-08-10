@@ -30,8 +30,8 @@ import li.songe.gkd.sdp.ui.component.useScrollBehaviorState
 import li.songe.gkd.sdp.ui.share.LocalMainViewModel
 import li.songe.gkd.sdp.ui.share.noRippleClickable
 import li.songe.gkd.sdp.ui.style.EmptyHeight
-import li.songe.gkd.sdp.ui.style.itemHorizontalPadding
-import li.songe.gkd.sdp.ui.style.itemVerticalPadding
+import li.songe.gkd.sdp.ui.style.DimensionTokens.SpacingBase
+import li.songe.gkd.sdp.ui.style.DimensionTokens.SpacingMd
 import li.songe.gkd.sdp.util.ISSUES_URL
 import li.songe.gkd.sdp.util.throttle
 import li.songe.gkd.sdp.R
@@ -74,13 +74,13 @@ fun CrashReportPage() {
                     ) {
                         Text(text = li.songe.gkd.sdp.app.getString(R.string.s_8d263a68b8))
                     }
-                    Spacer(modifier = Modifier.width(itemHorizontalPadding))
+                    Spacer(modifier = Modifier.width(DimensionTokens.SpacingBase))
                     TextButton(
                         onClick = { mainVm.showShareLogDlgFlow.value = true },
                     ) {
                         Text(text = li.songe.gkd.sdp.app.getString(R.string.s_252fed9478))
                     }
-                    Spacer(modifier = Modifier.width(itemHorizontalPadding))
+                    Spacer(modifier = Modifier.width(DimensionTokens.SpacingBase))
                 }
             }
         },
@@ -90,7 +90,7 @@ fun CrashReportPage() {
                 .verticalScroll(scrollState)
                 .fillMaxSize()
                 .padding(contentPadding),
-            verticalArrangement = Arrangement.spacedBy(itemVerticalPadding)
+            verticalArrangement = Arrangement.spacedBy(DimensionTokens.SpacingMd)
         ) {
             if (vm.crashDataList.isNotEmpty()) {
                 vm.crashSummaries.forEach { crashSummary ->

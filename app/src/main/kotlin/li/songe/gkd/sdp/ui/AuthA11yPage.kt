@@ -59,8 +59,8 @@ import li.songe.gkd.sdp.ui.component.PerfTopAppBar
 import li.songe.gkd.sdp.ui.component.updateDialogOptions
 import li.songe.gkd.sdp.ui.share.LocalMainViewModel
 import li.songe.gkd.sdp.ui.style.EmptyHeight
-import li.songe.gkd.sdp.ui.style.cardHorizontalPadding
-import li.songe.gkd.sdp.ui.style.itemHorizontalPadding
+import li.songe.gkd.sdp.ui.style.DimensionTokens.SpacingMd
+import li.songe.gkd.sdp.ui.style.DimensionTokens.SpacingBase
 import li.songe.gkd.sdp.ui.style.surfaceCardColors
 import li.songe.gkd.sdp.util.AndroidTarget
 import li.songe.gkd.sdp.util.AutomatorModeOption
@@ -109,7 +109,7 @@ fun AuthA11yPage() {
         ) {
             Card(
                 modifier = Modifier
-                    .padding(horizontal = itemHorizontalPadding)
+                    .padding(horizontal = DimensionTokens.SpacingBase)
                     .fillMaxWidth(),
                 onClick = throttle { mainVm.updateAutomatorMode(AutomatorModeOption.A11yMode) },
                 colors = surfaceCardColors,
@@ -130,14 +130,14 @@ fun AuthA11yPage() {
                 }
                 Text(
                     modifier = Modifier
-                        .padding(horizontal = cardHorizontalPadding)
+                        .padding(horizontal = DimensionTokens.SpacingMd)
                         .padding(start = 4.dp),
                     text = stringResource(R.string.s_5f83e7f6a1),
                     style = MaterialTheme.typography.titleSmall
                 )
                 TextListItem(
                     modifier = Modifier
-                        .padding(horizontal = cardHorizontalPadding)
+                        .padding(horizontal = DimensionTokens.SpacingMd)
                         .padding(start = 8.dp, top = 4.dp),
                     style = MaterialTheme.typography.bodyMedium,
                     list = listOf(
@@ -150,7 +150,7 @@ fun AuthA11yPage() {
                     contentTrue = {
                         Text(
                             modifier = Modifier
-                                .padding(horizontal = cardHorizontalPadding)
+                                .padding(horizontal = DimensionTokens.SpacingMd)
                                 .padding(start = 8.dp, top = 4.dp),
                             text = li.songe.gkd.sdp.app.getString(R.string.s_3075b35472),
                             style = MaterialTheme.typography.bodySmall,
@@ -160,7 +160,7 @@ fun AuthA11yPage() {
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(horizontal = cardHorizontalPadding),
+                                .padding(horizontal = DimensionTokens.SpacingMd),
                             verticalAlignment = Alignment.Bottom,
                             horizontalArrangement = Arrangement.SpaceBetween,
                         ) {
@@ -189,14 +189,14 @@ fun AuthA11yPage() {
                 )
                 Text(
                     modifier = Modifier
-                        .padding(horizontal = cardHorizontalPadding)
+                        .padding(horizontal = DimensionTokens.SpacingMd)
                         .padding(start = 4.dp, top = 8.dp),
                     text = stringResource(R.string.s_1dd014a84e),
                     style = MaterialTheme.typography.titleSmall,
                 )
                 TextListItem(
                     modifier = Modifier
-                        .padding(horizontal = cardHorizontalPadding)
+                        .padding(horizontal = DimensionTokens.SpacingMd)
                         .padding(start = 8.dp, top = 4.dp),
                     style = MaterialTheme.typography.bodyMedium,
                     list = listOf(
@@ -209,7 +209,7 @@ fun AuthA11yPage() {
                     contentTrue = {
                         Text(
                             modifier = Modifier
-                                .padding(horizontal = cardHorizontalPadding)
+                                .padding(horizontal = DimensionTokens.SpacingMd)
                                 .padding(start = 8.dp, top = 4.dp),
                             text = li.songe.gkd.sdp.app.getString(R.string.s_5ae6bc88fe),
                             style = MaterialTheme.typography.bodySmall,
@@ -218,7 +218,7 @@ fun AuthA11yPage() {
                     contentFalse = {
                         Row(
                             modifier = Modifier
-                                .padding(horizontal = cardHorizontalPadding),
+                                .padding(horizontal = DimensionTokens.SpacingMd),
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
                         ) {
                             ShizukuAuthButton()
@@ -233,7 +233,7 @@ fun AuthA11yPage() {
                 )
                 TextButton(
                     modifier = Modifier
-                        .padding(horizontal = cardHorizontalPadding),
+                        .padding(horizontal = DimensionTokens.SpacingMd),
                     onClick = throttle {
                         if (!writeSecureSettings) {
                             toast(li.songe.gkd.sdp.app.getString(R.string.s_45d0618f98, (writeSecureSettingsState.name).toString()))
@@ -254,7 +254,7 @@ fun AuthA11yPage() {
             Spacer(modifier = Modifier.height(12.dp))
             Card(
                 modifier = Modifier
-                    .padding(horizontal = itemHorizontalPadding)
+                    .padding(horizontal = DimensionTokens.SpacingBase)
                     .fillMaxWidth(),
                 onClick = throttle { mainVm.updateAutomatorMode(AutomatorModeOption.AutomationMode) },
                 colors = surfaceCardColors,
@@ -275,7 +275,7 @@ fun AuthA11yPage() {
                 }
                 TextListItem(
                     modifier = Modifier
-                        .padding(horizontal = cardHorizontalPadding)
+                        .padding(horizontal = DimensionTokens.SpacingMd)
                         .padding(start = 8.dp),
                     style = MaterialTheme.typography.bodyMedium,
                     list = listOf(
@@ -290,7 +290,7 @@ fun AuthA11yPage() {
                     contentTrue = {
                         Text(
                             modifier = Modifier
-                                .padding(horizontal = cardHorizontalPadding)
+                                .padding(horizontal = DimensionTokens.SpacingMd)
                                 .padding(start = 8.dp, top = 8.dp),
                             text = li.songe.gkd.sdp.app.getString(R.string.s_787a6e40ac),
                             style = MaterialTheme.typography.bodySmall,
@@ -299,13 +299,13 @@ fun AuthA11yPage() {
                     contentFalse = {
                         ShizukuAuthButton(
                             modifier = Modifier.padding(
-                                start = cardHorizontalPadding
+                                start = DimensionTokens.SpacingMd
                             )
                         )
                     }
                 )
                 TextButton(
-                    modifier = Modifier.padding(start = cardHorizontalPadding),
+                    modifier = Modifier.padding(start = DimensionTokens.SpacingMd),
                     onClick = throttle {
                         mainVm.navigatePage(A11YScopeAppListRoute)
                     },

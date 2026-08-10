@@ -44,7 +44,7 @@ import li.songe.gkd.sdp.ui.component.GroupNameText
 import li.songe.gkd.sdp.ui.component.PerfIcon
 import li.songe.gkd.sdp.ui.share.LocalMainViewModel
 import li.songe.gkd.sdp.ui.style.iconTextSize
-import li.songe.gkd.sdp.ui.style.itemHorizontalPadding
+import li.songe.gkd.sdp.ui.style.DimensionTokens.SpacingBase
 import li.songe.gkd.sdp.util.subsItemsFlow
 import li.songe.gkd.sdp.util.subsMapFlow
 import li.songe.gkd.sdp.util.throttle
@@ -73,15 +73,15 @@ internal fun ActionLogCard(
         modifier = modifier
             .fillMaxWidth()
             .padding(
-                start = itemHorizontalPadding / 2,
-                end = itemHorizontalPadding / 2,
+                start = DimensionTokens.SpacingBase / 2,
+                end = DimensionTokens.SpacingBase / 2,
                 top = verticalPadding
             )
     ) {
         if (isDiffApp && appId == null) {
             Row(
                 modifier = Modifier
-                    .padding(start = itemHorizontalPadding / 4)
+                    .padding(start = DimensionTokens.SpacingBase / 4)
                     .clip(MaterialTheme.shapes.extraSmall)
                     .clickable(onClick = throttle {
                         mainVm.navigatePage(
@@ -138,11 +138,11 @@ private fun ActionLogCardBody(
     val mainVm = LocalMainViewModel.current
     Row(
         modifier = Modifier
-            .padding(start = itemHorizontalPadding / 4)
+            .padding(start = DimensionTokens.SpacingBase / 4)
             .clickable(onClick = onClick)
             .fillMaxWidth()
             .height(IntrinsicSize.Min)
-            .padding(start = itemHorizontalPadding / 4)
+            .padding(start = DimensionTokens.SpacingBase / 4)
     ) {
             if (appId == null) {
                 Spacer(modifier = Modifier.width(2.dp))
