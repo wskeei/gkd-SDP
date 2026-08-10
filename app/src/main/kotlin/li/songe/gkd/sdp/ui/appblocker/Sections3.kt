@@ -88,7 +88,7 @@ internal fun AppRulesCard(
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                     )
                     Text(
-                        text = stringResource(R.string.s_eb20a448b7, rules.count { it.enabled),
+                        text = stringResource(R.string.s_eb20a448b7, rules.count { it.enabled }),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )

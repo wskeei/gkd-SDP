@@ -94,6 +94,12 @@ def strip_comments(text: str) -> str:
 
 
 def find_literals(text: str) -> list[Literal]:
+    """Find double-quoted strings, honoring escapes and template braces.
+
+    Inside a `${...}` template expression the quotes belong to the
+    expression, so `"a ${f("x")} b"` is one literal spanning the inner
+    quotes.
+    """
     literals = []
     i, n = 0, len(text)
     line = 1
@@ -108,12 +114,19 @@ def find_literals(text: str) -> list[Literal]:
             continue
         start = i
         j = i + 1
+        depth = 0
         while j < n:
             if text[j] == "\\":
                 j += 2
                 continue
-            if text[j] == '"':
+            if text[j] == '"' and depth == 0:
                 break
+            if text[j] == "$" and j + 1 < n and text[j + 1] == "{":
+                depth += 1
+                j += 2
+                continue
+            if text[j] == "}" and depth > 0:
+                depth -= 1
             j += 1
         if j >= n:
             break
@@ -371,13 +384,118 @@ def classify_lambda(masked: str, brace: int) -> bool | None:
     return None
 
 
+def collect_chain(
+    text: str,
+    lit: Literal,
+) -> tuple[int, int, str, list[str]] | None:
+    """Merge a `"A" + expr + "C"` chain into one format resource.
+
+    Returns (start, end, fmt, args) when [lit] begins a concatenation chain,
+    otherwise None. Expression parts become %N$s arguments.
+    """
+    if not re.match(r"\s*\+", text[lit.end:]):
+        return None
+    parts: list[tuple[str, list[str]]] = []
+    pos = lit.end
+    current = lit.raw
+    saw_part = False
+    while True:
+        m = re.match(r"\s*\+\s*", text[pos:])
+        if not m:
+            break
+        pos += m.end()
+        nxt_lits = find_literals(text[pos:])
+        if nxt_lits and nxt_lits[0].start == 0:
+            parts.append((current, []))
+            current = nxt_lits[0].raw
+            pos = pos + nxt_lits[0].end
+            saw_part = True
+            continue
+        # expression part until the next top-level '+'
+        expr_start = pos
+        depth = 0
+        while pos < len(text):
+            ch = text[pos]
+            if ch == '"':
+                inner = find_literals(text[pos:])
+                if inner and inner[0].start == pos:
+                    pos = inner[0].end
+                    continue
+            if ch in "([{":
+                depth += 1
+            elif ch in ")]}":
+                depth = max(0, depth - 1)
+            elif ch in "+," and depth == 0:
+                break
+            elif ch == "\n" and depth <= 0:
+                break
+            pos += 1
+        expr = text[expr_start:pos].strip()
+        if expr:
+            parts.append((current, []))
+            current = expr
+            saw_part = True
+            if pos < len(text) and text[pos] == "+":
+                continue
+            parts.append((current, []))
+            current = ""
+            break
+        break
+    if not saw_part:
+        return None
+    if current:
+        parts.append((current, []))
+    fmt_parts: list[str] = []
+    args: list[str] = []
+    for part, _ in parts:
+        if "${" in part or re.search(r"(?<!\\)\$[A-Za-z_]", part):
+            f, a = decode_template(part)
+            fmt_parts.append(f)
+            args.extend(a)
+        else:
+            fmt_parts.append(part)
+    return lit.start, pos, "".join(fmt_parts), args
+
+
 def decode_template(raw: str) -> tuple[str, list[str]]:
+    """Turn a Kotlin template into a format string and positional args.
+
+    `${expr}` expressions are extracted with brace balancing so lambdas like
+    `${rules.count { it.enabled }}` keep their closing brace.
+    """
     args = []
-    def repl(m):
-        expr = (m.group(1) or m.group(2)).strip()
-        args.append(expr)
-        return "{%d}" % len(args)
-    fmt = TEMPLATE_ARG.sub(repl, raw)
+    out = []
+    i = 0
+    n = len(raw)
+    while i < n:
+        if raw[i] == "\\":
+            out.append(raw[i:i + 2])
+            i += 2
+            continue
+        if raw[i] == "$" and i + 1 < n and raw[i + 1] == "{":
+            depth = 1
+            j = i + 2
+            while j < n and depth > 0:
+                if raw[j] == "{":
+                    depth += 1
+                elif raw[j] == "}":
+                    depth -= 1
+                j += 1
+            expr = raw[i + 2:j - 1].strip()
+            args.append(expr)
+            out.append("{%d}" % len(args))
+            i = j
+            continue
+        if raw[i] == "$" and i + 1 < n and raw[i + 1].isalpha():
+            m = re.match(r"\$([A-Za-z_][A-Za-z0-9_]*)", raw[i:])
+            if m:
+                args.append(m.group(1))
+                out.append("{%d}" % len(args))
+                i += m.end()
+                continue
+        out.append(raw[i])
+        i += 1
+    fmt = "".join(out)
     fmt = fmt.replace("%", "%%")
     fmt = re.sub(r"\{(\d+)\}", r"%\1$s", fmt)
     fmt = fmt.replace("\\$", "$")
@@ -454,18 +572,63 @@ def migrate_file(path: pathlib.Path, dry_run: bool = False) -> tuple[dict[str, s
         if not lit.raw.strip():
             continue
         ctx = enclosing_call(masked, lit)
+        named_owner = owning_named_argument(masked, text, lit) if not ctx else None
+        if not ctx and not named_owner:
+            continue
+        chain = collect_chain(text, lit)
+        if chain:
+            candidates.append((lit, ("__chain__", chain)))
+            continue
         if ctx:
             candidates.append((lit, ctx))
-            continue
-        named_owner = owning_named_argument(masked, text, lit)
-        if named_owner:
+        else:
             candidates.append((lit, ("__named__", named_owner, -1)))
     if not candidates:
         return {}, 0
+    # Drop candidates nested inside another candidate (outer templates and
+    # concat chains contain inner literals; migrating them twice corrupts the
+    # argument text). Chain candidates span their whole chain range.
+    def candidate_range(cand):
+        lit, ctx = cand
+        if ctx[0] == "__chain__":
+            return ctx[1][0], ctx[1][1]
+        return lit.start, lit.end
+
+    candidates = [
+        cand
+        for cand in candidates
+        if not any(
+            other is not cand and candidate_range(other)[0] <= candidate_range(cand)[0]
+            and candidate_range(other)[1] >= candidate_range(cand)[1]
+            for other in candidates
+        )
+    ]
     resources: dict[str, str] = {}
     segments = []
     wants_imports: set[str] = set()
-    for lit, (call_name, named_arg, idx) in candidates:
+    for lit, ctx in candidates:
+        if ctx[0] == "__chain__":
+            chain = ctx[1]
+            c_start, c_end, fmt, args = chain
+            key = key_for(fmt)
+            use_composable = is_composable_context(masked, lit)
+            if use_composable:
+                if args:
+                    call = f"stringResource(R.string.{key}, {', '.join(args)})"
+                else:
+                    call = f"stringResource(R.string.{key})"
+                wants_imports.add("androidx.compose.ui.res.stringResource")
+            else:
+                if args:
+                    call = f"app.getString(R.string.{key}, {', '.join(args)})"
+                else:
+                    call = f"app.getString(R.string.{key})"
+                wants_imports.add("li.songe.gkd.sdp.app")
+            wants_imports.add("li.songe.gkd.sdp.R")
+            resources[key] = fmt
+            segments.append((c_start, c_end, call))
+            continue
+        call_name, named_arg, idx = ctx
         key = key_for(lit.raw)
         if lit.is_template:
             fmt, args = decode_template(lit.raw)

@@ -206,7 +206,7 @@ fun UsageDurationRatioFeedback(
                 Text(app.getString(R.string.s_d11b352c3e, presentation.durationText), style = MaterialTheme.typography.bodyMedium)
             }
             Text(
-                text = app.getString(R.string.s_aa41382aa4, )—app.getString(R.string.s_c2b7df6201),
+                text = app.getString(R.string.s_112997acfa, presentation.equationText ?: "—"),
                 style = MaterialTheme.typography.bodyMedium,
             )
             presentation.comparisonText?.let {

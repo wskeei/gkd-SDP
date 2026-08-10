@@ -233,11 +233,7 @@ private fun FocusLockAccessibilityGuardEnableDialog(
         title = { Text(stringResource(R.string.s_b23186d5e5)) },
         text = {
             Text(
-                stringResource(R.string.s_36524f9faf) +
-                    stringResource(R.string.s_e4ccf19996, ) +
-                    stringResource(R.string.s_c95c313099, "并在 15、25、30、33、35、36 分钟分别提醒一次（间隔为 15/10/5/3/2/1 分钟）。" +) +
-                    stringResource(R.string.s_efcaa30b99, "并在 15、25、30、33、35、36 分钟分别提醒一次（间隔为 15/10/5/3/2/1 分钟）。" +
-                    "第 36 分钟最后一次提醒后仍未恢复，会显示全屏悬浮窗。" +),
+                stringResource(R.string.s_3152c08fb5),
             )
         },
         confirmButton = {
@@ -263,8 +259,7 @@ private fun FocusLockAccessibilityGuardDisableDialog(
         title = { Text(stringResource(R.string.s_61c6738b36)) },
         text = {
             Text(
-                stringResource(R.string.s_db67ff730b) +
-                    stringResource(R.string.s_c61e3028fc, ),
+                stringResource(R.string.s_6aac4e3a33),
             )
         },
         confirmButton = {
@@ -319,10 +314,10 @@ private fun FocusLockAutoReenableDialog(
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(stringResource(R.string.s_99858cff31))
-                Text(stringResource(R.string.s_ecfd65f5cd, )MM-dd HH:mm")}")
+                Text(stringResource(R.string.s_e78f2c3a4a, uiState.nextEnforceAt.format("MM-dd HH:mm")))
                 Text(stringResource(R.string.s_f70a7d4f0a, uiState.dailyDisableUsed, uiState.dailyDisableLimit))
                 Text(stringResource(R.string.s_3e67db9f62, uiState.dailyDisableRemaining))
-                Text(stringResource(R.string.s_e084dbb887, )MM-dd HH:mm")}")
+                Text(stringResource(R.string.s_52113abdd4, uiState.nextDailyResetAt.format("MM-dd HH:mm")))
                 if (!uiState.canEditInterval) {
                     Text(stringResource(R.string.s_d135a965d5, nextEditableText))
                 }

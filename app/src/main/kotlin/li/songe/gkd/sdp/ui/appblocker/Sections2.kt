@@ -158,7 +158,7 @@ private fun AppGroupCardHeader(
                 }
             }
             Text(
-                text = stringResource(R.string.s_11c0847151, rules.count { it.enabled),
+                text = stringResource(R.string.s_11c0847151, rules.count { it.enabled }),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )

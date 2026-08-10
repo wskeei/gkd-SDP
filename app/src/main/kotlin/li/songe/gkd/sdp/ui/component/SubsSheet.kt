@@ -137,7 +137,7 @@ fun SubsSheet(
                     Column(
                         modifier = childModifier.clearAndSetSemantics {
                             contentDescription =
-                                app.getString(R.string.s_9005e9a091, )未知app.getString(R.string.s_9b6b2c90c1, subscription.version, subsItem.mtimeStr)
+                                app.getString(R.string.s_488fdbc26e, subscription.author ?: "未知", subscription.version, subsItem.mtimeStr)
                         }
                     ) {
                         Row(

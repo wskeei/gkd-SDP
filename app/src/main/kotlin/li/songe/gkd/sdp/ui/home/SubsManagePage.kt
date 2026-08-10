@@ -243,7 +243,7 @@ fun useSubsManagePage(): ScaffoldExt {
                                         LocalContentColor.current
                                     }
                                 ),
-                                contentDescription = app.getString(R.string.s_06b0c3e743) + if (enableMatch) app.getString(R.string.s_25d2843150) else app.getString(R.string.s_0fe5a98e9f),
+                                contentDescription = app.getString(R.string.s_c1ebbe1ce7),
                                 onClickLabel = app.getString(R.string.s_d7ee5b2dac),
                                 onClick = throttle { switchStoreEnableMatch() },
                             )

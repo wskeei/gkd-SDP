@@ -75,18 +75,21 @@ fun SelfControlRuntimeStatusCard() {
             )
             Spacer(modifier = Modifier.height(6.dp))
             Text(
-                text = stringResource(R.string.s_5b8119c513, readiness.modeLabel)切换中stringResource(R.string.s_212499b2b1)已连接stringResource(R.string.s_d9a9d4db42)未连接stringResource(R.string.s_93a38b87d9),
+                text = stringResource(R.string.s_18a07b6ed5, readiness.modeLabel, when {
+                    runtime.switching -> "切换中"
+                    runtime.connected -> "已连接"
+                    else -> "未连接"
+                }),
                 style = MaterialTheme.typography.bodySmall,
             )
             Text(
-                text = stringResource(R.string.s_3f0462d83d, )已授权stringResource(R.string.s_97dccf7b6e)未授权stringResource(R.string.s_ea0b17ad17, issueText),
+                text = stringResource(R.string.s_95e55216b8, if (overlayPermission) "已授权" else "未授权", issueText),
                 style = MaterialTheme.typography.bodySmall,
                 color = if (readiness.ready) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
             )
             runtime.lastDecision?.let { decision ->
                 Text(
-                    text = app.getString(R.string.s_c52c529934, decision.feature, decision.decision) +
-                        li.songe.gkd.sdp.util.SelfControlElapsedPolicy.formatAbsolute(decision.atEpochMs),
+                    text = app.getString(R.string.s_8dfc55724a, decision.feature, decision.decision),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )

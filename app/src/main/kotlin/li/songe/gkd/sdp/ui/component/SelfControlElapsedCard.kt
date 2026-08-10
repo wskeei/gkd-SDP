@@ -156,8 +156,7 @@ private fun RunningElapsedContent(
         modifier = Modifier.padding(top = 4.dp),
     )
     Text(
-        text = stringResource(R.string.s_de27714146, if (state.firstOccurrence) copy.firstTimeLabel else copy.previousTimeLabel) +
-            SelfControlElapsedPolicy.formatAbsolute(state.anchorAtEpochMs),
+        text = stringResource(R.string.s_4087da19c9, if (state.firstOccurrence) copy.firstTimeLabel else copy.previousTimeLabel),
         style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         modifier = Modifier.padding(top = 2.dp),
