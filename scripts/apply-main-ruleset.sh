@@ -5,6 +5,9 @@ REQUIRED_CHECKS=(
   quality
   coverage
   visual-regression
+  managed-device-api26
+  managed-device-api35
+  performance
   build
 )
 

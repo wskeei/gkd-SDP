@@ -42,6 +42,11 @@ Draft Release：上传 APK/update.json/SHA256SUMS
 人工检查后发布不可变 Release
 ```
 
+项目先完成自动化与静态资产验证，再公开 Release。真机/OEM、实际
+Accessibility/Shizuku、`FLAG_SECURE` 截图合成、升级安装和应用内更新验证不
+作为 Draft 发布门禁；Release 公开后由用户下载公开资产自行执行，维护者不得
+把未执行的设备检查写成已通过。
+
 正式发布不强推 tag、不覆盖已发布资产、不把 main 的每次提交写成 Release。Tag 必须与 `versionName` 完全匹配，稳定 SemVer 和 `versionCode` 都必须相对历史版本单调递增；若已发布版本有问题，创建下一个稳定 PATCH 版本，并在旧版本说明中标注已知问题。发布工作流发现同名 Release 已存在时会停止，不覆盖历史资产。
 
 ## Signing safety
