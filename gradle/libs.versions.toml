@@ -15,6 +15,7 @@ remap = "0.1.1"
 shizuku = "13.1.5"
 loc = "0.6.2"
 vico = "2.0.0-alpha.28"
+lint = "32.3.0"
 
 [libraries]
 vico-compose = { module = "com.patrykandpatrick.vico:compose", version.ref = "vico" }
@@ -79,9 +80,12 @@ permissions = "com.github.getActivity:XXPermissions:28.2"
 device = "com.github.getActivity:DeviceCompat:2.6"
 json5 = "li.songe:json5:0.5.0"
 activityResultLauncher = "com.github.DylanCaiCoding:ActivityResultLauncher:1.1.2"
+lint-api = { module = "com.android.tools.lint:lint-api", version.ref = "lint" }
+lint-tests = { module = "com.android.tools.lint:lint-tests", version.ref = "lint" }
 
 [plugins]
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
+kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
 kotlin-parcelize = { id = "org.jetbrains.kotlin.plugin.parcelize", version.ref = "kotlin" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }

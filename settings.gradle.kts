@@ -3,6 +3,7 @@ include(
     ":app",
     ":hidden_api",
     ":selector",
+    ":quality-lint",
 )
 
 apply(from = "gradle/security-dependency-policy.settings.gradle.kts")
