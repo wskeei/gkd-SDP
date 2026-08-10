@@ -100,6 +100,8 @@ import li.songe.gkd.sdp.ui.AppInstallMonitorPage
 import li.songe.gkd.sdp.ui.AppInstallMonitorRoute
 import li.songe.gkd.sdp.ui.AppOpsAllowPage
 import li.songe.gkd.sdp.ui.AppOpsAllowRoute
+import li.songe.gkd.sdp.ui.capability.CapabilityCenterRoute
+import li.songe.gkd.sdp.ui.capability.CapabilityCenterScreen
 import li.songe.gkd.sdp.ui.AuthA11yPage
 import li.songe.gkd.sdp.ui.AuthA11yRoute
 import li.songe.gkd.sdp.ui.BlockA11yAppListPage
@@ -304,6 +306,7 @@ class MainActivity : ComponentActivity() {
                         entryProvider = entryProvider {
                             entry<HomeRoute> { HomePage(it) }
                             entry<AuthA11yRoute> { AuthA11yPage() }
+                            entry<CapabilityCenterRoute> { CapabilityCenterScreen(mainVm) }
                             entry<AboutRoute> { AboutPage() }
                             entry<BlockA11yAppListRoute> { BlockA11yAppListPage() }
                             entry<AdvancedPageRoute> { AdvancedPage() }

@@ -343,6 +343,21 @@ class MainViewModel(
         AutomatorModeOption.objects.findOption(it.automatorMode)
     }
 
+    fun toggleAccessibilityGuard(activity: MainActivity) {
+        val enabled = storeFlow.value.accessibilityGuardEnabled
+        if (enabled) {
+            // The one-way protection keeps the guard on while locked; the
+            // controller re-checks eligibility before committing.
+            AccessibilityGuardController.disable()
+        } else {
+            runMainPost {
+                launchTry {
+                    AccessibilityGuardController.enable(activity)
+                }
+            }
+        }
+    }
+
     fun updateAutomatorMode(option: AutomatorModeOption) {
         if (automatorModeFlow.value == option) return
         storeFlow.update { it.copy(automatorMode = option.value, enableAutomator = false) }
