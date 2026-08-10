@@ -31,9 +31,6 @@ class ComposeHardcodedTextDetector : Detector(), SourceCodeScanner {
             override fun visitCallExpression(node: UCallExpression) {
                 val methodName = node.methodName ?: return
                 if (methodName !in SCANNED_METHODS) return
-                val receiverName = (node.receiver as? org.jetbrains.uast.UReferenceExpression)?.resolveName()
-                if (receiverName != null && receiverName !in ALLOWED_RECEIVERS) return
-
                 node.valueArguments.forEachIndexed { index, argument ->
                     if (!isUserTextArgument(methodName, argument, index)) return@forEachIndexed
                     if (argument.isHardcodedText()) {
@@ -61,7 +58,7 @@ class ComposeHardcodedTextDetector : Detector(), SourceCodeScanner {
                 methodName == "Snackbar" || methodName == "toast" ||
                 methodName == "setContentTitle" || methodName == "setContentText" -> index == 0
             // Toast.makeText(context, text, duration)
-            methodName == "Toast" -> index == 1
+            methodName == "makeText" -> index == 1
             else -> false
         }
     }
@@ -91,12 +88,6 @@ class ComposeHardcodedTextDetector : Detector(), SourceCodeScanner {
             "setContentTitle",
             "setContentText",
             "AlertDialog",
-        )
-
-        private val ALLOWED_RECEIVERS = listOf(
-            "Toast",
-            "Notification",
-            "NotificationCompat",
         )
 
         private val TEXT_ARGUMENT_NAMES = setOf(
