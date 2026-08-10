@@ -72,7 +72,6 @@ internal fun UsageGuardCountdownOverlayContent(
     maxPillWidthPx: Int,
     onPillTap: () -> Unit,
     onDrag: (Float, Float) -> Unit,
-    onExpired: () -> Unit,
     onDismissTerminate: () -> Unit,
     onHideForScreenshot: () -> Unit,
     onConfirmTerminate: () -> Unit,
@@ -85,37 +84,32 @@ internal fun UsageGuardCountdownOverlayContent(
         )
     } else {
         UsageGuardCountdownPill(
-            expiresAt = state.expiresAt,
+            remainingMillis = state.remainingMillis,
             reasonText = state.reasonText,
             maxPillWidthPx = maxPillWidthPx,
             onTap = onPillTap,
             onDrag = onDrag,
-            onExpired = onExpired,
         )
     }
 }
 
 @Composable
 private fun UsageGuardCountdownPill(
-    expiresAt: Long,
+    remainingMillis: Long,
     reasonText: String,
     maxPillWidthPx: Int,
     onTap: () -> Unit,
     onDrag: (Float, Float) -> Unit,
-    onExpired: () -> Unit,
 ) {
-    var now by remember(expiresAt) { mutableLongStateOf(System.currentTimeMillis()) }
-    LaunchedEffect(expiresAt) {
+    var remaining by remember(remainingMillis) { mutableLongStateOf(remainingMillis) }
+    LaunchedEffect(remainingMillis) {
+        val startedAt = android.os.SystemClock.elapsedRealtime()
         while (true) {
-            now = System.currentTimeMillis()
-            if (now >= expiresAt) {
-                onExpired()
-                break
-            }
+            remaining = (remainingMillis - (android.os.SystemClock.elapsedRealtime() - startedAt)).coerceAtLeast(0L)
             delay(1_000L)
         }
     }
-    val remainingText = countdownRemainingText(expiresAt, now)
+    val remainingText = countdownRemainingText(remaining)
     val maxPillWidth = with(LocalDensity.current) {
         maxPillWidthPx.toDp()
     }

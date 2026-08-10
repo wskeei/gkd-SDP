@@ -29,6 +29,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -41,7 +42,6 @@ import li.songe.gkd.sdp.ui.style.itemPadding
 import li.songe.gkd.sdp.ui.style.surfaceCardColors
 
 @Composable
-@android.annotation.SuppressLint("NonObservableLocale")
 fun UrlGroupCard(
     group: UrlRuleGroup,
     rules: List<UrlTimeRule>,
@@ -140,8 +140,11 @@ private fun UrlGroupCardBody(
                     }
                 }
                 if (group.isCurrentlyLocked) {
-                    val lockEndTime = java.text.SimpleDateFormat("MM-dd HH:mm", java.util.Locale.getDefault())
-                        .format(java.util.Date(group.lockEndTime))
+                    val lockEndLocale = LocalConfiguration.current.locales[0]
+                    val lockEndTime = remember(lockEndLocale, group.lockEndTime) {
+                        java.text.SimpleDateFormat("MM-dd HH:mm", lockEndLocale)
+                            .format(java.util.Date(group.lockEndTime))
+                    }
                     Spacer(modifier = Modifier.height(4.dp))
                     Text("🔒 锁定至 $lockEndTime", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
                 }
@@ -192,7 +195,6 @@ private fun UrlGroupCardBody(
 
 
 @Composable
-@android.annotation.SuppressLint("NonObservableLocale")
 fun UrlItemCard(
     rule: UrlBlockRule,
     timeRules: List<UrlTimeRule>,
@@ -248,8 +250,11 @@ fun UrlItemCard(
                         overflow = TextOverflow.Ellipsis
                     )
                     if (rule.isCurrentlyLocked) {
-                        val lockEndTime = java.text.SimpleDateFormat("MM-dd HH:mm", java.util.Locale.getDefault())
-                            .format(java.util.Date(rule.lockEndTime))
+                        val lockEndLocale = LocalConfiguration.current.locales[0]
+                        val lockEndTime = remember(lockEndLocale, rule.lockEndTime) {
+                            java.text.SimpleDateFormat("MM-dd HH:mm", lockEndLocale)
+                                .format(java.util.Date(rule.lockEndTime))
+                        }
                         Text(
                             text = "🔒 锁定至 $lockEndTime",
                             style = MaterialTheme.typography.bodySmall,

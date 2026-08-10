@@ -54,6 +54,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import li.songe.gkd.sdp.a11y.UsageGuardEngine
+import li.songe.gkd.sdp.ui.share.ServiceOverlayLifecycleOwner
 import li.songe.gkd.sdp.ui.style.AppTheme
 import li.songe.gkd.sdp.util.BarUtils
 import li.songe.gkd.sdp.util.LogUtils
@@ -76,6 +77,8 @@ class UsageGuardCountdownOverlayService : LifecycleService(), SavedStateRegistry
     private val windowManager by lazy { getSystemService(WINDOW_SERVICE) as WindowManager }
     private var view: ComposeView? = null
     private var layoutParams: WindowManager.LayoutParams? = null
+    private var overlayLifecycleOwner: ServiceOverlayLifecycleOwner? = null
+    private var preservedPosition: Pair<Int, Int>? = null
     private val captureController = UsageGuardCountdownOverlayCaptureController()
     private var restoreOverlayJob: Job? = null
 
@@ -162,8 +165,10 @@ class UsageGuardCountdownOverlayService : LifecycleService(), SavedStateRegistry
     private fun showOverlay() {
         if (view != null) return
 
+        val lifecycleOwner = ServiceOverlayLifecycleOwner()
+        overlayLifecycleOwner = lifecycleOwner
         val overlayView = ComposeView(this).apply {
-            setViewTreeLifecycleOwner(this@UsageGuardCountdownOverlayService)
+            setViewTreeLifecycleOwner(lifecycleOwner)
             setViewTreeSavedStateRegistryOwner(this@UsageGuardCountdownOverlayService)
             setContent {
                 AppTheme {
@@ -174,14 +179,13 @@ class UsageGuardCountdownOverlayService : LifecycleService(), SavedStateRegistry
                     )
                     UsageGuardCountdownOverlayContent(
                         state = UsageGuardCountdownUiState(
-                            expiresAt = expiresAtState,
+                            remainingMillis = (expiresAtState - System.currentTimeMillis()).coerceAtLeast(0L),
                             reasonText = reasonTextState,
                             showTerminateConfirm = showTerminateConfirm,
                         ),
                         maxPillWidthPx = maxPillWidthPx,
                         onPillTap = { showTerminateConfirmScreen() },
                         onDrag = { dx, dy -> updatePosition(dx, dy) },
-                        onExpired = { stopSelf() },
                         onDismissTerminate = { hideTerminateConfirm() },
                         onHideForScreenshot = { hideOverlayForScreenshot() },
                         onConfirmTerminate = {
@@ -202,8 +206,8 @@ class UsageGuardCountdownOverlayService : LifecycleService(), SavedStateRegistry
             PixelFormat.TRANSLUCENT
         ).apply {
             gravity = Gravity.START or Gravity.TOP
-            x = initialPosition.x
-            y = initialPosition.y
+            x = preservedPosition?.first ?: initialPosition.x
+            y = preservedPosition?.second ?: initialPosition.y
         }
         view = overlayView
         layoutParams = params
@@ -218,8 +222,12 @@ class UsageGuardCountdownOverlayService : LifecycleService(), SavedStateRegistry
         runCatching {
             windowManager.addView(overlayView, params)
             captureController.onMountSucceeded()
+            overlayLifecycleOwner?.onViewAdded()
+            preservedPosition = null
         }.onFailure { error ->
             captureController.onMountFailed()
+            overlayLifecycleOwner?.onViewRemoved()
+            overlayLifecycleOwner = null
             restoreOverlayJob?.cancel()
             restoreOverlayJob = null
             view = null
@@ -241,8 +249,12 @@ class UsageGuardCountdownOverlayService : LifecycleService(), SavedStateRegistry
         val overlayView = view ?: return
         val params = layoutParams ?: return
         val hidden = captureController.snapshotForHide() ?: return
+        preservedPosition = params.x to params.y
         val removed = runCatching {
             windowManager.removeView(overlayView)
+            overlayLifecycleOwner?.onViewRemoved()
+            overlayLifecycleOwner = null
+            view = null
         }.onFailure { error ->
             LogUtils.d(
                 "usage guard countdown overlay temporary hide rejected",
@@ -272,11 +284,7 @@ class UsageGuardCountdownOverlayService : LifecycleService(), SavedStateRegistry
             leaseActive = UsageGuardEngine.canRestoreCountdownOverlay(hidden),
         )
         when (restoreAction) {
-            UsageGuardCountdownOverlayCaptureController.RestoreAction.MOUNT -> {
-                val overlayView = view ?: return
-                val params = layoutParams ?: return
-                mountOverlayView(overlayView, params)
-            }
+            UsageGuardCountdownOverlayCaptureController.RestoreAction.MOUNT -> showOverlay()
 
             UsageGuardCountdownOverlayCaptureController.RestoreAction.STOP_EXPIRED,
             UsageGuardCountdownOverlayCaptureController.RestoreAction.STOP_REVOKED -> {
@@ -364,6 +372,8 @@ class UsageGuardCountdownOverlayService : LifecycleService(), SavedStateRegistry
     }
 
     override fun onDestroy() {
+        overlayLifecycleOwner?.onViewRemoved()
+        overlayLifecycleOwner = null
         super.onDestroy()
         restoreOverlayJob?.cancel()
         restoreOverlayJob = null
@@ -381,6 +391,7 @@ class UsageGuardCountdownOverlayService : LifecycleService(), SavedStateRegistry
         captureController.onDestroy()
         view = null
         layoutParams = null
+        preservedPosition = null
         appId = ""
         recordId = 0L
         overlayLeaseId = 0L

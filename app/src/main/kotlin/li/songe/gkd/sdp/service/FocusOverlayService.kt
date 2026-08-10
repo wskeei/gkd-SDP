@@ -48,6 +48,7 @@ import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import li.songe.gkd.sdp.app
 import li.songe.gkd.sdp.a11y.FocusModeEngine
 import li.songe.gkd.sdp.ui.component.AppIcon
+import li.songe.gkd.sdp.ui.share.ServiceOverlayLifecycleOwner
 import li.songe.gkd.sdp.ui.style.AppTheme
 import li.songe.gkd.sdp.util.LogUtils
 import li.songe.gkd.sdp.util.FocusTimeFormatter
@@ -57,6 +58,7 @@ class FocusOverlayService : LifecycleService(), SavedStateRegistryOwner {
 
     private val windowManager by lazy { getSystemService(WINDOW_SERVICE) as WindowManager }
     private var view: ComposeView? = null
+    private var overlayLifecycleOwner: ServiceOverlayLifecycleOwner? = null
 
     private val savedStateRegistryController = SavedStateRegistryController.create(this)
     override val savedStateRegistry = savedStateRegistryController.savedStateRegistry
@@ -94,8 +96,10 @@ class FocusOverlayService : LifecycleService(), SavedStateRegistryOwner {
     ) {
         if (view != null) return
 
+        val lifecycleOwner = ServiceOverlayLifecycleOwner()
+        overlayLifecycleOwner = lifecycleOwner
         view = ComposeView(this).apply {
-            setViewTreeLifecycleOwner(this@FocusOverlayService)
+            setViewTreeLifecycleOwner(lifecycleOwner)
             setViewTreeSavedStateRegistryOwner(this@FocusOverlayService)
             setContent {
                 AppTheme {
@@ -145,8 +149,13 @@ class FocusOverlayService : LifecycleService(), SavedStateRegistryOwner {
             PixelFormat.TRANSLUCENT
         )
 
-        runCatching { windowManager.addView(view, params) }.onFailure { error ->
+        runCatching {
+            windowManager.addView(view, params)
+            lifecycleOwner.onViewAdded()
+        }.onFailure { error ->
             view?.let { runCatching { windowManager.removeViewImmediate(it) } }
+            lifecycleOwner.onViewRemoved()
+            overlayLifecycleOwner = null
             view = null
             LogUtils.d("focus overlay mount rejected", error::class.java.simpleName)
             FocusModeEngine.clearCooldown()
@@ -155,6 +164,8 @@ class FocusOverlayService : LifecycleService(), SavedStateRegistryOwner {
     }
 
     override fun onDestroy() {
+        overlayLifecycleOwner?.onViewRemoved()
+        overlayLifecycleOwner = null
         super.onDestroy()
         view?.let { runCatching { windowManager.removeView(it) } }
         view = null

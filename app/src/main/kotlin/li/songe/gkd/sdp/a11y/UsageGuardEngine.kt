@@ -431,12 +431,22 @@ object UsageGuardEngine {
         if (!isCurrentRequest(nextAppId, owner, token)) return
 
         stopCountdownOverlay(appId = previousAppId, owner = owner, token = token)
-        cancelExpiryWatch(previousAppId, clearDeadline = true)
 
-        val active = DbSet.usageGuardRecordDao.getActiveRecord(previousAppId) ?: return
+        val active = DbSet.usageGuardRecordDao.getActiveRecord(previousAppId) ?: run {
+            cancelExpiryWatch(previousAppId, clearDeadline = true)
+            return
+        }
         if (!isCurrentRequest(nextAppId, owner, token)) return
         val endedAt = appDependencies.clock.nowEpochMillis().coerceAtLeast(active.grantedAt)
-        when (UsageGuardUsageEndPolicy.onLeave(active.grantMode)) {
+        val leaveDecision = UsageGuardUsageEndPolicy.onLeave(active.grantMode)
+        // A resumable grant remains valid while the user is in another app.
+        // Keep its process-local monotonic deadline so a wall-clock rollback
+        // cannot extend the lease when the user returns.
+        cancelExpiryWatch(
+            appId = previousAppId,
+            clearDeadline = leaveDecision != UsageGuardUsageEndPolicy.LeaveDecision.MARK_ONLY,
+        )
+        when (leaveDecision) {
             UsageGuardUsageEndPolicy.LeaveDecision.MARK_AND_CLOSE ->
                 UsageGuardRecordRepository.closeRecordFromActiveUse(
                     id = active.id,

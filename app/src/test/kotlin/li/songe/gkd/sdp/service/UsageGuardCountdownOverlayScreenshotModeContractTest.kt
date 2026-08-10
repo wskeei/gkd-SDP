@@ -39,7 +39,9 @@ class UsageGuardCountdownOverlayScreenshotModeContractTest {
                 "UsageGuardEngine.canRestoreCountdownOverlay(",
             ),
         )
-        assertTrue(restoreMethod.contains("mountOverlayView(overlayView, params)"))
+        assertTrue(restoreMethod.contains("RestoreAction.MOUNT -> showOverlay()"))
+        assertTrue(hideMethod.contains("view = null"))
+        assertTrue(hideMethod.contains("preservedPosition = params.x to params.y"))
         assertTrue(source.contains("WindowManager.LayoutParams.FLAG_SECURE"))
         assertTrue(source.contains("captureController.onMountFailed()"))
         assertTrue(source.contains("view = null"))
