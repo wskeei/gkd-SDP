@@ -257,7 +257,7 @@ internal fun ReviewRankedBarList(
                 Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text(bar.label, modifier = Modifier.weight(1f))
-                        Text(li.songe.gkd.sdp.app.getString(R.string.s_dda4842aee, bar.countText, bar.shareText))
+                        Text(li.songe.gkd.sdp.app.getString(R.string.s_dda4842aee, (bar.countText).toString(), (bar.shareText).toString()))
                     }
                     LinearProgressIndicator(
                         progress = { bar.share },

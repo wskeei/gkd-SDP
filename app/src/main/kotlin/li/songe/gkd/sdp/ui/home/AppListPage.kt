@@ -190,7 +190,7 @@ fun useAppListPage(): ScaffoldExt {
                             onClick = throttle {
                                 mainVm.dialogFlow.updateDialogOptions(
                                     title = li.songe.gkd.sdp.app.getString(R.string.s_a15a6fbc16),
-                                    text = li.songe.gkd.sdp.app.getString(R.string.s_9c818a85b3, canQueryPkgState.name)
+                                    text = li.songe.gkd.sdp.app.getString(R.string.s_9c818a85b3, (canQueryPkgState.name).toString())
                                 )
                             },
                         )

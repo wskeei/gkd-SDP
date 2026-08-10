@@ -490,7 +490,7 @@ private fun ServerStatusCard() {
                 val usedSubsItemCount by vm.usedSubsItemCountFlow.collectAsStateWithLifecycle()
                 AnimatedVisibility(usedSubsItemCount > 0) {
                     Text(
-                        text = stringResource(R.string.s_a6eec0915a, usedSubsItemCount),
+                        text = stringResource(R.string.s_a6eec0915a, (usedSubsItemCount).toString()),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )

@@ -88,7 +88,7 @@ internal fun AppGroupCard(
         AlertDialog(
             onDismissRequest = { showDeleteConfirm = false },
             title = { Text(stringResource(R.string.s_ec2c341e25)) },
-            text = { Text(stringResource(R.string.s_4194ebb566, group.name)) },
+            text = { Text(stringResource(R.string.s_4194ebb566, (group.name).toString())) },
             confirmButton = {
                 TextButton(onClick = {
                     onDelete()
@@ -140,7 +140,7 @@ private fun AppGroupCardHeader(
             Spacer(modifier = Modifier.height(4.dp))
             Row {
                 Text(
-                    text = li.songe.gkd.sdp.app.getString(R.string.s_1e09b684d4, group.getAppList().size),
+                    text = li.songe.gkd.sdp.app.getString(R.string.s_1e09b684d4, (group.getAppList().size).toString()),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                 )
@@ -151,14 +151,14 @@ private fun AppGroupCardHeader(
                     ).format(java.util.Date(group.lockEndTime))
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = li.songe.gkd.sdp.app.getString(R.string.s_f30b55361a, lockEndTime),
+                        text = li.songe.gkd.sdp.app.getString(R.string.s_f30b55361a, (lockEndTime).toString()),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.error,
                     )
                 }
             }
             Text(
-                text = stringResource(R.string.s_11c0847151, rules.count { it.enabled }),
+                text = stringResource(R.string.s_11c0847151, (rules.count { it.enabled }).toString()),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -210,7 +210,7 @@ private fun AppGroupAppList(appList: List<String>) {
     HorizontalDivider()
     Spacer(modifier = Modifier.height(8.dp))
     Text(
-        text = stringResource(R.string.s_614197f94d, appList.size),
+        text = stringResource(R.string.s_614197f94d, (appList.size).toString()),
         style = MaterialTheme.typography.labelMedium,
         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
     )
@@ -245,7 +245,7 @@ private fun AppGroupRuleList(rules: List<BlockTimeRule>) {
     HorizontalDivider()
     Spacer(modifier = Modifier.height(8.dp))
     Text(
-        text = stringResource(R.string.s_68fd9e7f42, rules.size),
+        text = stringResource(R.string.s_68fd9e7f42, (rules.size).toString()),
         style = MaterialTheme.typography.labelMedium,
         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
     )
@@ -265,7 +265,7 @@ private fun AppGroupRuleList(rules: List<BlockTimeRule>) {
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
-                        text = li.songe.gkd.sdp.app.getString(R.string.s_e713116e5e, rule.formatTimeRange(), rule.formatDaysOfWeek()),
+                        text = li.songe.gkd.sdp.app.getString(R.string.s_e713116e5e, (rule.formatTimeRange()).toString(), (rule.formatDaysOfWeek()).toString()),
                         style = MaterialTheme.typography.bodyMedium,
                     )
                 }

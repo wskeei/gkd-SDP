@@ -112,7 +112,7 @@ fun AppInstallMonitorPage() {
                                 modifier = Modifier.fillMaxWidth()
                             ) {
                                 Text(
-                                    li.songe.gkd.sdp.app.getString(R.string.s_867057108e, selectedDate),
+                                    li.songe.gkd.sdp.app.getString(R.string.s_867057108e, (selectedDate).toString()),
                                     style = MaterialTheme.typography.titleSmall,
                                     fontWeight = FontWeight.Bold,
                                     modifier = Modifier.weight(1f)
@@ -150,7 +150,7 @@ fun AppInstallMonitorPage() {
                                             )
                                             val installWaitDays = (System.currentTimeMillis() - app.installTime) / (1000 * 60 * 60 * 24)
                                             Text(
-                                                li.songe.gkd.sdp.app.getString(R.string.s_ca924a6012, formatTime(app.installTime), installWaitDays),
+                                                li.songe.gkd.sdp.app.getString(R.string.s_ca924a6012, (formatTime(app.installTime)).toString(), (installWaitDays).toString()),
                                                 style = MaterialTheme.typography.bodySmall,
                                                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                                             )
@@ -158,7 +158,7 @@ fun AppInstallMonitorPage() {
                                                 val uninstallDate = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()).format(Date(app.uninstallTime))
                                                 val durationDays = (app.uninstallTime - app.installTime) / (1000 * 60 * 60 * 24)
                                                 Text(
-                                                    li.songe.gkd.sdp.app.getString(R.string.s_6eaf52dd96, uninstallDate, durationDays),
+                                                    li.songe.gkd.sdp.app.getString(R.string.s_6eaf52dd96, (uninstallDate).toString(), (durationDays).toString()),
                                                     style = MaterialTheme.typography.bodySmall,
                                                     color = MaterialTheme.colorScheme.error.copy(alpha = 0.8f)
                                                 )

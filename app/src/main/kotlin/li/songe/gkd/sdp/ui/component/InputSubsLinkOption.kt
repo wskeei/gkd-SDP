@@ -131,7 +131,7 @@ class InputSubsLinkOption {
                         )
                         if (needsCleartextAuthorization) {
                             Text(
-                                text = stringResource(R.string.s_ac96d3416e, cleartextOrigin),
+                                text = stringResource(R.string.s_ac96d3416e, (cleartextOrigin).toString()),
                             )
                         }
                     }

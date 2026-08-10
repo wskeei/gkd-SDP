@@ -194,8 +194,8 @@ fun useSubsManagePage(): ScaffoldExt {
                                 selectedIds
                             }
                             if (canDeleteIds.isNotEmpty()) {
-                                val text = li.songe.gkd.sdp.app.getString(R.string.s_0ee51f3213, canDeleteIds.size).let { s ->
-                                    if (selectedIds.contains(LOCAL_SUBS_ID)) li.songe.gkd.sdp.app.getString(R.string.s_9f3eea9816, s) else s
+                                val text = li.songe.gkd.sdp.app.getString(R.string.s_0ee51f3213, (canDeleteIds.size).toString()).let { s ->
+                                    if (selectedIds.contains(LOCAL_SUBS_ID)) li.songe.gkd.sdp.app.getString(R.string.s_9f3eea9816, (s).toString()) else s
                                 }
                                 PerfIconButton(
                                     imageVector = PerfIcon.Delete,
@@ -447,7 +447,7 @@ fun useSubsManagePage(): ScaffoldExt {
                                 if (subItem.enable && !checked) {
                                     val attempt = AutoReenableDisableGuard.tryConsumeForDisable()
                                     if (!attempt.allowed) {
-                                        toast(li.songe.gkd.sdp.app.getString(R.string.s_b0bb6964b5, attempt.limit))
+                                        toast(li.songe.gkd.sdp.app.getString(R.string.s_b0bb6964b5, (attempt.limit).toString()))
                                         return@launchAsFn
                                     }
                                 }

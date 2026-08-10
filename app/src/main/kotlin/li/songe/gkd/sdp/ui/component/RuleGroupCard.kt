@@ -338,7 +338,7 @@ fun BatchActionButtonGroup(vm: ViewModel, selectedDataSet: Set<ShowGroupState>) 
             )
             val list = batchUpdateGroupEnable(selectedDataSet, false)
             if (list.isNotEmpty()) {
-                toast(li.songe.gkd.sdp.app.getString(R.string.s_102626a5cc, list.size))
+                toast(li.songe.gkd.sdp.app.getString(R.string.s_102626a5cc, (list.size).toString()))
             } else {
                 toast(li.songe.gkd.sdp.app.getString(R.string.s_1e010b148d))
             }
@@ -354,7 +354,7 @@ fun BatchActionButtonGroup(vm: ViewModel, selectedDataSet: Set<ShowGroupState>) 
             )
             val list = batchUpdateGroupEnable(selectedDataSet, true)
             if (list.isNotEmpty()) {
-                toast(li.songe.gkd.sdp.app.getString(R.string.s_b8c5d58816, list.size))
+                toast(li.songe.gkd.sdp.app.getString(R.string.s_b8c5d58816, (list.size).toString()))
             } else {
                 toast(li.songe.gkd.sdp.app.getString(R.string.s_1e010b148d))
             }
@@ -370,7 +370,7 @@ fun BatchActionButtonGroup(vm: ViewModel, selectedDataSet: Set<ShowGroupState>) 
             )
             val list = batchUpdateGroupEnable(selectedDataSet, null)
             if (list.isNotEmpty()) {
-                toast(li.songe.gkd.sdp.app.getString(R.string.s_f988888fa2, list.size))
+                toast(li.songe.gkd.sdp.app.getString(R.string.s_f988888fa2, (list.size).toString()))
             } else {
                 toast(li.songe.gkd.sdp.app.getString(R.string.s_1e010b148d))
             }

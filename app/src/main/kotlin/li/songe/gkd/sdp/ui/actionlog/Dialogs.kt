@@ -166,22 +166,22 @@ private fun ActionLogDialogSummary(
             modifier = Modifier.padding(top = 4.dp),
         )
         Text(
-            text = stringResource(R.string.s_58d05e17f9, displayRuleName),
+            text = stringResource(R.string.s_58d05e17f9, (displayRuleName).toString()),
             style = MaterialTheme.typography.bodyMedium,
             modifier = Modifier.padding(top = 4.dp),
         )
         Text(
-            text = stringResource(R.string.s_4c646a2268, displaySubscriptionName, actionLog.subsVersion),
+            text = stringResource(R.string.s_4c646a2268, (displaySubscriptionName).toString(), (actionLog.subsVersion).toString()),
             style = MaterialTheme.typography.bodySmall,
             modifier = Modifier.padding(top = 4.dp),
         )
         Text(
-            text = stringResource(R.string.s_2b4543cfce, displayGroupName),
+            text = stringResource(R.string.s_2b4543cfce, (displayGroupName).toString()),
             style = MaterialTheme.typography.bodySmall,
             modifier = Modifier.padding(top = 2.dp),
         )
         Text(
-            text = stringResource(R.string.s_ea63fc76c4, actionLog.groupType, actionLog.groupKey) +
+            text = stringResource(R.string.s_ea63fc76c4, (actionLog.groupType).toString(), (actionLog.groupKey).toString()) +
                 "index=${actionLog.ruleIndex}, ${actionLog.ruleKey?.let { "key=$it" } ?: "未设置 key"}",
             style = MaterialTheme.typography.bodySmall,
             modifier = Modifier.padding(top = 2.dp),

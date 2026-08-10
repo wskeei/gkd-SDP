@@ -92,7 +92,7 @@ fun UrlGroupCard(
         AlertDialog(
             onDismissRequest = { showDeleteConfirm = false },
             title = { Text(stringResource(R.string.s_2d646aa66b)) },
-            text = { Text(stringResource(R.string.s_0ce42bb010, group.name)) },
+            text = { Text(stringResource(R.string.s_0ce42bb010, (group.name).toString())) },
             confirmButton = {
                 TextButton(onClick = {
                     onDelete()
@@ -148,7 +148,7 @@ private fun UrlGroupCardBody(
                             .format(java.util.Date(group.lockEndTime))
                     }
                     Spacer(modifier = Modifier.height(4.dp))
-                    Text(stringResource(R.string.s_f30b55361a, lockEndTime), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
+                    Text(stringResource(R.string.s_f30b55361a, (lockEndTime).toString()), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
                 }
             }
             Switch(
@@ -161,7 +161,7 @@ private fun UrlGroupCardBody(
             Spacer(modifier = Modifier.height(12.dp))
             HorizontalDivider()
             Spacer(modifier = Modifier.height(8.dp))
-            Text(stringResource(R.string.s_70fa42d276, urlRules.size), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
+            Text(stringResource(R.string.s_70fa42d276, (urlRules.size).toString()), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
             urlRules.forEach { urlRule ->
                 UrlInGroupRow(rule = urlRule, onEdit = { onEditUrlRule(urlRule) }, onDelete = { onDeleteUrlRule(urlRule) })
             }
@@ -170,7 +170,7 @@ private fun UrlGroupCardBody(
             Spacer(modifier = Modifier.height(12.dp))
             HorizontalDivider()
             Spacer(modifier = Modifier.height(8.dp))
-            Text(stringResource(R.string.s_68fd9e7f42, rules.size), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
+            Text(stringResource(R.string.s_68fd9e7f42, (rules.size).toString()), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
             rules.forEach { rule ->
                 TimeRuleRow(rule = rule, onEdit = { onTimeRuleEdit(rule) }, onDelete = { onTimeRuleDelete(rule) }, onLock = { onTimeRuleLock(rule) })
             }
@@ -258,7 +258,7 @@ fun UrlItemCard(
                                 .format(java.util.Date(rule.lockEndTime))
                         }
                         Text(
-                            text = stringResource(R.string.s_f30b55361a, lockEndTime),
+                            text = stringResource(R.string.s_f30b55361a, (lockEndTime).toString()),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.error
                         )
@@ -278,7 +278,7 @@ fun UrlItemCard(
                 Spacer(modifier = Modifier.height(8.dp))
 
                 Text(
-                    text = stringResource(R.string.s_c6191f388a, timeRules.size),
+                    text = stringResource(R.string.s_c6191f388a, (timeRules.size).toString()),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                 )

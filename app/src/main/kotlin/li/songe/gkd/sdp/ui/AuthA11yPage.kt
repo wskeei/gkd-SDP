@@ -236,11 +236,11 @@ fun AuthA11yPage() {
                         .padding(horizontal = cardHorizontalPadding),
                     onClick = throttle {
                         if (!writeSecureSettings) {
-                            toast(li.songe.gkd.sdp.app.getString(R.string.s_45d0618f98, writeSecureSettingsState.name))
+                            toast(li.songe.gkd.sdp.app.getString(R.string.s_45d0618f98, (writeSecureSettingsState.name).toString()))
                         }
                         mainVm.dialogFlow.updateDialogOptions(
                             title = li.songe.gkd.sdp.app.getString(R.string.s_ad2ea87ca3),
-                            text = li.songe.gkd.sdp.app.getString(R.string.s_cd7a98be77, META.appName)
+                            text = li.songe.gkd.sdp.app.getString(R.string.s_cd7a98be77, (META.appName).toString())
                         )
                     }
                 ) {

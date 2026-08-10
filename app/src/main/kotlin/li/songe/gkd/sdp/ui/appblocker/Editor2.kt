@@ -330,7 +330,7 @@ private fun RuleScheduleEditor(
                         (vm.ruleDaysOfWeek + day).sorted()
                     }
                 },
-                label = { Text(li.songe.gkd.sdp.app.getString(R.string.s_a94243a9c8, dayNames[day - 1])) },
+                label = { Text(li.songe.gkd.sdp.app.getString(R.string.s_a94243a9c8, (dayNames[day - 1]).toString())) },
                 enabled = !isLocked,
             )
         }

@@ -87,7 +87,7 @@ fun UrlInGroupRow(
         AlertDialog(
             onDismissRequest = { showDeleteConfirm = false },
             title = { Text(stringResource(R.string.s_f919deb126)) },
-            text = { Text(stringResource(R.string.s_d538243a95, rule.pattern)) },
+            text = { Text(stringResource(R.string.s_d538243a95, (rule.pattern).toString())) },
             confirmButton = {
                 TextButton(onClick = {
                     onDelete()
@@ -131,7 +131,7 @@ fun TimeRuleRow(
                 )
                 Spacer(modifier = Modifier.width(4.dp))
                 Text(
-                    text = stringResource(R.string.s_e713116e5e, rule.formatTimeRange(), rule.formatDaysOfWeek()),
+                    text = stringResource(R.string.s_e713116e5e, (rule.formatTimeRange()).toString(), (rule.formatDaysOfWeek()).toString()),
                     style = MaterialTheme.typography.bodyMedium
                 )
             }
@@ -146,7 +146,7 @@ fun TimeRuleRow(
                 val lockEndTime = java.text.SimpleDateFormat("MM-dd HH:mm", java.util.Locale.getDefault())
                     .format(java.util.Date(rule.lockEndTime))
                 Text(
-                    text = stringResource(R.string.s_f30b55361a, lockEndTime),
+                    text = stringResource(R.string.s_f30b55361a, (lockEndTime).toString()),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.error
                 )

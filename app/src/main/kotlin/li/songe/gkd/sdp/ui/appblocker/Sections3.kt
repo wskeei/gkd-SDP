@@ -83,12 +83,12 @@ internal fun AppRulesCard(
                         overflow = TextOverflow.Ellipsis
                     )
                     Text(
-                        text = stringResource(R.string.s_58b598a013, rules.size),
+                        text = stringResource(R.string.s_58b598a013, (rules.size).toString()),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                     )
                     Text(
-                        text = stringResource(R.string.s_eb20a448b7, rules.count { it.enabled }),
+                        text = stringResource(R.string.s_eb20a448b7, (rules.count { it.enabled }).toString()),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -140,7 +140,7 @@ internal fun AppRulesCard(
                             )
                             Spacer(modifier = Modifier.width(4.dp))
                             Text(
-                                text = li.songe.gkd.sdp.app.getString(R.string.s_e713116e5e, rule.formatTimeRange(), rule.formatDaysOfWeek()),
+                                text = li.songe.gkd.sdp.app.getString(R.string.s_e713116e5e, (rule.formatTimeRange()).toString(), (rule.formatDaysOfWeek()).toString()),
                                 style = MaterialTheme.typography.bodyMedium
                             )
                         }
@@ -156,7 +156,7 @@ internal fun AppRulesCard(
                             val lockEndTime = java.text.SimpleDateFormat("MM-dd HH:mm", java.util.Locale.getDefault())
                                 .format(java.util.Date(rule.lockEndTime))
                             Text(
-                                text = li.songe.gkd.sdp.app.getString(R.string.s_f30b55361a, lockEndTime),
+                                text = li.songe.gkd.sdp.app.getString(R.string.s_f30b55361a, (lockEndTime).toString()),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.error
                             )

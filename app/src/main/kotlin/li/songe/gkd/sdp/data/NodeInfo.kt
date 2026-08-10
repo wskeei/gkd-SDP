@@ -77,7 +77,7 @@ fun info2nodeList(root: AccessibilityNodeInfo?): List<NodeInfo> {
             }
             if (times > MAX_KEEP_SIZE) {
                 // https://github.com/gkd-kit/gkd/issues/28
-                toast(li.songe.gkd.sdp.app.getString(R.string.s_e073a2b7df, MAX_KEEP_SIZE))
+                toast(li.songe.gkd.sdp.app.getString(R.string.s_e073a2b7df, (MAX_KEEP_SIZE).toString()))
                 LogUtils.d(
                     "节点数量过多",
                     root.packageName,

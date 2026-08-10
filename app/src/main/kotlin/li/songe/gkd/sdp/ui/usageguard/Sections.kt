@@ -317,7 +317,7 @@ internal fun HistoryRow(record: UsageGuardRecord, appName: String) {
         Text(record.tagNames.joinToString(" · "), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
         Text(record.reasonText, style = MaterialTheme.typography.bodyMedium)
         Text(
-            stringResource(R.string.s_d159fb78f0, record.requestedDurationMinutes, UsageGuardReviewPolicy.formatUsedDuration(UsageGuardReviewPolicy.effectiveUsedSeconds(record))),
+            stringResource(R.string.s_d159fb78f0, (record.requestedDurationMinutes).toString(), (UsageGuardReviewPolicy.formatUsedDuration(UsageGuardReviewPolicy.effectiveUsedSeconds(record))).toString()),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )

@@ -69,7 +69,7 @@ object WechatContactFetcher {
         }
         
         if (target != null) {
-            toast(li.songe.gkd.sdp.app.getString(R.string.s_0cc07c757c, target))
+            toast(li.songe.gkd.sdp.app.getString(R.string.s_0cc07c757c, (target).toString()))
         }
         if (text != null && (text.contains("失败") || text.contains("完成") || text.contains("停止"))) {
             toast(text)
@@ -113,7 +113,7 @@ object WechatContactFetcher {
                 fetchContactsFromCurrentScreen()
             } catch (err: Exception) {
                 LogUtils.d("contact fetch failed", err)
-                toast(li.songe.gkd.sdp.app.getString(R.string.s_81cf2f474d, DiagnosticLogger.userMessage(err)))
+                toast(li.songe.gkd.sdp.app.getString(R.string.s_81cf2f474d, (DiagnosticLogger.userMessage(err)).toString()))
             } finally {
                 finishFetch()
             }
@@ -674,7 +674,7 @@ object WechatContactFetcher {
         if (fetchedContacts.isNotEmpty()) {
             // 保存到数据库
             DbSet.wechatContactDao.insertAll(fetchedContacts)
-            toast(li.songe.gkd.sdp.app.getString(R.string.s_375b87905f, fetchedContacts.size))
+            toast(li.songe.gkd.sdp.app.getString(R.string.s_375b87905f, (fetchedContacts.size).toString()))
             updateStatus("抓取完成：${fetchedContacts.size} 个联系人")
         } else {
             toast(li.songe.gkd.sdp.app.getString(R.string.s_464d02f662))

@@ -118,7 +118,7 @@ fun WechatContactPicker(
                                 )
                             }
                             Text(
-                                text = li.songe.gkd.sdp.app.getString(R.string.s_16f957e647, contact.wechatId),
+                                text = li.songe.gkd.sdp.app.getString(R.string.s_16f957e647, (contact.wechatId).toString()),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )

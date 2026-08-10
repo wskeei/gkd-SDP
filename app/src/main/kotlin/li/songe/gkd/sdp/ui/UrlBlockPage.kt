@@ -151,7 +151,7 @@ fun UrlBlockPage() {
                                 )
                                 val remainingMinutes = ((globalLock!!.lockEndTime - System.currentTimeMillis()) / 60000).coerceAtLeast(0)
                                 Text(
-                                    text = li.songe.gkd.sdp.app.getString(R.string.s_7c36cdf41a, if (remainingMinutes >= 60) "${remainingMinutes / 60}小时${remainingMinutes % 60}分钟" else "${remainingMinutes}分钟"),
+                                    text = li.songe.gkd.sdp.app.getString(R.string.s_7c36cdf41a, (if (remainingMinutes >= 60) "${remainingMinutes / 60}小时${remainingMinutes % 60}分钟" else "${remainingMinutes}分钟").toString()),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.error
                                 )
@@ -172,7 +172,7 @@ fun UrlBlockPage() {
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = li.songe.gkd.sdp.app.getString(R.string.s_bb218a940b, allGroups.size),
+                        text = li.songe.gkd.sdp.app.getString(R.string.s_bb218a940b, (allGroups.size).toString()),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold
                     )

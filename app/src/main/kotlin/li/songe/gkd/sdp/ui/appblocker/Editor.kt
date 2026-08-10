@@ -131,7 +131,7 @@ internal fun GroupEditorSheet(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text(
-                    text = li.songe.gkd.sdp.app.getString(R.string.s_71e649ba01, vm.groupApps.size),
+                    text = li.songe.gkd.sdp.app.getString(R.string.s_71e649ba01, (vm.groupApps.size).toString()),
                     style = MaterialTheme.typography.bodyMedium,
                     modifier = Modifier.weight(1f)
                 )

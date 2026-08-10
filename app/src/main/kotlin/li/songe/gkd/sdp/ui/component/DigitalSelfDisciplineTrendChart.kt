@@ -59,7 +59,7 @@ fun DigitalSelfDisciplineTrendChart(
             val maxValue = presentation.points.maxOf { it.value }
             val axisUnit = DigitalSelfDisciplineReviewPresentation.axisUnitLabel(presentation.metric)
             Text(
-                text = li.songe.gkd.sdp.app.getString(R.string.s_47d3fa79b4, presentation.metricLabel, axisUnit),
+                text = li.songe.gkd.sdp.app.getString(R.string.s_47d3fa79b4, (presentation.metricLabel).toString(), (axisUnit).toString()),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -68,12 +68,12 @@ fun DigitalSelfDisciplineTrendChart(
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
                 Text(
-                    text = li.songe.gkd.sdp.app.getString(R.string.s_d49e418af8, DigitalSelfDisciplineReviewPresentation.formatTrendValue(maxValue, presentation.metric)),
+                    text = li.songe.gkd.sdp.app.getString(R.string.s_d49e418af8, (DigitalSelfDisciplineReviewPresentation.formatTrendValue(maxValue, presentation.metric)).toString()),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Text(
-                    text = li.songe.gkd.sdp.app.getString(R.string.s_37feaa9b99, DigitalSelfDisciplineReviewPresentation.formatTrendValue(minValue, presentation.metric)),
+                    text = li.songe.gkd.sdp.app.getString(R.string.s_37feaa9b99, (DigitalSelfDisciplineReviewPresentation.formatTrendValue(minValue, presentation.metric)).toString()),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )

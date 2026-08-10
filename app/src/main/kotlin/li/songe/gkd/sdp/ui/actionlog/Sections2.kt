@@ -164,7 +164,7 @@ private fun ActionLogCardBody(
                 )
                 val outcomePresentation = ActionLogPresentation.from(actionLog)
                 Text(
-                    text = stringResource(R.string.s_6027bb300c, outcomePresentation.outcomeTitle, outcomePresentation.outcomeDescription),
+                    text = stringResource(R.string.s_6027bb300c, (outcomePresentation.outcomeTitle).toString(), (outcomePresentation.outcomeDescription).toString()),
                     style = MaterialTheme.typography.labelMedium,
                     color = if (actionLog.outcome == ActionLog.OUTCOME_INTERCEPTED) {
                         MaterialTheme.colorScheme.error
@@ -201,7 +201,7 @@ private fun ActionLogCardBody(
                             Text(
                                 text = actionLog.subsNameSnapshot
                                     ?: subscription?.name
-                                    ?: li.songe.gkd.sdp.app.getString(R.string.s_fbc86835e2, actionLog.subsId)
+                                    ?: li.songe.gkd.sdp.app.getString(R.string.s_fbc86835e2, (actionLog.subsId).toString())
                             )
                             val lineHeightDp = LocalDensity.current.run {
                                 LocalTextStyle.current.lineHeight.toDp()
@@ -213,7 +213,7 @@ private fun ActionLogCardBody(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text(
-                                    text = li.songe.gkd.sdp.app.getString(R.string.s_f498bf1ba7, item.first.subsVersion),
+                                    text = li.songe.gkd.sdp.app.getString(R.string.s_f498bf1ba7, (item.first.subsVersion).toString()),
                                     style = MaterialTheme.typography.labelMedium,
                                     color = MaterialTheme.colorScheme.tertiary,
                                     modifier = Modifier

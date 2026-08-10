@@ -183,7 +183,7 @@ fun AppDataChart(
                         modifier = Modifier.weight(1f),
                     )
                     Text(
-                        text = li.songe.gkd.sdp.app.getString(R.string.s_896022e814, row.valueText, row.unit),
+                        text = li.songe.gkd.sdp.app.getString(R.string.s_896022e814, (row.valueText).toString(), (row.unit).toString()),
                         style = MaterialTheme.typography.bodyMedium,
                     )
                     Spacer(modifier = Modifier.width(DimensionTokens.SpacingBase))

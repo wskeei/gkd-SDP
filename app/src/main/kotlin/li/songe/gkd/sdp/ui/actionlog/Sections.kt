@@ -303,7 +303,7 @@ internal fun ActionLogStatsView(vm: ActionLogVm) {
             ) {
                 Text(text = stat.date, style = MaterialTheme.typography.bodyMedium)
                 Text(
-                    text = li.songe.gkd.sdp.app.getString(R.string.s_f768d9701d, stat.count),
+                    text = li.songe.gkd.sdp.app.getString(R.string.s_f768d9701d, (stat.count).toString()),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.secondary
                 )

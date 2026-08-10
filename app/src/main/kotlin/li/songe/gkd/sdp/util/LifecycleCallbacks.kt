@@ -56,10 +56,10 @@ interface OnSimpleLife {
         @Loc loc: String = "",
     ) {
         onCreated {
-            toast(li.songe.gkd.sdp.app.getString(R.string.s_0927c7b920, name), loc = loc, delayMillis = delayMillis)
+            toast(li.songe.gkd.sdp.app.getString(R.string.s_0927c7b920, (name).toString()), loc = loc, delayMillis = delayMillis)
         }
         onDestroyed {
-            toast(li.songe.gkd.sdp.app.getString(R.string.s_421b5975e0, name), loc = loc)
+            toast(li.songe.gkd.sdp.app.getString(R.string.s_421b5975e0, (name).toString()), loc = loc)
         }
     }
 

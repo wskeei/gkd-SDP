@@ -139,7 +139,7 @@ class EventService : OverlayWindowService(positionKey = "event") {
                                 horizontalAlignment = Alignment.CenterHorizontally,
                             ) {
                                 if (count > 0) {
-                                    Text(text = li.songe.gkd.sdp.app.getString(R.string.s_2716b658b8, count))
+                                    Text(text = li.songe.gkd.sdp.app.getString(R.string.s_2716b658b8, (count).toString()))
                                 }
                                 PerfIconButton(
                                     imageVector = PerfIcon.ArrowDownward,

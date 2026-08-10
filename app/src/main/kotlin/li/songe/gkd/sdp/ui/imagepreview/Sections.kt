@@ -251,7 +251,7 @@ private fun ImagePreviewBars(
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(
-                        text = li.songe.gkd.sdp.app.getString(R.string.s_7adaf20edf, pagerState.currentPage + 1, previewItems.size),
+                        text = li.songe.gkd.sdp.app.getString(R.string.s_7adaf20edf, (pagerState.currentPage + 1).toString(), (previewItems.size).toString()),
                         modifier = Modifier
                             .background(Color.Black.copy(alpha = 0.5f), CircleShape)
                             .padding(horizontal = 12.dp, vertical = 4.dp),

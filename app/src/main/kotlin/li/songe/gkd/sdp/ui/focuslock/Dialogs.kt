@@ -121,7 +121,7 @@ fun LockDurationSheet(
             .padding(24.dp)
     ) {
         Text(
-            text = if (isLocked) stringResource(R.string.s_8a8478347d, targetName) else stringResource(R.string.s_9cb5b4660f, targetName),
+            text = if (isLocked) stringResource(R.string.s_8a8478347d, (targetName).toString()) else stringResource(R.string.s_9cb5b4660f, (targetName).toString()),
             style = MaterialTheme.typography.titleLarge,
             modifier = Modifier.padding(bottom = 8.dp)
         )
@@ -130,7 +130,7 @@ fun LockDurationSheet(
             val date = java.util.Date(currentEndTime)
             val formatter = java.text.SimpleDateFormat("MM-dd HH:mm", java.util.Locale.getDefault())
             Text(
-                text = stringResource(R.string.s_4bce9796c3, formatter.format(date)),
+                text = stringResource(R.string.s_4bce9796c3, (formatter.format(date)).toString()),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.padding(bottom = 8.dp)

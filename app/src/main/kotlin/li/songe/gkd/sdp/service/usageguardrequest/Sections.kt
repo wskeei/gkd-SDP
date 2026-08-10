@@ -53,7 +53,7 @@ internal fun UsageRequestHeaderAndRhythm(
         style = MaterialTheme.typography.headlineMedium,
     )
     Text(
-        text = stringResource(R.string.s_d5da946f96, appName),
+        text = stringResource(R.string.s_d5da946f96, (appName).toString()),
         style = MaterialTheme.typography.titleMedium,
     )
     Text(
@@ -191,8 +191,8 @@ internal fun UsageRequestReasonAndDuration(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
-                Text(li.songe.gkd.sdp.app.getString(R.string.s_58d3737769, minReasonLength))
-                Text(li.songe.gkd.sdp.app.getString(R.string.s_cf989beabc, reasonText.value.trim().length))
+                Text(li.songe.gkd.sdp.app.getString(R.string.s_58d3737769, (minReasonLength).toString()))
+                Text(li.songe.gkd.sdp.app.getString(R.string.s_cf989beabc, (reasonText.value.trim().length).toString()))
             }
         },
         isError = reasonError.value != null,
@@ -222,7 +222,7 @@ internal fun UsageRequestReasonAndDuration(
                     customMinutesText.value = ""
                     showCustomDuration.value = false
                 },
-                label = { Text(li.songe.gkd.sdp.app.getString(R.string.s_5f4ec4b0ec, minutes)) },
+                label = { Text(li.songe.gkd.sdp.app.getString(R.string.s_5f4ec4b0ec, (minutes).toString())) },
             )
         }
     }

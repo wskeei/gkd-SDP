@@ -149,7 +149,7 @@ private fun AdvancedPortDialog(
                 modifier = Modifier.fillMaxWidth().autoFocus(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 supportingText = {
-                    Text(li.songe.gkd.sdp.app.getString(R.string.s_201d216690, value.length), modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.End)
+                    Text(li.songe.gkd.sdp.app.getString(R.string.s_201d216690, (value.length).toString()), modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.End)
                 },
             )
         },

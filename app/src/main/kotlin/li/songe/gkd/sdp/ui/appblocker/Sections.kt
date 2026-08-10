@@ -352,7 +352,7 @@ private fun AppBlockerGlobalLockStatus(globalLock: li.songe.gkd.sdp.data.AppBloc
                 val remainingMinutes =
                     ((globalLock.lockEndTime - System.currentTimeMillis()) / 60000).coerceAtLeast(0)
                 Text(
-                    text = stringResource(R.string.s_7c36cdf41a, if (remainingMinutes >= 60) "${remainingMinutes / 60}小时${remainingMinutes % 60}分钟" else "${remainingMinutes}分钟"),
+                    text = stringResource(R.string.s_7c36cdf41a, (if (remainingMinutes >= 60) "${remainingMinutes / 60}小时${remainingMinutes % 60}分钟" else "${remainingMinutes}分钟").toString()),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.error,
                 )

@@ -139,7 +139,7 @@ class AutomationService private constructor() : A11yCommonImpl {
                         }
                         LogUtils.d("automation already registered", e)
                     } else {
-                        toast(li.songe.gkd.sdp.app.getString(R.string.s_3685fc478e, DiagnosticLogger.userMessage(e)))
+                        toast(li.songe.gkd.sdp.app.getString(R.string.s_3685fc478e, (DiagnosticLogger.userMessage(e)).toString()))
                         LogUtils.d(e)
                     }
                 }

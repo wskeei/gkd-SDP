@@ -153,7 +153,7 @@ internal fun FocusLockPageDialogs(
                         AccessibilityGuardController.DisableResult.BlockedByLock ->
                             toast(li.songe.gkd.sdp.app.getString(R.string.s_5c6b661917))
                         is AccessibilityGuardController.DisableResult.BlockedByQuota ->
-                            toast(li.songe.gkd.sdp.app.getString(R.string.s_ba1f755996, result.limit))
+                            toast(li.songe.gkd.sdp.app.getString(R.string.s_ba1f755996, (result.limit).toString()))
                         AccessibilityGuardController.DisableResult.Disabled,
                         AccessibilityGuardController.DisableResult.NoChange -> Unit
                     }
@@ -317,12 +317,12 @@ private fun FocusLockAutoReenableDialog(
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(stringResource(R.string.s_99858cff31))
-                Text(stringResource(R.string.s_e78f2c3a4a, uiState.nextEnforceAt.format("MM-dd HH:mm")))
-                Text(stringResource(R.string.s_f70a7d4f0a, uiState.dailyDisableUsed, uiState.dailyDisableLimit))
-                Text(stringResource(R.string.s_3e67db9f62, uiState.dailyDisableRemaining))
-                Text(stringResource(R.string.s_52113abdd4, uiState.nextDailyResetAt.format("MM-dd HH:mm")))
+                Text(stringResource(R.string.s_e78f2c3a4a, (uiState.nextEnforceAt.format("MM-dd HH:mm")).toString()))
+                Text(stringResource(R.string.s_f70a7d4f0a, (uiState.dailyDisableUsed).toString(), (uiState.dailyDisableLimit).toString()))
+                Text(stringResource(R.string.s_3e67db9f62, (uiState.dailyDisableRemaining).toString()))
+                Text(stringResource(R.string.s_52113abdd4, (uiState.nextDailyResetAt.format("MM-dd HH:mm")).toString()))
                 if (!uiState.canEditInterval) {
-                    Text(stringResource(R.string.s_d135a965d5, nextEditableText))
+                    Text(stringResource(R.string.s_d135a965d5, (nextEditableText).toString()))
                 }
                 OutlinedTextField(
                     value = inputText,

@@ -123,7 +123,7 @@ fun ContentStateBox(
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Text(
-                    text = stringResource(R.string.s_f6a8a7f4ed, state.errorCode),
+                    text = stringResource(R.string.s_f6a8a7f4ed, (state.errorCode).toString()),
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.error,
                     textAlign = TextAlign.Center,

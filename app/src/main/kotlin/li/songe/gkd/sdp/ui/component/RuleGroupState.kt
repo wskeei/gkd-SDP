@@ -208,7 +208,7 @@ suspend fun batchUpdateGroupEnable(
     if (enable == false && diffDataList.isNotEmpty()) {
         val attempt = AutoReenableDisableGuard.tryConsumeForDisable()
         if (!attempt.allowed) {
-            toast(li.songe.gkd.sdp.app.getString(R.string.s_b0bb6964b5, attempt.limit))
+            toast(li.songe.gkd.sdp.app.getString(R.string.s_b0bb6964b5, (attempt.limit).toString()))
             return emptyList()
         }
     }

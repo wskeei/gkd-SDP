@@ -142,7 +142,7 @@ internal fun QuickStartSheet(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text(
-                    text = stringResource(R.string.s_d6447fb450, vm.manualWhitelistApps.size),
+                    text = stringResource(R.string.s_d6447fb450, (vm.manualWhitelistApps.size).toString()),
                     style = MaterialTheme.typography.bodyMedium,
                     modifier = Modifier.weight(1f)
                 )

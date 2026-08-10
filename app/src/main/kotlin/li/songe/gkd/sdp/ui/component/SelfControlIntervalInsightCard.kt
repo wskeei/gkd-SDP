@@ -324,7 +324,7 @@ fun SelfControlIntervalInsightCard(
                 TextButton(
                     onClick = { menuExpanded = true },
                     modifier = Modifier.semantics {
-                        contentDescription = li.songe.gkd.sdp.app.getString(R.string.s_086fa44431, selectedWindow.label)
+                        contentDescription = li.songe.gkd.sdp.app.getString(R.string.s_086fa44431, (selectedWindow.label).toString())
                     },
                 ) {
                     Text(selectedWindow.label)
@@ -375,7 +375,7 @@ fun SelfControlIntervalInsightCard(
                     val average = series.stats.averageRatio?.let { SelfControlInsightPresentation.formatValue(it, SelfControlInsightWindowPolicy.Metric.USAGE_RATIO) }
                         ?: "暂无"
                     Text(
-                        text = li.songe.gkd.sdp.app.getString(R.string.s_233ee6a4c8, window.label, average, series.stats.sampleCount),
+                        text = li.songe.gkd.sdp.app.getString(R.string.s_233ee6a4c8, (window.label).toString(), (average).toString(), (series.stats.sampleCount).toString()),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -394,9 +394,9 @@ fun SelfControlIntervalInsightCard(
             Text(
                 text = when {
                     value != null && currentPoint != null ->
-                        li.songe.gkd.sdp.app.getString(R.string.s_2937d0d547, value, currentPoint.label)
-                    value != null -> li.songe.gkd.sdp.app.getString(R.string.s_7dcbc271db, value)
-                    currentPoint != null -> li.songe.gkd.sdp.app.getString(R.string.s_0ce6ca1568, currentPoint.label)
+                        li.songe.gkd.sdp.app.getString(R.string.s_2937d0d547, (value).toString(), (currentPoint.label).toString())
+                    value != null -> li.songe.gkd.sdp.app.getString(R.string.s_7dcbc271db, (value).toString())
+                    currentPoint != null -> li.songe.gkd.sdp.app.getString(R.string.s_0ce6ca1568, (currentPoint.label).toString())
                     else -> li.songe.gkd.sdp.app.getString(R.string.s_ca0dc4aed7)
                 },
                 style = MaterialTheme.typography.bodyMedium,
@@ -453,7 +453,7 @@ fun SelfControlIntervalInsightCard(
                         val currentLabel = if (row.isCurrent) "，本次" else ""
                         val bucketLabel = if (row.sampleCount > 1) "，时间桶平均 ${row.sampleCount} 条" else ""
                         Text(
-                            text = li.songe.gkd.sdp.app.getString(R.string.s_5b265e25d5, row.label, row.valueText, currentLabel, bucketLabel),
+                            text = li.songe.gkd.sdp.app.getString(R.string.s_5b265e25d5, (row.label).toString(), (row.valueText).toString(), (currentLabel).toString(), (bucketLabel).toString()),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )

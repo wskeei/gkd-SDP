@@ -592,12 +592,13 @@ def migrate_file(path: pathlib.Path, dry_run: bool = False) -> tuple[dict[str, s
         wants_imports.add("li.songe.gkd.sdp.R")
         if lit.is_template and not lit.dollar_raw:
             fmt, args = decode_template(lit.raw)
+            arg_calls = ", ".join(f"({a}).toString()" for a in args)
             use_composable = is_composable_context(masked, lit)
             if use_composable:
-                call = f"stringResource(R.string.{key}, {', '.join(args)})"
+                call = f"stringResource(R.string.{key}, {arg_calls})"
                 wants_imports.add("androidx.compose.ui.res.stringResource")
             else:
-                call = f"li.songe.gkd.sdp.app.getString(R.string.{key}, {', '.join(args)})"
+                call = f"li.songe.gkd.sdp.app.getString(R.string.{key}, {arg_calls})"
                 wants_imports.add("li.songe.gkd.sdp.R")
             resources[key] = fmt
             segments.append((lit.start - (2 if lit.dollar_raw else 0), lit.end, call))

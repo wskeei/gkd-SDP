@@ -82,7 +82,7 @@ fun UrlLockSheet(
                 val remaining = currentLockEndTime - System.currentTimeMillis()
                 val remainingMinutes = (remaining / 60000).coerceAtLeast(0)
                 Text(
-                    text = li.songe.gkd.sdp.app.getString(R.string.s_1090ec0cd1, if (remainingMinutes >= 60) "${remainingMinutes / 60}小时${remainingMinutes % 60}分钟" else "${remainingMinutes}分钟"),
+                    text = li.songe.gkd.sdp.app.getString(R.string.s_1090ec0cd1, (if (remainingMinutes >= 60) "${remainingMinutes / 60}小时${remainingMinutes % 60}分钟" else "${remainingMinutes}分钟").toString()),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.padding(bottom = 16.dp)

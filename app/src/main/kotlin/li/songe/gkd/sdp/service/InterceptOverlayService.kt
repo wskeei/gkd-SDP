@@ -447,7 +447,7 @@ fun InterceptScreen(
                 onClick = onExit,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text(li.songe.gkd.sdp.app.getString(R.string.s_5013a2206e, timeLeft))
+                Text(li.songe.gkd.sdp.app.getString(R.string.s_5013a2206e, (timeLeft).toString()))
             }
         }
     }

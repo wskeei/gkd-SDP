@@ -68,7 +68,7 @@ suspend fun MainActivity.saveFileToDownloads(file: File) {
         )
         targetFile.writeBytes(file.readBytes())
     }
-    toast(li.songe.gkd.sdp.app.getString(R.string.s_9376a4238e, file.name))
+    toast(li.songe.gkd.sdp.app.getString(R.string.s_9376a4238e, (file.name).toString()))
 }
 
 fun Context.tryStartActivity(intent: Intent): Boolean {
@@ -77,7 +77,7 @@ fun Context.tryStartActivity(intent: Intent): Boolean {
         return true
     } catch (e: Exception) {
         LogUtils.d("tryStartActivity", e)
-        toast(li.songe.gkd.sdp.app.getString(R.string.s_475787d680, DiagnosticLogger.userMessage(e)))
+        toast(li.songe.gkd.sdp.app.getString(R.string.s_475787d680, (DiagnosticLogger.userMessage(e)).toString()))
         return false
     }
 }
@@ -152,7 +152,7 @@ fun <T : Service> startForegroundServiceByClass(clazz: KClass<T>): Boolean {
     } catch (e: Throwable) {
         LogUtils.d(e)
         val prefix = if (isActivityVisible) "" else "${META.appName}: "
-        toast(li.songe.gkd.sdp.app.getString(R.string.s_73e7e97c6d, prefix, DiagnosticLogger.userMessage(e)), forced = true)
+        toast(li.songe.gkd.sdp.app.getString(R.string.s_73e7e97c6d, (prefix).toString(), (DiagnosticLogger.userMessage(e)).toString()), forced = true)
         return false
     }
 }

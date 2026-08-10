@@ -169,14 +169,14 @@ class MainViewModel(
                 client.get(url).bodyAsText()
             } catch (e: Exception) {
                 LogUtils.d(e)
-                toast(li.songe.gkd.sdp.app.getString(R.string.s_11d1976e38, DiagnosticLogger.userMessage(e)))
+                toast(li.songe.gkd.sdp.app.getString(R.string.s_11d1976e38, (DiagnosticLogger.userMessage(e)).toString()))
                 return@launchTry
             }
             val newSubsRaw = try {
                 RawSubscription.parse(text)
             } catch (e: Exception) {
                 LogUtils.d(e)
-                toast(li.songe.gkd.sdp.app.getString(R.string.s_dea3d845c4, DiagnosticLogger.userMessage(e)))
+                toast(li.songe.gkd.sdp.app.getString(R.string.s_dea3d845c4, (DiagnosticLogger.userMessage(e)).toString()))
                 return@launchTry
             }
             if (oldItem == null) {
@@ -191,7 +191,7 @@ class MainViewModel(
                 }
             }
             if (newSubsRaw.id < 0) {
-                toast(li.songe.gkd.sdp.app.getString(R.string.s_1f4d53235c, newSubsRaw.id))
+                toast(li.songe.gkd.sdp.app.getString(R.string.s_1f4d53235c, (newSubsRaw.id).toString()))
                 return@launchTry
             }
             val newItem = oldItem?.copy(updateUrl = url) ?: SubsItem(
@@ -231,7 +231,7 @@ class MainViewModel(
     }
 
     fun handleGkdUri(uri: Uri) {
-        val notFoundToast = { toast(li.songe.gkd.sdp.app.getString(R.string.s_55c1c91c04, uri)) }
+        val notFoundToast = { toast(li.songe.gkd.sdp.app.getString(R.string.s_55c1c91c04, (uri).toString())) }
         when (val parsed = DeepLinkParser.parse(uri.toString())) {
             is DeepLinkParseResult.Destination -> selectDestination(parsed.value)
             DeepLinkParseResult.Invalid -> when (WebOriginPolicy.legacyDeepLinkTarget(uri.toString())) {

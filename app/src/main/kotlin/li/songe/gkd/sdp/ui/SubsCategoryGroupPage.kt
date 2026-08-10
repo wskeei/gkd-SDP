@@ -144,7 +144,7 @@ fun SubsCategoryGroupPage(route: SubsCategoryGroupRoute) {
                         .map { g -> g to subs.getAppByGroup(g) },
                 )
                 if (updatedList.isNotEmpty()) {
-                    toast(li.songe.gkd.sdp.app.getString(R.string.s_9672b434b8, updatedList.size))
+                    toast(li.songe.gkd.sdp.app.getString(R.string.s_9672b434b8, (updatedList.size).toString()))
                 } else {
                     toast(li.songe.gkd.sdp.app.getString(R.string.s_8e1d999ba4))
                 }
@@ -189,7 +189,7 @@ fun SubsCategoryGroupPage(route: SubsCategoryGroupRoute) {
                                 expanded = false
                                 mainVm.dialogFlow.waitResult(
                                     title = li.songe.gkd.sdp.app.getString(R.string.s_0bfb53c9cd),
-                                    text = li.songe.gkd.sdp.app.getString(R.string.s_2b96421a75, category.name),
+                                    text = li.songe.gkd.sdp.app.getString(R.string.s_2b96421a75, (category.name).toString()),
                                     error = true,
                                 )
                                 mainVm.popPage()

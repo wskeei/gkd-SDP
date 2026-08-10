@@ -72,27 +72,27 @@ fun AutoReenableGuardCard(
                 color = MaterialTheme.colorScheme.primary
             )
             Text(
-                text = stringResource(R.string.s_826d077913, intervalMinutes),
+                text = stringResource(R.string.s_826d077913, (intervalMinutes).toString()),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Text(
-                text = stringResource(R.string.s_e6f8000ed3, nextEditableText),
+                text = stringResource(R.string.s_e6f8000ed3, (nextEditableText).toString()),
                 style = MaterialTheme.typography.bodySmall,
                 color = if (!autoReenableUiState.canEditInterval) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.onSurfaceVariant
             )
             Text(
-                text = stringResource(R.string.s_70d1eab884, nextEnforceText),
+                text = stringResource(R.string.s_70d1eab884, (nextEnforceText).toString()),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Text(
-                text = stringResource(R.string.s_e0498a9bce, autoReenableUiState.dailyDisableUsed, autoReenableUiState.dailyDisableLimit, autoReenableUiState.dailyDisableRemaining),
+                text = stringResource(R.string.s_e0498a9bce, (autoReenableUiState.dailyDisableUsed).toString(), (autoReenableUiState.dailyDisableLimit).toString(), (autoReenableUiState.dailyDisableRemaining).toString()),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Text(
-                text = stringResource(R.string.s_841a72191f, nextDailyResetText),
+                text = stringResource(R.string.s_841a72191f, (nextDailyResetText).toString()),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )

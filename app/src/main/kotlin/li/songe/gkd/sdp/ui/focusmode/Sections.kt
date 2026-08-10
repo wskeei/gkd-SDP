@@ -291,9 +291,9 @@ internal fun ActiveSessionCard(
                         val remainingMinutes = session.getRemainingTime() / 60000
                         Text(
                             text = if (remainingMinutes >= 60) {
-                                stringResource(R.string.s_517526331f, remainingMinutes / 60, remainingMinutes % 60)
+                                stringResource(R.string.s_517526331f, (remainingMinutes / 60).toString(), (remainingMinutes % 60).toString())
                             } else {
-                                stringResource(R.string.s_ec9af249f1, remainingMinutes)
+                                stringResource(R.string.s_ec9af249f1, (remainingMinutes).toString())
                             },
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)

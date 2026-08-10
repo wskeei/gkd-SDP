@@ -147,7 +147,7 @@ class HttpService : Service(), OnSimpleLife by DefaultSimpleLifeImpl() {
         remoteSessionPolicy.revoke(RemoteRevocationReason.REPLACED)
         rateLimiter.clear()
         if (!isPortAvailable(port)) {
-            toast(li.songe.gkd.sdp.app.getString(R.string.s_bba5c9298c, port))
+            toast(li.songe.gkd.sdp.app.getString(R.string.s_bba5c9298c, (port).toString()))
             stopSelf()
             return
         }

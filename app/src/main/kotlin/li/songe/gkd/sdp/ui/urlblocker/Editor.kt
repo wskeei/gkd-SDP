@@ -246,7 +246,7 @@ private fun UrlRuleTimeFields(vm: UrlBlockVm, isLocked: Boolean) {
                 onClick = {
                     vm.timeRuleDaysOfWeek = if (currentDays.contains(day)) currentDays - day else (currentDays + day).sorted()
                 },
-                label = { Text(li.songe.gkd.sdp.app.getString(R.string.s_a94243a9c8, dayNames[day - 1])) },
+                label = { Text(li.songe.gkd.sdp.app.getString(R.string.s_a94243a9c8, (dayNames[day - 1]).toString())) },
                 enabled = !isLocked,
             )
         }

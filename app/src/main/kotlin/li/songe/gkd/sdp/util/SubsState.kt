@@ -532,7 +532,7 @@ fun checkSubsUpdate(showToast: Boolean = false) = appScope.launchTry(Dispatchers
         }
         if (showToast) {
             if (successNum > 0) {
-                toast(li.songe.gkd.sdp.app.getString(R.string.s_6a863491d4, successNum))
+                toast(li.songe.gkd.sdp.app.getString(R.string.s_6a863491d4, (successNum).toString()))
             } else {
                 toast(li.songe.gkd.sdp.app.getString(R.string.s_f0ece473ea))
             }

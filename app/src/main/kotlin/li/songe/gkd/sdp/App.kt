@@ -235,7 +235,7 @@ class App : Application() {
             LogUtils.d("UncaughtExceptionHandler", t, e)
             val mtime = System.currentTimeMillis()
             val errorCode = DiagnosticLogger.errorCode(e)
-            toast(li.songe.gkd.sdp.app.getString(R.string.s_672352d845, errorCode))
+            toast(li.songe.gkd.sdp.app.getString(R.string.s_672352d845, (errorCode).toString()))
             DiagnosticLogger.record(
                 DiagnosticEvent(
                     eventCode = DiagnosticEventCode.CRASH_CAPTURED,

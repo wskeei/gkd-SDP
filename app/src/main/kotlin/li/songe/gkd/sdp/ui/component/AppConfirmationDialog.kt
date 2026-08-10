@@ -60,7 +60,7 @@ fun AppConfirmationDialog(
         },
         text = {
             Column {
-                Text(stringResource(R.string.s_1bbac91b90, objectName))
+                Text(stringResource(R.string.s_1bbac91b90, (objectName).toString()))
                 Spacer(modifier = Modifier.height(DimensionTokens.SpacingSm))
                 Text(
                     text = description,
@@ -70,7 +70,7 @@ fun AppConfirmationDialog(
                 if (requiresPhrase) {
                     Spacer(modifier = Modifier.height(DimensionTokens.SpacingBase))
                     AppFormField(
-                        label = stringResource(R.string.s_aba4ea9027, FullDeletionPolicy.FullDeletionPhrase),
+                        label = stringResource(R.string.s_aba4ea9027, (FullDeletionPolicy.FullDeletionPhrase).toString()),
                         value = phraseInput,
                         onValueChange = { phraseInput = it },
                         supportingText = null,

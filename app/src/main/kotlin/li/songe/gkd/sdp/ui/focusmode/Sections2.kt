@@ -100,7 +100,7 @@ internal fun FocusRuleCard(
                     // 根据规则类型显示不同信息
                     if (rule.isQuickStart) {
                         Text(
-                            text = stringResource(R.string.s_55423fd0ff, rule.formatDuration()),
+                            text = stringResource(R.string.s_55423fd0ff, (rule.formatDuration()).toString()),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
                         )
@@ -113,7 +113,7 @@ internal fun FocusRuleCard(
                         }
                     } else {
                         Text(
-                            text = li.songe.gkd.sdp.app.getString(R.string.s_b209e2ce8a, rule.startTime, rule.endTime),
+                            text = li.songe.gkd.sdp.app.getString(R.string.s_b209e2ce8a, (rule.startTime).toString(), (rule.endTime).toString()),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
                         )
@@ -169,7 +169,7 @@ internal fun FocusRuleCard(
         AlertDialog(
             onDismissRequest = { showDeleteConfirm = false },
             title = { Text(stringResource(R.string.s_f9ad34b946)) },
-            text = { Text(stringResource(R.string.s_7435e653ef, rule.name)) },
+            text = { Text(stringResource(R.string.s_7435e653ef, (rule.name).toString())) },
             confirmButton = {
                 TextButton(onClick = {
                     onDelete()

@@ -149,7 +149,7 @@ fun SubsSheet(
                                 style = MaterialTheme.typography.labelLarge,
                             )
                             Text(
-                                text = stringResource(R.string.s_82b86f78a2, subscription.version),
+                                text = stringResource(R.string.s_82b86f78a2, (subscription.version).toString()),
                                 style = MaterialTheme.typography.labelMedium,
                                 color = MaterialTheme.colorScheme.tertiary,
                                 modifier = Modifier
@@ -212,7 +212,7 @@ fun SubsSheet(
                                     style = MaterialTheme.typography.labelLarge,
                                 )
                                 Text(
-                                    text = if (subscription.globalGroups.isNotEmpty()) stringResource(R.string.s_966f4322a8, subscription.globalGroups.size) else stringResource(R.string.s_5dbd015496),
+                                    text = if (subscription.globalGroups.isNotEmpty()) stringResource(R.string.s_966f4322a8, (subscription.globalGroups.size).toString()) else stringResource(R.string.s_5dbd015496),
                                     style = MaterialTheme.typography.labelMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant.let {
                                         if (subscription.globalGroups.isEmpty()) {
@@ -248,7 +248,7 @@ fun SubsSheet(
                                     style = MaterialTheme.typography.labelLarge,
                                 )
                                 Text(
-                                    text = if (subscription.appGroups.isNotEmpty()) stringResource(R.string.s_eac59394f9, subscription.apps.size, subscription.appGroups.size) else stringResource(R.string.s_5dbd015496),
+                                    text = if (subscription.appGroups.isNotEmpty()) stringResource(R.string.s_eac59394f9, (subscription.apps.size).toString(), (subscription.appGroups.size).toString()) else stringResource(R.string.s_5dbd015496),
                                     style = MaterialTheme.typography.labelMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant.let {
                                         if (subscription.appGroups.isEmpty()) {
@@ -285,7 +285,7 @@ fun SubsSheet(
                                     style = MaterialTheme.typography.labelLarge,
                                 )
                                 Text(
-                                    text = if (subscription.categories.isNotEmpty()) stringResource(R.string.s_f6140ad79e, subscription.categories.size) else stringResource(R.string.s_5dbd015496),
+                                    text = if (subscription.categories.isNotEmpty()) stringResource(R.string.s_f6140ad79e, (subscription.categories.size).toString()) else stringResource(R.string.s_5dbd015496),
                                     style = MaterialTheme.typography.labelMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant.let {
                                         if (subscription.categories.isEmpty()) {
@@ -393,7 +393,7 @@ fun SubsSheet(
                                 vm.viewModelScope.launchAsFn {
                                     mainVm.dialogFlow.waitResult(
                                         title = li.songe.gkd.sdp.app.getString(R.string.s_fe7b16b5c0),
-                                        text = li.songe.gkd.sdp.app.getString(R.string.s_59fbf95a82, subscription?.name ?: subsItem.id),
+                                        text = li.songe.gkd.sdp.app.getString(R.string.s_59fbf95a82, (subscription?.name ?: subsItem.id).toString()),
                                         error = true,
                                     )
                                     sheetSubsIdFlow.value = null

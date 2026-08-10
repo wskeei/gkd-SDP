@@ -192,7 +192,7 @@ fun UsageDurationRatioFeedback(
                     Text(presentation.currentRatioText, style = MaterialTheme.typography.titleLarge)
                 }
                 Column {
-                    Text(li.songe.gkd.sdp.app.getString(R.string.s_34e7ba7c70, presentation.selectedWindow.label), style = MaterialTheme.typography.bodySmall)
+                    Text(li.songe.gkd.sdp.app.getString(R.string.s_34e7ba7c70, (presentation.selectedWindow.label).toString()), style = MaterialTheme.typography.bodySmall)
                     Text(presentation.selectedWindowAverageText, style = MaterialTheme.typography.bodyMedium)
                 }
             }
@@ -201,11 +201,11 @@ fun UsageDurationRatioFeedback(
                 horizontalArrangement = Arrangement.spacedBy(16.dp),
                 verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
-                Text(li.songe.gkd.sdp.app.getString(R.string.s_0db6dd2e7f, presentation.gapText), style = MaterialTheme.typography.bodyMedium)
-                Text(li.songe.gkd.sdp.app.getString(R.string.s_d11b352c3e, presentation.durationText), style = MaterialTheme.typography.bodyMedium)
+                Text(li.songe.gkd.sdp.app.getString(R.string.s_0db6dd2e7f, (presentation.gapText).toString()), style = MaterialTheme.typography.bodyMedium)
+                Text(li.songe.gkd.sdp.app.getString(R.string.s_d11b352c3e, (presentation.durationText).toString()), style = MaterialTheme.typography.bodyMedium)
             }
             Text(
-                text = li.songe.gkd.sdp.app.getString(R.string.s_112997acfa, presentation.equationText ?: "—"),
+                text = li.songe.gkd.sdp.app.getString(R.string.s_112997acfa, (presentation.equationText ?: "—").toString()),
                 style = MaterialTheme.typography.bodyMedium,
             )
             presentation.comparisonText?.let {

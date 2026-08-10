@@ -74,21 +74,21 @@ fun SelfControlRuntimeStatusCard() {
             )
             Spacer(modifier = Modifier.height(6.dp))
             Text(
-                text = stringResource(R.string.s_18a07b6ed5, readiness.modeLabel, when {
+                text = stringResource(R.string.s_18a07b6ed5, (readiness.modeLabel).toString(), (when {
                     runtime.switching -> "切换中"
                     runtime.connected -> "已连接"
                     else -> "未连接"
-                }),
+                }).toString()),
                 style = MaterialTheme.typography.bodySmall,
             )
             Text(
-                text = stringResource(R.string.s_95e55216b8, if (overlayPermission) "已授权" else "未授权", issueText),
+                text = stringResource(R.string.s_95e55216b8, (if (overlayPermission) "已授权" else "未授权").toString(), (issueText).toString()),
                 style = MaterialTheme.typography.bodySmall,
                 color = if (readiness.ready) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
             )
             runtime.lastDecision?.let { decision ->
                 Text(
-                    text = li.songe.gkd.sdp.app.getString(R.string.s_c52c529934, decision.feature, decision.decision) +
+                    text = li.songe.gkd.sdp.app.getString(R.string.s_c52c529934, (decision.feature).toString(), (decision.decision).toString()) +
                         li.songe.gkd.sdp.util.SelfControlElapsedPolicy.formatAbsolute(decision.atEpochMs),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -193,7 +193,7 @@ fun SubscriptionCard(
                             )
                             if (appState.isLocked) {
                                 Text(
-                                    text = li.songe.gkd.sdp.app.getString(R.string.s_1ebce11b0b, formatRemainingTime(appState.lockEndTime - System.currentTimeMillis())),
+                                    text = li.songe.gkd.sdp.app.getString(R.string.s_1ebce11b0b, (formatRemainingTime(appState.lockEndTime - System.currentTimeMillis())).toString()),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.primary
                                 )
@@ -281,7 +281,7 @@ private fun SubscriptionHeader(
             )
             if (subState.isLocked) {
                 Text(
-                    text = stringResource(R.string.s_72effd1c3d, formatRemainingTime(subState.lockEndTime - System.currentTimeMillis())),
+                    text = stringResource(R.string.s_72effd1c3d, (formatRemainingTime(subState.lockEndTime - System.currentTimeMillis())).toString()),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.primary,
                 )

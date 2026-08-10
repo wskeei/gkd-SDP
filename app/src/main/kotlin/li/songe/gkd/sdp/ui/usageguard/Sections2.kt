@@ -197,7 +197,7 @@ private fun UsageGuardRulesSection(state: UsageGuardSettingsRenderState) {
                             }
                         },
                         modifier = Modifier.width(112.dp),
-                        label = { Text(li.songe.gkd.sdp.app.getString(R.string.s_fc0d628dd8, index + 1)) },
+                        label = { Text(li.songe.gkd.sdp.app.getString(R.string.s_fc0d628dd8, (index + 1).toString())) },
                         singleLine = true,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     )
@@ -227,7 +227,7 @@ private fun UsageGuardRulesSection(state: UsageGuardSettingsRenderState) {
                         onClick = { if (!tag.isPreset) vm.deleteCustomTag(tag) },
                         label = {
                             Text(
-                                if (tag.isPreset) tag.name else li.songe.gkd.sdp.app.getString(R.string.s_fd325af405, tag.name),
+                                if (tag.isPreset) tag.name else li.songe.gkd.sdp.app.getString(R.string.s_fd325af405, (tag.name).toString()),
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
                             )
@@ -420,7 +420,7 @@ private fun UsageGuardHistorySection(state: UsageGuardSettingsRenderState) {
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(li.songe.gkd.sdp.app.getString(R.string.s_2cf75123ae), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
                 Text(
-                    li.songe.gkd.sdp.app.getString(R.string.s_5a46f954cd, selectedDate.value.format(usageGuardDateFormatter)),
+                    li.songe.gkd.sdp.app.getString(R.string.s_5a46f954cd, (selectedDate.value.format(usageGuardDateFormatter)).toString()),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )

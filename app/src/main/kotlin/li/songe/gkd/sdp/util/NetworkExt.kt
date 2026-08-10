@@ -11,7 +11,7 @@ fun getIpAddressInLocalNetwork(): List<String> {
     } catch (e: Exception) {
         // android.system.ErrnoException: getifaddrs failed: EACCES (Permission denied)
         LogUtils.d("network interface lookup failed", e)
-        toast(li.songe.gkd.sdp.app.getString(R.string.s_99b5891003, DiagnosticLogger.userMessage(e)))
+        toast(li.songe.gkd.sdp.app.getString(R.string.s_99b5891003, (DiagnosticLogger.userMessage(e)).toString()))
         return emptyList()
     }
     val localAddresses = networkInterfaces.flatMap {

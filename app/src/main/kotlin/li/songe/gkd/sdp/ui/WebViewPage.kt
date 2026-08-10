@@ -122,7 +122,7 @@ fun WebViewPage(route: WebViewRoute) {
                         onClick = throttle {
                             mainVm.dialogFlow.updateDialogOptions(
                                 title = li.songe.gkd.sdp.app.getString(R.string.s_6276f4ee6d),
-                                text = li.songe.gkd.sdp.app.getString(R.string.s_73b0be10ba, chromeVersion),
+                                text = li.songe.gkd.sdp.app.getString(R.string.s_73b0be10ba, (chromeVersion).toString()),
                             )
                         },
                     )

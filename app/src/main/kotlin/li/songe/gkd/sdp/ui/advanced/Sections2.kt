@@ -210,8 +210,8 @@ private fun AdvancedHttpRunningContent(
                     "监听范围：局域网｜剩余 $remainingMinutes 分钟"
                 },
             )
-            remoteSession.pairingCode?.let { Text(li.songe.gkd.sdp.app.getString(R.string.s_cc0dd8de47, it)) }
-            remoteSession.clientSummary?.let { Text(li.songe.gkd.sdp.app.getString(R.string.s_759c95ad54, it)) }
+            remoteSession.pairingCode?.let { Text(li.songe.gkd.sdp.app.getString(R.string.s_cc0dd8de47, (it).toString())) }
+            remoteSession.clientSummary?.let { Text(li.songe.gkd.sdp.app.getString(R.string.s_759c95ad54, (it).toString())) }
             Row {
                 val localUrl = "http://127.0.0.1:${store.httpServerPort}"
                 Text(

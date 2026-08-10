@@ -165,7 +165,7 @@ private fun RuleEditorTypeFields(vm: FocusModeVm) {
                             (vm.ruleDaysOfWeek + day).sorted()
                         }
                     },
-                    label = { Text(li.songe.gkd.sdp.app.getString(R.string.s_a94243a9c8, dayNames[day - 1])) },
+                    label = { Text(li.songe.gkd.sdp.app.getString(R.string.s_a94243a9c8, (dayNames[day - 1]).toString())) },
                 )
             }
         }
@@ -184,7 +184,7 @@ private fun RuleEditorMessageAndWhitelist(vm: FocusModeVm, onShowWhitelistPicker
     )
     Spacer(modifier = Modifier.height(16.dp))
     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-        Text(stringResource(R.string.s_a322744a5c, vm.ruleWhitelistApps.size), style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+        Text(stringResource(R.string.s_a322744a5c, (vm.ruleWhitelistApps.size).toString()), style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
         TextButton(onClick = onShowWhitelistPicker) { Text(stringResource(R.string.s_70b208202c)) }
     }
     if (vm.ruleWhitelistApps.isNotEmpty()) {

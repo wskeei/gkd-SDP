@@ -324,13 +324,13 @@ class AppInstallMonitorVm : BaseViewModel() {
         }
         
         DbSet.monitoredAppDao.insert(MonitoredApp(packageName, displayName))
-        toast(li.songe.gkd.sdp.app.getString(R.string.s_e9e6e68873, displayName))
+        toast(li.songe.gkd.sdp.app.getString(R.string.s_e9e6e68873, (displayName).toString()))
         refreshInstalledStatus()
     }
     
     fun deleteMonitoredApp(app: MonitoredApp) = viewModelScope.launch(Dispatchers.IO) {
         DbSet.monitoredAppDao.delete(app)
-        toast(li.songe.gkd.sdp.app.getString(R.string.s_151577da08, app.displayName))
+        toast(li.songe.gkd.sdp.app.getString(R.string.s_151577da08, (app.displayName).toString()))
     }
     
     fun exportToCsv() = viewModelScope.launch(Dispatchers.IO) {
@@ -380,7 +380,7 @@ class AppInstallMonitorVm : BaseViewModel() {
             })
             
         } catch (e: Exception) {
-            toast(li.songe.gkd.sdp.app.getString(R.string.s_9839a9c90b, DiagnosticLogger.userMessage(e)))
+            toast(li.songe.gkd.sdp.app.getString(R.string.s_9839a9c90b, (DiagnosticLogger.userMessage(e)).toString()))
         }
     }
 }

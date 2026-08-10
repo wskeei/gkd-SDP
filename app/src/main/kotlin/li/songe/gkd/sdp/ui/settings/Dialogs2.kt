@@ -180,7 +180,7 @@ private fun BackupWorkflowStageContent(
         }
         BackupWorkflowStage.EXPORT_SUMMARY -> {
             Text(stringResource(R.string.s_e8c1720f03))
-            workflow.selectedCategoryIds.forEach { Text(li.songe.gkd.sdp.app.getString(R.string.s_28b124759e, backupCategoryTitle(it))) }
+            workflow.selectedCategoryIds.forEach { Text(li.songe.gkd.sdp.app.getString(R.string.s_28b124759e, (backupCategoryTitle(it)).toString())) }
             Text(stringResource(R.string.s_58bad7a807))
             Text(stringResource(R.string.s_d2e08cab80))
             Text(stringResource(R.string.s_6ed70747fd))
@@ -189,16 +189,16 @@ private fun BackupWorkflowStageContent(
             val prepared = requireNotNull(workflow.preparedImport)
             Text(
                 when (prepared.sourceFormat) {
-                    BackupSourceFormat.ENCRYPTED_V2 -> stringResource(R.string.s_82275eff6f, prepared.payload.manifest.formatVersion)
+                    BackupSourceFormat.ENCRYPTED_V2 -> stringResource(R.string.s_82275eff6f, (prepared.payload.manifest.formatVersion).toString())
                     BackupSourceFormat.LEGACY_V1 -> stringResource(R.string.s_c9d242c96c)
                 },
             )
             Text(stringResource(R.string.s_f3c459c9c3))
-            prepared.payload.manifest.categoryIds.forEach { Text(li.songe.gkd.sdp.app.getString(R.string.s_28b124759e, backupCategoryTitle(it))) }
+            prepared.payload.manifest.categoryIds.forEach { Text(li.songe.gkd.sdp.app.getString(R.string.s_28b124759e, (backupCategoryTitle(it)).toString())) }
             Text(stringResource(R.string.s_9eba7fa3e2))
             Text(stringResource(R.string.s_b3af13eb8f))
             prepared.conflicts.forEach { conflict ->
-                Text(li.songe.gkd.sdp.app.getString(R.string.s_a237a78c90, backupCategoryTitle(conflict.categoryId), conflict.added, conflict.overwritten, conflict.deleted))
+                Text(li.songe.gkd.sdp.app.getString(R.string.s_a237a78c90, (backupCategoryTitle(conflict.categoryId)).toString(), (conflict.added).toString(), (conflict.overwritten).toString(), (conflict.deleted).toString()))
             }
         }
     }

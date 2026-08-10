@@ -351,7 +351,7 @@ fun AppBlockerInterceptScreen(
                 onClick = onExit,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text(stringResource(R.string.s_c2768060ab, timeLeft))
+                Text(stringResource(R.string.s_c2768060ab, (timeLeft).toString()))
             }
         }
     }

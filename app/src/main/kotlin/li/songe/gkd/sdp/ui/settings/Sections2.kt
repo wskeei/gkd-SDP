@@ -158,7 +158,7 @@ private fun SettingsGeneralSection(
     val subsStatus by vm.subsStatusFlow.collectAsStateWithLifecycle()
     TextSwitch(
         title = stringResource(R.string.s_ce7c7d71a7),
-        subtitle = if (store.useCustomNotifText) stringResource(R.string.s_bedcb574bc, store.customNotifTitle, store.customNotifText) else subsStatus,
+        subtitle = if (store.useCustomNotifText) stringResource(R.string.s_bedcb574bc, (store.customNotifTitle).toString(), (store.customNotifText).toString()) else subsStatus,
         checked = store.useCustomNotifText,
         onClickLabel = stringResource(R.string.s_ac04fdc8b3),
         onClick = { showNotifTextInputDlg.value = true },
@@ -239,7 +239,7 @@ private fun SettingsOtherSection(store: SettingsStore, mainVm: MainViewModel, vm
     }
     SettingItem(
         title = stringResource(R.string.s_6337015d1f),
-        subtitle = if (activeLockCount > 0) stringResource(R.string.s_ed7465c7b9, activeLockCount) else stringResource(R.string.s_74b0d1f601),
+        subtitle = if (activeLockCount > 0) stringResource(R.string.s_ed7465c7b9, (activeLockCount).toString()) else stringResource(R.string.s_74b0d1f601),
         onClick = { mainVm.navigatePage(FocusLockRoute) },
     )
     SettingItem(title = stringResource(R.string.s_dd07e641ca), onClick = { mainVm.navigatePage(AdvancedPageRoute) })
