@@ -26,6 +26,7 @@ import li.songe.gkd.sdp.data.SubsVersion
 import li.songe.gkd.sdp.db.DbSet
 import li.songe.json5.decodeFromJson5String
 import java.net.URI
+import li.songe.gkd.sdp.R
 
 val subsItemsFlow by lazy {
     DbSet.subsItemDao.query().stateIn(appScope, SharingStarted.Eagerly, emptyList())
@@ -137,7 +138,7 @@ suspend fun updateSubscription(
 suspend fun deleteSubscription(vararg subsIds: Long): Int =
     SubscriptionMutationRepository.delete(*subsIds).also { deleteSize ->
         if (deleteSize > 0) {
-            toast("删除成功")
+            toast(li.songe.gkd.sdp.app.getString(R.string.s_86e8d12a79))
             LogUtils.d("deleteSubscription", "count=$deleteSize")
         }
     }
@@ -487,7 +488,7 @@ fun checkSubsUpdate(showToast: Boolean = false) = appScope.launchTry(Dispatchers
     try {
         if (subsEntriesFlow.value.any { !it.subsItem.isLocal } && !NetworkUtils.isAvailable()) {
             if (showToast) {
-                toast("网络不可用")
+                toast(li.songe.gkd.sdp.app.getString(R.string.s_f1b1586c08))
             }
             return@launchTry
         }
@@ -531,9 +532,9 @@ fun checkSubsUpdate(showToast: Boolean = false) = appScope.launchTry(Dispatchers
         }
         if (showToast) {
             if (successNum > 0) {
-                toast("更新 $successNum 条订阅")
+                toast(li.songe.gkd.sdp.app.getString(R.string.s_6a863491d4, (successNum).toString()))
             } else {
-                toast("暂无更新")
+                toast(li.songe.gkd.sdp.app.getString(R.string.s_f0ece473ea))
             }
         }
         LogUtils.d("结束检测更新")

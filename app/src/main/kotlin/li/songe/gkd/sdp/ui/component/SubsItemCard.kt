@@ -46,6 +46,7 @@ import li.songe.gkd.sdp.util.subsLoadErrorsFlow
 import li.songe.gkd.sdp.util.subsRefreshErrorsFlow
 import li.songe.gkd.sdp.util.throttle
 import li.songe.gkd.sdp.util.updateSubsMutex
+import li.songe.gkd.sdp.R
 
 
 @Composable
@@ -118,9 +119,9 @@ fun SubsItemCard(
                 if (subscription != null) {
                     Text(
                         modifier = Modifier.semantics {
-                            contentDescription = "订阅顺序：$index, 订阅名称 ${subscription.name}"
+                            contentDescription = li.songe.gkd.sdp.app.getString(R.string.s_0f40d8d7de, (index).toString(), (subscription.name).toString())
                         },
-                        text = "$index. ${subscription.name}",
+                        text = li.songe.gkd.sdp.app.getString(R.string.s_dc9c537d48, (index).toString(), (subscription.name).toString()),
                         maxLines = 1,
                         softWrap = false,
                         overflow = TextOverflow.Ellipsis,
@@ -142,7 +143,7 @@ fun SubsItemCard(
                             if (subscription.author != null) {
                                 Text(
                                     modifier = Modifier.semantics {
-                                        contentDescription = "作者 ${subscription.author}"
+                                        contentDescription = li.songe.gkd.sdp.app.getString(R.string.s_44d89b8e5a, (subscription.author).toString())
                                     },
                                     text = subscription.author,
                                     style = MaterialTheme.typography.labelSmall,
@@ -150,9 +151,9 @@ fun SubsItemCard(
                             }
                             Text(
                                 modifier = Modifier.semantics {
-                                    contentDescription = "订阅版本号 ${subscription.version}"
+                                    contentDescription = li.songe.gkd.sdp.app.getString(R.string.s_213bcdc0f2, (subscription.version).toString())
                                 },
-                                text = "v" + (subscription.version.toString()),
+                                text = li.songe.gkd.sdp.app.getString(R.string.s_7a38d8cbd2) + (subscription.version.toString()),
                                 style = MaterialTheme.typography.labelSmall,
                             )
                         } else {
@@ -166,7 +167,7 @@ fun SubsItemCard(
                         val timeStr = formatTimeAgo(subsItem.mtime)
                         Text(
                             modifier = Modifier.semantics {
-                                contentDescription = "更新时间 $timeStr"
+                                contentDescription = li.songe.gkd.sdp.app.getString(R.string.s_203d809fb1, (timeStr).toString())
                             },
                             text = timeStr,
                             style = MaterialTheme.typography.labelSmall,
@@ -174,7 +175,7 @@ fun SubsItemCard(
                     }
                 } else {
                     Text(
-                        text = "id=${subsItem.id}",
+                        text = li.songe.gkd.sdp.app.getString(R.string.s_c8b05a26f8, (subsItem.id).toString()),
                         maxLines = 1,
                         softWrap = false,
                         overflow = TextOverflow.Ellipsis,
@@ -187,14 +188,14 @@ fun SubsItemCard(
                     }
                     Text(
                         text = subsLoadError?.message
-                            ?: if (subsRefreshing) "加载中..." else "文件不存在",
+                            ?: if (subsRefreshing) li.songe.gkd.sdp.app.getString(R.string.s_514c33af5c) else li.songe.gkd.sdp.app.getString(R.string.s_ffcf0a1eb0),
                         style = MaterialTheme.typography.bodyMedium,
                         color = color
                     )
                 }
                 if (subsRefreshError != null) {
                     Text(
-                        text = "更新错误: ${subsRefreshError?.message}",
+                        text = li.songe.gkd.sdp.app.getString(R.string.s_7d38b53290, (subsRefreshError?.message).toString()),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.error
                     )

@@ -120,8 +120,8 @@ fun SubsGlobalGroupExcludePage(route: SubsGlobalGroupExcludeRoute) {
         context.justHideSoftInput()
         if (vm.changedValue != null) {
             mainVm.dialogFlow.waitResult(
-                title = "提示",
-                text = "当前内容未保存，是否放弃编辑？",
+                title = li.songe.gkd.sdp.app.getString(R.string.s_ab3656a956),
+                text = li.songe.gkd.sdp.app.getString(R.string.s_aebc195621),
             )
         }
         editable = false
@@ -187,9 +187,9 @@ fun SubsGlobalGroupExcludePage(route: SubsGlobalGroupExcludeRoute) {
                                             exclude = newExclude.stringify()
                                         )
                                         DbSet.subsConfigDao.insert(subsConfig)
-                                        toast("更新成功")
+                                        toast(li.songe.gkd.sdp.app.getString(R.string.s_e2cff77372))
                                     } else {
-                                        toast("未修改")
+                                        toast(li.songe.gkd.sdp.app.getString(R.string.s_fff8cc4d94))
                                     }
                                     context.justHideSoftInput()
                                     editable = false
@@ -365,7 +365,7 @@ fun SubsGlobalGroupExcludePage(route: SubsGlobalGroupExcludeRoute) {
                 item(ListPlaceholder.KEY, ListPlaceholder.TYPE) {
                     Spacer(modifier = Modifier.height(EmptyHeight))
                     if (showAppInfos.isEmpty() && searchStr.isNotEmpty()) {
-                        EmptyText(text = if (vm.appFilter.showAllAppFlow.collectAsStateWithLifecycle().value) "暂无搜索结果" else "暂无搜索结果，或修改筛选")
+                        EmptyText(text = if (vm.appFilter.showAllAppFlow.collectAsStateWithLifecycle().value) li.songe.gkd.sdp.app.getString(R.string.s_8f8274c754) else li.songe.gkd.sdp.app.getString(R.string.s_9e7d3ee61c))
                         Spacer(modifier = Modifier.height(EmptyHeight / 2))
                     }
                 }

@@ -53,6 +53,7 @@ import li.songe.gkd.sdp.ui.style.AppTheme
 import li.songe.gkd.sdp.util.InterceptUtils
 import li.songe.gkd.sdp.util.SelfControlElapsedPolicy
 import li.songe.gkd.sdp.util.SelfControlInsightWindowPolicy
+import li.songe.gkd.sdp.R
 
 class InterceptOverlayService : LifecycleService(), SavedStateRegistryOwner {
 
@@ -446,7 +447,7 @@ fun InterceptScreen(
                 onClick = onExit,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text("算了 (退出) ${timeLeft}s")
+                Text(li.songe.gkd.sdp.app.getString(R.string.s_5013a2206e, (timeLeft).toString()))
             }
         }
     }

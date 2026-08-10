@@ -34,6 +34,7 @@ import li.songe.gkd.sdp.ui.style.scaffoldPadding
 import li.songe.gkd.sdp.util.appInfoMapFlow
 import li.songe.gkd.sdp.util.ruleSummaryFlow
 import li.songe.gkd.sdp.util.throttle
+import li.songe.gkd.sdp.R
 
 @Serializable
 data object SlowGroupRoute : NavKey
@@ -55,11 +56,11 @@ fun SlowGroupPage() {
                         mainVm.popPage()
                     })
                 },
-                title = { Text(text = "缓慢查询") },
+                title = { Text(text = li.songe.gkd.sdp.app.getString(R.string.s_9b30ccd61d)) },
                 actions = {
                     PerfIconButton(imageVector = PerfIcon.Info, onClick = throttle {
                         mainVm.dialogFlow.updateDialogOptions(
-                            title = "缓慢查询",
+                            title = li.songe.gkd.sdp.app.getString(R.string.s_9b30ccd61d),
                             text = arrayOf(
                                 "任意单个规则同时满足以下 3 个条件即判定为缓慢查询",
                                 "1. 选择器右侧无法快速查询且不是主动查询, 或内部使用<<且无法快速查询\n2. preKeys 为空\n3. matchTime 为空或大于 10s",
@@ -116,7 +117,7 @@ fun SlowGroupPage() {
             item(ListPlaceholder.KEY, ListPlaceholder.TYPE) {
                 Spacer(modifier = Modifier.height(EmptyHeight))
                 if (ruleSummary.slowGroupCount == 0) {
-                    EmptyText(text = "暂无规则")
+                    EmptyText(text = li.songe.gkd.sdp.app.getString(R.string.s_cff584d9ab))
                 }
             }
         }

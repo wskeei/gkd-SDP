@@ -34,6 +34,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import li.songe.gkd.sdp.data.BlockTimeRule
+import androidx.compose.ui.res.stringResource
+import li.songe.gkd.sdp.R
 
 @Composable
 internal fun AppBlockerTemplatePickerDialog(
@@ -42,7 +44,7 @@ internal fun AppBlockerTemplatePickerDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("选择时间模板") },
+        title = { Text(stringResource(R.string.s_be8a21a3ed)) },
         text = {
             LazyColumn {
                 items(BlockTimeRule.Companion.TEMPLATES) { template ->
@@ -71,7 +73,7 @@ internal fun AppBlockerTemplatePickerDialog(
         },
         confirmButton = {
             TextButton(onClick = onDismiss) {
-                Text("取消")
+                Text(stringResource(R.string.s_4d0b4688c7))
             }
         }
     )
@@ -113,7 +115,7 @@ internal fun LockSheet(
                 val remaining = currentLockEndTime - System.currentTimeMillis()
                 val remainingMinutes = (remaining / 60000).coerceAtLeast(0)
                 Text(
-                    text = "当前剩余: ${if (remainingMinutes >= 60) "${remainingMinutes / 60}小时${remainingMinutes % 60}分钟" else "${remainingMinutes}分钟"}",
+                    text = li.songe.gkd.sdp.app.getString(R.string.s_1090ec0cd1, (if (remainingMinutes >= 60) "${remainingMinutes / 60}小时${remainingMinutes % 60}分钟" else "${remainingMinutes}分钟").toString()),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.padding(bottom = 16.dp)
@@ -128,7 +130,7 @@ internal fun LockSheet(
             }
 
             Text(
-                text = "选择时长",
+                text = li.songe.gkd.sdp.app.getString(R.string.s_80e9287545),
                 style = MaterialTheme.typography.labelMedium,
                 modifier = Modifier.padding(bottom = 8.dp)
             )
@@ -170,7 +172,7 @@ internal fun LockSheet(
                     onCheckedChange = { vm.isCustomLockDuration = it }
                 )
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("自定义时长", style = MaterialTheme.typography.bodyMedium)
+                Text(li.songe.gkd.sdp.app.getString(R.string.s_ea6dccc0a6), style = MaterialTheme.typography.bodyMedium)
             }
 
             if (vm.isCustomLockDuration) {
@@ -182,7 +184,7 @@ internal fun LockSheet(
                     OutlinedTextField(
                         value = vm.customLockDaysText,
                         onValueChange = { vm.customLockDaysText = it },
-                        label = { Text("天") },
+                        label = { Text(li.songe.gkd.sdp.app.getString(R.string.s_c3304d1e49)) },
                         modifier = Modifier.weight(1f),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         singleLine = true
@@ -190,7 +192,7 @@ internal fun LockSheet(
                     OutlinedTextField(
                         value = vm.customLockHoursText,
                         onValueChange = { vm.customLockHoursText = it },
-                        label = { Text("小时") },
+                        label = { Text(li.songe.gkd.sdp.app.getString(R.string.s_99f6904ff3)) },
                         modifier = Modifier.weight(1f),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         singleLine = true
@@ -204,7 +206,7 @@ internal fun LockSheet(
                 onClick = onLock,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text("确认锁定")
+                Text(li.songe.gkd.sdp.app.getString(R.string.s_648f1e98b5))
             }
 
             Spacer(modifier = Modifier.height(16.dp))

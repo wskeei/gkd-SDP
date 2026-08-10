@@ -8,13 +8,14 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import li.songe.gkd.sdp.ui.style.itemPadding
@@ -36,13 +37,23 @@ fun TextSwitch(
     onClick: (() -> Unit)? = { onCheckedChange?.invoke(!checked) },
     onClickLabel: String? = "切换${title}状态",
 ) {
-    val topModifier = if (onClick != null) {
+    // The whole row is the semantic toggle so TalkBack sees one element;
+    // the trailing Switch is visual only.
+    val toggle = onCheckedChange != null
+    val rowModifier = if (toggle) {
+        modifier.toggleable(
+            value = checked,
+            enabled = enabled,
+            role = Role.Switch,
+            onValueChange = onCheckedChange,
+        )
+    } else if (onClick != null) {
         modifier.clickable(onClick = onClick, onClickLabel = onClickLabel)
     } else {
         modifier
     }
     Row(
-        modifier = if (paddingDisabled) topModifier else topModifier.itemPadding(),
+        modifier = if (paddingDisabled) rowModifier else rowModifier.itemPadding(),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
@@ -86,13 +97,19 @@ fun TextSwitch(
             }
         }
         suffixIcon?.invoke()
-        PerfSwitch(
-            checked = checked,
-            enabled = enabled,
-            onCheckedChange = onCheckedChange?.let { throttle(fn = it) },
-            modifier = Modifier.semantics {
-                this.stateDescription = title + if (checked) "已开启" else "已关闭"
-            }
-        )
+        if (toggle) {
+            PerfSwitch(
+                checked = checked,
+                enabled = enabled,
+                onCheckedChange = onCheckedChange,
+                modifier = Modifier.clearAndSetSemantics {},
+            )
+        } else {
+            PerfSwitch(
+                checked = checked,
+                enabled = enabled,
+                onCheckedChange = onCheckedChange?.let { throttle(fn = it) },
+            )
+        }
     }
 }

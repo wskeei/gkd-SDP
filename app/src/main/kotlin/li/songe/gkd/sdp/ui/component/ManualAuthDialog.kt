@@ -24,6 +24,8 @@ import li.songe.gkd.sdp.ui.share.LocalMainViewModel
 import li.songe.gkd.sdp.util.ShortUrlSet
 import li.songe.gkd.sdp.util.copyText
 import li.songe.gkd.sdp.util.throttle
+import androidx.compose.ui.res.stringResource
+import li.songe.gkd.sdp.R
 
 @Composable
 fun ManualAuthDialog(
@@ -35,10 +37,10 @@ fun ManualAuthDialog(
         val mainVm = LocalMainViewModel.current
         AlertDialog(
             onDismissRequest = { onUpdateShow(false) },
-            title = { Text(text = "命令授权") },
+            title = { Text(text = stringResource(R.string.s_92cab38651)) },
             text = {
                 Column(modifier = Modifier.fillMaxWidth()) {
-                    Text(text = "1. 有一台安装了 adb 的电脑\n\n2.手机开启调试模式后连接电脑授权调试\n\n3. 在电脑 cmd/pwsh 中运行如下命令")
+                    Text(text = stringResource(R.string.s_3560caf980))
                     Spacer(modifier = Modifier.height(4.dp))
                     Box(
                         modifier = Modifier.fillMaxWidth()
@@ -76,7 +78,7 @@ fun ManualAuthDialog(
                                 onUpdateShow(false)
                                 mainVm.navigatePage(WebViewRoute(initUrl = ShortUrlSet.URL3))
                             }),
-                        text = "运行后授权失败?",
+                        text = stringResource(R.string.s_7c423e3f43),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.primary,
                     )
@@ -86,7 +88,7 @@ fun ManualAuthDialog(
                 TextButton(onClick = {
                     onUpdateShow(false)
                 }) {
-                    Text(text = "关闭")
+                    Text(text = stringResource(R.string.s_6c14bd7f6f))
                 }
             },
         )

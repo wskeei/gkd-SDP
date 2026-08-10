@@ -29,6 +29,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import li.songe.gkd.sdp.util.appInfoMapFlow
+import androidx.compose.ui.res.stringResource
+import li.songe.gkd.sdp.R
 
 @Composable
 fun AppPickerDialog(
@@ -75,17 +77,17 @@ fun AppPickerDialog(
                 OutlinedTextField(
                     value = searchQuery,
                     onValueChange = { searchQuery = it },
-                    label = { Text("搜索应用") },
-                    placeholder = { Text("输入应用名称或包名") },
+                    label = { Text(stringResource(R.string.s_897fdfef89)) },
+                    placeholder = { Text(li.songe.gkd.sdp.app.getString(R.string.s_e1dfdd0c28)) },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
                     leadingIcon = {
-                        Icon(PerfIcon.Search, contentDescription = "搜索")
+                        Icon(PerfIcon.Search, contentDescription = stringResource(R.string.s_f04090805c))
                     },
                     trailingIcon = {
                         if (searchQuery.isNotEmpty()) {
                             IconButton(onClick = { searchQuery = "" }) {
-                                Icon(PerfIcon.Close, contentDescription = "清除")
+                                Icon(PerfIcon.Close, contentDescription = stringResource(R.string.s_7b15e5e8e7))
                             }
                         }
                     }
@@ -107,7 +109,7 @@ fun AppPickerDialog(
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "显示系统应用",
+                        text = stringResource(R.string.s_52c2b4e02d),
                         style = MaterialTheme.typography.bodyMedium
                     )
                 }
@@ -174,7 +176,7 @@ fun AppPickerDialog(
                                     )
                                     if (appInfo.isSystem) {
                                         Text(
-                                            text = "系统应用",
+                                            text = li.songe.gkd.sdp.app.getString(R.string.s_a4be5dfa64),
                                             style = MaterialTheme.typography.bodySmall,
                                             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
                                         )
@@ -188,12 +190,12 @@ fun AppPickerDialog(
         },
         confirmButton = {
             TextButton(onClick = { onConfirm(selectedApps.toList()) }) {
-                Text("确定")
+                Text(stringResource(R.string.s_f526c89937))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("取消")
+                Text(stringResource(R.string.s_4d0b4688c7))
             }
         }
     )

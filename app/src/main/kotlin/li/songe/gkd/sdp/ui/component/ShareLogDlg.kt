@@ -29,6 +29,7 @@ import li.songe.gkd.sdp.util.launchTry
 import li.songe.gkd.sdp.util.saveFileToDownloads
 import li.songe.gkd.sdp.util.shareFile
 import li.songe.gkd.sdp.util.throttle
+import li.songe.gkd.sdp.R
 
 @Composable
 fun ShareLogDlg(showShareLogDlgFlow: MutableStateFlow<Boolean>) {
@@ -49,35 +50,35 @@ fun ShareLogDlg(showShareLogDlgFlow: MutableStateFlow<Boolean>) {
                     .padding(16.dp)
                 Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
                     Text(
-                        text = if (confirmationStep) "确认生成支持包" else "支持包内容与隐私说明",
+                        text = if (confirmationStep) li.songe.gkd.sdp.app.getString(R.string.s_4be37702c8) else li.songe.gkd.sdp.app.getString(R.string.s_782087b38b),
                         modifier = modifier,
                     )
                     if (!confirmationStep) {
                         Text(
-                            text = "将包含：应用版本与系统类别、功能开关、权限能力状态、最多 500 条脱敏诊断事件、脱敏崩溃摘要。",
+                            text = li.songe.gkd.sdp.app.getString(R.string.s_357a190b67),
                             modifier = modifier,
                         )
                         Text(
-                            text = "不会包含：数据库、设置原文、订阅、申请理由、网址、截图、界面文字、联系人、Cookie、令牌或文件绝对路径。",
+                            text = li.songe.gkd.sdp.app.getString(R.string.s_e17a2ef166),
                             modifier = modifier,
                         )
                         Text(
-                            text = "预计大小：小于 3 MiB。生成前请再次确认。",
+                            text = li.songe.gkd.sdp.app.getString(R.string.s_89ae336abd),
                             modifier = modifier,
                         )
                         Text(
-                            text = "继续",
+                            text = li.songe.gkd.sdp.app.getString(R.string.s_1fc1afc5c5),
                             modifier = Modifier
                                 .clickable(onClick = throttle { confirmationStep = true })
                                 .then(modifier),
                         )
                     } else {
                         Text(
-                            text = "选择下列操作即确认生成仅含上述白名单内容的支持包。",
+                            text = li.songe.gkd.sdp.app.getString(R.string.s_7fad32f141),
                             modifier = modifier,
                         )
                         Text(
-                            text = "确认并分享到其他应用",
+                            text = li.songe.gkd.sdp.app.getString(R.string.s_6605382d7c),
                             modifier = Modifier
                                 .clickable(onClick = throttle {
                                     visible = false
@@ -89,7 +90,7 @@ fun ShareLogDlg(showShareLogDlgFlow: MutableStateFlow<Boolean>) {
                                 .then(modifier),
                         )
                         Text(
-                            text = "确认并保存到下载",
+                            text = li.songe.gkd.sdp.app.getString(R.string.s_b21acfde65),
                             modifier = Modifier
                                 .clickable(onClick = throttle {
                                     visible = false
@@ -101,7 +102,7 @@ fun ShareLogDlg(showShareLogDlgFlow: MutableStateFlow<Boolean>) {
                                 .then(modifier),
                         )
                         Text(
-                            text = "确认并生成链接（需要可访问上传服务）",
+                            text = li.songe.gkd.sdp.app.getString(R.string.s_81b17d1c10),
                             modifier = Modifier
                                 .clickable(onClick = throttle {
                                     visible = false
@@ -112,7 +113,7 @@ fun ShareLogDlg(showShareLogDlgFlow: MutableStateFlow<Boolean>) {
                                 .then(modifier),
                         )
                         Text(
-                            text = "返回查看内容",
+                            text = li.songe.gkd.sdp.app.getString(R.string.s_22a7b0d512),
                             modifier = Modifier
                                 .clickable(onClick = throttle { confirmationStep = false })
                                 .then(modifier),

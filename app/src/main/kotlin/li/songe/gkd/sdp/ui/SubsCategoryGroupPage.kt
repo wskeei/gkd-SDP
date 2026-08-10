@@ -68,6 +68,7 @@ import li.songe.gkd.sdp.util.launchAsFn
 import li.songe.gkd.sdp.util.throttle
 import li.songe.gkd.sdp.util.toast
 import li.songe.gkd.sdp.util.updateSubscription
+import li.songe.gkd.sdp.R
 
 @Serializable
 data class SubsCategoryGroupRoute(val subsId: Long, val categoryKey: Int) : NavKey
@@ -134,8 +135,8 @@ fun SubsCategoryGroupPage(route: SubsCategoryGroupRoute) {
             )
             val resetAll = suspend {
                 mainVm.dialogFlow.waitResult(
-                    title = "重置开关",
-                    text = "重置当前类别下所有规则开关为默认值？\n重置后规则可由类别批量控制开关",
+                    title = li.songe.gkd.sdp.app.getString(R.string.s_b2f0b173eb),
+                    text = li.songe.gkd.sdp.app.getString(R.string.s_902609e57e),
                 )
                 val updatedList = DbSet.subsConfigDao.batchResetAppGroupEnable(
                     subs.id,
@@ -143,9 +144,9 @@ fun SubsCategoryGroupPage(route: SubsCategoryGroupRoute) {
                         .map { g -> g to subs.getAppByGroup(g) },
                 )
                 if (updatedList.isNotEmpty()) {
-                    toast("重置 ${updatedList.size} 规则")
+                    toast(li.songe.gkd.sdp.app.getString(R.string.s_9672b434b8, (updatedList.size).toString()))
                 } else {
-                    toast("无可重置规则")
+                    toast(li.songe.gkd.sdp.app.getString(R.string.s_8e1d999ba4))
                 }
             }
             if (subs.isLocal) {
@@ -162,7 +163,7 @@ fun SubsCategoryGroupPage(route: SubsCategoryGroupRoute) {
                         if (groupSize > 0) {
                             DropdownMenuItem(
                                 leadingIcon = { PerfIcon(imageVector = ResetSettings) },
-                                text = { Text(text = "重置") },
+                                text = { Text(text = li.songe.gkd.sdp.app.getString(R.string.s_3d81345303)) },
                                 onClick = throttle(vm.viewModelScope.launchAsFn {
                                     expanded = false
                                     resetAll()
@@ -171,7 +172,7 @@ fun SubsCategoryGroupPage(route: SubsCategoryGroupRoute) {
                         }
                         DropdownMenuItem(
                             leadingIcon = { PerfIcon(imageVector = PerfIcon.Edit) },
-                            text = { Text(text = "编辑") },
+                            text = { Text(text = li.songe.gkd.sdp.app.getString(R.string.s_a7f814c0a4)) },
                             onClick = {
                                 expanded = false
                                 vm.showEditCategoryFlow.value = true
@@ -179,7 +180,7 @@ fun SubsCategoryGroupPage(route: SubsCategoryGroupRoute) {
                         )
                         DropdownMenuItem(
                             leadingIcon = { PerfIcon(imageVector = PerfIcon.Delete) },
-                            text = { Text(text = "删除") },
+                            text = { Text(text = li.songe.gkd.sdp.app.getString(R.string.s_3755f56f2f)) },
                             colors = MenuDefaults.itemColors(
                                 textColor = MaterialTheme.colorScheme.error,
                                 leadingIconColor = MaterialTheme.colorScheme.error,
@@ -187,8 +188,8 @@ fun SubsCategoryGroupPage(route: SubsCategoryGroupRoute) {
                             onClick = throttle(mainVm.viewModelScope.launchAsFn {
                                 expanded = false
                                 mainVm.dialogFlow.waitResult(
-                                    title = "删除类别",
-                                    text = "确定删除 ${category.name} ?",
+                                    title = li.songe.gkd.sdp.app.getString(R.string.s_0bfb53c9cd),
+                                    text = li.songe.gkd.sdp.app.getString(R.string.s_2b96421a75, (category.name).toString()),
                                     error = true,
                                 )
                                 mainVm.popPage()
@@ -198,7 +199,7 @@ fun SubsCategoryGroupPage(route: SubsCategoryGroupRoute) {
                                         removeIf { it.key == category.key }
                                     })
                                 )
-                                toast("删除成功")
+                                toast(li.songe.gkd.sdp.app.getString(R.string.s_86e8d12a79))
                             })
                         )
                     }
@@ -304,7 +305,7 @@ fun SubsCategoryGroupPage(route: SubsCategoryGroupRoute) {
             item(ListPlaceholder.KEY, ListPlaceholder.TYPE) {
                 Spacer(modifier = Modifier.height(EmptyHeight))
                 if (apps.isEmpty()) {
-                    EmptyText(text = if (vm.showAllAppFlow.collectAsStateWithLifecycle().value) "暂无数据" else "暂无数据，或修改筛选")
+                    EmptyText(text = if (vm.showAllAppFlow.collectAsStateWithLifecycle().value) li.songe.gkd.sdp.app.getString(R.string.s_b246458f20) else li.songe.gkd.sdp.app.getString(R.string.s_53e5dc587c))
                     Spacer(modifier = Modifier.height(EmptyHeight))
                 }
             }

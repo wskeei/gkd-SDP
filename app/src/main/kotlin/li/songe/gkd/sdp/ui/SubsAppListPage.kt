@@ -227,9 +227,9 @@ fun SubsAppListPage(route: SubsAppListRoute) {
                 if (appTripleList.isEmpty() && !firstLoading) {
                     EmptyText(
                         text = if (searchStr.isNotEmpty()) {
-                            if (vm.showAllAppFlow.collectAsStateWithLifecycle().value) "暂无搜索结果" else "暂无搜索结果，或修改筛选"
+                            if (vm.showAllAppFlow.collectAsStateWithLifecycle().value) li.songe.gkd.sdp.app.getString(R.string.s_8f8274c754) else li.songe.gkd.sdp.app.getString(R.string.s_9e7d3ee61c)
                         } else {
-                            "暂无规则"
+                            li.songe.gkd.sdp.app.getString(R.string.s_cff584d9ab)
                         }
                     )
                     Spacer(modifier = Modifier.height(EmptyHeight / 2))

@@ -23,6 +23,8 @@ import li.songe.gkd.sdp.MainActivity
 import li.songe.gkd.sdp.ui.share.LocalMainViewModel
 import li.songe.gkd.sdp.util.ShortUrlSet
 import li.songe.gkd.sdp.util.throttle
+import androidx.compose.ui.res.stringResource
+import li.songe.gkd.sdp.R
 
 
 @Composable
@@ -67,7 +69,7 @@ fun TermsAcceptDialog() {
             "关于无障碍" to @Composable {
                 Text(
                     modifier = modifier,
-                    text = "GKD 请求使用系统「无障碍 API」获取屏幕信息, 以此基于用户自定义订阅规则执行自动化操作",
+                    text = li.songe.gkd.sdp.app.getString(R.string.s_37c53d9dc0),
                 )
             }
         )
@@ -88,14 +90,14 @@ fun TermsAcceptDialog() {
                     mainVm.termsAcceptedFlow.value = true
                 }
             }) {
-                Text(text = "同意")
+                Text(text = stringResource(R.string.s_d5f0847ff2))
             }
         },
         dismissButton = {
             TextButton(onClick = throttle {
                 context.finish()
             }) {
-                Text(text = "不同意")
+                Text(text = stringResource(R.string.s_befce4eeb3))
             }
         }
     )

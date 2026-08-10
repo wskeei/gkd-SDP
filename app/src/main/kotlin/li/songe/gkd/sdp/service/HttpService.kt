@@ -84,6 +84,7 @@ import li.songe.gkd.sdp.util.toast
 import li.songe.gkd.sdp.util.updateSubscription
 import java.io.File
 import java.util.concurrent.atomic.AtomicLong
+import li.songe.gkd.sdp.R
 
 class HttpService : Service(), OnSimpleLife by DefaultSimpleLifeImpl() {
     override fun onBind(intent: Intent?) = null
@@ -115,7 +116,7 @@ class HttpService : Service(), OnSimpleLife by DefaultSimpleLifeImpl() {
                         remoteSessionPolicy.revoke(RemoteRevocationReason.EXPIRED)
                         remoteSessionStateFlow.value = remoteSessionPolicy.snapshot()
                         listenModeFlow.value = RemoteListenMode.LOCAL_ONLY
-                        toast("局域网调试会话已到期，已切回仅本机")
+                        toast(li.songe.gkd.sdp.app.getString(R.string.s_a0ec31af81))
                     } else {
                         notifyRemoteState(state, now)
                     }
@@ -146,7 +147,7 @@ class HttpService : Service(), OnSimpleLife by DefaultSimpleLifeImpl() {
         remoteSessionPolicy.revoke(RemoteRevocationReason.REPLACED)
         rateLimiter.clear()
         if (!isPortAvailable(port)) {
-            toast("端口 $port 被占用，请更换后重试")
+            toast(li.songe.gkd.sdp.app.getString(R.string.s_bba5c9298c, (port).toString()))
             stopSelf()
             return
         }
@@ -160,14 +161,14 @@ class HttpService : Service(), OnSimpleLife by DefaultSimpleLifeImpl() {
             scope.createServer(port, mode.host).apply { start() }
         } catch (error: Exception) {
             LogUtils.d("HTTP service start failed")
-            toast("HTTP 服务启动失败")
+            toast(li.songe.gkd.sdp.app.getString(R.string.s_6340271cde))
             null
         }
         if (httpServerFlow.value == null) {
             stopSelf()
         } else {
             notifyRemoteState(remoteSessionStateFlow.value, System.currentTimeMillis())
-            if (wasRunning) toast("HTTP服务已安全重启")
+            if (wasRunning) toast(li.songe.gkd.sdp.app.getString(R.string.s_6e75461ed4))
         }
     }
 

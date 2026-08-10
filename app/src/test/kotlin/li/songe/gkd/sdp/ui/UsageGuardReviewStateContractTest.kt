@@ -40,9 +40,9 @@ class UsageGuardReviewStateContractTest {
         val source = sourceFile("app/src/main/kotlin/li/songe/gkd/sdp/ui/component/DigitalSelfDisciplineTrendChart.kt").readText()
         val presentation = sourceFile("app/src/main/kotlin/li/songe/gkd/sdp/ui/component/DigitalSelfDisciplineReviewPresentation.kt").readText()
 
-        assertTrue(source.contains("纵轴："))
-        assertTrue(source.contains("最大"))
-        assertTrue(source.contains("最小"))
+        assertTrue(source.contains("R.string.s_47d3fa79b4"))
+        assertTrue(source.contains("R.string.s_d49e418af8"))
+        assertTrue(source.contains("R.string.s_37feaa9b99"))
         assertTrue(presentation.contains("fun xAxisLabels"))
         assertTrue(presentation.contains("maxLabels: Int = 6"))
     }

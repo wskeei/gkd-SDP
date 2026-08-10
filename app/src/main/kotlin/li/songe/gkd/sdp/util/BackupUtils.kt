@@ -16,6 +16,7 @@ import li.songe.gkd.sdp.backup.FileBackupImportJournal
 import li.songe.gkd.sdp.backup.LegacyBackupImporter
 import li.songe.gkd.sdp.backup.PreparedBackupImport
 import java.io.File
+import li.songe.gkd.sdp.R
 
 object BackupUtils {
     private const val MAX_ENCRYPTED_BACKUP_BYTES = 65L * 1024L * 1024L
@@ -43,7 +44,7 @@ object BackupUtils {
 
     suspend fun importBackUpData(uri: Uri) {
         pendingImportUriFlow.value = uri
-        toast("已选择备份，请在“设置 → 备份恢复”输入密码并确认导入")
+        toast(li.songe.gkd.sdp.app.getString(R.string.s_e907fcd7c0))
     }
 
     suspend fun exportBackUpData(

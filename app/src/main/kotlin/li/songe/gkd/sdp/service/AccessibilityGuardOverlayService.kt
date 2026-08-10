@@ -39,6 +39,7 @@ import li.songe.gkd.sdp.ui.style.AppTheme
 import li.songe.gkd.sdp.util.LogUtils
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicLong
+import androidx.compose.ui.res.stringResource
 
 /**
  * Full-screen accessibility permission reminder.
@@ -290,13 +291,13 @@ private fun AccessibilityGuardOverlayContent(
                 modifier = Modifier.padding(top = 16.dp),
             )
             Text(
-                text = "无障碍权限已关闭",
+                text = stringResource(R.string.s_6439fc3f5f),
                 style = MaterialTheme.typography.headlineSmall,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.padding(top = 24.dp),
             )
             Text(
-                text = "为保证已启用的自动化功能正常工作，请返回应用重新开启无障碍权限。",
+                text = stringResource(R.string.s_b213d3a099),
                 style = MaterialTheme.typography.bodyLarge,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.padding(top = 16.dp, bottom = 32.dp),
@@ -305,7 +306,7 @@ private fun AccessibilityGuardOverlayContent(
                 onClick = onGoHome,
                 modifier = Modifier.fillMaxWidth(),
             ) {
-                Text("前往")
+                Text(stringResource(R.string.s_23926d6146))
             }
         }
     }

@@ -58,6 +58,7 @@ import li.songe.gkd.sdp.util.switchItem
 import li.songe.gkd.sdp.util.throttle
 import li.songe.gkd.sdp.util.toast
 import li.songe.gkd.sdp.util.updateSubscription
+import li.songe.gkd.sdp.R
 
 
 @Serializable
@@ -149,8 +150,8 @@ fun SubsGlobalGroupListPage(route: SubsGlobalGroupListRoute) {
                                             Dispatchers.Default
                                         ) {
                                             mainVm.dialogFlow.waitResult(
-                                                title = "删除规则",
-                                                text = "删除当前所选规则?",
+                                                title = li.songe.gkd.sdp.app.getString(R.string.s_f9ad34b946),
+                                                text = li.songe.gkd.sdp.app.getString(R.string.s_e0d623ba29),
                                                 error = true,
                                             )
                                             val keys = selectedDataSet.mapNotNull { g ->
@@ -168,7 +169,7 @@ fun SubsGlobalGroupListPage(route: SubsGlobalGroupListRoute) {
                                                 subsItemId,
                                                 keys
                                             )
-                                            toast("删除成功")
+                                            toast(li.songe.gkd.sdp.app.getString(R.string.s_86e8d12a79))
                                         })
                                 )
                             }
@@ -191,7 +192,7 @@ fun SubsGlobalGroupListPage(route: SubsGlobalGroupListRoute) {
                         ) {
                             DropdownMenuItem(
                                 text = {
-                                    Text(text = "全选")
+                                    Text(text = li.songe.gkd.sdp.app.getString(R.string.s_3e44b2a933))
                                 },
                                 onClick = {
                                     expanded = false
@@ -204,7 +205,7 @@ fun SubsGlobalGroupListPage(route: SubsGlobalGroupListRoute) {
                             )
                             DropdownMenuItem(
                                 text = {
-                                    Text(text = "反选")
+                                    Text(text = li.songe.gkd.sdp.app.getString(R.string.s_ae05880411))
                                 },
                                 onClick = {
                                     expanded = false
@@ -275,7 +276,7 @@ fun SubsGlobalGroupListPage(route: SubsGlobalGroupListRoute) {
             item(ListPlaceholder.KEY, ListPlaceholder.TYPE) {
                 Spacer(modifier = Modifier.height(EmptyHeight))
                 if (globalGroups.isEmpty()) {
-                    EmptyText(text = "暂无规则")
+                    EmptyText(text = li.songe.gkd.sdp.app.getString(R.string.s_cff584d9ab))
                 }
             }
         }

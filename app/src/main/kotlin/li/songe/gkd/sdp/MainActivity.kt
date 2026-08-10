@@ -170,6 +170,8 @@ import li.songe.gkd.sdp.util.throttle
 import li.songe.gkd.sdp.util.toast
 import kotlin.concurrent.Volatile
 import kotlin.reflect.jvm.jvmName
+import androidx.compose.ui.res.stringResource
+import li.songe.gkd.sdp.R
 
 class MainActivity : ComponentActivity() {
     val startTime = System.currentTimeMillis()
@@ -243,7 +245,7 @@ class MainActivity : ComponentActivity() {
             type = contentType
         }).data?.data
         if (u == null) {
-            toast("未选择文件")
+            toast(li.songe.gkd.sdp.app.getString(R.string.s_dbb4430dc0))
         }
         return u
     }
@@ -381,7 +383,7 @@ class MainActivity : ComponentActivity() {
         if (META.isGkdChannel && storeFlow.value.accessibilityGuardEnabled &&
             !canDrawOverlaysState.updateAndGet()
         ) {
-            toast("无障碍权限守护需要悬浮窗权限，请重新授权")
+            toast(li.songe.gkd.sdp.app.getString(R.string.s_4a6c3f7937))
         }
         if (topActivityFlow.value.appId != META.appId) {
             synchronized(topActivityFlow) {
@@ -456,14 +458,14 @@ private fun ShizukuErrorDialog(stateFlow: MutableStateFlow<Throwable?>) {
         val installed = appInfoCache.contains(shizukuAppId)
         AlertDialog(
             onDismissRequest = { stateFlow.value = null },
-            title = { Text(text = "授权错误") },
+            title = { Text(text = stringResource(R.string.s_9c8db95f12)) },
             text = {
                 Column {
                     Text(
                         text = if (installed) {
-                            "Shizuku 授权失败，请检查是否运行"
+                            stringResource(R.string.s_f08db2ab6e)
                         } else {
-                            "Shizuku 授权失败，检测到 Shizuku 未安装，请先下载后安装，如果你是通过其它方式授权，请忽略此提示自行查找原因"
+                            stringResource(R.string.s_6dc32911b1)
                         }
                     )
                     Spacer(modifier = Modifier.height(8.dp))
@@ -506,20 +508,20 @@ private fun ShizukuErrorDialog(stateFlow: MutableStateFlow<Throwable?>) {
                         stateFlow.value = null
                         openApp(shizukuAppId)
                     }) {
-                        Text(text = "打开 Shizuku")
+                        Text(text = stringResource(R.string.s_894a72442f))
                     }
                 } else {
                     TextButton(onClick = {
                         stateFlow.value = null
                         openUri(ShortUrlSet.URL4)
                     }) {
-                        Text(text = "去下载")
+                        Text(text = stringResource(R.string.s_21654037e2))
                     }
                 }
             },
             dismissButton = {
                 TextButton(onClick = { stateFlow.value = null }) {
-                    Text(text = "我知道了")
+                    Text(text = stringResource(R.string.s_dd3760c80a))
                 }
             }
         )
@@ -542,17 +544,17 @@ fun AccessRestrictedSettingsDlg() {
     val isA11yPage = mainVm.topRoute is AuthA11yRoute
     LaunchedEffect(isA11yPage, accessRestrictedSettingsShow) {
         if (isA11yPage && accessRestrictedSettingsShow && !a11yRunning) {
-            toast("请重新授权以解除限制")
+            toast(li.songe.gkd.sdp.app.getString(R.string.s_a0995a1cf8))
             accessRestrictedSettingsShowFlow.value = false
         }
     }
     if (accessRestrictedSettingsShow && !isA11yPage && !a11yRunning) {
         AlertDialog(
             title = {
-                Text(text = "权限受限")
+                Text(text = stringResource(R.string.s_17bfc950b7))
             },
             text = {
-                Text(text = "当前操作权限「访问受限设置」已被限制, 请先解除限制")
+                Text(text = stringResource(R.string.s_1262ae439f))
             },
             onDismissRequest = {
                 accessRestrictedSettingsShowFlow.value = false
@@ -562,14 +564,14 @@ fun AccessRestrictedSettingsDlg() {
                     accessRestrictedSettingsShowFlow.value = false
                     mainVm.navigateWebPage(ShortUrlSet.URL2)
                 }) {
-                    Text(text = "解除")
+                    Text(text = stringResource(R.string.s_ec7ae06b09))
                 }
             },
             dismissButton = {
                 TextButton({
                     accessRestrictedSettingsShowFlow.value = false
                 }) {
-                    Text(text = "关闭")
+                    Text(text = stringResource(R.string.s_6c14bd7f6f))
                 }
             },
         )
@@ -583,15 +585,15 @@ fun UiAutomationAlreadyRegisteredDlg() {
             onDismissRequest = {
                 automationRegisteredExceptionFlow.value = null
             },
-            title = { Text(text = "启动失败") },
+            title = { Text(text = stringResource(R.string.s_65525f0f44)) },
             text = {
-                Text(text = "自动化服务启动失败，检测到自动化服务已被其他应用占用，请先关闭已有服务后重试\n\n注：自动化服务只能同时运行一个，请确保没有其他应用或测试框架占用后再启动")
+                Text(text = stringResource(R.string.s_914a3f7e15))
             },
             confirmButton = {
                 TextButton(onClick = {
                     automationRegisteredExceptionFlow.value = null
                 }) {
-                    Text(text = "我知道了")
+                    Text(text = stringResource(R.string.s_dd3760c80a))
                 }
             }
         )

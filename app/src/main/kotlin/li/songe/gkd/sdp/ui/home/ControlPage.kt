@@ -75,8 +75,6 @@ import li.songe.gkd.sdp.ui.component.textSize
 import li.songe.gkd.sdp.ui.component.useScrollBehaviorState
 import li.songe.gkd.sdp.ui.share.LocalMainViewModel
 import li.songe.gkd.sdp.ui.style.EmptyHeight
-import li.songe.gkd.sdp.ui.style.itemHorizontalPadding
-import li.songe.gkd.sdp.ui.style.itemVerticalPadding
 import li.songe.gkd.sdp.ui.style.surfaceCardColors
 import li.songe.gkd.sdp.util.HOME_PAGE_URL
 import li.songe.gkd.sdp.util.HomeA11yServiceTogglePolicy
@@ -91,6 +89,7 @@ import li.songe.gkd.sdp.util.throttle
 import li.songe.gkd.sdp.util.toast
 import li.songe.gkd.sdp.remote.RemoteListenMode
 import li.songe.gkd.sdp.remote.RemoteScope
+import li.songe.gkd.sdp.ui.style.DimensionTokens
 
 @Composable
 fun useControlPage(): ScaffoldExt {
@@ -136,8 +135,8 @@ fun useControlPage(): ScaffoldExt {
             modifier = Modifier
                 .verticalScroll(scrollState)
                 .padding(contentPadding)
-                .padding(horizontal = itemHorizontalPadding),
-            verticalArrangement = Arrangement.spacedBy(itemHorizontalPadding / 2)
+                .padding(horizontal = DimensionTokens.SpacingBase),
+            verticalArrangement = Arrangement.spacedBy(DimensionTokens.SpacingBase / 2)
         ) {
             if (appOpsRestrictedFlow.collectAsStateWithLifecycle().value) {
                 Card(
@@ -155,14 +154,14 @@ fun useControlPage(): ScaffoldExt {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(itemVerticalPadding),
+                            .padding(DimensionTokens.SpacingMd),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
                         PerfIcon(imageVector = PerfIcon.WarningAmber)
                         Text(
                             modifier = Modifier.weight(1f),
-                            text = "检测到权限受限制，请前往解除",
+                            text = stringResource(R.string.s_7917327c68),
                             style = MaterialTheme.typography.bodyLarge,
                         )
                         PerfIcon(imageVector = PerfIcon.KeyboardArrowRight)
@@ -237,7 +236,7 @@ fun useControlPage(): ScaffoldExt {
                     if (it) {
                         StatusService.requestStart(context)
                     } else if (store.accessibilityGuardEnabled) {
-                        toast("请先关闭无障碍权限守护")
+                        toast(li.songe.gkd.sdp.app.getString(R.string.s_f10262d528))
                     } else {
                         StatusService.stop()
                         storeFlow.value = store.copy(
@@ -319,9 +318,9 @@ fun useControlPage(): ScaffoldExt {
         if (showA11yDisableInfoDialog) {
             AlertDialog(
                 onDismissRequest = { showA11yDisableInfoDialog = false },
-                title = { Text("不能在应用内关闭无障碍") },
+                title = { Text(stringResource(R.string.s_f90b38d994)) },
                 text = {
-                    Text("为防止误触，应用内不支持在此关闭无障碍。若确需关闭，请前往 Android 系统无障碍设置。")
+                    Text(stringResource(R.string.s_48594302d1))
                 },
                 confirmButton = {
                     TextButton(
@@ -330,12 +329,12 @@ fun useControlPage(): ScaffoldExt {
                             openA11ySettings()
                         },
                     ) {
-                        Text("前往设置")
+                        Text(stringResource(R.string.s_9ea2c95e8d))
                     }
                 },
                 dismissButton = {
                     TextButton(onClick = { showA11yDisableInfoDialog = false }) {
-                        Text("取消")
+                        Text(stringResource(R.string.s_4d0b4688c7))
                     }
                 },
             )
@@ -433,7 +432,7 @@ private fun IconTextCard(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(itemVerticalPadding),
+            .padding(DimensionTokens.SpacingMd),
         verticalAlignment = Alignment.CenterVertically
     ) {
         PerfIcon(
@@ -446,7 +445,7 @@ private fun IconTextCard(
             tint = MaterialTheme.colorScheme.primary,
             contentDescription = null,
         )
-        Spacer(modifier = Modifier.width(itemHorizontalPadding))
+        Spacer(modifier = Modifier.width(DimensionTokens.SpacingBase))
         content()
     }
 }
@@ -456,19 +455,18 @@ private fun ServerStatusCard() {
     val mainVm = LocalMainViewModel.current
     val vm = viewModel<HomeVm>()
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .semantics {
-                onClick(label = "不执行操作", action = null)
-            }, shape = RoundedCornerShape(20.dp), colors = surfaceCardColors, onClick = {}) {
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        colors = surfaceCardColors,
+    ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(
-                    start = itemVerticalPadding,
-                    end = itemVerticalPadding,
-                    top = itemVerticalPadding,
-                    bottom = itemVerticalPadding / 2
+                    start = DimensionTokens.SpacingMd,
+                    end = DimensionTokens.SpacingMd,
+                    top = DimensionTokens.SpacingMd,
+                    bottom = DimensionTokens.SpacingMd / 2
                 ), verticalAlignment = Alignment.CenterVertically
         ) {
             PerfIcon(
@@ -480,18 +478,18 @@ private fun ServerStatusCard() {
                     .size(24.dp),
                 tint = MaterialTheme.colorScheme.primary
             )
-            Spacer(modifier = Modifier.width(itemHorizontalPadding))
+            Spacer(modifier = Modifier.width(DimensionTokens.SpacingBase))
             Column(
                 modifier = Modifier.weight(1f)
             ) {
                 Text(
-                    text = "数据概览",
+                    text = stringResource(R.string.s_354077c764),
                     style = MaterialTheme.typography.bodyLarge,
                 )
                 val usedSubsItemCount by vm.usedSubsItemCountFlow.collectAsStateWithLifecycle()
                 AnimatedVisibility(usedSubsItemCount > 0) {
                     Text(
-                        text = "已开启 $usedSubsItemCount 条订阅",
+                        text = stringResource(R.string.s_a6eec0915a, (usedSubsItemCount).toString()),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -501,7 +499,7 @@ private fun ServerStatusCard() {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = itemVerticalPadding)
+                .padding(horizontal = DimensionTokens.SpacingMd)
         ) {
             val subsStatus by vm.subsStatusFlow.collectAsStateWithLifecycle()
             AnimatedVisibility(subsStatus.isNotEmpty()) {
@@ -550,7 +548,7 @@ private fun ServerStatusCard() {
                     )
                 }
             }
-            Spacer(modifier = Modifier.height(itemVerticalPadding))
+            Spacer(modifier = Modifier.height(DimensionTokens.SpacingMd))
         }
     }
 }

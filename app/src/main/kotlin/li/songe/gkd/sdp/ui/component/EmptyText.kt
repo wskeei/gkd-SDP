@@ -1,19 +1,20 @@
 package li.songe.gkd.sdp.ui.component
 
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.style.TextAlign
 
+/**
+ * Legacy alias for a centered empty hint. New screens should use
+ * [ContentState.Empty] through [ContentStateBox] so empty states keep a
+ * title, description and a single action everywhere.
+ */
 @Composable
-fun EmptyText(text: String = "暂无数据") {
-    Text(
-        text = text,
-        modifier = Modifier.fillMaxWidth(),
-        style = MaterialTheme.typography.bodyMedium,
-        textAlign = TextAlign.Center,
-        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
-    )
+fun EmptyText(
+    text: String = "暂无数据",
+    modifier: Modifier = Modifier,
+) {
+    ContentStateBox(
+        state = ContentState.Empty(title = text),
+        modifier = modifier,
+    ) {}
 }

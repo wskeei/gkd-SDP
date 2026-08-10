@@ -65,6 +65,8 @@ import li.songe.gkd.sdp.util.UsageGuardCountdownOverlayPolicy
 import li.songe.gkd.sdp.util.UsageGuardCountdownOverlaySession
 import li.songe.gkd.sdp.util.px
 import kotlin.math.roundToInt
+import androidx.compose.ui.res.stringResource
+import li.songe.gkd.sdp.R
 
 @Composable
 internal fun UsageGuardCountdownOverlayContent(
@@ -185,11 +187,11 @@ private fun UsageGuardTerminateConfirmScreen(
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
                 Text(
-                    text = "使用控制",
+                    text = stringResource(R.string.s_17cf04336d),
                     style = MaterialTheme.typography.titleLarge,
                 )
                 Text(
-                    text = "隐藏悬浮条不会暂停本次使用；提前终止会将倒计时归零并立即回到桌面。",
+                    text = stringResource(R.string.s_75358e224d),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -199,10 +201,10 @@ private fun UsageGuardTerminateConfirmScreen(
                         .fillMaxWidth()
                         .heightIn(min = 48.dp),
                 ) {
-                    Text("隐藏 10 秒用于截图")
+                    Text(stringResource(R.string.s_d3d9818b53))
                 }
                 Text(
-                    text = "隐藏期间倒计时继续，之后自动恢复。",
+                    text = stringResource(R.string.s_894ea44be1),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -212,10 +214,10 @@ private fun UsageGuardTerminateConfirmScreen(
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     TextButton(onClick = onDismiss) {
-                        Text("返回")
+                        Text(stringResource(R.string.s_11d0241540))
                     }
                     Button(onClick = onConfirm) {
-                        Text("终止使用")
+                        Text(stringResource(R.string.s_59f9bf3524))
                     }
                 }
             }

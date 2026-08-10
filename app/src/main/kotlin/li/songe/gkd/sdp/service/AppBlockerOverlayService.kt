@@ -53,6 +53,8 @@ import li.songe.gkd.sdp.ui.style.AppTheme
 import li.songe.gkd.sdp.util.SelfControlElapsedPolicy
 import li.songe.gkd.sdp.util.SelfControlInsightWindowPolicy
 import li.songe.gkd.sdp.util.AppBlockerDecisionPolicy
+import androidx.compose.ui.res.stringResource
+import li.songe.gkd.sdp.R
 
 class AppBlockerOverlayService : LifecycleService(), SavedStateRegistryOwner {
 
@@ -349,7 +351,7 @@ fun AppBlockerInterceptScreen(
                 onClick = onExit,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text("算了（退出）${timeLeft}s")
+                Text(stringResource(R.string.s_c2768060ab, (timeLeft).toString()))
             }
         }
     }

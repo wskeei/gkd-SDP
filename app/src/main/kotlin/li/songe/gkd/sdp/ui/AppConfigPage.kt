@@ -74,6 +74,7 @@ import li.songe.gkd.sdp.util.launchAsFn
 import li.songe.gkd.sdp.util.switchItem
 import li.songe.gkd.sdp.util.throttle
 import li.songe.gkd.sdp.util.toJson5String
+import li.songe.gkd.sdp.R
 
 @Serializable
 data class AppConfigRoute(
@@ -217,7 +218,7 @@ fun AppConfigPage(route: AppConfigRoute) {
                             if (isSelectedMode) {
                                 DropdownMenuItem(
                                     text = {
-                                        Text(text = "全选")
+                                        Text(text = li.songe.gkd.sdp.app.getString(R.string.s_3e44b2a933))
                                     },
                                     onClick = {
                                         expanded = false
@@ -226,7 +227,7 @@ fun AppConfigPage(route: AppConfigRoute) {
                                 )
                                 DropdownMenuItem(
                                     text = {
-                                        Text(text = "反选")
+                                        Text(text = li.songe.gkd.sdp.app.getString(R.string.s_ae05880411))
                                     },
                                     onClick = {
                                         expanded = false
@@ -378,7 +379,7 @@ fun AppConfigPage(route: AppConfigRoute) {
             item(ListPlaceholder.KEY, ListPlaceholder.TYPE) {
                 Spacer(modifier = Modifier.height(EmptyHeight))
                 if (groupSize == 0 && !firstLoading) {
-                    EmptyText(text = if (vm.showDisabledRuleFlow.collectAsStateWithLifecycle().value) "暂无数据" else "暂无数据，或修改筛选")
+                    EmptyText(text = if (vm.showDisabledRuleFlow.collectAsStateWithLifecycle().value) li.songe.gkd.sdp.app.getString(R.string.s_b246458f20) else li.songe.gkd.sdp.app.getString(R.string.s_53e5dc587c))
                 }
             }
         }

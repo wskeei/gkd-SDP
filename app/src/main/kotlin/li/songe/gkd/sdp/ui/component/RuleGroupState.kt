@@ -34,6 +34,7 @@ import li.songe.gkd.sdp.util.subsMapFlow
 import li.songe.gkd.sdp.util.throttle
 import li.songe.gkd.sdp.util.toast
 import li.songe.gkd.sdp.util.updateSubscription
+import li.songe.gkd.sdp.R
 
 data class ShowGroupState(
     val subsId: Long,
@@ -207,7 +208,7 @@ suspend fun batchUpdateGroupEnable(
     if (enable == false && diffDataList.isNotEmpty()) {
         val attempt = AutoReenableDisableGuard.tryConsumeForDisable()
         if (!attempt.allowed) {
-            toast("今日关闭次数已用完（${attempt.limit} 次），将于明日 00:00 重置")
+            toast(li.songe.gkd.sdp.app.getString(R.string.s_b0bb6964b5, (attempt.limit).toString()))
             return emptyList()
         }
     }
@@ -318,7 +319,7 @@ class RuleGroupState(
                                             ).stringify()
                                         )
                                     )
-                                    toast("已重置局部开关至初始状态")
+                                    toast(li.songe.gkd.sdp.app.getString(R.string.s_9f8659b8b5))
                                 }
                             } else {
                                 null
@@ -327,7 +328,7 @@ class RuleGroupState(
                             subsConfig.enable?.let {
                                 mainVm.viewModelScope.launchAsFn {
                                     DbSet.subsConfigDao.update(subsConfig.copy(enable = null))
-                                    toast("已重置开关至初始状态")
+                                    toast(li.songe.gkd.sdp.app.getString(R.string.s_59ec2d9a54))
                                 }
                             }
                         }
@@ -335,7 +336,7 @@ class RuleGroupState(
                         subsConfig.enable?.let {
                             mainVm.viewModelScope.launchAsFn {
                                 DbSet.subsConfigDao.update(subsConfig.copy(enable = null))
-                                toast("已重置开关至初始状态")
+                                toast(li.songe.gkd.sdp.app.getString(R.string.s_59ec2d9a54))
                             }
                         }
                     }
@@ -375,7 +376,7 @@ class RuleGroupState(
                             showGroupState.groupKey
                         )
                     }
-                    toast("删除成功")
+                    toast(li.songe.gkd.sdp.app.getString(R.string.s_86e8d12a79))
                 }
             )
         }
@@ -392,8 +393,8 @@ class RuleGroupState(
                     val newValue = changedExcludeData
                     if (newValue != null) {
                         mainVm.dialogFlow.waitResult(
-                            title = "提示",
-                            text = "当前内容未保存，是否放弃编辑？",
+                            title = li.songe.gkd.sdp.app.getString(R.string.s_ab3656a956),
+                            text = li.songe.gkd.sdp.app.getString(R.string.s_aebc195621),
                         )
                     }
                     dismissExcludeGroupShow()
@@ -418,7 +419,7 @@ class RuleGroupState(
                                 PerfIconButton(imageVector = PerfIcon.Save, onClick = throttle {
                                     val newValue = changedExcludeData
                                     if (newValue == null) {
-                                        toast("无修改")
+                                        toast(li.songe.gkd.sdp.app.getString(R.string.s_a2a69342dd))
                                         dismissExcludeGroupShow()
                                     } else {
                                         val newSubsConfig =
@@ -433,7 +434,7 @@ class RuleGroupState(
                                         dismissExcludeGroupShow()
                                         mainVm.viewModelScope.launchTry {
                                             DbSet.subsConfigDao.insert(newSubsConfig)
-                                            toast("更新成功")
+                                            toast(li.songe.gkd.sdp.app.getString(R.string.s_e2cff77372))
                                         }
                                     }
                                 })

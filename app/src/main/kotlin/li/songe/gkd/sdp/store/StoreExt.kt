@@ -7,6 +7,7 @@ import li.songe.gkd.sdp.service.ExposeService
 import li.songe.gkd.sdp.util.AppListString
 import li.songe.gkd.sdp.util.launchTry
 import li.songe.gkd.sdp.util.toast
+import li.songe.gkd.sdp.R
 
 val storeFlow by lazy {
     createAnyFlow(
@@ -85,9 +86,9 @@ fun initStore() = appScope.launchTry(Dispatchers.IO) {
 
 fun switchStoreEnableMatch() {
     if (storeFlow.value.enableMatch) {
-        toast("暂停规则匹配")
+        toast(li.songe.gkd.sdp.app.getString(R.string.s_2bd91e39a7))
     } else {
-        toast("开启规则匹配")
+        toast(li.songe.gkd.sdp.app.getString(R.string.s_bb9c248fa1))
     }
     storeFlow.update { it.copy(enableMatch = !it.enableMatch) }
 }

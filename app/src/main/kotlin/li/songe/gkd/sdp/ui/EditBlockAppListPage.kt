@@ -24,6 +24,7 @@ import li.songe.gkd.sdp.ui.style.scaffoldPadding
 import li.songe.gkd.sdp.util.launchAsFn
 import li.songe.gkd.sdp.util.throttle
 import li.songe.gkd.sdp.util.toast
+import li.songe.gkd.sdp.R
 
 @Serializable
 data object EditBlockAppListRoute : NavKey
@@ -37,8 +38,8 @@ fun EditBlockAppListPage() {
         if (vm.getChangedSet() != null) {
             context.justHideSoftInput()
             mainVm.dialogFlow.waitResult(
-                title = "提示",
-                text = "当前内容未保存，是否放弃编辑？",
+                title = li.songe.gkd.sdp.app.getString(R.string.s_ab3656a956),
+                text = li.songe.gkd.sdp.app.getString(R.string.s_aebc195621),
             )
         } else {
             context.hideSoftInput()
@@ -55,7 +56,7 @@ fun EditBlockAppListPage() {
                     onClick = onBack,
                 )
             },
-            title = { Text(text = "应用白名单") },
+            title = { Text(text = li.songe.gkd.sdp.app.getString(R.string.s_7395ba05d0)) },
             actions = {
                 PerfIconButton(
                     imageVector = PerfIcon.Save,
@@ -63,9 +64,9 @@ fun EditBlockAppListPage() {
                         val newSet = vm.getChangedSet()
                         if (newSet != null) {
                             blockMatchAppListFlow.value = newSet
-                            toast("更新成功")
+                            toast(li.songe.gkd.sdp.app.getString(R.string.s_e2cff77372))
                         } else {
-                            toast("未修改")
+                            toast(li.songe.gkd.sdp.app.getString(R.string.s_fff8cc4d94))
                         }
                         context.hideSoftInput()
                         mainVm.popPage()

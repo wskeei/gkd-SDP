@@ -30,6 +30,8 @@ import li.songe.gkd.sdp.a11y.UsageGuardEngine
 import li.songe.gkd.sdp.ui.style.AppTheme
 import li.songe.gkd.sdp.ui.share.ServiceOverlayLifecycleOwner
 import li.songe.gkd.sdp.util.LogUtils
+import androidx.compose.ui.res.stringResource
+import li.songe.gkd.sdp.R
 
 class UsageGuardTimeoutOverlayService : LifecycleService(), SavedStateRegistryOwner {
     private val windowManager by lazy { getSystemService(WINDOW_SERVICE) as WindowManager }
@@ -132,7 +134,7 @@ private fun UsageGuardTimeoutScreen(
             verticalArrangement = Arrangement.Center,
         ) {
             Text(
-                text = "时间已到",
+                text = stringResource(R.string.s_367b8716dd),
                 style = MaterialTheme.typography.displaySmall,
             )
             Text(
@@ -144,7 +146,7 @@ private fun UsageGuardTimeoutScreen(
                 onClick = onGoHome,
                 modifier = Modifier.fillMaxWidth(),
             ) {
-                Text("回到桌面")
+                Text(stringResource(R.string.s_533bc81708))
             }
         }
     }

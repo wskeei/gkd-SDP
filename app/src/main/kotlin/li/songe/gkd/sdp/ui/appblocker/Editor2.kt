@@ -39,6 +39,8 @@ import li.songe.gkd.sdp.app
 import li.songe.gkd.sdp.data.AppGroup
 import li.songe.gkd.sdp.data.BlockTimeRule
 import li.songe.gkd.sdp.ui.component.AppPickerDialog
+import androidx.compose.ui.res.stringResource
+import li.songe.gkd.sdp.R
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
@@ -133,9 +135,9 @@ private fun RuleEditorContent(
 ) {
     Text(
         text = if (vm.editingRule != null) {
-            if (isLocked) "查看规则 (已锁定)" else "编辑规则"
+            if (isLocked) stringResource(R.string.s_f387d20cb8) else stringResource(R.string.s_13794d2141)
         } else {
-            "添加规则"
+            stringResource(R.string.s_d2fc32282a)
         },
         style = MaterialTheme.typography.titleLarge,
         fontWeight = FontWeight.Bold,
@@ -171,7 +173,7 @@ private fun RuleTargetEditor(
     isLocked: Boolean,
     onShowAppPicker: () -> Unit,
 ) {
-    Text(text = "拦截对象", style = MaterialTheme.typography.bodyMedium)
+    Text(text = stringResource(R.string.s_cbd16b0221), style = MaterialTheme.typography.bodyMedium)
     Spacer(modifier = Modifier.height(8.dp))
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         FilterChip(
@@ -180,7 +182,7 @@ private fun RuleTargetEditor(
                 vm.ruleTargetType = BlockTimeRule.TARGET_TYPE_APP
                 vm.ruleTargetId = ""
             },
-            label = { Text("单独应用") },
+            label = { Text(stringResource(R.string.s_74c7776c98)) },
             enabled = !isLocked,
         )
         FilterChip(
@@ -189,7 +191,7 @@ private fun RuleTargetEditor(
                 vm.ruleTargetType = BlockTimeRule.TARGET_TYPE_GROUP
                 vm.ruleTargetId = ""
             },
-            label = { Text("应用组") },
+            label = { Text(stringResource(R.string.s_c46c8c9e4d)) },
             enabled = !isLocked,
         )
     }
@@ -201,7 +203,7 @@ private fun RuleTargetEditor(
         ) {
             Text(
                 text = if (vm.ruleTargetId.isBlank()) {
-                    "未选择应用"
+                    stringResource(R.string.s_496e1f9b69)
                 } else {
                     try {
                         val appInfo = app.packageManager.getApplicationInfo(vm.ruleTargetId, 0)
@@ -214,17 +216,17 @@ private fun RuleTargetEditor(
                 modifier = Modifier.weight(1f),
             )
             TextButton(onClick = onShowAppPicker, enabled = !isLocked) {
-                Text("选择应用")
+                Text(stringResource(R.string.s_9ec480c1e4))
             }
         }
     } else if (allGroups.isEmpty()) {
         Text(
-            text = "暂无应用组，请先创建应用组",
+            text = stringResource(R.string.s_56eaee3096),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.error,
         )
     } else {
-        Text(text = "选择应用组", style = MaterialTheme.typography.bodySmall)
+        Text(text = li.songe.gkd.sdp.app.getString(R.string.s_e3e710b8a5), style = MaterialTheme.typography.bodySmall)
         Spacer(modifier = Modifier.height(8.dp))
         FlowRow(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -254,35 +256,35 @@ private fun RuleScheduleEditor(
         modifier = Modifier.fillMaxWidth(),
     ) {
         Text(
-            text = "时间模板",
+            text = stringResource(R.string.s_a36a90e3d1),
             style = MaterialTheme.typography.bodyMedium,
             modifier = Modifier.weight(1f),
         )
         TextButton(onClick = onShowTemplateDialog, enabled = !isLocked) {
-            Text("选择模板")
+            Text(stringResource(R.string.s_860cb31951))
         }
     }
     Spacer(modifier = Modifier.height(16.dp))
-    Text(text = "规则模式", style = MaterialTheme.typography.bodyMedium)
+    Text(text = stringResource(R.string.s_a89571c669), style = MaterialTheme.typography.bodyMedium)
     Spacer(modifier = Modifier.height(8.dp))
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         FilterChip(
             selected = !vm.ruleIsAllowMode,
             onClick = { vm.ruleIsAllowMode = false },
-            label = { Text("🚫 禁止时间段") },
+            label = { Text(stringResource(R.string.s_837212d5ad)) },
             enabled = !isLocked,
         )
         FilterChip(
             selected = vm.ruleIsAllowMode,
             onClick = { vm.ruleIsAllowMode = true },
-            label = { Text("✓ 允许时间段") },
+            label = { Text(stringResource(R.string.s_78bb3ad69e)) },
             enabled = !isLocked,
         )
     }
     if (vm.ruleIsAllowMode) {
         Spacer(modifier = Modifier.height(4.dp))
         Text(
-            text = "仅在设定的时间段内允许使用，其他时间拦截",
+            text = stringResource(R.string.s_8a4ee1e5ae),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.primary,
         )
@@ -294,8 +296,8 @@ private fun RuleScheduleEditor(
         OutlinedTextField(
             value = vm.ruleStartTime,
             onValueChange = { vm.ruleStartTime = it },
-            label = { Text("开始时间") },
-            placeholder = { Text("22:00") },
+            label = { Text(stringResource(R.string.s_e8868af6eb)) },
+            placeholder = { Text(li.songe.gkd.sdp.app.getString(R.string.s_9f82f6d52b)) },
             modifier = Modifier.weight(1f),
             singleLine = true,
             enabled = !isLocked,
@@ -303,15 +305,15 @@ private fun RuleScheduleEditor(
         OutlinedTextField(
             value = vm.ruleEndTime,
             onValueChange = { vm.ruleEndTime = it },
-            label = { Text("结束时间") },
-            placeholder = { Text("08:00") },
+            label = { Text(stringResource(R.string.s_a0bb9f49ab)) },
+            placeholder = { Text(li.songe.gkd.sdp.app.getString(R.string.s_a843b2d4ca)) },
             modifier = Modifier.weight(1f),
             singleLine = true,
             enabled = !isLocked,
         )
     }
     Spacer(modifier = Modifier.height(16.dp))
-    Text(text = "生效日期", style = MaterialTheme.typography.bodyMedium)
+    Text(text = stringResource(R.string.s_d642f8ef29), style = MaterialTheme.typography.bodyMedium)
     Spacer(modifier = Modifier.height(8.dp))
     FlowRow(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -328,7 +330,7 @@ private fun RuleScheduleEditor(
                         (vm.ruleDaysOfWeek + day).sorted()
                     }
                 },
-                label = { Text("周${dayNames[day - 1]}") },
+                label = { Text(li.songe.gkd.sdp.app.getString(R.string.s_a94243a9c8, (dayNames[day - 1]).toString())) },
                 enabled = !isLocked,
             )
         }
@@ -345,8 +347,8 @@ private fun RuleEditorActions(
     OutlinedTextField(
         value = vm.ruleInterceptMessage,
         onValueChange = { vm.ruleInterceptMessage = it },
-        label = { Text("拦截提示语") },
-        placeholder = { Text("这真的重要吗？") },
+        label = { Text(stringResource(R.string.s_f82dffbf08)) },
+        placeholder = { Text(li.songe.gkd.sdp.app.getString(R.string.s_b3d972565c)) },
         modifier = Modifier.fillMaxWidth(),
         singleLine = true,
         enabled = !isLocked,
@@ -354,7 +356,7 @@ private fun RuleEditorActions(
     Spacer(modifier = Modifier.height(24.dp))
     if (!isLocked) {
         Button(onClick = onSave, modifier = Modifier.fillMaxWidth()) {
-            Text("保存")
+            Text(stringResource(R.string.s_fadf24dbc5))
         }
     } else {
         Button(
@@ -365,7 +367,7 @@ private fun RuleEditorActions(
                 contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
             ),
         ) {
-            Text("确定")
+            Text(li.songe.gkd.sdp.app.getString(R.string.s_f526c89937))
         }
     }
 }

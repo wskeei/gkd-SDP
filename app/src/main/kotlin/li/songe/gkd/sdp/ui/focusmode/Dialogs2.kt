@@ -28,6 +28,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import li.songe.gkd.sdp.data.FocusRule
+import li.songe.gkd.sdp.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -47,7 +48,7 @@ internal fun LockRuleSheet(
                 .padding(16.dp)
         ) {
             Text(
-                text = if (rule.isCurrentlyLocked) "延长锁定" else "锁定规则",
+                text = if (rule.isCurrentlyLocked) li.songe.gkd.sdp.app.getString(R.string.s_eae5fd957e) else li.songe.gkd.sdp.app.getString(R.string.s_2201b864c9),
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold
             )
@@ -55,7 +56,7 @@ internal fun LockRuleSheet(
             Spacer(modifier = Modifier.height(8.dp))
 
             Text(
-                text = "锁定后无法关闭或删除此规则",
+                text = li.songe.gkd.sdp.app.getString(R.string.s_b292eb1d6a),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
             )
@@ -63,7 +64,7 @@ internal fun LockRuleSheet(
             if (rule.isCurrentlyLocked) {
                 val remainingMinutes = ((rule.lockEndTime - System.currentTimeMillis()) / 60000).coerceAtLeast(0)
                 Text(
-                    text = "当前剩余: ${if (remainingMinutes >= 60) "${remainingMinutes / 60}小时${remainingMinutes % 60}分钟" else "${remainingMinutes}分钟"}",
+                    text = li.songe.gkd.sdp.app.getString(R.string.s_1090ec0cd1, (if (remainingMinutes >= 60) "${remainingMinutes / 60}小时${remainingMinutes % 60}分钟" else "${remainingMinutes}分钟").toString()),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.primary
                 )
@@ -113,7 +114,7 @@ internal fun LockRuleSheet(
                     onCheckedChange = { vm.isCustomLockDuration = it }
                 )
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("自定义")
+                Text(li.songe.gkd.sdp.app.getString(R.string.s_c493338e8c))
             }
 
             if (vm.isCustomLockDuration) {
@@ -124,7 +125,7 @@ internal fun LockRuleSheet(
                     OutlinedTextField(
                         value = vm.customLockDaysText,
                         onValueChange = { vm.customLockDaysText = it },
-                        label = { Text("天") },
+                        label = { Text(li.songe.gkd.sdp.app.getString(R.string.s_c3304d1e49)) },
                         modifier = Modifier.weight(1f),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         singleLine = true
@@ -132,7 +133,7 @@ internal fun LockRuleSheet(
                     OutlinedTextField(
                         value = vm.customLockHoursText,
                         onValueChange = { vm.customLockHoursText = it },
-                        label = { Text("小时") },
+                        label = { Text(li.songe.gkd.sdp.app.getString(R.string.s_99f6904ff3)) },
                         modifier = Modifier.weight(1f),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         singleLine = true
@@ -146,7 +147,7 @@ internal fun LockRuleSheet(
                 onClick = onLock,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text(if (rule.isCurrentlyLocked) "延长锁定" else "确认锁定")
+                Text(if (rule.isCurrentlyLocked) li.songe.gkd.sdp.app.getString(R.string.s_eae5fd957e) else li.songe.gkd.sdp.app.getString(R.string.s_648f1e98b5))
             }
 
             Spacer(modifier = Modifier.height(16.dp))

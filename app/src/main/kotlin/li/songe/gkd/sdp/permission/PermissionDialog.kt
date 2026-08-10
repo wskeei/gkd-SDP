@@ -10,6 +10,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.flow.MutableStateFlow
 import li.songe.gkd.sdp.MainActivity
 import li.songe.gkd.sdp.util.stopCoroutine
+import androidx.compose.ui.res.stringResource
+import li.songe.gkd.sdp.R
 
 data class AuthReason(
     val text: () -> String,
@@ -23,7 +25,7 @@ fun AuthDialog(authReasonFlow: MutableStateFlow<AuthReason?>) {
     if (authAction != null) {
         AlertDialog(
             title = {
-                Text(text = "权限请求")
+                Text(text = stringResource(R.string.s_bef597b206))
             },
             text = {
                 Text(text = authAction.text())
@@ -34,12 +36,12 @@ fun AuthDialog(authReasonFlow: MutableStateFlow<AuthReason?>) {
                     authReasonFlow.value = null
                     authAction.confirm?.invoke(context)
                 }) {
-                    Text(text = "确认")
+                    Text(text = stringResource(R.string.s_b56d9ac6c5))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { authReasonFlow.value = null }) {
-                    Text(text = "取消")
+                    Text(text = stringResource(R.string.s_4d0b4688c7))
                 }
             }
         )

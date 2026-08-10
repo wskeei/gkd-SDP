@@ -34,6 +34,8 @@ import li.songe.gkd.sdp.util.launchAsFn
 import li.songe.gkd.sdp.util.mapState
 import li.songe.gkd.sdp.util.subsMapFlow
 import li.songe.gkd.sdp.util.toast
+import androidx.compose.ui.res.stringResource
+import li.songe.gkd.sdp.R
 
 @Composable
 internal fun ActionLogDialog(
@@ -164,22 +166,22 @@ private fun ActionLogDialogSummary(
             modifier = Modifier.padding(top = 4.dp),
         )
         Text(
-            text = "具体规则：$displayRuleName",
+            text = stringResource(R.string.s_58d05e17f9, (displayRuleName).toString()),
             style = MaterialTheme.typography.bodyMedium,
             modifier = Modifier.padding(top = 4.dp),
         )
         Text(
-            text = "订阅：$displaySubscriptionName · v${actionLog.subsVersion}",
+            text = stringResource(R.string.s_4c646a2268, (displaySubscriptionName).toString(), (actionLog.subsVersion).toString()),
             style = MaterialTheme.typography.bodySmall,
             modifier = Modifier.padding(top = 4.dp),
         )
         Text(
-            text = "规则组：$displayGroupName",
+            text = stringResource(R.string.s_2b4543cfce, (displayGroupName).toString()),
             style = MaterialTheme.typography.bodySmall,
             modifier = Modifier.padding(top = 2.dp),
         )
         Text(
-            text = "规则标识：groupType=${actionLog.groupType}, groupKey=${actionLog.groupKey}, " +
+            text = stringResource(R.string.s_ea63fc76c4, (actionLog.groupType).toString(), (actionLog.groupKey).toString()) +
                 "index=${actionLog.ruleIndex}, ${actionLog.ruleKey?.let { "key=$it" } ?: "未设置 key"}",
             style = MaterialTheme.typography.bodySmall,
             modifier = Modifier.padding(top = 2.dp),
@@ -223,7 +225,7 @@ private fun ActionLogDialogActions(
                             ).stringify(),
                         ),
                     )
-                    toast("更新成功")
+                    toast(li.songe.gkd.sdp.app.getString(R.string.s_e2cff77372))
                 },
             )
             HorizontalDivider()
@@ -254,7 +256,7 @@ private fun ActionLogDialogActions(
                         exclude = oldExclude.switch(actionLog.appId, actionLog.activityId).stringify(),
                     ),
                 )
-                toast("更新成功")
+                toast(li.songe.gkd.sdp.app.getString(R.string.s_e2cff77372))
             },
         )
         HorizontalDivider()

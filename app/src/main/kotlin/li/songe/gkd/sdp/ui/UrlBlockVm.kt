@@ -22,6 +22,7 @@ import li.songe.gkd.sdp.db.DbSet
 import li.songe.gkd.sdp.ui.share.BaseViewModel
 import li.songe.gkd.sdp.util.AutoReenableDisableGuard
 import li.songe.gkd.sdp.util.toast
+import li.songe.gkd.sdp.R
 
 class UrlBlockVm : BaseViewModel() {
 
@@ -112,17 +113,17 @@ class UrlBlockVm : BaseViewModel() {
 
     fun saveGroup() = viewModelScope.launch(Dispatchers.IO) {
         if (groupName.isBlank()) {
-            toast("请输入规则组名称")
+            toast(li.songe.gkd.sdp.app.getString(R.string.s_c2b0a0b1d5))
             return@launch
         }
 
         val globalLock = globalLockFlow.value
         if (globalLock?.isCurrentlyLocked == true) {
-            toast("全局锁定中，无法修改")
+            toast(li.songe.gkd.sdp.app.getString(R.string.s_b60e11702a))
             return@launch
         }
         if (editingGroup?.isCurrentlyLocked == true) {
-            toast("该组已锁定，无法修改")
+            toast(li.songe.gkd.sdp.app.getString(R.string.s_2d310a6c50))
             return@launch
         }
 
@@ -151,18 +152,18 @@ class UrlBlockVm : BaseViewModel() {
             DbSet.urlBlockRuleDao.insert(rule)
         }
 
-        toast(if (editingGroup != null) "规则组已更新" else "规则组已添加")
+        toast(if (editingGroup != null) li.songe.gkd.sdp.app.getString(R.string.s_56ffd3054f) else li.songe.gkd.sdp.app.getString(R.string.s_ee56793e12))
         resetGroupForm()
     }
 
     fun deleteGroup(group: UrlRuleGroup) = viewModelScope.launch(Dispatchers.IO) {
         val globalLock = globalLockFlow.value
         if (globalLock?.isCurrentlyLocked == true) {
-            toast("全局锁定中，无法删除")
+            toast(li.songe.gkd.sdp.app.getString(R.string.s_f668f3749f))
             return@launch
         }
         if (group.isCurrentlyLocked) {
-            toast("规则组已锁定，无法删除")
+            toast(li.songe.gkd.sdp.app.getString(R.string.s_434380b5e5))
             return@launch
         }
         
@@ -176,7 +177,7 @@ class UrlBlockVm : BaseViewModel() {
         }
 
         DbSet.urlRuleGroupDao.delete(group)
-        toast("规则组已删除")
+        toast(li.songe.gkd.sdp.app.getString(R.string.s_d48a92c5b2))
     }
 
     fun toggleGroupEnabled(group: UrlRuleGroup) = viewModelScope.launch(Dispatchers.IO) {
@@ -184,7 +185,7 @@ class UrlBlockVm : BaseViewModel() {
              // 锁定时允许开启，但不允许关闭 (AppBlocker 逻辑：锁定时无法修改)
              // 实际上 AppBlocker 逻辑是：isLocked 则无法 toggle。
              if (group.isCurrentlyLocked) {
-                 toast("规则组已锁定，无法关闭")
+                 toast(li.songe.gkd.sdp.app.getString(R.string.s_b82b363afb))
                  return@launch
              }
         }
@@ -255,23 +256,23 @@ class UrlBlockVm : BaseViewModel() {
 
     fun saveUrlRule() = viewModelScope.launch(Dispatchers.IO) {
         if (urlPattern.isBlank()) {
-            toast("请输入网址匹配模式")
+            toast(li.songe.gkd.sdp.app.getString(R.string.s_d141fba50f))
             return@launch
         }
 
         val globalLock = globalLockFlow.value
         if (globalLock?.isCurrentlyLocked == true) {
-            toast("全局锁定中，无法修改")
+            toast(li.songe.gkd.sdp.app.getString(R.string.s_b60e11702a))
             return@launch
         }
         if (editingUrlRule?.isCurrentlyLocked == true) {
-            toast("该规则已锁定，无法修改")
+            toast(li.songe.gkd.sdp.app.getString(R.string.s_24250499b8))
             return@launch
         }
         if (urlGroupId > 0) {
             val group = DbSet.urlRuleGroupDao.getById(urlGroupId)
             if (group?.isCurrentlyLocked == true) {
-                toast("所属规则组已锁定，无法修改组内规则")
+                toast(li.songe.gkd.sdp.app.getString(R.string.s_b52be1df35))
                 return@launch
             }
         }
@@ -307,32 +308,32 @@ class UrlBlockVm : BaseViewModel() {
         )
         DbSet.urlTimeRuleDao.insert(tr)
 
-        toast(if (editingUrlRule != null) "规则已更新" else "规则已添加")
+        toast(if (editingUrlRule != null) li.songe.gkd.sdp.app.getString(R.string.s_fccd13d79e) else li.songe.gkd.sdp.app.getString(R.string.s_4a96cba3d5))
         resetUrlForm()
     }
 
     fun deleteUrlRule(rule: UrlBlockRule) = viewModelScope.launch(Dispatchers.IO) {
         val globalLock = globalLockFlow.value
         if (globalLock?.isCurrentlyLocked == true) {
-            toast("全局锁定中，无法删除")
+            toast(li.songe.gkd.sdp.app.getString(R.string.s_f668f3749f))
             return@launch
         }
         if (rule.isCurrentlyLocked) {
-            toast("规则已锁定，无法删除")
+            toast(li.songe.gkd.sdp.app.getString(R.string.s_7e2a3403ff))
             return@launch
         }
         // 删除关联的时间规则
         DbSet.urlTimeRuleDao.deleteByTarget(UrlTimeRule.TARGET_TYPE_RULE, rule.id)
         
         DbSet.urlBlockRuleDao.delete(rule)
-        toast("规则已删除")
+        toast(li.songe.gkd.sdp.app.getString(R.string.s_91ba569081))
     }
 
     fun toggleUrlRuleEnabled(rule: UrlBlockRule) = viewModelScope.launch(Dispatchers.IO) {
         // 锁定受 Global Lock 和 自身 Lock 控制
         val globalLock = globalLockFlow.value
         if (rule.enabled && (globalLock?.isCurrentlyLocked == true || rule.isCurrentlyLocked)) {
-            toast("规则已锁定，无法关闭")
+            toast(li.songe.gkd.sdp.app.getString(R.string.s_e27c087656))
             return@launch
         }
         val requestedEnabled = !rule.enabled
@@ -380,17 +381,17 @@ class UrlBlockVm : BaseViewModel() {
 
     fun saveTimeRule() = viewModelScope.launch(Dispatchers.IO) {
         if (timeRuleTargetId == 0L) {
-            toast("请选择拦截对象")
+            toast(li.songe.gkd.sdp.app.getString(R.string.s_bb81e3c8bd))
             return@launch
         }
 
         val globalLock = globalLockFlow.value
         if (globalLock?.isCurrentlyLocked == true) {
-            toast("全局锁定中，无法修改")
+            toast(li.songe.gkd.sdp.app.getString(R.string.s_b60e11702a))
             return@launch
         }
         if (editingTimeRule?.isCurrentlyLocked == true) {
-            toast("该时间规则已锁定，无法修改")
+            toast(li.songe.gkd.sdp.app.getString(R.string.s_0748da8850))
             return@launch
         }
         
@@ -398,13 +399,13 @@ class UrlBlockVm : BaseViewModel() {
         if (timeRuleTargetType == UrlTimeRule.TARGET_TYPE_RULE) {
             val rule = DbSet.urlBlockRuleDao.getById(timeRuleTargetId)
             if (rule?.isCurrentlyLocked == true) {
-                toast("目标规则已锁定，无法修改其时间规则")
+                toast(li.songe.gkd.sdp.app.getString(R.string.s_1f3bc33f58))
                 return@launch
             }
         } else {
             val group = DbSet.urlRuleGroupDao.getById(timeRuleTargetId)
             if (group?.isCurrentlyLocked == true) {
-                toast("目标规则组已锁定，无法修改其时间规则")
+                toast(li.songe.gkd.sdp.app.getString(R.string.s_407094d575))
                 return@launch
             }
         }
@@ -425,27 +426,27 @@ class UrlBlockVm : BaseViewModel() {
         )
 
         DbSet.urlTimeRuleDao.insert(rule)
-        toast(if (editingTimeRule != null) "时间规则已更新" else "时间规则已添加")
+        toast(if (editingTimeRule != null) li.songe.gkd.sdp.app.getString(R.string.s_5a06c20c64) else li.songe.gkd.sdp.app.getString(R.string.s_d26775f66c))
         resetTimeRuleForm()
     }
 
     fun deleteTimeRule(rule: UrlTimeRule) = viewModelScope.launch(Dispatchers.IO) {
         val globalLock = globalLockFlow.value
         if (globalLock?.isCurrentlyLocked == true) {
-            toast("全局锁定中，无法删除")
+            toast(li.songe.gkd.sdp.app.getString(R.string.s_f668f3749f))
             return@launch
         }
         if (rule.isCurrentlyLocked) {
-            toast("该规则已锁定，无法删除")
+            toast(li.songe.gkd.sdp.app.getString(R.string.s_3a385f3e59))
             return@launch
         }
         DbSet.urlTimeRuleDao.delete(rule)
-        toast("时间规则已删除")
+        toast(li.songe.gkd.sdp.app.getString(R.string.s_2e8b6dcd1b))
     }
 
     fun toggleTimeRuleEnabled(rule: UrlTimeRule) = viewModelScope.launch(Dispatchers.IO) {
         if (rule.enabled && (rule.isCurrentlyLocked || globalLockFlow.value?.isCurrentlyLocked == true)) {
-            toast("规则已锁定，无法关闭")
+            toast(li.songe.gkd.sdp.app.getString(R.string.s_e27c087656))
             return@launch
         }
         val requestedEnabled = !rule.enabled
@@ -479,7 +480,7 @@ class UrlBlockVm : BaseViewModel() {
     fun lockGlobal() = viewModelScope.launch(Dispatchers.IO) {
         val durationMillis = calculateLockEndTime()
         if (durationMillis == 0L) {
-            toast("请输入有效的锁定时长")
+            toast(li.songe.gkd.sdp.app.getString(R.string.s_40d80a0879))
             return@launch
         }
 
@@ -500,13 +501,13 @@ class UrlBlockVm : BaseViewModel() {
         )
 
         DbSet.urlBlockerLockDao.insert(lock)
-        toast("全局锁定已设置")
+        toast(li.songe.gkd.sdp.app.getString(R.string.s_32850ffc30))
     }
 
     fun lockGroup(group: UrlRuleGroup) = viewModelScope.launch(Dispatchers.IO) {
         val durationMillis = calculateLockEndTime()
         if (durationMillis == 0L) {
-            toast("请输入有效的锁定时长")
+            toast(li.songe.gkd.sdp.app.getString(R.string.s_40d80a0879))
             return@launch
         }
 
@@ -526,13 +527,13 @@ class UrlBlockVm : BaseViewModel() {
         )
 
         DbSet.urlRuleGroupDao.update(updatedGroup)
-        toast("规则组已锁定")
+        toast(li.songe.gkd.sdp.app.getString(R.string.s_ba0a98f664))
     }
 
     fun lockUrlRule(rule: UrlBlockRule) = viewModelScope.launch(Dispatchers.IO) {
         val durationMillis = calculateLockEndTime()
         if (durationMillis == 0L) {
-            toast("请输入有效的锁定时长")
+            toast(li.songe.gkd.sdp.app.getString(R.string.s_40d80a0879))
             return@launch
         }
 
@@ -552,13 +553,13 @@ class UrlBlockVm : BaseViewModel() {
         )
 
         DbSet.urlBlockRuleDao.update(updatedRule)
-        toast("规则已锁定")
+        toast(li.songe.gkd.sdp.app.getString(R.string.s_7aa6790ed4))
     }
 
     fun lockTimeRule(rule: UrlTimeRule) = viewModelScope.launch(Dispatchers.IO) {
         val durationMillis = calculateLockEndTime()
         if (durationMillis == 0L) {
-             toast("请输入有效的锁定时长")
+             toast(li.songe.gkd.sdp.app.getString(R.string.s_40d80a0879))
             return@launch
         }
 
@@ -578,7 +579,7 @@ class UrlBlockVm : BaseViewModel() {
         )
 
         DbSet.urlTimeRuleDao.update(updatedRule)
-        toast("时间规则已锁定")
+        toast(li.songe.gkd.sdp.app.getString(R.string.s_f191eda2e9))
     }
 
     // ======================== 浏览器 Logic (保留) ========================
@@ -601,7 +602,7 @@ class UrlBlockVm : BaseViewModel() {
 
     fun saveBrowser() = viewModelScope.launch(Dispatchers.IO) {
         if (browserPackageName.isBlank() || browserUrlBarId.isBlank()) {
-            toast("请填写完整的浏览器信息")
+            toast(li.songe.gkd.sdp.app.getString(R.string.s_d2925a1027))
             return@launch
         }
 
@@ -614,28 +615,28 @@ class UrlBlockVm : BaseViewModel() {
         )
 
         DbSet.browserConfigDao.insert(browser)
-        toast(if (editingBrowser != null) "浏览器配置已更新" else "浏览器已添加")
+        toast(if (editingBrowser != null) li.songe.gkd.sdp.app.getString(R.string.s_9ef00032cc) else li.songe.gkd.sdp.app.getString(R.string.s_4ee42d581f))
         resetBrowserForm()
     }
 
     fun deleteBrowser(browser: BrowserConfig) = viewModelScope.launch(Dispatchers.IO) {
         val globalLock = globalLockFlow.value
         if (globalLock?.isCurrentlyLocked == true) {
-             toast("全局锁定中，无法删除浏览器")
+             toast(li.songe.gkd.sdp.app.getString(R.string.s_89f482a121))
              return@launch
         }
         if (browser.isBuiltin) {
-            toast("内置浏览器不可删除")
+            toast(li.songe.gkd.sdp.app.getString(R.string.s_540af00cbb))
             return@launch
         }
         DbSet.browserConfigDao.delete(browser)
-        toast("浏览器配置已删除")
+        toast(li.songe.gkd.sdp.app.getString(R.string.s_6881bbfdb4))
     }
     
     fun toggleBrowserEnabled(browser: BrowserConfig) = viewModelScope.launch(Dispatchers.IO) {
         val globalLock = globalLockFlow.value
         if (browser.enabled && globalLock?.isCurrentlyLocked == true) {
-            toast("全局锁定中，无法关闭")
+            toast(li.songe.gkd.sdp.app.getString(R.string.s_86c2460795))
             return@launch
         }
         DbSet.browserConfigDao.update(browser.copy(enabled = !browser.enabled))

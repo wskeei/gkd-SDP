@@ -18,6 +18,7 @@ import li.songe.gkd.sdp.diagnostics.DiagnosticLogger
 import li.songe.gkd.sdp.util.LogUtils
 import li.songe.gkd.sdp.util.toast
 import kotlin.random.Random
+import li.songe.gkd.sdp.R
 
 data class FetchState(
     val isFetching: Boolean = false,
@@ -68,7 +69,7 @@ object WechatContactFetcher {
         }
         
         if (target != null) {
-            toast("已抓取: $target")
+            toast(li.songe.gkd.sdp.app.getString(R.string.s_0cc07c757c, (target).toString()))
         }
         if (text != null && (text.contains("失败") || text.contains("完成") || text.contains("停止"))) {
             toast(text)
@@ -77,7 +78,7 @@ object WechatContactFetcher {
 
     fun startFetch(accessibilityService: AccessibilityService) {
         if (isFetching) {
-            toast("正在抓取中，请稍候")
+            toast(li.songe.gkd.sdp.app.getString(R.string.s_c136c74156))
             return
         }
 
@@ -103,7 +104,7 @@ object WechatContactFetcher {
 
         appScope.launch(Dispatchers.IO) {
             try {
-                toast("请打开微信通讯录页面")
+                toast(li.songe.gkd.sdp.app.getString(R.string.s_439ce2d1bb))
                 updateStatus("等待进入微信通讯录...")
 
                 // 等待用户打开通讯录
@@ -112,7 +113,7 @@ object WechatContactFetcher {
                 fetchContactsFromCurrentScreen()
             } catch (err: Exception) {
                 LogUtils.d("contact fetch failed", err)
-                toast("抓取失败：${DiagnosticLogger.userMessage(err)}")
+                toast(li.songe.gkd.sdp.app.getString(R.string.s_81cf2f474d, (DiagnosticLogger.userMessage(err)).toString()))
             } finally {
                 finishFetch()
             }
@@ -673,10 +674,10 @@ object WechatContactFetcher {
         if (fetchedContacts.isNotEmpty()) {
             // 保存到数据库
             DbSet.wechatContactDao.insertAll(fetchedContacts)
-            toast("抓取完成，已更新 ${fetchedContacts.size} 个联系人")
+            toast(li.songe.gkd.sdp.app.getString(R.string.s_375b87905f, (fetchedContacts.size).toString()))
             updateStatus("抓取完成：${fetchedContacts.size} 个联系人")
         } else {
-            toast("未抓取到联系人")
+            toast(li.songe.gkd.sdp.app.getString(R.string.s_464d02f662))
             updateStatus("未抓取到联系人")
         }
 
@@ -698,6 +699,6 @@ object WechatContactFetcher {
         collectJob?.cancel()
         collectJob = null
         service = null
-        toast("已停止抓取")
+        toast(li.songe.gkd.sdp.app.getString(R.string.s_a759881bbf))
     }
 }

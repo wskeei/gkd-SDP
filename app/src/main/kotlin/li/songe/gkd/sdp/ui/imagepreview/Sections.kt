@@ -68,6 +68,7 @@ import okhttp3.OkHttpClient
 import okio.Path.Companion.toOkioPath
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.toJavaDuration
+import li.songe.gkd.sdp.R
 
 internal val imageLoader by lazy {
     ImageLoader.Builder(app)
@@ -250,7 +251,7 @@ private fun ImagePreviewBars(
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(
-                        text = "${pagerState.currentPage + 1} / ${previewItems.size}",
+                        text = li.songe.gkd.sdp.app.getString(R.string.s_7adaf20edf, (pagerState.currentPage + 1).toString(), (previewItems.size).toString()),
                         modifier = Modifier
                             .background(Color.Black.copy(alpha = 0.5f), CircleShape)
                             .padding(horizontal = 12.dp, vertical = 4.dp),

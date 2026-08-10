@@ -1,12 +1,984 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name" debug_suffix="true">GKD-SDP</string>
-    <string name="a11y_desc">基于高级选择器和订阅规则的屏幕自定义点击服务\n\n通过自定义选择器和订阅规则，能帮助你实现点击任意位置控件，自定义快捷操作等高级功能</string>
-    <string name="import_backup" debug_suffix="true">导入备份</string>
-    <string name="capture_snapshot" debug_suffix="true">捕获快照</string>
-    <string name="http_server" debug_suffix="true">HTTP服务</string>
-    <string name="snapshot_button" debug_suffix="true">快照按钮</string>
-    <string name="rule_match" debug_suffix="true">规则匹配</string>
-    <string name="record_activity" debug_suffix="true">界面服务</string>
-    <string name="record_a11y_event" debug_suffix="true">事件服务</string>
+    <string name="a11y_desc" formatted="false">基于高级选择器和订阅规则的屏幕自定义点击服务\n\n通过自定义选择器和订阅规则，能帮助你实现点击任意位置控件，自定义快捷操作等高级功能</string>
+    <string name="app_name" formatted="false">GKD-SDP</string>
+    <string name="capture_snapshot" formatted="false">捕获快照</string>
+    <string name="http_server" formatted="false">HTTP服务</string>
+    <string name="import_backup" formatted="false">导入备份</string>
+    <string name="record_a11y_event" formatted="false">事件服务</string>
+    <string name="record_activity" formatted="false">界面服务</string>
+    <string name="rule_match" formatted="false">规则匹配</string>
+    <string name="s_00e778c519" formatted="false">授权范围</string>
+    <string name="s_0261a6c710" formatted="false">全局锁定</string>
+    <string name="s_027b905228" formatted="false">授权成功</string>
+    <string name="s_0335fe51da" formatted="false">Shizuku 服务已断开</string>
+    <string name="s_035bb01220" formatted="false">服务未连接</string>
+    <string name="s_036f009257" formatted="false">前缀匹配</string>
+    <string name="s_03c2d07a24" formatted="false">包名</string>
+    <string name="s_04c62c8f3d" formatted="false">无障碍</string>
+    <string name="s_067f4e9588" formatted="false">四个快速时长</string>
+    <string name="s_06802d0346" formatted="false">应用组已添加</string>
+    <string name="s_06e3aae567" formatted="false">已添加的应用不可移除；如需移除，请删除整个应用组后重建。</string>
+    <string name="s_0748ac7579" formatted="false">基础只读范围</string>
+    <string name="s_0748da8850" formatted="false">该时间规则已锁定，无法修改</string>
+    <string name="s_078163778f">间隔冷却中，还需%1$s后可修改</string>
+    <string name="s_07a62b1e96" formatted="false">编辑服务端口</string>
+    <string name="s_081a44d5f5" formatted="false">列表选择</string>
+    <string name="s_086fa44431">选择统计范围，当前 %1$s</string>
+    <string name="s_087db63ab1" formatted="false">安装</string>
+    <string name="s_0927c7b920">%1$s已启动</string>
+    <string name="s_0933e86c0e" formatted="false">生成快照需要获取屏幕截图</string>
+    <string name="s_09b58aa342" formatted="false">外观</string>
+    <string name="s_09c309db65" formatted="false">最短时长为 5 分钟</string>
+    <string name="s_0b707d6dcc" formatted="false">锁定</string>
+    <string name="s_0b97786e44" formatted="false">⚠️ 当前已安装</string>
+    <string name="s_0bdb9d76df" formatted="false">当日无监控应用</string>
+    <string name="s_0bfb53c9cd" formatted="false">删除类别</string>
+    <string name="s_0c3d6aa510">已更新自动重开间隔：%1$s 分钟</string>
+    <string name="s_0c42f43e47" formatted="false">删除日志</string>
+    <string name="s_0c81c7ca27" formatted="false">把默认模式、理由门槛和常用时长收紧到你真正会用的那组值。</string>
+    <string name="s_0c96adb235" formatted="false">关闭后立即倒计时，并按 15/10/5/3/2/1 分钟分阶段提醒</string>
+    <string name="s_0cc07c757c">已抓取: %1$s</string>
+    <string name="s_0ce42bb010">确定要删除规则组「%1$s」吗？组内的所有规则也会被删除。</string>
+    <string name="s_0ce6ca1568">本次所在时段：%1$s</string>
+    <string name="s_0d9a428066" formatted="false">添加应用规则</string>
+    <string name="s_0db6dd2e7f">未使用间隔 %1$s</string>
+    <string name="s_0ee51f3213">确定删除所选 %1$s 个订阅?</string>
+    <string name="s_0f0c48af67" formatted="false">Shizuku 授权</string>
+    <string name="s_0f40d8d7de">订阅顺序：%1$s, 订阅名称 %2$s</string>
+    <string name="s_0f4580b7db" formatted="false">自动重开始终启用，无法关闭；会恢复规则、使用申请开关与无障碍权限守护</string>
+    <string name="s_0f8458ec0b" formatted="false">白名单应用（点击移除）</string>
+    <string name="s_0fd5f2bdd6" formatted="false">下列权限应默认授予，但可能因某些操作如系统升级，备份迁移等被限制</string>
+    <string name="s_102626a5cc">已关闭 %1$s 条规则</string>
+    <string name="s_1031d055e8" formatted="false">未找到匹配的联系人</string>
+    <string name="s_103787f23f" formatted="false">正在连接中，请稍后</string>
+    <string name="s_104a39b093" formatted="false">使用协议</string>
+    <string name="s_108a9199f2" formatted="false">保存提示</string>
+    <string name="s_1090ec0cd1">当前剩余: %1$s</string>
+    <string name="s_112997acfa">同单位换算：%1$s</string>
+    <string name="s_115793186c" formatted="false">每行一个，如：
+bilibili.com
+youtube.com</string>
+    <string name="s_11740cb0a5" formatted="false">版本信息</string>
+    <string name="s_11c0847151">%1$s 条启用时间规则</string>
+    <string name="s_11d0241540" formatted="false">返回</string>
+    <string name="s_11d1976e38">下载订阅文件失败
+%1$s</string>
+    <string name="s_12460118b0" formatted="false">没有合适的标签？添加标签</string>
+    <string name="s_1262ae439f" formatted="false">当前操作权限「访问受限设置」已被限制, 请先解除限制</string>
+    <string name="s_1278802e6e" formatted="false">拦截类型</string>
+    <string name="s_12abdcba31" formatted="false">可继续选择安装新版本</string>
+    <string name="s_12b64fb2df" formatted="false">事件日志</string>
+    <string name="s_13794d2141" formatted="false">编辑规则</string>
+    <string name="s_14b8a7bf3c" formatted="false">记录服务</string>
+    <string name="s_1508e32d35" formatted="false">修改订阅</string>
+    <string name="s_150e6661aa" formatted="false">卸载后重新安装可让应用权限回归初始状态解除限制，先点击下方「导出应用」可将应用提前保存至下载，然后卸载应用，到文件管理中重新安装即可
+
+注意：卸载会删除所有数据，请自行备份数据</string>
+    <string name="s_151577da08">已移除: %1$s</string>
+    <string name="s_1640da6876" formatted="false">全局锁定中</string>
+    <string name="s_1658680c1d" formatted="false">添加规则组</string>
+    <string name="s_16f957e647">微信号: %1$s</string>
+    <string name="s_17068dc79c" formatted="false">反馈须知</string>
+    <string name="s_175813e4ff" formatted="false">专注模式未启动</string>
+    <string name="s_177a269ee4" formatted="false">开源代码</string>
+    <string name="s_179a65fe24" formatted="false">请选择有效的应用组</string>
+    <string name="s_17bfc950b7" formatted="false">权限受限</string>
+    <string name="s_17cf04336d" formatted="false">使用控制</string>
+    <string name="s_17f4155b4b" formatted="false">特征选择器</string>
+    <string name="s_188896795f" formatted="false">导出</string>
+    <string name="s_18a07b6ed5">模式：%1$s · 引擎：%2$s</string>
+    <string name="s_1937bcb105" formatted="false">规则名称</string>
+    <string name="s_1941b8aa85" formatted="false">触发文案支持变量替换，规则如下
+${1} 子规则名称
+${2} 规则名称
+${3} 触发次数
+
+示例模板
+${1}/${2}/${3}
+
+替换结果
+子规则a/规则A/3</string>
+    <string name="s_196c9660e0" formatted="false">暂无可确认的上次结束时间</string>
+    <string name="s_19c7b9ed28" formatted="false">应用组已锁定，无法关闭</string>
+    <string name="s_19ce2aa525" formatted="false">启用多条订阅时弹窗确认</string>
+    <string name="s_1a2443f7d2" formatted="false">打开白名单应用</string>
+    <string name="s_1a26edf94a" formatted="false">其他</string>
+    <string name="s_1ac3e91414" formatted="false">正在处理，请勿关闭应用…</string>
+    <string name="s_1acf004269" formatted="false">获取信息根节点失败</string>
+    <string name="s_1ae2d653ce" formatted="false">记录分心软件安装历史</string>
+    <string name="s_1b2219a307" formatted="false">限制说明</string>
+    <string name="s_1bbac91b90">对象：%1$s</string>
+    <string name="s_1cac8ac7f5" formatted="false">处理中…</string>
+    <string name="s_1d51cdc0f2" formatted="false">添加无障碍保活失败
+请尝试重启无障碍</string>
+    <string name="s_1d80e402d6" formatted="false">请输入 1~5 的整数次数</string>
+    <string name="s_1dd014a84e" formatted="false">增强</string>
+    <string name="s_1e010b148d" formatted="false">无规则被改变</string>
+    <string name="s_1e09b684d4">%1$s 个应用</string>
+    <string name="s_1eb2bb81e0" formatted="false">如：晚间复盘</string>
+    <string name="s_1ebce11b0b">剩余 %1$s</string>
+    <string name="s_1f2998c9c8" formatted="false">去设置</string>
+    <string name="s_1f3bc33f58" formatted="false">目标规则已锁定，无法修改其时间规则</string>
+    <string name="s_1f3c14ed9e" formatted="false">保存截图到相册</string>
+    <string name="s_1f4d53235c">订阅id不可为%1$s
+负数id为内部使用</string>
+    <string name="s_1f54fb7d63" formatted="false">是否将所选规则重置开关至初始状态?
+
+注: 也可在「订阅-规则类别」操作</string>
+    <string name="s_1fa7fa3095" formatted="false">这一列还没有应用</string>
+    <string name="s_1fc1afc5c5" formatted="false">继续</string>
+    <string name="s_1fee3b4a52" formatted="false">🚫</string>
+    <string name="s_201d216690">%1$s / 5</string>
+    <string name="s_203d809fb1">更新时间 %1$s</string>
+    <string name="s_20b86aa7ab" formatted="false">默认查看今天的申请记录，切换日期时只保留所选那一天的内容。</string>
+    <string name="s_20bf3bc4ef" formatted="false">终止下载</string>
+    <string name="s_213bcdc0f2">订阅版本号 %1$s</string>
+    <string name="s_21654037e2" formatted="false">去下载</string>
+    <string name="s_21e2314ce6" formatted="false">先确认总开关，再核对当前保护范围和默认策略。</string>
+    <string name="s_2201b864c9" formatted="false">锁定规则</string>
+    <string name="s_22a7b0d512" formatted="false">返回查看内容</string>
+    <string name="s_2313ce7d22" formatted="false">打开触发提示弹窗</string>
+    <string name="s_233ee6a4c8">%1$s平均 %2$s（%3$s 条）</string>
+    <string name="s_23926d6146" formatted="false">前往</string>
+    <string name="s_24250499b8" formatted="false">该规则已锁定，无法修改</string>
+    <string name="s_242a10d8a9" formatted="false">记录浏览</string>
+    <string name="s_24feb0f040" formatted="false">提示「正在保存快照」</string>
+    <string name="s_252fed9478" formatted="false">导出日志</string>
+    <string name="s_25af58e687" formatted="false">事件服务</string>
+    <string name="s_25d2843150" formatted="false">已启用</string>
+    <string name="s_25d3a49e6c" formatted="false">构建渠道</string>
+    <string name="s_25d9aca60f" formatted="false">启用拦截</string>
+    <string name="s_26bb571105" formatted="false">状态正常, 无需操作</string>
+    <string name="s_26c9e586fc" formatted="false">快照记录</string>
+    <string name="s_2716b658b8">+%1$s</string>
+    <string name="s_2735ce6e46" formatted="false">无法开启无障碍?</string>
+    <string name="s_2755dbd77c" formatted="false">使用申请总开关</string>
+    <string name="s_27e042df94" formatted="false">应用模式已保存</string>
+    <string name="s_288d57a99d" formatted="false">白名单已保存</string>
+    <string name="s_28b124759e">• %1$s</string>
+    <string name="s_28bf227b9b" formatted="false">分钟</string>
+    <string name="s_29207cc695" formatted="false">请输入提示内容</string>
+    <string name="s_2937d0d547">本次：%1$s · 所在时段：%2$s</string>
+    <string name="s_2990881615">%1$s / %2$s</string>
+    <string name="s_29aa760a1e" formatted="false">如：bilibili.com</string>
+    <string name="s_29ea25d303" formatted="false">提示样式</string>
+    <string name="s_2a5a0db475" formatted="false">仅选中应用</string>
+    <string name="s_2ad07a9506" formatted="false">✗ 已删</string>
+    <string name="s_2b37101eb6" formatted="false">请输入应用规则
+</string>
+    <string name="s_2b4543cfce">规则组：%1$s</string>
+    <string name="s_2b5f43357d" formatted="false">规则组详情</string>
+    <string name="s_2b96421a75">确定删除 %1$s ?</string>
+    <string name="s_2bd91e39a7" formatted="false">暂停规则匹配</string>
+    <string name="s_2be88ca424" formatted="false">null</string>
+    <string name="s_2c20f3fd5e" formatted="false">正在刷新订阅,请稍后操作</string>
+    <string name="s_2c393a9233" formatted="false">启动后锁定</string>
+    <string name="s_2cf75123ae" formatted="false">按日期筛选</string>
+    <string name="s_2d310a6c50" formatted="false">该组已锁定，无法修改</string>
+    <string name="s_2d646aa66b" formatted="false">删除规则组</string>
+    <string name="s_2e268f4e64" formatted="false">白名单内关闭服务</string>
+    <string name="s_2e4c2a37c1" formatted="false">这不是快速启动模板</string>
+    <string name="s_2e8b6dcd1b" formatted="false">时间规则已删除</string>
+    <string name="s_2f752c005e" formatted="false">移除</string>
+    <string name="s_302471b81d" formatted="false">复盘范围</string>
+    <string name="s_3036ac5688" formatted="false">通知文案支持变量替换，规则如下
+${i} 全局规则数
+${k} 应用数
+${u} 应用规则数
+${n} 触发次数
+
+示例模板
+${i}全局/${k}应用/${u}规则/${n}触发
+
+替换结果
+0全局/1应用/2规则/3触发</string>
+    <string name="s_3075b35472" formatted="false">已持有「无障碍权限」可继续使用</string>
+    <string name="s_30808f105b" formatted="false">暂无独立规则</string>
+    <string name="s_30a60b1367" formatted="false">快速时长</string>
+    <string name="s_3219dbb398" formatted="false">上传文件中</string>
+    <string name="s_327d59b5bd" formatted="false">下载中</string>
+    <string name="s_32850ffc30" formatted="false">全局锁定已设置</string>
+    <string name="s_32d6755cac" formatted="false">点选柱形查看明细</string>
+    <string name="s_3352552afe" formatted="false">查看时间规则 (已锁定)</string>
+    <string name="s_33fa921b9f" formatted="false">网址</string>
+    <string name="s_340b2031bf" formatted="false">规则无变动</string>
+    <string name="s_341bcd0a2b" formatted="false">如: com.android.chrome:id/url_bar</string>
+    <string name="s_34a4bd22d5" formatted="false">图标化浏览优先于长列表，点按图标后再切换模式或移出列表。</string>
+    <string name="s_34ba6b190f" formatted="false">请先确认此明文来源</string>
+    <string name="s_34e1511e3b" formatted="false">替换成功</string>
+    <string name="s_34e21ea99c" formatted="false">无效应用ID</string>
+    <string name="s_34e7ba7c70">%1$s平均</string>
+    <string name="s_34fd164246" formatted="false">手动授权</string>
+    <string name="s_354077c764" formatted="false">数据概览</string>
+    <string name="s_3560caf980" formatted="false">1. 有一台安装了 adb 的电脑
+
+2.手机开启调试模式后连接电脑授权调试
+
+3. 在电脑 cmd/pwsh 中运行如下命令</string>
+    <string name="s_356c996618" formatted="false">使用申请</string>
+    <string name="s_357a190b67" formatted="false">将包含：应用版本与系统类别、功能开关、权限能力状态、最多 500 条脱敏诊断事件、脱敏崩溃摘要。</string>
+    <string name="s_362f11dc2a" formatted="false">浏览器适配</string>
+    <string name="s_36524f9faf" formatted="false">即使当前无障碍已经关闭，也可以先开启守护。检测到关闭后会立即显示倒计时，</string>
+    <string name="s_367b8716dd" formatted="false">时间已到</string>
+    <string name="s_3685fc478e">自动化启动失败：%1$s</string>
+    <string name="s_3718c68dfd" formatted="false">确定锁定</string>
+    <string name="s_3721fe11a2" formatted="false">局部无障碍</string>
+    <string name="s_3745f91a8c" formatted="false">请填写完整信息</string>
+    <string name="s_3755f56f2f" formatted="false">删除</string>
+    <string name="s_375b87905f">抓取完成，已更新 %1$s 个联系人</string>
+    <string name="s_37c53d9dc0" formatted="false">GKD 请求使用系统「无障碍 API」获取屏幕信息, 以此基于用户自定义订阅规则执行自动化操作</string>
+    <string name="s_37fbc765c6" formatted="false">隐藏快照截图状态栏</string>
+    <string name="s_37feaa9b99">最小 %1$s</string>
+    <string name="s_3a385f3e59" formatted="false">该规则已锁定，无法删除</string>
+    <string name="s_3a6e607f0c" formatted="false">授权</string>
+    <string name="s_3ab400ba10" formatted="false">选择覆盖应用</string>
+    <string name="s_3aba810f58" formatted="false">类别描述</string>
+    <string name="s_3af2ad9aac" formatted="false">全局生效</string>
+    <string name="s_3b39242124" formatted="false">请稍候…</string>
+    <string name="s_3bddb65762" formatted="false">模式覆盖</string>
+    <string name="s_3cc7a5af4c" formatted="false">已锁定</string>
+    <string name="s_3d7090e33e" formatted="false">是否将所选规则全部关闭?
+
+注: 也可在「订阅-规则类别」操作</string>
+    <string name="s_3d81345303" formatted="false">重置</string>
+    <string name="s_3e2b222d98" formatted="false">两次输入的密码不一致</string>
+    <string name="s_3e42de41c7" formatted="false">说明: 触发拦截后将显示全屏提示，10秒后自动退出。</string>
+    <string name="s_3e44b2a933" formatted="false">全选</string>
+    <string name="s_3e5e447fd3" formatted="false">界面切换日志</string>
+    <string name="s_3e67db9f62">剩余次数：%1$s</string>
+    <string name="s_3e964b109c" formatted="false">所选日期暂无记录</string>
+    <string name="s_3fb9d5b75c" formatted="false">编辑时间规则</string>
+    <string name="s_404e6e3b68" formatted="false">更新微信联系人</string>
+    <string name="s_40635c4228" formatted="false">编辑类别</string>
+    <string name="s_407094d575" formatted="false">目标规则组已锁定，无法修改其时间规则</string>
+    <string name="s_40d80a0879" formatted="false">请输入有效的锁定时长</string>
+    <string name="s_4194ebb566">确定要删除应用组「%1$s」吗？相关的时间规则也会被删除。</string>
+    <string name="s_41d7664f15" formatted="false">未使用间隔</string>
+    <string name="s_421b5975e0">%1$s已关闭</string>
+    <string name="s_427069f0a2" formatted="false">专注时长</string>
+    <string name="s_42a36e9497" formatted="false">反馈</string>
+    <string name="s_42c3637722" formatted="false">自动化已启动</string>
+    <string name="s_42e1b49044" formatted="false">此规则已经在内部配置对当前应用的禁用，就算强制开启规则也是无意义或不生效的
+
+提示: 这种情况一般在此全局规则无法适配/跳过适配/单独适配当前应用时出现</string>
+    <string name="s_434380b5e5" formatted="false">规则组已锁定，无法删除</string>
+    <string name="s_439ce2d1bb" formatted="false">请打开微信通讯录页面</string>
+    <string name="s_44bd725407" formatted="false">如需显示所有应用
+请授予「读取应用列表权限」</string>
+    <string name="s_44c31cddda" formatted="false">事件服务(无权限)</string>
+    <string name="s_44d89b8e5a">作者 %1$s</string>
+    <string name="s_451b1366af" formatted="false">多</string>
+    <string name="s_458dd653a4" formatted="false">内容变化</string>
+    <string name="s_45d0618f98">请先授予「%1$s」</string>
+    <string name="s_464d02f662" formatted="false">未抓取到联系人</string>
+    <string name="s_46de88b050" formatted="false">请输入 Github Cookie</string>
+    <string name="s_472d6f2b45" formatted="false">尚未生效：请添加时间规则</string>
+    <string name="s_475787d680">跳转失败
+%1$s</string>
+    <string name="s_47d3fa79b4">纵轴：%1$s（%2$s） · 时间轴最多显示 6 个标签</string>
+    <string name="s_48594302d1" formatted="false">为防止误触，应用内不支持在此关闭无障碍。若确需关闭，请前往 Android 系统无障碍设置。</string>
+    <string name="s_48ff47e21f" formatted="false">界面日志</string>
+    <string name="s_491a7f5bd7" formatted="false">（已锁定）</string>
+    <string name="s_492729f7f9" formatted="false">截屏时保存快照</string>
+    <string name="s_496e1f9b69" formatted="false">未选择应用</string>
+    <string name="s_4a338bcd08" formatted="false">申请权限</string>
+    <string name="s_4a6c3f7937" formatted="false">无障碍权限守护需要悬浮窗权限，请重新授权</string>
+    <string name="s_4a96cba3d5" formatted="false">规则已添加</string>
+    <string name="s_4adcd23b06" formatted="false">选择白名单</string>
+    <string name="s_4b7e05a71a" formatted="false">规则与申请偏好</string>
+    <string name="s_4bce9796c3">当前锁定至: %1$s</string>
+    <string name="s_4be37702c8" formatted="false">确认生成支持包</string>
+    <string name="s_4c28d5df90" formatted="false">代码记录</string>
+    <string name="s_4c57a177b2" formatted="false">这些应用在全局模式下可直接跳过使用申请。</string>
+    <string name="s_4c646a2268">订阅：%1$s · v%2$s</string>
+    <string name="s_4c7baac83b" formatted="false">添加监控应用</string>
+    <string name="s_4cec547cf2" formatted="false">间用比</string>
+    <string name="s_4d0b4688c7" formatted="false">取消</string>
+    <string name="s_4de50894b8" formatted="false">日志</string>
+    <string name="s_4e700140c6" formatted="false">Shizuku 服务连接成功</string>
+    <string name="s_4ee42d581f" formatted="false">浏览器已添加</string>
+    <string name="s_4fd3d72b67" formatted="false">无障碍启动超时，请尝试关闭重启</string>
+    <string name="s_5013a2206e">算了 (退出) %1$ss</string>
+    <string name="s_50532745b5" formatted="false">触发记录</string>
+    <string name="s_5118a80944" formatted="false">系统 Toast 存在频率限制, 触发过于频繁会被系统强制不显示
+
+如果只使用开屏一类低频率规则可使用系统提示, 否则建议关闭此项使用自定义样式提示</string>
+    <string name="s_514c33af5c" formatted="false">加载中...</string>
+    <string name="s_517526331f">剩余 %1$s 小时 %2$s 分钟</string>
+    <string name="s_52113abdd4">下一次重置时间：%1$s</string>
+    <string name="s_5291c7544f" formatted="false">专注模式已锁定，无法提前结束</string>
+    <string name="s_52c2b4e02d" formatted="false">显示系统应用</string>
+    <string name="s_52fa962ab3" formatted="false">应用管理</string>
+    <string name="s_533bc81708" formatted="false">回到桌面</string>
+    <string name="s_53836c4482" formatted="false">自动化启动失败，被其他应用占用</string>
+    <string name="s_53c76c1349" formatted="false">规则类别</string>
+    <string name="s_53de29c90a" formatted="false">请至少添加一个应用</string>
+    <string name="s_53e5dc587c" formatted="false">暂无数据，或修改筛选</string>
+    <string name="s_540af00cbb" formatted="false">内置浏览器不可删除</string>
+    <string name="s_5414239fa2" formatted="false">暂无规则组</string>
+    <string name="s_544facd553" formatted="false">自动化局部关闭</string>
+    <string name="s_5464aca4a1" formatted="false">未启动</string>
+    <string name="s_54900435fc" formatted="false">类别名称</string>
+    <string name="s_55071d1cf5" formatted="false">查看趋势文字明细</string>
+    <string name="s_55423fd0ff">时长：%1$s</string>
+    <string name="s_55c1c91c04">未知URI
+%1$s</string>
+    <string name="s_561d9917c6" formatted="false">确定删除所有快照记录?</string>
+    <string name="s_565e1ff87a" formatted="false">使用系统样式</string>
+    <string name="s_56eaee3096" formatted="false">暂无应用组，请先创建应用组</string>
+    <string name="s_56ffd3054f" formatted="false">规则组已更新</string>
+    <string name="s_57828673c0" formatted="false">已添加</string>
+    <string name="s_586a91601e" formatted="false">版本代码</string>
+    <string name="s_58a79cef99" formatted="false">生成快照/日志链接</string>
+    <string name="s_58aafa922e" formatted="false">已批量更新配置</string>
+    <string name="s_58b598a013">%1$s 条时间规则</string>
+    <string name="s_58bad7a807" formatted="false">格式：GKDSDPBK2 / PBKDF2-SHA256 / AES-256-GCM</string>
+    <string name="s_58d05e17f9">具体规则：%1$s</string>
+    <string name="s_58d3737769">至少 %1$s 个字</string>
+    <string name="s_58dc64c81a" formatted="false">手动输入</string>
+    <string name="s_5982c44c18" formatted="false">重新加载</string>
+    <string name="s_59e2c8e61d" formatted="false">使用须知</string>
+    <string name="s_59ec2d9a54" formatted="false">已重置开关至初始状态</string>
+    <string name="s_59f9bf3524" formatted="false">终止使用</string>
+    <string name="s_59fbf95a82">确定删除 %1$s ?</string>
+    <string name="s_5a06c20c64" formatted="false">时间规则已更新</string>
+    <string name="s_5a46f954cd">当前查看 %1$s</string>
+    <string name="s_5a5a7a890c" formatted="false">刷新页面</string>
+    <string name="s_5a73d0b9c6" formatted="false">搜索应用名或包名</string>
+    <string name="s_5a9f8deb3e" formatted="false">提示: 可使用 GKD 的快照功能查看浏览器地址栏的节点 ID</string>
+    <string name="s_5ae6bc88fe" formatted="false">已持有「写入安全设置权限」 优先使用此项</string>
+    <string name="s_5b265e25d5">%1$s：%2$s%3$s%4$s</string>
+    <string name="s_5b62e0a895" formatted="false">删除快照</string>
+    <string name="s_5bf7ff408f" formatted="false">触发提示</string>
+    <string name="s_5bf8fdca8e" formatted="false">正在读取上次记录…</string>
+    <string name="s_5bf9577af0" formatted="false">前五类默认启用；包含截图、无障碍事件与微信联系人的敏感类别默认关闭。</string>
+    <string name="s_5c07ed58a8" formatted="false">浏览器名称</string>
+    <string name="s_5c57086db5" formatted="false">非法规则</string>
+    <string name="s_5c6b661917" formatted="false">数字自律锁定生效中，无法关闭无障碍权限守护</string>
+    <string name="s_5dbd015496" formatted="false">暂无</string>
+    <string name="s_5dffc801c0" formatted="false">锁定设置已更新</string>
+    <string name="s_5f4ec4b0ec">%1$s分钟</string>
+    <string name="s_5f519ca1d8" formatted="false">规则名称 (可选)</string>
+    <string name="s_5f76edc5de" formatted="false">未知错误</string>
+    <string name="s_5f83e7f6a1" formatted="false">基础</string>
+    <string name="s_6027bb300c">%1$s · %2$s</string>
+    <string name="s_608b8e137e" formatted="false">选择标签</string>
+    <string name="s_60b4ae9082" formatted="false">保存修改</string>
+    <string name="s_60cd8a5af2" formatted="false">订阅已存在</string>
+    <string name="s_60d171dc16" formatted="false">请检查微信是否安装或禁用</string>
+    <string name="s_60f0ae8cbf" formatted="false">事件详情</string>
+    <string name="s_60ff133549" formatted="false">开始使用</string>
+    <string name="s_614197f94d">应用列表 (%1$s)</string>
+    <string name="s_61485b8822">%1$s / %2$s</string>
+    <string name="s_61c6738b36" formatted="false">关闭无障碍权限守护</string>
+    <string name="s_62221c94a0" formatted="false">仅授权此来源</string>
+    <string name="s_6276f4ee6d" formatted="false">兼容性提示</string>
+    <string name="s_62a6243ff9" formatted="false">如：视频网站</string>
+    <string name="s_62da9fb9ac" formatted="false">（已锁定，无法提前结束）</string>
+    <string name="s_632e6dd2c1" formatted="false">确定删除当前快照吗?</string>
+    <string name="s_6337015d1f" formatted="false">数字自律</string>
+    <string name="s_6340271cde" formatted="false">HTTP 服务启动失败</string>
+    <string name="s_637cf2032c" formatted="false">专注时长至少为 5 分钟</string>
+    <string name="s_63c1371c03" formatted="false">专注模式</string>
+    <string name="s_63c9be57f7" formatted="false">锁定后无法删除或修改任何规则/组，但可以新增。</string>
+    <string name="s_63da968987" formatted="false">从组中删除</string>
+    <string name="s_63ef694432" formatted="false">选择专注规则</string>
+    <string name="s_6439fc3f5f" formatted="false">无障碍权限已关闭</string>
+    <string name="s_648f1e98b5" formatted="false">确认锁定</string>
+    <string name="s_65525f0f44" formatted="false">启动失败</string>
+    <string name="s_6579a5ba64" formatted="false">立即断开局域网会话</string>
+    <string name="s_65f3531c34" formatted="false">订阅设置</string>
+    <string name="s_65fc81e161" formatted="false">打开</string>
+    <string name="s_6600f231be" formatted="false">搜索联系人</string>
+    <string name="s_6605382d7c" formatted="false">确认并分享到其他应用</string>
+    <string name="s_6662277b90" formatted="false">不带 http://，支持域名或前缀</string>
+    <string name="s_66b10cf5e5" formatted="false">打开HTTP设置弹窗</string>
+    <string name="s_672352d845">应用发生错误（错误码：%1$s）</string>
+    <string name="s_67f4598335" formatted="false">应用组名称</string>
+    <string name="s_6806d16ee2" formatted="false">锁定期间规则将无法关闭。请谨慎操作。</string>
+    <string name="s_687f626d74" formatted="false">未找到应用</string>
+    <string name="s_6881bbfdb4" formatted="false">浏览器配置已删除</string>
+    <string name="s_68fd9e7f42">时间规则 (%1$s)</string>
+    <string name="s_6905b9f1f9" formatted="false">专注模式已开始</string>
+    <string name="s_6950d05c09" formatted="false">添加成功</string>
+    <string name="s_69523749b4" formatted="false">应用组已更新</string>
+    <string name="s_698a879938" formatted="false">✓</string>
+    <string name="s_698bea5124" formatted="false">作者</string>
+    <string name="s_69dc314d81" formatted="false">无障碍事件日志</string>
+    <string name="s_6a05dbdc88" formatted="false">匹配方式</string>
+    <string name="s_6a1b839874" formatted="false">轨迹提示</string>
+    <string name="s_6a43e3e09d" formatted="false">HTTP服务</string>
+    <string name="s_6a863491d4">更新 %1$s 条订阅</string>
+    <string name="s_6b0ad26edf" formatted="false">启用优化</string>
+    <string name="s_6b582fbb9d" formatted="false">清除订阅</string>
+    <string name="s_6b683e741b" formatted="false">无障碍局部关闭</string>
+    <string name="s_6be293f190" formatted="false">目标应用组不存在</string>
+    <string name="s_6c0be6e7b0" formatted="false">已复制本机地址</string>
+    <string name="s_6c14bd7f6f" formatted="false">关闭</string>
+    <string name="s_6c189aad4d" formatted="false">执行成功</string>
+    <string name="s_6c19fe0177" formatted="false">应用名</string>
+    <string name="s_6c53cda00c" formatted="false">所选范围暂无分布数据</string>
+    <string name="s_6c572506c2" formatted="false">显示当前界面信息</string>
+    <string name="s_6c7f21d273" formatted="false">间隔（分钟）</string>
+    <string name="s_6ca959f5b2" formatted="false">截图尺寸不一致或文件不可读取，无法替换</string>
+    <string name="s_6cbc419758" formatted="false">已设置为跟随应用白名单</string>
+    <string name="s_6cede3740a" formatted="false">编辑规则组</string>
+    <string name="s_6d17c9576a" formatted="false">允许时间段</string>
+    <string name="s_6d322b1bac" formatted="false">如: com.android.chrome</string>
+    <string name="s_6dc32911b1" formatted="false">Shizuku 授权失败，检测到 Shizuku 未安装，请先下载后安装，如果你是通过其它方式授权，请忽略此提示自行查找原因</string>
+    <string name="s_6deabd286d" formatted="false">如：娱乐应用</string>
+    <string name="s_6debaa8885" formatted="false">添加订阅</string>
+    <string name="s_6e166bc0d5">已更新每日关闭限额：%1$s 次</string>
+    <string name="s_6e75461ed4" formatted="false">HTTP服务已安全重启</string>
+    <string name="s_6eaf52dd96">卸载于: %1$s (共存活 %2$s天)</string>
+    <string name="s_6ed70747fd" formatted="false">不会包含诊断日志、崩溃文件、缓存、支持包、私有 Store、会话令牌、密钥或命令脚本。</string>
+    <string name="s_6f1972e48e" formatted="false">进行中</string>
+    <string name="s_6f77ee7c5c" formatted="false">服务端口</string>
+    <string name="s_6fc15efa04" formatted="false">正在连接 Shizuku 服务...</string>
+    <string name="s_70b208202c" formatted="false">选择</string>
+    <string name="s_70d1eab884">下一次自动重开：%1$s</string>
+    <string name="s_70fa42d276">包含的网址 (%1$s)</string>
+    <string name="s_71e649ba01">应用列表 (%1$s)</string>
+    <string name="s_71f86583e1" formatted="false">新增标签</string>
+    <string name="s_72effd1c3d">已锁定 • 剩余 %1$s</string>
+    <string name="s_7395ba05d0" formatted="false">应用白名单</string>
+    <string name="s_73b0be10ba">系统 WebView 版本（%1$s）过低，文档可能无法正常显示。请升级系统 WebView，或使用外部浏览器。</string>
+    <string name="s_73e7e97c6d">%1$s启动服务失败：%2$s</string>
+    <string name="s_73fb671025" formatted="false">暂无数据可导出</string>
+    <string name="s_74010fe072" formatted="false">备份导入完成</string>
+    <string name="s_7435e653ef">确定要删除规则「%1$s」吗？</string>
+    <string name="s_744ffb01f4" formatted="false">锁定时间规则</string>
+    <string name="s_748db62aba" formatted="false">无障碍权限守护</string>
+    <string name="s_74b0d1f601" formatted="false">未锁定</string>
+    <string name="s_74c7776c98" formatted="false">单独应用</string>
+    <string name="s_750642ccd6" formatted="false">深色模式</string>
+    <string name="s_75358e224d" formatted="false">隐藏悬浮条不会暂停本次使用；提前终止会将倒计时归零并立即回到桌面。</string>
+    <string name="s_756f3b92c0" formatted="false">Shizuku 断开，重启应用以释放自动化服务</string>
+    <string name="s_759c95ad54">已连接客户端：%1$s</string>
+    <string name="s_75ae6a8a7d" formatted="false">显示名称</string>
+    <string name="s_7655f477f1" formatted="false">规则类型</string>
+    <string name="s_769abeb44a" formatted="false">查看规则组 (已锁定)</string>
+    <string name="s_76b9880829" formatted="false">结束</string>
+    <string name="s_76e76680f1" formatted="false">确定删除所有界面日志?</string>
+    <string name="s_7774d11343" formatted="false">已复制局域网地址</string>
+    <string name="s_7790dc931f" formatted="false">音量变化时保存快照</string>
+    <string name="s_781d71bd97" formatted="false">申请理由</string>
+    <string name="s_782087b38b" formatted="false">支持包内容与隐私说明</string>
+    <string name="s_7834885df6" formatted="false">隐藏卡片后可能导致部分设备无法给任务卡片加锁后台，建议先加锁后再隐藏，若已加锁或没有锁后台机制请继续</string>
+    <string name="s_787a6e40ac" formatted="false">已连接 Shizuku 服务，可继续使用</string>
+    <string name="s_78bb3ad69e" formatted="false">✓ 允许时间段</string>
+    <string name="s_7917327c68" formatted="false">检测到权限受限制，请前往解除</string>
+    <string name="s_79cc871ca9" formatted="false">开始</string>
+    <string name="s_7a1cbaff45" formatted="false">记录服务(无权限)</string>
+    <string name="s_7a38d8cbd2" formatted="false">v</string>
+    <string name="s_7aa6790ed4" formatted="false">规则已锁定</string>
+    <string name="s_7adaf20edf">%1$s / %2$s</string>
+    <string name="s_7b15e5e8e7" formatted="false">清除</string>
+    <string name="s_7b29e9051a" formatted="false">请先授权 Shizuku</string>
+    <string name="s_7c0311beef" formatted="false">申请时长</string>
+    <string name="s_7c2c7f64bf" formatted="false">专注模式进行中</string>
+    <string name="s_7c36cdf41a">剩余 %1$s</string>
+    <string name="s_7c423e3f43" formatted="false">运行后授权失败?</string>
+    <string name="s_7cce6f6775" formatted="false">点击撤销；后续更新请求会立即拒绝</string>
+    <string name="s_7d38b53290">更新错误: %1$s</string>
+    <string name="s_7dcbc271db">本次：%1$s</string>
+    <string name="s_7e2a3403ff" formatted="false">规则已锁定，无法删除</string>
+    <string name="s_7e3742f2bf" formatted="false">自律拦截运行状态</string>
+    <string name="s_7e4c9176ba" formatted="false">进入无障碍白名单页面</string>
+    <string name="s_7e68eb622d" formatted="false">保存成功</string>
+    <string name="s_7e8190abeb" formatted="false">安装记录热力图</string>
+    <string name="s_7f96c93415" formatted="false">请先设置 cookie 后再上传</string>
+    <string name="s_7f9cc8a658" formatted="false">请输入应用组名称</string>
+    <string name="s_7fad32f141" formatted="false">选择下列操作即确认生成仅含上述白名单内容的支持包。</string>
+    <string name="s_7fd2ebc2a8" formatted="false">自动重开间隔</string>
+    <string name="s_7fd47e102e" formatted="false">本次</string>
+    <string name="s_80e9287545" formatted="false">选择时长</string>
+    <string name="s_8102e48aad" formatted="false">时间规则</string>
+    <string name="s_81287b9dd7" formatted="false">应用组已锁定，无法删除</string>
+    <string name="s_812f4a9e8a" formatted="false">当前界面拒绝显示悬浮窗</string>
+    <string name="s_817af1870c" formatted="false">保存配置</string>
+    <string name="s_817ddac3d7" formatted="false">移出白名单</string>
+    <string name="s_81b17d1c10" formatted="false">确认并生成链接（需要可访问上传服务）</string>
+    <string name="s_81cf2f474d">抓取失败：%1$s</string>
+    <string name="s_82275eff6f">格式版本：加密备份 v%1$s</string>
+    <string name="s_8233960bfd" formatted="false">备份恢复</string>
+    <string name="s_826d077913">当前间隔：%1$s 分钟（0 为高频巡检）</string>
+    <string name="s_82b86f78a2">v%1$s</string>
+    <string name="s_8344831e7c" formatted="false">副标题</string>
+    <string name="s_837212d5ad" formatted="false">🚫 禁止时间段</string>
+    <string name="s_83caf1badc" formatted="false">快照</string>
+    <string name="s_841a72191f">下次配额重置：%1$s</string>
+    <string name="s_85e76f58dc" formatted="false">(内置)</string>
+    <string name="s_860cb31951" formatted="false">选择模板</string>
+    <string name="s_86539a3eb0" formatted="false">当前没有已启用的规则组，请先前往订阅页面启用规则。</string>
+    <string name="s_86613e925d" formatted="false">局部关闭</string>
+    <string name="s_86629471c3" formatted="false">网址匹配模式</string>
+    <string name="s_867057108e">%1$s 当日存在应用</string>
+    <string name="s_8674184633" formatted="false">应用列表更新成功</string>
+    <string name="s_86c2460795" formatted="false">全局锁定中，无法关闭</string>
+    <string name="s_86e8d12a79" formatted="false">删除成功</string>
+    <string name="s_8731a78cdd" formatted="false">记录列表</string>
+    <string name="s_874487d6ea" formatted="false">如: Chrome</string>
+    <string name="s_877a0e2923" formatted="false">暂无白名单应用</string>
+    <string name="s_881aca9e23" formatted="false">开启「轨迹提示」后点击或滑动后会在屏幕上使用悬浮窗绘制轨迹(一段时间后消失)，如果新触摸事件恰好在悬浮窗区域内，可能会被目标应用拒绝，从而导致点击或滑动无响应</string>
+    <string name="s_881d2d1f26" formatted="false">暂无联系人，请点击上方按钮更新</string>
+    <string name="s_89120c94be" formatted="false">确定延长</string>
+    <string name="s_894a72442f" formatted="false">打开 Shizuku</string>
+    <string name="s_894ea44be1" formatted="false">隐藏期间倒计时继续，之后自动恢复。</string>
+    <string name="s_896022e814">%1$s%2$s</string>
+    <string name="s_897fdfef89" formatted="false">搜索应用</string>
+    <string name="s_89ae336abd" formatted="false">预计大小：小于 3 MiB。生成前请再次确认。</string>
+    <string name="s_89b4aa6364" formatted="false">时间</string>
+    <string name="s_89c340d11d" formatted="false">输入内容不匹配</string>
+    <string name="s_89f482a121" formatted="false">全局锁定中，无法删除浏览器</string>
+    <string name="s_8a4ee1e5ae" formatted="false">仅在设定的时间段内允许使用，其他时间拦截</string>
+    <string name="s_8a8478347d">延长锁定: %1$s</string>
+    <string name="s_8a87deaa49" formatted="false">白名单应用</string>
+    <string name="s_8af0ad9f92" formatted="false">更新渠道</string>
+    <string name="s_8afda7e678" formatted="false">查看数据</string>
+    <string name="s_8b3aba89d1" formatted="false">移出受控应用</string>
+    <string name="s_8b779bd414" formatted="false">规则组名称</string>
+    <string name="s_8bb38ef00c" formatted="false">未启用</string>
+    <string name="s_8bba24fe03" formatted="false">撤销明文来源授权</string>
+    <string name="s_8c276c1fea" formatted="false">隐私政策</string>
+    <string name="s_8c91b02262" formatted="false">后台隐藏</string>
+    <string name="s_8c9fbc6ef9" formatted="false">无效事件选择器</string>
+    <string name="s_8cda652587" formatted="false">域名匹配</string>
+    <string name="s_8d263a68b8" formatted="false">问题反馈</string>
+    <string name="s_8d864071da" formatted="false">显示无障碍事件</string>
+    <string name="s_8dc09bd1b4" formatted="false">订阅id不对应</string>
+    <string name="s_8de957a7b7" formatted="false">未分组</string>
+    <string name="s_8e1d999ba4" formatted="false">无可重置规则</string>
+    <string name="s_8e2d76bc89" formatted="false">确定要删除这条规则吗？</string>
+    <string name="s_8e9d261743" formatted="false">所属规则组</string>
+    <string name="s_8ecb7f0457" formatted="false">Shizuku</string>
+    <string name="s_8eddb6bd87" formatted="false">应用界面节点信息及截图</string>
+    <string name="s_8f22c9908e" formatted="false">删除记录</string>
+    <string name="s_8f68cd6535" formatted="false">收起添加标签</string>
+    <string name="s_8f74cd015b" formatted="false">白名单</string>
+    <string name="s_8f8274c754" formatted="false">暂无搜索结果</string>
+    <string name="s_90059a73fc" formatted="false">请输入类别描述</string>
+    <string name="s_902609e57e" formatted="false">重置当前类别下所有规则开关为默认值？
+重置后规则可由类别批量控制开关</string>
+    <string name="s_90d5529440" formatted="false">崩溃记录</string>
+    <string name="s_90fa56d24c" formatted="false">暂无类别</string>
+    <string name="s_9118783aea" formatted="false">配置全屏拦截</string>
+    <string name="s_914a3f7e15" formatted="false">自动化服务启动失败，检测到自动化服务已被其他应用占用，请先关闭已有服务后重试
+
+注：自动化服务只能同时运行一个，请确保没有其他应用或测试框架占用后再启动</string>
+    <string name="s_919924d7fe" formatted="false">当前规则已锁定，无法关闭自律模式</string>
+    <string name="s_91ba569081" formatted="false">规则已删除</string>
+    <string name="s_923ae7391e" formatted="false">全屏拦截功能需要悬浮窗权限才能正常显示。请前往设置开启。</string>
+    <string name="s_92cab38651" formatted="false">命令授权</string>
+    <string name="s_93564a7ced" formatted="false">操作提示</string>
+    <string name="s_9376a4238e">已保存 %1$s 到下载</string>
+    <string name="s_93794c92ab" formatted="false">点击复制</string>
+    <string name="s_93cac1f331" formatted="false">替换截图(去除隐私)</string>
+    <string name="s_940c88657e" formatted="false">间隔</string>
+    <string name="s_94191ce210" formatted="false">添加</string>
+    <string name="s_9454e9b90d" formatted="false">查看耗电说明</string>
+    <string name="s_952d0f0784" formatted="false">时间格式必须为 HH:mm（例如 09:00）</string>
+    <string name="s_95a85cd30d" formatted="false">在「最近任务」隐藏卡片</string>
+    <string name="s_95bb0f726c" formatted="false">上传完成</string>
+    <string name="s_95e55216b8">悬浮窗：%1$s · %2$s</string>
+    <string name="s_960d7b0923" formatted="false">捐赠支持</string>
+    <string name="s_9645ef9c2d" formatted="false">检测到无障碍关闭后立即提醒，最后显示全屏提示</string>
+    <string name="s_966f4322a8">共 %1$s 全局规则</string>
+    <string name="s_9672b434b8">重置 %1$s 规则</string>
+    <string name="s_96a8d40541" formatted="false">编辑浏览器</string>
+    <string name="s_96b029d1e1" formatted="false">当前范围</string>
+    <string name="s_96c7288776" formatted="false">重启无障碍失败</string>
+    <string name="s_973f07187d" formatted="false">保存到下载</string>
+    <string name="s_97424615a7" formatted="false">关闭服务时删除内存订阅</string>
+    <string name="s_9748286edf" formatted="false">时间设置 (拦截生效时间)</string>
+    <string name="s_97668429f3" formatted="false">请选择至少一个生效日期</string>
+    <string name="s_97f98cd922" formatted="false">音量快照</string>
+    <string name="s_98362e17dd">%1$s / %2$s</string>
+    <string name="s_9839a9c90b">导出失败：%1$s</string>
+    <string name="s_99858cff31" formatted="false">自动重开始终启用，无法关闭。会恢复已关闭的规则、使用申请开关与已加入保护的无障碍权限守护。</string>
+    <string name="s_99b5891003">获取 HOST 失败：%1$s</string>
+    <string name="s_99f6904ff3" formatted="false">小时</string>
+    <string name="s_9b30ccd61d" formatted="false">缓慢查询</string>
+    <string name="s_9b66e8878b" formatted="false">Shizuku 服务连接失败</string>
+    <string name="s_9c66857925" formatted="false">锁定（无法提前结束）</string>
+    <string name="s_9c818a85b3">检测到已授予「%1$s」但实际获取应用数量稀少，已使用其它方式获取但可能不全，在应用列表下拉刷新可重新获取，若无法解决可尝试关闭权限后重新授予或重启设备</string>
+    <string name="s_9c8db95f12" formatted="false">授权错误</string>
+    <string name="s_9cb5b4660f">锁定: %1$s</string>
+    <string name="s_9cf5deae81" formatted="false">暂无统计数据</string>
+    <string name="s_9d227c591a" formatted="false">常用标签库</string>
+    <string name="s_9d6d4b8017" formatted="false">拦截对象类型无效</string>
+    <string name="s_9dd4b09b8d" formatted="false">✓ 存在</string>
+    <string name="s_9de6b27eca" formatted="false">申请时长选项已保存</string>
+    <string name="s_9df1323aef" formatted="false">关闭守护</string>
+    <string name="s_9e5cc3140b" formatted="false">订阅不存在</string>
+    <string name="s_9e7d3ee61c" formatted="false">暂无搜索结果，或修改筛选</string>
+    <string name="s_9e99477b43" formatted="false">暂时无法读取上次记录</string>
+    <string name="s_9ea2c95e8d" formatted="false">前往设置</string>
+    <string name="s_9eba7fa3e2" formatted="false">替换方式：只替换备份包含的类别，未包含类别保持不变。</string>
+    <string name="s_9ec480c1e4" formatted="false">选择应用</string>
+    <string name="s_9edcdf6586" formatted="false">下载完毕</string>
+    <string name="s_9ef00032cc" formatted="false">浏览器配置已更新</string>
+    <string name="s_9effd4ccc9" formatted="false">全局规则</string>
+    <string name="s_9f3c6b0775" formatted="false">已配置，当前时段不拦截</string>
+    <string name="s_9f3eea9816">%1$s
+
+注: 不包含本地订阅</string>
+    <string name="s_9f82f6d52b" formatted="false">22:00</string>
+    <string name="s_9f8659b8b5" formatted="false">已重置局部开关至初始状态</string>
+    <string name="s_9fccef0027" formatted="false">请输入目标应用ID</string>
+    <string name="s_a003f1da17" formatted="false">com.example.app</string>
+    <string name="s_a00626547a" formatted="false">请输入订阅链接</string>
+    <string name="s_a04aff06d0" formatted="false">延长全局锁定</string>
+    <string name="s_a08049752b" formatted="false">特征事件选择器</string>
+    <string name="s_a0995a1cf8" formatted="false">请重新授权以解除限制</string>
+    <string name="s_a0bb9f49ab" formatted="false">结束时间</string>
+    <string name="s_a0ec31af81" formatted="false">局域网调试会话已到期，已切回仅本机</string>
+    <string name="s_a15a6fbc16" formatted="false">权限异常</string>
+    <string name="s_a237a78c90">%1$s：新增 %2$s，覆盖 %3$s，删除 %4$s</string>
+    <string name="s_a273727311" formatted="false">开始专注</string>
+    <string name="s_a2a69342dd" formatted="false">无修改</string>
+    <string name="s_a322744a5c">白名单应用 (%1$s)</string>
+    <string name="s_a36a90e3d1" formatted="false">时间模板</string>
+    <string name="s_a3e561c7c6" formatted="false">提升权限优化体验</string>
+    <string name="s_a495040b76" formatted="false">包名 *</string>
+    <string name="s_a497f76289" formatted="false">定时规则</string>
+    <string name="s_a4be5dfa64" formatted="false">系统应用</string>
+    <string name="s_a50703b6a2" formatted="false">卸载重装</string>
+    <string name="s_a52cfc2df4" formatted="false">请输入 0~240 的整数分钟</string>
+    <string name="s_a597b31e88" formatted="false">为个别全局受控应用单独指定严格或普通模式。</string>
+    <string name="s_a5b44b3b94" formatted="false">备份文件无效或未授予读取权限</string>
+    <string name="s_a63ec9e8f8" formatted="false">选择白名单应用</string>
+    <string name="s_a6a2d4845d" formatted="false">生效范围</string>
+    <string name="s_a6df38586d" formatted="false">检查更新</string>
+    <string name="s_a6eec0915a">已开启 %1$s 条订阅</string>
+    <string name="s_a6f805694b" formatted="false">上传失败</string>
+    <string name="s_a6f825af51" formatted="false">自定义分钟数</string>
+    <string name="s_a6fa6ad6cb" formatted="false">无障碍已关闭</string>
+    <string name="s_a75357bc35" formatted="false">动态配色</string>
+    <string name="s_a759881bbf" formatted="false">已停止抓取</string>
+    <string name="s_a7e6272535" formatted="false">请检查此应用是否安装或禁用</string>
+    <string name="s_a7f814c0a4" formatted="false">编辑</string>
+    <string name="s_a837990204" formatted="false">监控列表</string>
+    <string name="s_a843b2d4ca" formatted="false">08:00</string>
+    <string name="s_a866534a0d" formatted="false">类别说明</string>
+    <string name="s_a89571c669" formatted="false">规则模式</string>
+    <string name="s_a8d5390010" formatted="false">查看链接</string>
+    <string name="s_a8ece9678b" formatted="false">自动化已关闭</string>
+    <string name="s_a94243a9c8">周%1$s</string>
+    <string name="s_aaa3b3883f" formatted="false">提示设置</string>
+    <string name="s_ab3656a956" formatted="false">提示</string>
+    <string name="s_aba4ea9027">输入“%1$s”以确认</string>
+    <string name="s_abb22bd95c" formatted="false">复制链接</string>
+    <string name="s_ac04fdc8b3" formatted="false">打开修改通知文案弹窗</string>
+    <string name="s_ac245bfc80" formatted="false">Github Cookie</string>
+    <string name="s_ac3cc79f91" formatted="false">授权状态</string>
+    <string name="s_ac96d3416e">明文来源：%1$s
+HTTP 内容可能在传输中被读取或修改；授权仅适用于此 scheme、host 与 port。</string>
+    <string name="s_ad1a01b57a" formatted="false">分享到其他应用</string>
+    <string name="s_ad2ea87ca3" formatted="false">无感保活</string>
+    <string name="s_ad5386cf16" formatted="false">统计图表</string>
+    <string name="s_addb3c2ba2" formatted="false">快照按钮</string>
+    <string name="s_ae05880411" formatted="false">反选</string>
+    <string name="s_ae2399c597" formatted="false">默认授权</string>
+    <string name="s_aebc195621" formatted="false">当前内容未保存，是否放弃编辑？</string>
+    <string name="s_b06217b584" formatted="false">Shizuku 服务连接部分失败</string>
+    <string name="s_b0871a4a6b" formatted="false">保存时长选项</string>
+    <string name="s_b0b9270849" formatted="false">新版本</string>
+    <string name="s_b0bb6964b5">今日关闭次数已用完（%1$s 次），将于明日 00:00 重置</string>
+    <string name="s_b13a1d7e01" formatted="false">确定删除所有事件日志?</string>
+    <string name="s_b151485175" formatted="false">耗电警告</string>
+    <string name="s_b1a934b247" formatted="false">订阅链接</string>
+    <string name="s_b209e2ce8a">%1$s - %2$s</string>
+    <string name="s_b213d3a099" formatted="false">为保证已启用的自动化功能正常工作，请返回应用重新开启无障碍权限。</string>
+    <string name="s_b21acfde65" formatted="false">确认并保存到下载</string>
+    <string name="s_b23186d5e5" formatted="false">开启无障碍权限守护</string>
+    <string name="s_b246458f20" formatted="false">暂无数据</string>
+    <string name="s_b28678dc48" formatted="false">最近间隔与间用比</string>
+    <string name="s_b292eb1d6a" formatted="false">锁定后无法关闭或删除此规则</string>
+    <string name="s_b2d1d6afd6" formatted="false">自动重开始终启用，无法关闭。</string>
+    <string name="s_b2f0b173eb" formatted="false">重置开关</string>
+    <string name="s_b387756d31" formatted="false">终止上传</string>
+    <string name="s_b3af13eb8f" formatted="false">冲突预览：</string>
+    <string name="s_b3d972565c" formatted="false">这真的重要吗？</string>
+    <string name="s_b412fa069d" formatted="false">使用条件</string>
+    <string name="s_b4450d038a" formatted="false">当前应用没有无障碍信息，捕获失败</string>
+    <string name="s_b4676e2715" formatted="false">请输入类别名称</string>
+    <string name="s_b52be1df35" formatted="false">所属规则组已锁定，无法修改组内规则</string>
+    <string name="s_b56d9ac6c5" formatted="false">确认</string>
+    <string name="s_b600d981ce" formatted="false">需要悬浮窗权限</string>
+    <string name="s_b60e11702a" formatted="false">全局锁定中，无法修改</string>
+    <string name="s_b7db442622" formatted="false">加入</string>
+    <string name="s_b82b363afb" formatted="false">规则组已锁定，无法关闭</string>
+    <string name="s_b8c5d58816">已启用 %1$s 条规则</string>
+    <string name="s_b9304f6294" formatted="false">生成链接(需科学上网)</string>
+    <string name="s_b9a0e4b4ab" formatted="false">锁定规则组</string>
+    <string name="s_ba0a98f664" formatted="false">规则组已锁定</string>
+    <string name="s_ba1f755996">今日关闭次数已用完（%1$s 次），将于明日 00:00 重置</string>
+    <string name="s_ba964c4042" formatted="false">分享提示</string>
+    <string name="s_bac4c36ee7" formatted="false">快速启动</string>
+    <string name="s_bb218a940b">规则组 (%1$s)</string>
+    <string name="s_bb81e3c8bd" formatted="false">请选择拦截对象</string>
+    <string name="s_bb9c248fa1" formatted="false">开启规则匹配</string>
+    <string name="s_bb9dd3221c" formatted="false">收起图表文字明细</string>
+    <string name="s_bba5c9298c">端口 %1$s 被占用，请更换后重试</string>
+    <string name="s_bbacb690bd" formatted="false">锁定后无法关闭、删除或修改此规则组。</string>
+    <string name="s_bc3692dc28" formatted="false">已启用，打开受控应用前需要先申请</string>
+    <string name="s_bd7b6c1ed1" formatted="false">截屏快照设置</string>
+    <string name="s_bda66bc5a5" formatted="false">收起自定义时长</string>
+    <string name="s_be1e5b4074" formatted="false">打开提示设置弹窗</string>
+    <string name="s_be695b05b4" formatted="false">理由门槛</string>
+    <string name="s_be7bf1f6b3" formatted="false">「局部关闭」可在白名单应用内关闭服务，来解决界面异常，游戏掉帧或无障碍检测的问题</string>
+    <string name="s_be8a21a3ed" formatted="false">选择时间模板</string>
+    <string name="s_be8af550f3" formatted="false">应用ID</string>
+    <string name="s_bed172efc9" formatted="false">关于</string>
+    <string name="s_bedcb574bc">%1$s / %2$s</string>
+    <string name="s_beea7e4cae" formatted="false">批量添加网址 (可选)</string>
+    <string name="s_bef597b206" formatted="false">权限请求</string>
+    <string name="s_befce4eeb3" formatted="false">不同意</string>
+    <string name="s_c0e820383d" formatted="false">无障碍已启动</string>
+    <string name="s_c136c74156" formatted="false">正在抓取中，请稍候</string>
+    <string name="s_c1ef062e06" formatted="false">复制成功</string>
+    <string name="s_c1f18f4e0a" formatted="false">下载更新</string>
+    <string name="s_c27031c740" formatted="false">软件安装监测</string>
+    <string name="s_c2768060ab">算了（退出）%1$ss</string>
+    <string name="s_c2b0a0b1d5" formatted="false">请输入规则组名称</string>
+    <string name="s_c2fd3fcdd3" formatted="false">界面密度</string>
+    <string name="s_c3159c4450" formatted="false">文件加载错误或不存在</string>
+    <string name="s_c3304d1e49" formatted="false">天</string>
+    <string name="s_c41137ca16" formatted="false">打开配置截屏快照弹窗</string>
+    <string name="s_c456ae2487" formatted="false">请配置目标应用和特征事件选择器</string>
+    <string name="s_c46c8c9e4d" formatted="false">应用组</string>
+    <string name="s_c487de4445" formatted="false">最少理由字数已保存</string>
+    <string name="s_c493338e8c" formatted="false">自定义</string>
+    <string name="s_c5277e6e6f" formatted="false">状态变化</string>
+    <string name="s_c52c529934">最近判定：%1$s · %2$s · </string>
+    <string name="s_c54815f2f8" formatted="false">请先授予「写入安全设置权限」</string>
+    <string name="s_c5c9cefa90" formatted="false">同意并开启</string>
+    <string name="s_c5f42f5a0f" formatted="false">HTTP设置</string>
+    <string name="s_c5fd22b186" formatted="false">当前为自动化模式，无障碍将自动关闭</string>
+    <string name="s_c6191f388a">时间规则 (%1$s)</string>
+    <string name="s_c61e3028fc" formatted="false">如果已加入自动重开保护，守护会在下一次检查时恢复。</string>
+    <string name="s_c62e341470" formatted="false">详细数据</string>
+    <string name="s_c6d8dd919b" formatted="false">未检测到界面切换，捕获失败</string>
+    <string name="s_c6e062fed0" formatted="false">添加浏览器</string>
+    <string name="s_c7380c3c20" formatted="false">数字自律复盘</string>
+    <string name="s_c754ba8092" formatted="false">专注模式已结束</string>
+    <string name="s_c7dddf757a" formatted="false">隐藏状态栏</string>
+    <string name="s_c8b05a26f8">id=%1$s</string>
+    <string name="s_c95c313099" formatted="false">第 36 分钟最后一次提醒后仍未恢复，会显示全屏悬浮窗。</string>
+    <string name="s_c9a939b41d" formatted="false">锁定后无法关闭或删除此规则。</string>
+    <string name="s_c9d242c96c" formatted="false">格式版本：旧版未加密备份（已安全转换为 v2）</string>
+    <string name="s_c9f77c0be6" formatted="false">已暂时关闭，将由自动重开保护恢复</string>
+    <string name="s_ca0dc4aed7" formatted="false">本次：已记录，暂无可比较的间隔值</string>
+    <string name="s_ca18550e48" formatted="false">自动重开保护</string>
+    <string name="s_ca22cd537c" formatted="false">添加时间规则</string>
+    <string name="s_ca41e1bef4" formatted="false">收起数据</string>
+    <string name="s_ca924a6012">安装于: %1$s (已安装 %2$s天)</string>
+    <string name="s_cb098574e7" formatted="false">应用组已锁定</string>
+    <string name="s_cb1d1e7bde" formatted="false">默认授权模式</string>
+    <string name="s_cbd16b0221" formatted="false">拦截对象</string>
+    <string name="s_cc0dd8de47">一次性配对码：%1$s（60 秒内有效）</string>
+    <string name="s_cce3d12ecc" formatted="false">严格模式</string>
+    <string name="s_cd05c7b50f" formatted="false">查看文本</string>
+    <string name="s_cd42ed46a6" formatted="false">类型: </string>
+    <string name="s_cd732f6643" formatted="false">移除模式覆盖</string>
+    <string name="s_cd7a98be77">添加通知栏快捷开关
+
+1. 下拉通知栏至「快捷开关」标界面
+2. 找到名称为 %1$s 的快捷开关
+3. 添加此开关到通知面板
+
+只要此快捷开关在通知面板可见
+无论是系统杀后台还是自身崩溃
+简单下拉打开通知即可重启</string>
+    <string name="s_ce7a8986ad" formatted="false">查看图表文字明细</string>
+    <string name="s_ce7c7d71a7" formatted="false">通知文案</string>
+    <string name="s_ce953b779c" formatted="false">请先切换到无障碍模式</string>
+    <string name="s_ceac8790d1" formatted="false">加载失败, 点击重试</string>
+    <string name="s_ceea8ce8e5" formatted="false">规则存在错误, 无法启用</string>
+    <string name="s_cf174a6fa9" formatted="false">正在保存快照...</string>
+    <string name="s_cf989beabc">%1$s 字</string>
+    <string name="s_cff584d9ab" formatted="false">暂无规则</string>
+    <string name="s_d039ea532e" formatted="false">添加全局规则</string>
+    <string name="s_d0b1c07c8f" formatted="false">未启用，当前不会拦截受控应用</string>
+    <string name="s_d0cd80bc26" formatted="false">某些场景下服务刚启动时概率不工作，如多次遇到此情况则不建议使用此功能</string>
+    <string name="s_d11b352c3e">申请时长 %1$s</string>
+    <string name="s_d135a965d5">冷却中，下次可修改：%1$s</string>
+    <string name="s_d141fba50f" formatted="false">请输入网址匹配模式</string>
+    <string name="s_d159fb78f0">申请 %1$s 分钟 · 实用 %2$s</string>
+    <string name="s_d1dcaf9ad6" formatted="false">已忽略此版本</string>
+    <string name="s_d21804ab1a" formatted="false">锁定后无法关闭、删除或修改此时间规则。</string>
+    <string name="s_d26775f66c" formatted="false">时间规则已添加</string>
+    <string name="s_d28f049f02" formatted="false">沉思语录</string>
+    <string name="s_d2925a1027" formatted="false">请填写完整的浏览器信息</string>
+    <string name="s_d2a4e522d4" formatted="false">已授权明文来源</string>
+    <string name="s_d2e08cab80" formatted="false">预计大小：不超过 65 MiB；实际大小由系统文件选择器显示。</string>
+    <string name="s_d2fc32282a" formatted="false">添加规则</string>
+    <string name="s_d3d9818b53" formatted="false">隐藏 10 秒用于截图</string>
+    <string name="s_d41dda6f65" formatted="false">已有相同链接订阅</string>
+    <string name="s_d48a92c5b2" formatted="false">规则组已删除</string>
+    <string name="s_d49e418af8">最大 %1$s</string>
+    <string name="s_d4d9c40dc4" formatted="false">请输入规则名称</string>
+    <string name="s_d538243a95">确定要将此规则「%1$s」删除吗？</string>
+    <string name="s_d5650458c9" formatted="false">Shizuku 断开，结束应用以释放自动化服务</string>
+    <string name="s_d5bc80c5db" formatted="false">有时间规则格式无效，请编辑修正</string>
+    <string name="s_d5da946f96">申请打开 %1$s</string>
+    <string name="s_d5f0847ff2" formatted="false">同意</string>
+    <string name="s_d63a373932" formatted="false">测试版本渠道更新快
+但不稳定可能存在较多BUG
+请谨慎使用</string>
+    <string name="s_d642f8ef29" formatted="false">生效日期</string>
+    <string name="s_d6447fb450">白名单应用 (%1$s)</string>
+    <string name="s_d73b70ee9b" formatted="false">每日关闭限额（次）</string>
+    <string name="s_d7e65414e9" formatted="false">触发趋势（最近14个自然日）</string>
+    <string name="s_d84129b8be" formatted="false">忽略</string>
+    <string name="s_d88d6e6c25" formatted="false">文案规则</string>
+    <string name="s_d8d9e2143a" formatted="false">正在保存...</string>
+    <string name="s_d8eb8652a1" formatted="false">请输入内容，支持变量替换</string>
+    <string name="s_d8f6d7b5a9" formatted="false">该应用已在监控列表中</string>
+    <string name="s_d9c32a4c3d" formatted="false">未知</string>
+    <string name="s_d9db02d07a" formatted="false">更新</string>
+    <string name="s_da3b95b64a" formatted="false">敏感范围，默认关闭</string>
+    <string name="s_da6a6dc1af" formatted="false">应用规则</string>
+    <string name="s_daf67e7a09" formatted="false">删除时间规则</string>
+    <string name="s_db67ff730b" formatted="false">关闭后将停止无障碍权限提醒、倒计时和全屏提示。</string>
+    <string name="s_db8d309a8e" formatted="false">正在刷新订阅，请稍后操作</string>
+    <string name="s_db9c6063a5">更新 %1$s 条，跳过 %2$s 条(已锁定)</string>
+    <string name="s_dbb4430dc0" formatted="false">未选择文件</string>
+    <string name="s_dc9c537d48">%1$s. %2$s</string>
+    <string name="s_dcbbbab7a5" formatted="false">网址拦截</string>
+    <string name="s_dd07e641ca" formatted="false">高级设置</string>
+    <string name="s_dd3760c80a" formatted="false">我知道了</string>
+    <string name="s_dd8a138761" formatted="false">选择要延长的时长。锁定期间规则将无法关闭。</string>
+    <string name="s_dda4842aee">%1$s · %2$s</string>
+    <string name="s_de27714146">%1$s：</string>
+    <string name="s_de4579c740" formatted="false">批量配置全屏拦截</string>
+    <string name="s_dea3d845c4">解析订阅文件失败
+%1$s</string>
+    <string name="s_dec1fa77b8" formatted="false">应用组已删除</string>
+    <string name="s_dec2ec4618" formatted="false">最少字数</string>
+    <string name="s_df06c7a718" formatted="false">添加标签</string>
+    <string name="s_df4803c166" formatted="false">23:00</string>
+    <string name="s_df95c4025b" formatted="false">截屏服务</string>
+    <string name="s_e0498a9bce">今日关闭次数：%1$s/%2$s（剩余 %3$s）</string>
+    <string name="s_e073a2b7df">节点数量至多保留%1$s,丢弃后续节点</string>
+    <string name="s_e09b9cc9e4" formatted="false">确定要删除这条时间规则吗？</string>
+    <string name="s_e0c8442c8f" formatted="false">选择受控应用</string>
+    <string name="s_e0d623ba29" formatted="false">删除当前所选规则?</string>
+    <string name="s_e0dab22b1a" formatted="false">下载失败</string>
+    <string name="s_e17a2ef166" formatted="false">不会包含：数据库、设置原文、订阅、申请理由、网址、截图、界面文字、联系人、Cookie、令牌或文件绝对路径。</string>
+    <string name="s_e182c1f7ff" formatted="false">收起趋势文字明细</string>
+    <string name="s_e1dfdd0c28" formatted="false">输入应用名称或包名</string>
+    <string name="s_e1f202e22a" formatted="false">受控应用已保存</string>
+    <string name="s_e27c087656" formatted="false">规则已锁定，无法关闭</string>
+    <string name="s_e2cff77372" formatted="false">更新成功</string>
+    <string name="s_e2d53a6d3a" formatted="false">重试</string>
+    <string name="s_e2ecfd6487" formatted="false">提交时间</string>
+    <string name="s_e317d798a8" formatted="false">包含截图/节点或联系人数据；只在明确需要时开启</string>
+    <string name="s_e330f2e53c" formatted="false">在浏览器下连接调试</string>
+    <string name="s_e3e710b8a5" formatted="false">选择应用组</string>
+    <string name="s_e4ccf19996" formatted="false">并在 15、25、30、33、35、36 分钟分别提醒一次（间隔为 15/10/5/3/2/1 分钟）。</string>
+    <string name="s_e60faf5b29" formatted="false">你干嘛~ 哎呦~</string>
+    <string name="s_e6bbd743b3" formatted="false">应用拦截</string>
+    <string name="s_e6dc2df4a4" formatted="false">主标题</string>
+    <string name="s_e6f8000ed3">下次可修改：%1$s</string>
+    <string name="s_e713116e5e">%1$s %2$s</string>
+    <string name="s_e7693b5362" formatted="false">应用组已关闭</string>
+    <string name="s_e78582fda3" formatted="false">显示触发位置信息</string>
+    <string name="s_e78f2c3a4a">下一次自动重开：%1$s</string>
+    <string name="s_e7e0ffcd50" formatted="false">非法链接</string>
+    <string name="s_e8446b01b9" formatted="false">目标应用组已锁定，无法修改其时间规则</string>
+    <string name="s_e8868af6eb" formatted="false">开始时间</string>
+    <string name="s_e88c1f786e" formatted="false">保护状态</string>
+    <string name="s_e8a4554eb3" formatted="false">普通模式</string>
+    <string name="s_e8c1720f03" formatted="false">将写入加密备份 v2：</string>
+    <string name="s_e8c5028e79" formatted="false">启用多个远程订阅可能导致执行大量重复规则, 这可能造成规则执行卡顿以及多余耗电
+
+请认真考虑后再确认开启！！！
+</string>
+    <string name="s_e907fcd7c0" formatted="false">已选择备份，请在“设置 → 备份恢复”输入密码并确认导入</string>
+    <string name="s_e9e6e68873">已添加: %1$s</string>
+    <string name="s_ea10de41b6" formatted="false">应用语言</string>
+    <string name="s_ea63fc76c4">规则标识：groupType=%1$s, groupKey=%2$s, </string>
+    <string name="s_ea6dccc0a6" formatted="false">自定义时长</string>
+    <string name="s_ea72227d80" formatted="false">请输入特征事件选择器</string>
+    <string name="s_ea8e8dbcb9" formatted="false">添加应用</string>
+    <string name="s_eac59394f9">共 %1$s 应用 %2$s 规则</string>
+    <string name="s_eae5fd957e" formatted="false">延长锁定</string>
+    <string name="s_eb20a448b7">%1$s 条启用规则</string>
+    <string name="s_eb4f824680" formatted="false">立即开始专注</string>
+    <string name="s_ebb9cdd84c" formatted="false">版本名称</string>
+    <string name="s_ebf718dc74" formatted="false">间隔可调：0~240 分钟；每 3 天仅可修改一次。</string>
+    <string name="s_ec206f889f" formatted="false">前往授权</string>
+    <string name="s_ec2c341e25" formatted="false">删除应用组</string>
+    <string name="s_ec7ae06b09" formatted="false">解除</string>
+    <string name="s_ec9af249f1">剩余 %1$s 分钟</string>
+    <string name="s_ecae7085ce" formatted="false">更新订阅</string>
+    <string name="s_ed7465c7b9">%1$s 项规则已锁定</string>
+    <string name="s_ed773d5b65" formatted="false">添加监控</string>
+    <string name="s_ee56793e12" formatted="false">规则组已添加</string>
+    <string name="s_ee5db675e1" formatted="false">截屏快照</string>
+    <string name="s_ef3d433a35" formatted="false">事件数据</string>
+    <string name="s_ef5f9af603" formatted="false">显示按钮点击保存快照</string>
+    <string name="s_efcaa30b99" formatted="false">关闭守护会受数字自律锁定、每日关闭限额和自动重开保护约束。</string>
+    <string name="s_f0250d57b9" formatted="false">添加类别</string>
+    <string name="s_f04090805c" formatted="false">搜索</string>
+    <string name="s_f08db2ab6e" formatted="false">Shizuku 授权失败，请检查是否运行</string>
+    <string name="s_f0ece473ea" formatted="false">暂无更新</string>
+    <string name="s_f10262d528" formatted="false">请先关闭无障碍权限守护</string>
+    <string name="s_f10b25a414" formatted="false">内置禁用</string>
+    <string name="s_f1484fa78b" formatted="false">常规</string>
+    <string name="s_f191eda2e9" formatted="false">时间规则已锁定</string>
+    <string name="s_f1b1586c08" formatted="false">网络不可用</string>
+    <string name="s_f30b55361a">🔒 锁定至 %1$s</string>
+    <string name="s_f387d20cb8" formatted="false">查看规则 (已锁定)</string>
+    <string name="s_f3c459c9c3" formatted="false">包含类别：</string>
+    <string name="s_f3cf657a3f" formatted="false">尚未生效：请启用时间规则</string>
+    <string name="s_f40b27d6b8" formatted="false">HTTP</string>
+    <string name="s_f498bf1ba7">v%1$s</string>
+    <string name="s_f4af79e75c" formatted="false">请输入全局规则
+</string>
+    <string name="s_f4fb517c9c" formatted="false">如：B站</string>
+    <string name="s_f526c89937" formatted="false">确定</string>
+    <string name="s_f52a834cc7" formatted="false">最近间隔</string>
+    <string name="s_f5c895b864" formatted="false">版本渠道</string>
+    <string name="s_f5d0d9c7f0" formatted="false">更换 Cookie</string>
+    <string name="s_f6140ad79e">共 %1$s 类别</string>
+    <string name="s_f668f3749f" formatted="false">全局锁定中，无法删除</string>
+    <string name="s_f68f9ce68b" formatted="false">是否将所选规则全部启用?
+
+注: 也可在「订阅-规则类别」操作</string>
+    <string name="s_f6a8a7f4ed">出错了（%1$s）</string>
+    <string name="s_f6b45b5f13" formatted="false">独立规则</string>
+    <string name="s_f70a7d4f0a">今日已用/总额：%1$s/%2$s</string>
+    <string name="s_f744422fe2" formatted="false">开启无障碍失败</string>
+    <string name="s_f768d9701d">%1$s 次触发</string>
+    <string name="s_f7acefd2d4" formatted="false">查看</string>
+    <string name="s_f82dffbf08" formatted="false">拦截提示语</string>
+    <string name="s_f8b4c14ff9" formatted="false">工作模式</string>
+    <string name="s_f90b38d994" formatted="false">不能在应用内关闭无障碍</string>
+    <string name="s_f919deb126" formatted="false">移除规则</string>
+    <string name="s_f988888fa2">已重置 %1$s 条规则开关至初始状态</string>
+    <string name="s_f989d9d7f9" formatted="false">开启 15 分钟局域网调试</string>
+    <string name="s_f9ad34b946" formatted="false">删除规则</string>
+    <string name="s_f9c5942b1f" formatted="false">toggle</string>
+    <string name="s_fa0e1bf898" formatted="false">地址栏节点 ID *</string>
+    <string name="s_fa25aa2cc7" formatted="false">快速启动模板</string>
+    <string name="s_fa495b65bd" formatted="false">少</string>
+    <string name="s_fa8cdd2a46" formatted="false">所选范围暂无明细</string>
+    <string name="s_fad8721370" formatted="false">加密备份已保存</string>
+    <string name="s_fadf24dbc5" formatted="false">保存</string>
+    <string name="s_fb2cc4f730" formatted="false">无障碍白名单</string>
+    <string name="s_fbc86835e2">id=%1$s</string>
+    <string name="s_fc0d628dd8">选项 %1$s</string>
+    <string name="s_fc350beec5" formatted="false">外部打开</string>
+    <string name="s_fccd13d79e" formatted="false">规则已更新</string>
+    <string name="s_fcfcb10e4c" formatted="false">界面服务</string>
+    <string name="s_fd325af405">%1$s ×</string>
+    <string name="s_fe7b16b5c0" formatted="false">删除订阅</string>
+    <string name="s_ffa17c3049" formatted="false">解除限制</string>
+    <string name="s_ffcf0a1eb0" formatted="false">文件不存在</string>
+    <string name="s_fff8cc4d94" formatted="false">未修改</string>
+    <string name="snapshot_button" formatted="false">快照按钮</string>
 </resources>

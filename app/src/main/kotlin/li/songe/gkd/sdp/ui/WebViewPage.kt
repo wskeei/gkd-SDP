@@ -60,6 +60,7 @@ import li.songe.gkd.sdp.util.openUri
 import li.songe.gkd.sdp.util.json
 import li.songe.gkd.sdp.util.throttle
 import java.net.URI
+import li.songe.gkd.sdp.R
 
 @Serializable
 data class WebViewRoute(val initUrl: String) : NavKey
@@ -120,8 +121,8 @@ fun WebViewPage(route: WebViewRoute) {
                         imageVector = PerfIcon.WarningAmber,
                         onClick = throttle {
                             mainVm.dialogFlow.updateDialogOptions(
-                                title = "兼容性提示",
-                                text = "系统 WebView 版本（$chromeVersion）过低，文档可能无法正常显示。请升级系统 WebView，或使用外部浏览器。",
+                                title = li.songe.gkd.sdp.app.getString(R.string.s_6276f4ee6d),
+                                text = li.songe.gkd.sdp.app.getString(R.string.s_73b0be10ba, (chromeVersion).toString()),
                             )
                         },
                     )
@@ -135,7 +136,7 @@ fun WebViewPage(route: WebViewRoute) {
                     ) {
                         if (!loading) {
                             DropdownMenuItem(
-                                text = { Text("刷新页面") },
+                                text = { Text(li.songe.gkd.sdp.app.getString(R.string.s_5a5a7a890c)) },
                                 onClick = {
                                     expanded = false
                                     webView?.reload()
@@ -143,14 +144,14 @@ fun WebViewPage(route: WebViewRoute) {
                             )
                         }
                         DropdownMenuItem(
-                            text = { Text("复制链接") },
+                            text = { Text(li.songe.gkd.sdp.app.getString(R.string.s_abb22bd95c)) },
                             onClick = {
                                 expanded = false
                                 copyText(webView?.url ?: initUrl)
                             },
                         )
                         DropdownMenuItem(
-                            text = { Text("外部打开") },
+                            text = { Text(li.songe.gkd.sdp.app.getString(R.string.s_fc350beec5)) },
                             onClick = {
                                 expanded = false
                                 val current = webView?.url ?: initUrl

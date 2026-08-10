@@ -10,6 +10,8 @@ import androidx.compose.runtime.remember
 import kotlinx.coroutines.flow.MutableStateFlow
 import li.songe.gkd.sdp.util.openUri
 import li.songe.gkd.sdp.util.throttle
+import androidx.compose.ui.res.stringResource
+import li.songe.gkd.sdp.R
 
 @Composable
 fun TextDialog(
@@ -24,7 +26,7 @@ fun TextDialog(
         AlertDialog(
             onDismissRequest = onDismissRequest,
             title = {
-                Text(text = if (isUri) "查看链接" else "查看文本")
+                Text(text = if (isUri) stringResource(R.string.s_a8d5390010) else stringResource(R.string.s_cd05c7b50f))
             },
             text = {
                 CopyTextCard(text = text)
@@ -35,11 +37,11 @@ fun TextDialog(
                         onDismissRequest()
                         openUri(text)
                     }) {
-                        Text(text = "打开")
+                        Text(text = stringResource(R.string.s_65fc81e161))
                     }
                 } else {
                     TextButton(onClick = onDismissRequest) {
-                        Text(text = "关闭")
+                        Text(text = stringResource(R.string.s_6c14bd7f6f))
                     }
                 }
             },

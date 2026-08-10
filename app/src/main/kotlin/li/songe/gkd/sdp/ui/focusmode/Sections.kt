@@ -46,6 +46,8 @@ import li.songe.gkd.sdp.ui.share.LocalMainViewModel
 import li.songe.gkd.sdp.ui.style.itemPadding
 import li.songe.gkd.sdp.ui.style.scaffoldPadding
 import li.songe.gkd.sdp.ui.style.surfaceCardColors
+import androidx.compose.ui.res.stringResource
+import li.songe.gkd.sdp.R
 
 @Composable
 fun FocusModePageSections() {
@@ -76,13 +78,13 @@ fun FocusModePageSections() {
                         onClick = { mainVm.popPage() },
                     )
                 },
-                title = { Text(text = "专注模式") },
+                title = { Text(text = li.songe.gkd.sdp.app.getString(R.string.s_63c1371c03)) },
                 actions = {
                     IconButton(onClick = {
                         vm.resetRuleForm()
                         showRuleEditorSheet = true
                     }) {
-                        Icon(PerfIcon.Add, contentDescription = "添加规则")
+                        Icon(PerfIcon.Add, contentDescription = li.songe.gkd.sdp.app.getString(R.string.s_d2fc32282a))
                     }
                 }
             )
@@ -145,12 +147,12 @@ private fun FocusModeRulesList(
         }
         if (!isActive) {
             item(key = "quick_start") {
-                Button(onClick = onQuickStart, modifier = Modifier.fillMaxWidth().itemPadding()) { Text("立即开始专注") }
+                Button(onClick = onQuickStart, modifier = Modifier.fillMaxWidth().itemPadding()) { Text(li.songe.gkd.sdp.app.getString(R.string.s_eb4f824680)) }
                 Spacer(modifier = Modifier.height(16.dp))
             }
         }
         item(key = "quick_rules_header") {
-            Text("快速启动模板", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, modifier = Modifier.itemPadding())
+            Text(li.songe.gkd.sdp.app.getString(R.string.s_fa25aa2cc7), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, modifier = Modifier.itemPadding())
             Spacer(modifier = Modifier.height(8.dp))
         }
         FocusModeRuleItems(
@@ -161,7 +163,7 @@ private fun FocusModeRulesList(
             onLock = onLock,
         )
         item(key = "scheduled_rules_header") {
-            Text("定时规则", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, modifier = Modifier.itemPadding())
+            Text(li.songe.gkd.sdp.app.getString(R.string.s_a497f76289), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, modifier = Modifier.itemPadding())
             Spacer(modifier = Modifier.height(8.dp))
         }
         FocusModeRuleItems(
@@ -281,7 +283,7 @@ internal fun ActiveSessionCard(
                 Spacer(modifier = Modifier.width(12.dp))
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = if (isActive) "专注模式进行中" else "专注模式未启动",
+                        text = if (isActive) stringResource(R.string.s_7c2c7f64bf) else stringResource(R.string.s_175813e4ff),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold
                     )
@@ -289,16 +291,16 @@ internal fun ActiveSessionCard(
                         val remainingMinutes = session.getRemainingTime() / 60000
                         Text(
                             text = if (remainingMinutes >= 60) {
-                                "剩余 ${remainingMinutes / 60} 小时 ${remainingMinutes % 60} 分钟"
+                                stringResource(R.string.s_517526331f, (remainingMinutes / 60).toString(), (remainingMinutes % 60).toString())
                             } else {
-                                "剩余 $remainingMinutes 分钟"
+                                stringResource(R.string.s_ec9af249f1, (remainingMinutes).toString())
                             },
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
                         )
                         if (session.isCurrentlyLocked) {
                             Text(
-                                text = "（已锁定）",
+                                text = stringResource(R.string.s_491a7f5bd7),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.error.copy(alpha = 0.8f)
                             )
@@ -307,7 +309,7 @@ internal fun ActiveSessionCard(
                 }
                 if (isActive && session?.isManual == true && !session.isCurrentlyLocked) {
                     OutlinedButton(onClick = onStop) {
-                        Text("结束")
+                        Text(stringResource(R.string.s_76b9880829))
                     }
                 }
             }
@@ -317,7 +319,7 @@ internal fun ActiveSessionCard(
                 HorizontalDivider()
                 Spacer(modifier = Modifier.height(12.dp))
                 Text(
-                    text = "白名单应用（点击移除）",
+                    text = stringResource(R.string.s_0f8458ec0b),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                 )
@@ -367,7 +369,7 @@ internal fun WhitelistAppRow(
         )
         if (canRemove) {
             IconButton(onClick = onRemove) {
-                Icon(PerfIcon.Close, contentDescription = "移除")
+                Icon(PerfIcon.Close, contentDescription = stringResource(R.string.s_2f752c005e))
             }
         }
     }

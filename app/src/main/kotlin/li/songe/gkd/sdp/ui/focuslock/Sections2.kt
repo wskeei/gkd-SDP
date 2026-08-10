@@ -40,6 +40,8 @@ import li.songe.gkd.sdp.permission.canDrawOverlaysState
 import li.songe.gkd.sdp.ui.component.PerfIcon
 import li.songe.gkd.sdp.ui.style.surfaceCardColors
 import li.songe.gkd.sdp.util.format
+import androidx.compose.ui.res.stringResource
+import li.songe.gkd.sdp.R
 
 @Composable
 fun SelfControlRuntimeStatusCard() {
@@ -66,27 +68,27 @@ fun SelfControlRuntimeStatusCard() {
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
-                text = "自律拦截运行状态",
+                text = stringResource(R.string.s_7e3742f2bf),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
             )
             Spacer(modifier = Modifier.height(6.dp))
             Text(
-                text = "模式：${readiness.modeLabel} · 引擎：${when {
+                text = stringResource(R.string.s_18a07b6ed5, (readiness.modeLabel).toString(), (when {
                     runtime.switching -> "切换中"
                     runtime.connected -> "已连接"
                     else -> "未连接"
-                }}",
+                }).toString()),
                 style = MaterialTheme.typography.bodySmall,
             )
             Text(
-                text = "悬浮窗：${if (overlayPermission) "已授权" else "未授权"} · $issueText",
+                text = stringResource(R.string.s_95e55216b8, (if (overlayPermission) "已授权" else "未授权").toString(), (issueText).toString()),
                 style = MaterialTheme.typography.bodySmall,
                 color = if (readiness.ready) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
             )
             runtime.lastDecision?.let { decision ->
                 Text(
-                    text = "最近判定：${decision.feature} · ${decision.decision} · " +
+                    text = li.songe.gkd.sdp.app.getString(R.string.s_c52c529934, (decision.feature).toString(), (decision.decision).toString()) +
                         li.songe.gkd.sdp.util.SelfControlElapsedPolicy.formatAbsolute(decision.atEpochMs),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -103,7 +105,7 @@ fun SelfControlRuntimeStatusCard() {
                         )
                     },
                 ) {
-                    Text("前往授权")
+                    Text(stringResource(R.string.s_ec206f889f))
                 }
             }
         }
@@ -149,7 +151,7 @@ fun SubscriptionCard(
                 // Global Rules
                 if (subState.globalRules.isNotEmpty()) {
                     Text(
-                        text = "全局规则",
+                        text = li.songe.gkd.sdp.app.getString(R.string.s_9effd4ccc9),
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.padding(start = 56.dp, top = 8.dp, bottom = 4.dp)
@@ -191,7 +193,7 @@ fun SubscriptionCard(
                             )
                             if (appState.isLocked) {
                                 Text(
-                                    text = "剩余 ${formatRemainingTime(appState.lockEndTime - System.currentTimeMillis())}",
+                                    text = li.songe.gkd.sdp.app.getString(R.string.s_1ebce11b0b, (formatRemainingTime(appState.lockEndTime - System.currentTimeMillis())).toString()),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.primary
                                 )
@@ -279,7 +281,7 @@ private fun SubscriptionHeader(
             )
             if (subState.isLocked) {
                 Text(
-                    text = "已锁定 • 剩余 ${formatRemainingTime(subState.lockEndTime - System.currentTimeMillis())}",
+                    text = stringResource(R.string.s_72effd1c3d, (formatRemainingTime(subState.lockEndTime - System.currentTimeMillis())).toString()),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.primary,
                 )
@@ -383,15 +385,15 @@ fun AccessibilityGuardCard(
             )
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "无障碍权限守护",
+                    text = stringResource(R.string.s_748db62aba),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold,
                 )
                 Text(
                     text = when {
-                        enabled -> "关闭后立即倒计时，并按 15/10/5/3/2/1 分钟分阶段提醒"
-                        armed -> "已暂时关闭，将由自动重开保护恢复"
-                        else -> "检测到无障碍关闭后立即提醒，最后显示全屏提示"
+                        enabled -> stringResource(R.string.s_0c96adb235)
+                        armed -> stringResource(R.string.s_c9f77c0be6)
+                        else -> stringResource(R.string.s_9645ef9c2d)
                     },
                     style = MaterialTheme.typography.bodySmall,
                     color = if (enabled) {

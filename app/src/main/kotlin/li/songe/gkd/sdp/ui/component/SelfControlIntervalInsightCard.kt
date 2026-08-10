@@ -26,6 +26,8 @@ import androidx.compose.ui.unit.dp
 import li.songe.gkd.sdp.util.SelfControlInsightWindowPolicy
 import li.songe.gkd.sdp.util.SelfControlIntervalPolicy
 import li.songe.gkd.sdp.util.UsageRequestRhythmPolicy
+import androidx.compose.ui.res.stringResource
+import li.songe.gkd.sdp.R
 
 /** A request-only value which is intentionally kept out of historical samples and statistics. */
 data class SelfControlInsightCurrentReference(
@@ -310,7 +312,7 @@ fun SelfControlIntervalInsightCard(
     ) {
         HorizontalDivider()
         Text(
-            text = if (supportsUsageRatio) "最近间隔与间用比" else "最近间隔",
+            text = if (supportsUsageRatio) stringResource(R.string.s_b28678dc48) else stringResource(R.string.s_f52a834cc7),
             style = MaterialTheme.typography.titleSmall,
         )
         FlowRow(
@@ -322,7 +324,7 @@ fun SelfControlIntervalInsightCard(
                 TextButton(
                     onClick = { menuExpanded = true },
                     modifier = Modifier.semantics {
-                        contentDescription = "选择统计范围，当前 ${selectedWindow.label}"
+                        contentDescription = li.songe.gkd.sdp.app.getString(R.string.s_086fa44431, (selectedWindow.label).toString())
                     },
                 ) {
                     Text(selectedWindow.label)
@@ -346,13 +348,13 @@ fun SelfControlIntervalInsightCard(
                 FilterChip(
                     selected = presentation.selectedMetric == SelfControlInsightWindowPolicy.Metric.INTERVAL,
                     onClick = { onMetricSelected(SelfControlInsightWindowPolicy.Metric.INTERVAL) },
-                    label = { Text("间隔") },
+                    label = { Text(stringResource(R.string.s_940c88657e)) },
                     modifier = Modifier.semantics { contentDescription = "统计间隔" },
                 )
                 FilterChip(
                     selected = presentation.selectedMetric == SelfControlInsightWindowPolicy.Metric.USAGE_RATIO,
                     onClick = { onMetricSelected(SelfControlInsightWindowPolicy.Metric.USAGE_RATIO) },
-                    label = { Text("间用比") },
+                    label = { Text(stringResource(R.string.s_4cec547cf2)) },
                     modifier = Modifier.semantics { contentDescription = "统计间用比" },
                 )
             }
@@ -373,7 +375,7 @@ fun SelfControlIntervalInsightCard(
                     val average = series.stats.averageRatio?.let { SelfControlInsightPresentation.formatValue(it, SelfControlInsightWindowPolicy.Metric.USAGE_RATIO) }
                         ?: "暂无"
                     Text(
-                        text = "${window.label}平均 $average（${series.stats.sampleCount} 条）",
+                        text = li.songe.gkd.sdp.app.getString(R.string.s_233ee6a4c8, (window.label).toString(), (average).toString(), (series.stats.sampleCount).toString()),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -392,10 +394,10 @@ fun SelfControlIntervalInsightCard(
             Text(
                 text = when {
                     value != null && currentPoint != null ->
-                        "本次：$value · 所在时段：${currentPoint.label}"
-                    value != null -> "本次：$value"
-                    currentPoint != null -> "本次所在时段：${currentPoint.label}"
-                    else -> "本次：已记录，暂无可比较的间隔值"
+                        li.songe.gkd.sdp.app.getString(R.string.s_2937d0d547, (value).toString(), (currentPoint.label).toString())
+                    value != null -> li.songe.gkd.sdp.app.getString(R.string.s_7dcbc271db, (value).toString())
+                    currentPoint != null -> li.songe.gkd.sdp.app.getString(R.string.s_0ce6ca1568, (currentPoint.label).toString())
+                    else -> li.songe.gkd.sdp.app.getString(R.string.s_ca0dc4aed7)
                 },
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.primary,
@@ -437,10 +439,10 @@ fun SelfControlIntervalInsightCard(
             TextButton(
                 onClick = { detailsExpanded = !detailsExpanded },
                 modifier = Modifier.semantics {
-                    contentDescription = if (detailsExpanded) "收起图表文字明细" else "查看图表文字明细"
+                    contentDescription = if (detailsExpanded) li.songe.gkd.sdp.app.getString(R.string.s_bb9dd3221c) else li.songe.gkd.sdp.app.getString(R.string.s_ce7a8986ad)
                 },
             ) {
-                Text(if (detailsExpanded) "收起图表文字明细" else "查看图表文字明细")
+                Text(if (detailsExpanded) stringResource(R.string.s_bb9dd3221c) else stringResource(R.string.s_ce7a8986ad))
             }
             if (detailsExpanded) {
                 Column(
@@ -451,7 +453,7 @@ fun SelfControlIntervalInsightCard(
                         val currentLabel = if (row.isCurrent) "，本次" else ""
                         val bucketLabel = if (row.sampleCount > 1) "，时间桶平均 ${row.sampleCount} 条" else ""
                         Text(
-                            text = "${row.label}：${row.valueText}$currentLabel$bucketLabel",
+                            text = li.songe.gkd.sdp.app.getString(R.string.s_5b265e25d5, (row.label).toString(), (row.valueText).toString(), (currentLabel).toString(), (bucketLabel).toString()),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )

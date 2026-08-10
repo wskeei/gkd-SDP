@@ -46,12 +46,14 @@ import li.songe.gkd.sdp.ui.component.PerfTopAppBar
 import li.songe.gkd.sdp.ui.component.updateDialogOptions
 import li.songe.gkd.sdp.ui.share.LocalMainViewModel
 import li.songe.gkd.sdp.ui.style.EmptyHeight
-import li.songe.gkd.sdp.ui.style.itemHorizontalPadding
 import li.songe.gkd.sdp.util.getShareApkFile
 import li.songe.gkd.sdp.util.launchAsFn
 import li.songe.gkd.sdp.util.launchTry
 import li.songe.gkd.sdp.util.saveFileToDownloads
 import li.songe.gkd.sdp.util.toast
+import androidx.compose.ui.res.stringResource
+import li.songe.gkd.sdp.R
+import li.songe.gkd.sdp.ui.style.DimensionTokens
 
 @Serializable
 data object AppOpsAllowRoute : NavKey
@@ -69,7 +71,7 @@ fun AppOpsAllowPage() {
                 mainVm.popPage()
             })
         }, title = {
-            Text(text = "解除限制")
+            Text(text = li.songe.gkd.sdp.app.getString(R.string.s_ffa17c3049))
         })
     }) { contentPadding ->
         Column(
@@ -81,11 +83,11 @@ fun AppOpsAllowPage() {
             if (appOpsRestricted) {
                 Column(
                     modifier = Modifier
-                        .padding(itemHorizontalPadding, 0.dp)
+                        .padding(DimensionTokens.SpacingBase, 0.dp)
                         .fillMaxWidth(),
                 ) {
                     Text(
-                        text = "下列权限应默认授予，但可能因某些操作如系统升级，备份迁移等被限制",
+                        text = stringResource(R.string.s_0fd5f2bdd6),
                         style = MaterialTheme.typography.bodyMedium,
                     )
                     Spacer(modifier = Modifier.height(24.dp))
@@ -101,15 +103,15 @@ fun AppOpsAllowPage() {
                         buttons = listOf(
                             "Shizuku 授权" to vm.viewModelScope.launchAsFn(Dispatchers.IO) {
                                 mainVm.guardShizukuContext()
-                                toast("授权成功")
+                                toast(li.songe.gkd.sdp.app.getString(R.string.s_027b905228))
                             },
                             "命令授权" to {
                                 vm.showCopyDlgFlow.value = true
                             },
                             "卸载重装" to {
                                 mainVm.dialogFlow.updateDialogOptions(
-                                    title = "卸载重装",
-                                    text = "卸载后重新安装可让应用权限回归初始状态解除限制，先点击下方「导出应用」可将应用提前保存至下载，然后卸载应用，到文件管理中重新安装即可\n\n注意：卸载会删除所有数据，请自行备份数据",
+                                    title = li.songe.gkd.sdp.app.getString(R.string.s_a50703b6a2),
+                                    text = li.songe.gkd.sdp.app.getString(R.string.s_150e6661aa),
                                     dismissText = "导出应用",
                                     dismissAction = {
                                         mainVm.viewModelScope.launchTry(Dispatchers.IO) {
@@ -126,7 +128,7 @@ fun AppOpsAllowPage() {
             Spacer(modifier = Modifier.height(EmptyHeight))
             if (!appOpsRestricted) {
                 Spacer(modifier = Modifier.height(EmptyHeight))
-                EmptyText(text = "状态正常, 无需操作")
+                EmptyText(text = stringResource(R.string.s_26bb571105))
             }
         }
     }

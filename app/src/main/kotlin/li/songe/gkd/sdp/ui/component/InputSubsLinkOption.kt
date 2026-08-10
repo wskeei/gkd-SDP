@@ -26,6 +26,8 @@ import li.songe.gkd.sdp.util.subsItemsFlow
 import li.songe.gkd.sdp.util.throttle
 import li.songe.gkd.sdp.util.toast
 import kotlin.coroutines.resume
+import androidx.compose.ui.res.stringResource
+import li.songe.gkd.sdp.R
 
 
 class InputSubsLinkOption {
@@ -47,23 +49,23 @@ class InputSubsLinkOption {
     private fun submit(authorizeCleartext: Boolean) {
         val value = valueFlow.value
         if (!URLUtil.isNetworkUrl(value)) {
-            toast("非法链接")
+            toast(li.songe.gkd.sdp.app.getString(R.string.s_e7e0ffcd50))
             return
         }
         val initValue = initValueFlow.value
         if (initValue.isNotEmpty() && initValue == value) {
-            toast("未修改")
+            toast(li.songe.gkd.sdp.app.getString(R.string.s_fff8cc4d94))
             resume(null)
             return
         }
         if (subsItemsFlow.value.any { it.updateUrl == value }) {
-            toast("已有相同链接订阅")
+            toast(li.songe.gkd.sdp.app.getString(R.string.s_d41dda6f65))
             return
         }
         val cleartextOrigin = CleartextOriginPolicy.canonicalOrigin(value)
         if (cleartextOrigin != null && cleartextOrigin !in CleartextOriginAuthorizations.originsFlow.value) {
             if (!authorizeCleartext) {
-                toast("请先确认此明文来源")
+                toast(li.songe.gkd.sdp.app.getString(R.string.s_34ba6b190f))
                 return
             }
             CleartextOriginAuthorizations.authorize(value)
@@ -101,7 +103,7 @@ class InputSubsLinkOption {
                         horizontalArrangement = Arrangement.SpaceBetween,
                         modifier = Modifier.fillMaxWidth(),
                     ) {
-                        Text(text = if (initValue.isNotEmpty()) "修改订阅" else "添加订阅")
+                        Text(text = if (initValue.isNotEmpty()) stringResource(R.string.s_1508e32d35) else stringResource(R.string.s_6debaa8885))
                         PerfIconButton(
                             imageVector = PerfIcon.HelpOutline,
                             contentDescription = "订阅帮助",
@@ -123,13 +125,13 @@ class InputSubsLinkOption {
                                 .fillMaxWidth()
                                 .autoFocus(),
                             placeholder = {
-                                Text(text = "请输入订阅链接")
+                                Text(text = li.songe.gkd.sdp.app.getString(R.string.s_a00626547a))
                             },
                             isError = value.isNotEmpty() && !URLUtil.isNetworkUrl(value),
                         )
                         if (needsCleartextAuthorization) {
                             Text(
-                                text = "明文来源：$cleartextOrigin\nHTTP 内容可能在传输中被读取或修改；授权仅适用于此 scheme、host 与 port。",
+                                text = stringResource(R.string.s_ac96d3416e, (cleartextOrigin).toString()),
                             )
                         }
                     }
@@ -144,12 +146,12 @@ class InputSubsLinkOption {
                             submit(authorizeCleartext = needsCleartextAuthorization)
                         }),
                     ) {
-                        Text(text = if (needsCleartextAuthorization) "仅授权此来源" else "确定")
+                        Text(text = if (needsCleartextAuthorization) stringResource(R.string.s_62221c94a0) else stringResource(R.string.s_f526c89937))
                     }
                 },
                 dismissButton = {
                     TextButton(onClick = ::cancel) {
-                        Text(text = "取消")
+                        Text(text = stringResource(R.string.s_4d0b4688c7))
                     }
                 },
             )

@@ -60,6 +60,7 @@ import li.songe.gkd.sdp.ui.share.ListPlaceholder
 import li.songe.gkd.sdp.util.launchTry
 import li.songe.gkd.sdp.util.startForegroundServiceByClass
 import li.songe.gkd.sdp.util.stopServiceByClass
+import li.songe.gkd.sdp.R
 
 class EventService : OverlayWindowService(positionKey = "event") {
 
@@ -94,7 +95,7 @@ class EventService : OverlayWindowService(positionKey = "event") {
                     .padding(4.dp)
             ) {
                 ClosableTitle(
-                    title = if (A11yService.isRunning.collectAsStateWithLifecycle().value || uiAutomationFlow.collectAsStateWithLifecycle().value != null) "事件服务" else "事件服务(无权限)"
+                    title = if (A11yService.isRunning.collectAsStateWithLifecycle().value || uiAutomationFlow.collectAsStateWithLifecycle().value != null) li.songe.gkd.sdp.app.getString(R.string.s_25af58e687) else li.songe.gkd.sdp.app.getString(R.string.s_44c31cddda)
                 )
                 val textStyle = MaterialTheme.typography.labelSmall
                 val numCharWidth = measureNumberTextWidth(textStyle)
@@ -138,7 +139,7 @@ class EventService : OverlayWindowService(positionKey = "event") {
                                 horizontalAlignment = Alignment.CenterHorizontally,
                             ) {
                                 if (count > 0) {
-                                    Text(text = "+$count")
+                                    Text(text = li.songe.gkd.sdp.app.getString(R.string.s_2716b658b8, (count).toString()))
                                 }
                                 PerfIconButton(
                                     imageVector = PerfIcon.ArrowDownward,

@@ -12,6 +12,7 @@ import li.songe.gkd.sdp.util.subsMapFlow
 import li.songe.gkd.sdp.util.toast
 import li.songe.gkd.sdp.util.updateSubscription
 import li.songe.json5.Json5
+import li.songe.gkd.sdp.R
 
 class UpsertRuleGroupVm(val route: UpsertRuleGroupRoute) : ViewModel() {
     val groupKey = route.groupKey
@@ -55,7 +56,7 @@ class UpsertRuleGroupVm(val route: UpsertRuleGroupRoute) : ViewModel() {
             error("规则不能为空")
         }
         if (text == initText) {
-            toast("规则无变动")
+            toast(li.songe.gkd.sdp.app.getString(R.string.s_340b2031bf))
             return
         }
         var jsonObject = runCatching { Json5.parseToJson5Element(text) }.run {
@@ -84,7 +85,7 @@ class UpsertRuleGroupVm(val route: UpsertRuleGroupRoute) : ViewModel() {
         }
 
         if (jsonObject == initialGroup?.cacheJsonObject) {
-            toast("规则无变动")
+            toast(li.songe.gkd.sdp.app.getString(R.string.s_340b2031bf))
             return
         }
         if (groupKey != null) {
@@ -120,7 +121,7 @@ class UpsertRuleGroupVm(val route: UpsertRuleGroupRoute) : ViewModel() {
                 }
             }
             if (newGroup == initialGroup) {
-                toast("规则无变动")
+                toast(li.songe.gkd.sdp.app.getString(R.string.s_340b2031bf))
                 return
             }
             val newSubs = if (appId != null) {
@@ -255,9 +256,9 @@ class UpsertRuleGroupVm(val route: UpsertRuleGroupRoute) : ViewModel() {
             }
         }
         if (isEdit) {
-            toast("更新成功")
+            toast(li.songe.gkd.sdp.app.getString(R.string.s_e2cff77372))
         } else {
-            toast("添加成功")
+            toast(li.songe.gkd.sdp.app.getString(R.string.s_6950d05c09))
         }
     }
 

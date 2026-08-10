@@ -81,8 +81,8 @@ fun A11yScopeAppListPage() {
         context.justHideSoftInput()
         if (vm.textChanged) {
             mainVm.dialogFlow.waitResult(
-                title = "提示",
-                text = "当前内容未保存，是否放弃编辑？",
+                title = li.songe.gkd.sdp.app.getString(R.string.s_ab3656a956),
+                text = li.songe.gkd.sdp.app.getString(R.string.s_aebc195621),
             )
         }
         editable = false
@@ -100,8 +100,8 @@ fun A11yScopeAppListPage() {
                                 if (vm.textChanged) {
                                     context.justHideSoftInput()
                                     mainVm.dialogFlow.waitResult(
-                                        title = "提示",
-                                        text = "当前内容未保存，是否放弃编辑？",
+                                        title = li.songe.gkd.sdp.app.getString(R.string.s_ab3656a956),
+                                        text = li.songe.gkd.sdp.app.getString(R.string.s_aebc195621),
                                     )
                                 }
                                 editable = !editable
@@ -139,7 +139,7 @@ fun A11yScopeAppListPage() {
                             )
                         Text(
                             modifier = titleModifier,
-                            text = "局部无障碍",
+                            text = li.songe.gkd.sdp.app.getString(R.string.s_3721fe11a2),
                         )
                     }
                 },
@@ -154,9 +154,9 @@ fun A11yScopeAppListPage() {
                                     if (vm.textChanged) {
                                         a11yScopeAppListFlow.value =
                                             AppListString.decode(vm.textFlow.value)
-                                        toast("更新成功")
+                                        toast(li.songe.gkd.sdp.app.getString(R.string.s_e2cff77372))
                                     } else {
-                                        toast("未修改")
+                                        toast(li.songe.gkd.sdp.app.getString(R.string.s_fff8cc4d94))
                                     }
                                     context.justHideSoftInput()
                                     editable = false
@@ -262,7 +262,7 @@ fun A11yScopeAppListPage() {
                 item(ListPlaceholder.KEY, ListPlaceholder.TYPE) {
                     Spacer(modifier = Modifier.height(EmptyHeight))
                     if (appInfos.isEmpty() && searchStr.isNotEmpty()) {
-                        EmptyText(text = "暂无搜索结果")
+                        EmptyText(text = li.songe.gkd.sdp.app.getString(R.string.s_8f8274c754))
                         Spacer(modifier = Modifier.height(EmptyHeight / 2))
                     }
                 }

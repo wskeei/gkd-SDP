@@ -45,6 +45,8 @@ import li.songe.gkd.sdp.ui.style.getJson5AnnotatedString
 import li.songe.gkd.sdp.util.copyText
 import li.songe.gkd.sdp.util.throttle
 import li.songe.gkd.sdp.util.toast
+import androidx.compose.ui.res.stringResource
+import li.songe.gkd.sdp.R
 
 @Composable
 fun RuleGroupDialog(
@@ -65,7 +67,7 @@ fun RuleGroupDialog(
 
     AlertDialog(
         onDismissRequest = onDismissRequest,
-        title = { Text(text = "规则组详情") },
+        title = { Text(text = stringResource(R.string.s_2b5f43357d)) },
         text = {
             Box(
                 modifier = Modifier.fillMaxWidth()

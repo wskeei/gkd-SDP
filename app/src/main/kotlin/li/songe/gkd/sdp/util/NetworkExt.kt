@@ -3,6 +3,7 @@ package li.songe.gkd.sdp.util
 import li.songe.gkd.sdp.diagnostics.DiagnosticLogger
 import java.net.NetworkInterface
 import java.net.ServerSocket
+import li.songe.gkd.sdp.R
 
 fun getIpAddressInLocalNetwork(): List<String> {
     val networkInterfaces = try {
@@ -10,7 +11,7 @@ fun getIpAddressInLocalNetwork(): List<String> {
     } catch (e: Exception) {
         // android.system.ErrnoException: getifaddrs failed: EACCES (Permission denied)
         LogUtils.d("network interface lookup failed", e)
-        toast("获取 HOST 失败：${DiagnosticLogger.userMessage(e)}")
+        toast(li.songe.gkd.sdp.app.getString(R.string.s_99b5891003, (DiagnosticLogger.userMessage(e)).toString()))
         return emptyList()
     }
     val localAddresses = networkInterfaces.flatMap {

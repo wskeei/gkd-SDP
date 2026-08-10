@@ -50,6 +50,7 @@ import li.songe.gkd.sdp.util.launchAsFn
 import li.songe.gkd.sdp.util.throttle
 import li.songe.gkd.sdp.util.toast
 import java.util.Objects
+import li.songe.gkd.sdp.R
 
 
 @Composable
@@ -115,7 +116,7 @@ fun RuleGroupCard(
     val isLocked = FocusLockUtils.isRuleLocked(subs.id, appId, group.key)
     val onCheckedChange = appScope.launchAsFn<Boolean> { newChecked ->
         if (!newChecked && isLocked) {
-            toast("规则已锁定，无法关闭")
+            toast(li.songe.gkd.sdp.app.getString(R.string.s_e27c087656))
             return@launchAsFn
         }
         val newConfig = if (appId != null) {
@@ -235,7 +236,7 @@ fun RuleGroupCard(
                         }
                     } else {
                         Text(
-                            text = group.errorDesc ?: "未知错误",
+                            text = group.errorDesc ?: li.songe.gkd.sdp.app.getString(R.string.s_5f76edc5de),
                             modifier = Modifier.fillMaxWidth(),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.error
@@ -332,14 +333,14 @@ fun BatchActionButtonGroup(vm: ViewModel, selectedDataSet: Set<ShowGroupState>) 
         contentDescription = "批量关闭规则",
         onClick = throttle(vm.viewModelScope.launchAsFn(Dispatchers.Default) {
             mainVm.dialogFlow.waitResult(
-                title = "操作提示",
-                text = "是否将所选规则全部关闭?\n\n注: 也可在「订阅-规则类别」操作"
+                title = li.songe.gkd.sdp.app.getString(R.string.s_93564a7ced),
+                text = li.songe.gkd.sdp.app.getString(R.string.s_3d7090e33e)
             )
             val list = batchUpdateGroupEnable(selectedDataSet, false)
             if (list.isNotEmpty()) {
-                toast("已关闭 ${list.size} 条规则")
+                toast(li.songe.gkd.sdp.app.getString(R.string.s_102626a5cc, (list.size).toString()))
             } else {
-                toast("无规则被改变")
+                toast(li.songe.gkd.sdp.app.getString(R.string.s_1e010b148d))
             }
         })
     )
@@ -348,14 +349,14 @@ fun BatchActionButtonGroup(vm: ViewModel, selectedDataSet: Set<ShowGroupState>) 
         contentDescription = "批量打开规则",
         onClick = throttle(vm.viewModelScope.launchAsFn(Dispatchers.Default) {
             mainVm.dialogFlow.waitResult(
-                title = "操作提示",
-                text = "是否将所选规则全部启用?\n\n注: 也可在「订阅-规则类别」操作"
+                title = li.songe.gkd.sdp.app.getString(R.string.s_93564a7ced),
+                text = li.songe.gkd.sdp.app.getString(R.string.s_f68f9ce68b)
             )
             val list = batchUpdateGroupEnable(selectedDataSet, true)
             if (list.isNotEmpty()) {
-                toast("已启用 ${list.size} 条规则")
+                toast(li.songe.gkd.sdp.app.getString(R.string.s_b8c5d58816, (list.size).toString()))
             } else {
-                toast("无规则被改变")
+                toast(li.songe.gkd.sdp.app.getString(R.string.s_1e010b148d))
             }
         })
     )
@@ -364,14 +365,14 @@ fun BatchActionButtonGroup(vm: ViewModel, selectedDataSet: Set<ShowGroupState>) 
         contentDescription = "批量重置规则开关",
         onClick = throttle(vm.viewModelScope.launchAsFn(Dispatchers.Default) {
             mainVm.dialogFlow.waitResult(
-                title = "操作提示",
-                text = "是否将所选规则重置开关至初始状态?\n\n注: 也可在「订阅-规则类别」操作"
+                title = li.songe.gkd.sdp.app.getString(R.string.s_93564a7ced),
+                text = li.songe.gkd.sdp.app.getString(R.string.s_1f54fb7d63)
             )
             val list = batchUpdateGroupEnable(selectedDataSet, null)
             if (list.isNotEmpty()) {
-                toast("已重置 ${list.size} 条规则开关至初始状态")
+                toast(li.songe.gkd.sdp.app.getString(R.string.s_f988888fa2, (list.size).toString()))
             } else {
-                toast("无规则被改变")
+                toast(li.songe.gkd.sdp.app.getString(R.string.s_1e010b148d))
             }
         })
     )

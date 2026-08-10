@@ -28,6 +28,7 @@ import li.songe.gkd.sdp.util.toast
 import li.songe.gkd.sdp.store.writeTextAtomically
 import java.io.File
 import java.util.concurrent.atomic.AtomicLong
+import li.songe.gkd.sdp.R
 
 class ExposeService : Service() {
     override fun onBind(intent: Intent?): Binder? = null
@@ -61,7 +62,7 @@ class ExposeService : Service() {
             ExposeAction.STATUS_AUTOSTART -> StatusService.autoStart()
             ExposeAction.CAPTURE -> SnapshotExt.captureSnapshot()
             ExposeAction.SYNC_FIX -> {
-                toast("执行成功", forced = true)
+                toast(li.songe.gkd.sdp.app.getString(R.string.s_6c189aad4d), forced = true)
                 syncFixState()
             }
         }

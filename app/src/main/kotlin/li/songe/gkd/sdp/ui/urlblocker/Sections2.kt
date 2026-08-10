@@ -31,6 +31,8 @@ import androidx.compose.ui.unit.dp
 import li.songe.gkd.sdp.data.UrlBlockRule
 import li.songe.gkd.sdp.data.UrlTimeRule
 import li.songe.gkd.sdp.ui.component.PerfIcon
+import androidx.compose.ui.res.stringResource
+import li.songe.gkd.sdp.R
 
 @Composable
 fun UrlInGroupRow(
@@ -68,7 +70,7 @@ fun UrlInGroupRow(
             IconButton(onClick = { showDeleteConfirm = true }) {
                 Icon(
                     PerfIcon.Delete,
-                    contentDescription = "从组中删除",
+                    contentDescription = stringResource(R.string.s_63da968987),
                     tint = MaterialTheme.colorScheme.error.copy(alpha = 0.6f)
                 )
             }
@@ -84,19 +86,19 @@ fun UrlInGroupRow(
     if (showDeleteConfirm) {
         AlertDialog(
             onDismissRequest = { showDeleteConfirm = false },
-            title = { Text("移除规则") },
-            text = { Text("确定要将此规则「${rule.pattern}」删除吗？") },
+            title = { Text(stringResource(R.string.s_f919deb126)) },
+            text = { Text(stringResource(R.string.s_d538243a95, (rule.pattern).toString())) },
             confirmButton = {
                 TextButton(onClick = {
                     onDelete()
                     showDeleteConfirm = false
                 }) {
-                    Text("删除")
+                    Text(stringResource(R.string.s_3755f56f2f))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showDeleteConfirm = false }) {
-                    Text("取消")
+                    Text(stringResource(R.string.s_4d0b4688c7))
                 }
             }
         )
@@ -124,18 +126,18 @@ fun TimeRuleRow(
         Column(modifier = Modifier.weight(1f)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    text = if (rule.isAllowMode) "✓" else "🚫",
+                    text = if (rule.isAllowMode) stringResource(R.string.s_698a879938) else stringResource(R.string.s_1fee3b4a52),
                     style = MaterialTheme.typography.bodySmall
                 )
                 Spacer(modifier = Modifier.width(4.dp))
                 Text(
-                    text = "${rule.formatTimeRange()} ${rule.formatDaysOfWeek()}",
+                    text = stringResource(R.string.s_e713116e5e, (rule.formatTimeRange()).toString(), (rule.formatDaysOfWeek()).toString()),
                     style = MaterialTheme.typography.bodyMedium
                 )
             }
             if (rule.isAllowMode) {
                 Text(
-                    text = "允许时间段",
+                    text = stringResource(R.string.s_6d17c9576a),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.primary
                 )
@@ -144,7 +146,7 @@ fun TimeRuleRow(
                 val lockEndTime = java.text.SimpleDateFormat("MM-dd HH:mm", java.util.Locale.getDefault())
                     .format(java.util.Date(rule.lockEndTime))
                 Text(
-                    text = "🔒 锁定至 $lockEndTime",
+                    text = stringResource(R.string.s_f30b55361a, (lockEndTime).toString()),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.error
                 )
@@ -154,7 +156,7 @@ fun TimeRuleRow(
         IconButton(onClick = onLock) {
             Icon(
                 PerfIcon.Lock,
-                contentDescription = if (rule.isCurrentlyLocked) "延长锁定" else "锁定",
+                contentDescription = if (rule.isCurrentlyLocked) stringResource(R.string.s_eae5fd957e) else stringResource(R.string.s_0b707d6dcc),
                 tint = if (rule.isCurrentlyLocked) {
                     MaterialTheme.colorScheme.error
                 } else {
@@ -167,7 +169,7 @@ fun TimeRuleRow(
             IconButton(onClick = { showDeleteConfirm = true }) {
                 Icon(
                     PerfIcon.Delete,
-                    contentDescription = "删除",
+                    contentDescription = stringResource(R.string.s_3755f56f2f),
                     tint = MaterialTheme.colorScheme.error
                 )
             }
@@ -183,19 +185,19 @@ fun TimeRuleRow(
     if (showDeleteConfirm) {
         AlertDialog(
             onDismissRequest = { showDeleteConfirm = false },
-            title = { Text("删除时间规则") },
-            text = { Text("确定要删除这条时间规则吗？") },
+            title = { Text(stringResource(R.string.s_daf67e7a09)) },
+            text = { Text(stringResource(R.string.s_e09b9cc9e4)) },
             confirmButton = {
                 TextButton(onClick = {
                     onDelete()
                     showDeleteConfirm = false
                 }) {
-                    Text("删除")
+                    Text(stringResource(R.string.s_3755f56f2f))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showDeleteConfirm = false }) {
-                    Text("取消")
+                    Text(stringResource(R.string.s_4d0b4688c7))
                 }
             }
         )

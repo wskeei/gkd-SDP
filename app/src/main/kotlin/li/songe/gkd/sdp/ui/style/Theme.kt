@@ -3,8 +3,6 @@ package li.songe.gkd.sdp.ui.style
 import android.content.res.Configuration
 import android.view.accessibility.AccessibilityManager
 import androidx.activity.compose.LocalActivity
-import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
@@ -41,8 +39,58 @@ import li.songe.gkd.sdp.ui.share.LocalIsTalkbackEnabled
 import li.songe.gkd.sdp.util.AndroidTarget
 import java.util.Locale
 
-private val LightColorScheme = lightColorScheme()
-private val DarkColorScheme = darkColorScheme()
+private val LightColorScheme = lightColorScheme(
+    primary = ColorTokens.Light.primary,
+    onPrimary = ColorTokens.Light.onPrimary,
+    primaryContainer = ColorTokens.Light.primaryContainer,
+    onPrimaryContainer = ColorTokens.Light.onPrimaryContainer,
+    secondary = ColorTokens.Light.secondary,
+    onSecondary = ColorTokens.Light.onSecondary,
+    secondaryContainer = ColorTokens.Light.secondaryContainer,
+    onSecondaryContainer = ColorTokens.Light.onSecondaryContainer,
+    tertiary = ColorTokens.Light.tertiary,
+    onTertiary = ColorTokens.Light.onTertiary,
+    tertiaryContainer = ColorTokens.Light.tertiaryContainer,
+    onTertiaryContainer = ColorTokens.Light.onTertiaryContainer,
+    error = ColorTokens.Light.error,
+    onError = ColorTokens.Light.onError,
+    errorContainer = ColorTokens.Light.errorContainer,
+    onErrorContainer = ColorTokens.Light.onErrorContainer,
+    background = ColorTokens.Light.background,
+    onBackground = ColorTokens.Light.onBackground,
+    surface = ColorTokens.Light.surface,
+    onSurface = ColorTokens.Light.onSurface,
+    surfaceVariant = ColorTokens.Light.surfaceVariant,
+    onSurfaceVariant = ColorTokens.Light.onSurfaceVariant,
+    outline = ColorTokens.Light.outline,
+    outlineVariant = ColorTokens.Light.outlineVariant,
+)
+private val DarkColorScheme = darkColorScheme(
+    primary = ColorTokens.Dark.primary,
+    onPrimary = ColorTokens.Dark.onPrimary,
+    primaryContainer = ColorTokens.Dark.primaryContainer,
+    onPrimaryContainer = ColorTokens.Dark.onPrimaryContainer,
+    secondary = ColorTokens.Dark.secondary,
+    onSecondary = ColorTokens.Dark.onSecondary,
+    secondaryContainer = ColorTokens.Dark.secondaryContainer,
+    onSecondaryContainer = ColorTokens.Dark.onSecondaryContainer,
+    tertiary = ColorTokens.Dark.tertiary,
+    onTertiary = ColorTokens.Dark.onTertiary,
+    tertiaryContainer = ColorTokens.Dark.tertiaryContainer,
+    onTertiaryContainer = ColorTokens.Dark.onTertiaryContainer,
+    error = ColorTokens.Dark.error,
+    onError = ColorTokens.Dark.onError,
+    errorContainer = ColorTokens.Dark.errorContainer,
+    onErrorContainer = ColorTokens.Dark.onErrorContainer,
+    background = ColorTokens.Dark.background,
+    onBackground = ColorTokens.Dark.onBackground,
+    surface = ColorTokens.Dark.surface,
+    onSurface = ColorTokens.Dark.onSurface,
+    surfaceVariant = ColorTokens.Dark.surfaceVariant,
+    onSurfaceVariant = ColorTokens.Dark.onSurfaceVariant,
+    outline = ColorTokens.Dark.outline,
+    outlineVariant = ColorTokens.Dark.outlineVariant,
+)
 
 @Composable
 fun AppTheme(
@@ -129,57 +177,8 @@ fun AppTheme(
         LocalIsTalkbackEnabled provides isTalkbackEnabled
     ) {
         MaterialTheme(
-            colorScheme = colorScheme.animation(),
+            colorScheme = colorScheme,
             content = content,
         )
     }
-}
-
-@Composable
-private fun Color.animation() = animateColorAsState(
-    targetValue = this,
-    animationSpec = tween(durationMillis = 500),
-    label = "animation"
-).value
-
-@Composable
-private fun ColorScheme.animation(): ColorScheme {
-    return copy(
-        primary = primary.animation(),
-        onPrimary = onPrimary.animation(),
-        primaryContainer = primaryContainer.animation(),
-        onPrimaryContainer = onPrimaryContainer.animation(),
-        inversePrimary = inversePrimary.animation(),
-        secondary = secondary.animation(),
-        onSecondary = onSecondary.animation(),
-        secondaryContainer = secondaryContainer.animation(),
-        onSecondaryContainer = onSecondaryContainer.animation(),
-        tertiary = tertiary.animation(),
-        onTertiary = onTertiary.animation(),
-        tertiaryContainer = tertiaryContainer.animation(),
-        onTertiaryContainer = onTertiaryContainer.animation(),
-        background = background.animation(),
-        onBackground = onBackground.animation(),
-        surface = surface.animation(),
-        onSurface = onSurface.animation(),
-        surfaceVariant = surfaceVariant.animation(),
-        onSurfaceVariant = onSurfaceVariant.animation(),
-        surfaceTint = surfaceTint.animation(),
-        inverseSurface = inverseSurface.animation(),
-        inverseOnSurface = inverseOnSurface.animation(),
-        error = error.animation(),
-        onError = onError.animation(),
-        errorContainer = errorContainer.animation(),
-        onErrorContainer = onErrorContainer.animation(),
-        outline = outline.animation(),
-        outlineVariant = outlineVariant.animation(),
-        scrim = scrim.animation(),
-        surfaceBright = surfaceBright.animation(),
-        surfaceDim = surfaceDim.animation(),
-        surfaceContainer = surfaceContainer.animation(),
-        surfaceContainerHigh = surfaceContainerHigh.animation(),
-        surfaceContainerHighest = surfaceContainerHighest.animation(),
-        surfaceContainerLow = surfaceContainerLow.animation(),
-        surfaceContainerLowest = surfaceContainerLowest.animation(),
-    )
 }

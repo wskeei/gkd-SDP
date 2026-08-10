@@ -95,6 +95,7 @@ import li.songe.gkd.sdp.util.launchAsFn
 import li.songe.gkd.sdp.util.throttle
 import li.songe.gkd.sdp.util.toast
 import li.songe.selector.Selector
+import androidx.compose.ui.res.stringResource
 
 @Composable
 fun AdvancedPageSections() {
@@ -138,7 +139,7 @@ private fun AdvancedPortDialog(
     var value by remember { mutableStateOf(store.httpServerPort.toString()) }
     AlertDialog(
         properties = DialogProperties(dismissOnClickOutside = false),
-        title = { Text(text = "服务端口") },
+        title = { Text(text = stringResource(R.string.s_6f77ee7c5c)) },
         text = {
             OutlinedTextField(
                 value = value,
@@ -148,7 +149,7 @@ private fun AdvancedPortDialog(
                 modifier = Modifier.fillMaxWidth().autoFocus(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 supportingText = {
-                    Text("${value.length} / 5", modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.End)
+                    Text(li.songe.gkd.sdp.app.getString(R.string.s_201d216690, (value.length).toString()), modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.End)
                 },
             )
         },
@@ -165,12 +166,12 @@ private fun AdvancedPortDialog(
                     showEditPortDlg.value = false
                     if (newPort != store.httpServerPort) {
                         storeFlow.value = store.copy(httpServerPort = newPort)
-                        toast("更新成功")
+                        toast(li.songe.gkd.sdp.app.getString(R.string.s_e2cff77372))
                     }
                 },
-            ) { Text("确认") }
+            ) { Text(stringResource(R.string.s_b56d9ac6c5)) }
         },
-        dismissButton = { TextButton(onClick = { showEditPortDlg.value = false }) { Text("取消") } },
+        dismissButton = { TextButton(onClick = { showEditPortDlg.value = false }) { Text(stringResource(R.string.s_4d0b4688c7)) } },
     )
 }
 
@@ -181,7 +182,7 @@ private fun AdvancedShizukuDialog(
     if (!showShizukuState.value) return
     val onDismissRequest = { showShizukuState.value = false }
     AlertDialog(
-        title = { Text(text = "授权状态") },
+        title = { Text(text = stringResource(R.string.s_ac3cc79f91)) },
         text = {
             val states = shizukuContextFlow.collectAsStateWithLifecycle().value.states
             Column {
@@ -191,7 +192,7 @@ private fun AdvancedShizukuDialog(
             }
         },
         onDismissRequest = onDismissRequest,
-        confirmButton = { TextButton(onClick = onDismissRequest) { Text(text = "我知道了") } },
+        confirmButton = { TextButton(onClick = onDismissRequest) { Text(text = stringResource(R.string.s_dd3760c80a)) } },
     )
 }
 
@@ -212,7 +213,7 @@ private fun AdvancedCaptureScreenshotDialog(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 modifier = Modifier.fillMaxWidth(),
             ) {
-                Text(text = "截屏快照")
+                Text(text = stringResource(R.string.s_ee5db675e1))
                 PerfIconButton(
                     imageVector = PerfIcon.HelpOutline,
                     onClick = throttle {
@@ -225,18 +226,18 @@ private fun AdvancedCaptureScreenshotDialog(
         text = {
             Column(modifier = Modifier.fillMaxWidth()) {
                 CustomOutlinedTextField(
-                    label = { Text("应用ID") },
+                    label = { Text(li.songe.gkd.sdp.app.getString(R.string.s_be8af550f3)) },
                     value = appIdValue,
-                    placeholder = { Text(text = "请输入目标应用ID") },
+                    placeholder = { Text(text = li.songe.gkd.sdp.app.getString(R.string.s_9fccef0027)) },
                     onValueChange = { appIdValue = it },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 CustomOutlinedTextField(
-                    label = { Text("特征事件选择器") },
+                    label = { Text(li.songe.gkd.sdp.app.getString(R.string.s_a08049752b)) },
                     value = eventSelectorValue,
-                    placeholder = { Text(text = "请输入特征事件选择器") },
+                    placeholder = { Text(text = li.songe.gkd.sdp.app.getString(R.string.s_ea72227d80)) },
                     onValueChange = { eventSelectorValue = it },
                     maxLines = 4,
                     modifier = Modifier.fillMaxWidth().autoFocus(),
@@ -251,11 +252,11 @@ private fun AdvancedCaptureScreenshotDialog(
                     return@throttle
                 }
                 if (appIdValue.isNotEmpty() && !appInfoMapFlow.value.contains(appIdValue)) {
-                    toast("无效应用ID")
+                    toast(li.songe.gkd.sdp.app.getString(R.string.s_34e21ea99c))
                     return@throttle
                 }
                 if (eventSelectorValue.isNotEmpty() && Selector.parseOrNull(eventSelectorValue) == null) {
-                    toast("无效事件选择器")
+                    toast(li.songe.gkd.sdp.app.getString(R.string.s_8c9fbc6ef9))
                     return@throttle
                 }
                 storeFlow.update {
@@ -264,10 +265,10 @@ private fun AdvancedCaptureScreenshotDialog(
                         screenshotEventSelector = eventSelectorValue,
                     )
                 }
-                toast("更新成功")
+                toast(li.songe.gkd.sdp.app.getString(R.string.s_e2cff77372))
                 showDialog.value = false
-            }) { Text("确认") }
+            }) { Text(stringResource(R.string.s_b56d9ac6c5)) }
         },
-        dismissButton = { TextButton(onClick = { showDialog.value = false }) { Text("取消") } },
+        dismissButton = { TextButton(onClick = { showDialog.value = false }) { Text(stringResource(R.string.s_4d0b4688c7)) } },
     )
 }

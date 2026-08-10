@@ -44,11 +44,13 @@ import li.songe.gkd.sdp.ui.component.GroupNameText
 import li.songe.gkd.sdp.ui.component.PerfIcon
 import li.songe.gkd.sdp.ui.share.LocalMainViewModel
 import li.songe.gkd.sdp.ui.style.iconTextSize
-import li.songe.gkd.sdp.ui.style.itemHorizontalPadding
 import li.songe.gkd.sdp.util.subsItemsFlow
 import li.songe.gkd.sdp.util.subsMapFlow
 import li.songe.gkd.sdp.util.throttle
 import li.songe.gkd.sdp.util.toast
+import androidx.compose.ui.res.stringResource
+import li.songe.gkd.sdp.R
+import li.songe.gkd.sdp.ui.style.DimensionTokens
 
 @Composable
 internal fun ActionLogCard(
@@ -71,15 +73,15 @@ internal fun ActionLogCard(
         modifier = modifier
             .fillMaxWidth()
             .padding(
-                start = itemHorizontalPadding / 2,
-                end = itemHorizontalPadding / 2,
+                start = DimensionTokens.SpacingBase / 2,
+                end = DimensionTokens.SpacingBase / 2,
                 top = verticalPadding
             )
     ) {
         if (isDiffApp && appId == null) {
             Row(
                 modifier = Modifier
-                    .padding(start = itemHorizontalPadding / 4)
+                    .padding(start = DimensionTokens.SpacingBase / 4)
                     .clip(MaterialTheme.shapes.extraSmall)
                     .clickable(onClick = throttle {
                         mainVm.navigatePage(
@@ -136,11 +138,11 @@ private fun ActionLogCardBody(
     val mainVm = LocalMainViewModel.current
     Row(
         modifier = Modifier
-            .padding(start = itemHorizontalPadding / 4)
+            .padding(start = DimensionTokens.SpacingBase / 4)
             .clickable(onClick = onClick)
             .fillMaxWidth()
             .height(IntrinsicSize.Min)
-            .padding(start = itemHorizontalPadding / 4)
+            .padding(start = DimensionTokens.SpacingBase / 4)
     ) {
             if (appId == null) {
                 Spacer(modifier = Modifier.width(2.dp))
@@ -162,7 +164,7 @@ private fun ActionLogCardBody(
                 )
                 val outcomePresentation = ActionLogPresentation.from(actionLog)
                 Text(
-                    text = "${outcomePresentation.outcomeTitle} · ${outcomePresentation.outcomeDescription}",
+                    text = stringResource(R.string.s_6027bb300c, (outcomePresentation.outcomeTitle).toString(), (outcomePresentation.outcomeDescription).toString()),
                     style = MaterialTheme.typography.labelMedium,
                     color = if (actionLog.outcome == ActionLog.OUTCOME_INTERCEPTED) {
                         MaterialTheme.colorScheme.error
@@ -182,7 +184,7 @@ private fun ActionLogCardBody(
                         )
                     } else {
                         Text(
-                            text = "null",
+                            text = li.songe.gkd.sdp.app.getString(R.string.s_2be88ca424),
                             color = LocalContentColor.current.copy(alpha = 0.5f),
                         )
                     }
@@ -192,14 +194,14 @@ private fun ActionLogCardBody(
                                 if (subsItemsFlow.value.any { it.id == actionLog.subsId }) {
                                     mainVm.sheetSubsIdFlow.value = actionLog.subsId
                                 } else {
-                                    toast("订阅不存在")
+                                    toast(li.songe.gkd.sdp.app.getString(R.string.s_9e5cc3140b))
                                 }
                             })
                         ) {
                             Text(
                                 text = actionLog.subsNameSnapshot
                                     ?: subscription?.name
-                                    ?: "id=${actionLog.subsId}"
+                                    ?: li.songe.gkd.sdp.app.getString(R.string.s_fbc86835e2, (actionLog.subsId).toString())
                             )
                             val lineHeightDp = LocalDensity.current.run {
                                 LocalTextStyle.current.lineHeight.toDp()
@@ -211,7 +213,7 @@ private fun ActionLogCardBody(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text(
-                                    text = "v${item.first.subsVersion}",
+                                    text = li.songe.gkd.sdp.app.getString(R.string.s_f498bf1ba7, (item.first.subsVersion).toString()),
                                     style = MaterialTheme.typography.labelMedium,
                                     color = MaterialTheme.colorScheme.tertiary,
                                     modifier = Modifier

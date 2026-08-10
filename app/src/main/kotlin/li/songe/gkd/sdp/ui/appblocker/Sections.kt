@@ -40,6 +40,8 @@ import li.songe.gkd.sdp.ui.share.LocalMainViewModel
 import li.songe.gkd.sdp.ui.style.itemPadding
 import li.songe.gkd.sdp.ui.style.scaffoldPadding
 import li.songe.gkd.sdp.ui.style.surfaceCardColors
+import androidx.compose.ui.res.stringResource
+import li.songe.gkd.sdp.R
 
 @Composable
 fun AppBlockerPageSections() {
@@ -172,12 +174,12 @@ private fun AppBlockerPageScaffold(
                         onClick = onNavigateBack,
                     )
                 },
-                title = { Text(text = "应用拦截") },
+                title = { Text(text = li.songe.gkd.sdp.app.getString(R.string.s_e6bbd743b3)) },
                 actions = {
                     IconButton(onClick = onShowGlobalLock) {
                         Icon(
                             PerfIcon.Lock,
-                            contentDescription = "全局锁定",
+                            contentDescription = li.songe.gkd.sdp.app.getString(R.string.s_0261a6c710),
                             tint = if (globalLock?.isCurrentlyLocked == true) {
                                 MaterialTheme.colorScheme.error
                             } else {
@@ -309,14 +311,14 @@ private fun AppBlockerAutoReenableNotice() {
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
-                text = "自动重开始终启用，无法关闭。",
+                text = stringResource(R.string.s_b2d1d6afd6),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.primary,
                 fontWeight = FontWeight.SemiBold,
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text = "间隔可调：0~240 分钟；每 3 天仅可修改一次。",
+                text = stringResource(R.string.s_ebf718dc74),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -343,14 +345,14 @@ private fun AppBlockerGlobalLockStatus(globalLock: li.songe.gkd.sdp.data.AppBloc
             Spacer(modifier = Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "全局锁定中",
+                    text = stringResource(R.string.s_1640da6876),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                 )
                 val remainingMinutes =
                     ((globalLock.lockEndTime - System.currentTimeMillis()) / 60000).coerceAtLeast(0)
                 Text(
-                    text = "剩余 ${if (remainingMinutes >= 60) "${remainingMinutes / 60}小时${remainingMinutes % 60}分钟" else "${remainingMinutes}分钟"}",
+                    text = stringResource(R.string.s_7c36cdf41a, (if (remainingMinutes >= 60) "${remainingMinutes / 60}小时${remainingMinutes % 60}分钟" else "${remainingMinutes}分钟").toString()),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.error,
                 )
@@ -377,7 +379,7 @@ private fun AppBlockerSectionHeader(title: String, onAdd: () -> Unit) {
         TextButton(onClick = onAdd) {
             Icon(PerfIcon.Add, contentDescription = null)
             Spacer(modifier = Modifier.width(4.dp))
-            Text("添加")
+            Text(stringResource(R.string.s_94191ce210))
         }
     }
 }

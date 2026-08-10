@@ -73,8 +73,8 @@ class UsageGuardCountdownOverlayScreenshotModeContractTest {
         assertTrue(control.contains("OutlinedButton("))
         assertTrue(control.contains("onClick = onHideForScreenshot"))
         assertTrue(control.contains(".heightIn(min = 48.dp)"))
-        assertTrue(control.contains("Text(\"隐藏 10 秒用于截图\")"))
-        assertTrue(control.contains("text = \"隐藏期间倒计时继续，之后自动恢复。\""))
+        assertTrue(control.contains("Text(stringResource(R.string.s"))
+        assertTrue(control.contains("text = stringResource(R.string.s"))
         assertTrue(control.contains("style = MaterialTheme.typography.bodySmall"))
     }
 

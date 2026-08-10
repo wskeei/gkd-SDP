@@ -171,7 +171,7 @@ fun useAppListPage(): ScaffoldExt {
                         if (localEditWhiteListMode) {
                             Text(
                                 modifier = titleModifier,
-                                text = "应用白名单",
+                                text = li.songe.gkd.sdp.app.getString(R.string.s_7395ba05d0),
                             )
                         } else {
                             Text(
@@ -189,8 +189,8 @@ fun useAppListPage(): ScaffoldExt {
                             contentDescription = canQueryPkgState.name + "异常",
                             onClick = throttle {
                                 mainVm.dialogFlow.updateDialogOptions(
-                                    title = "权限异常",
-                                    text = "检测到已授予「${canQueryPkgState.name}」但实际获取应用数量稀少，已使用其它方式获取但可能不全，在应用列表下拉刷新可重新获取，若无法解决可尝试关闭权限后重新授予或重启设备"
+                                    title = li.songe.gkd.sdp.app.getString(R.string.s_a15a6fbc16),
+                                    text = li.songe.gkd.sdp.app.getString(R.string.s_9c818a85b3, (canQueryPkgState.name).toString())
                                 )
                             },
                         )
@@ -335,7 +335,7 @@ fun useAppListPage(): ScaffoldExt {
                 item(ListPlaceholder.KEY, ListPlaceholder.TYPE) {
                     Spacer(modifier = Modifier.height(EmptyHeight))
                     if (appInfos.isEmpty() && searchStr.isNotEmpty()) {
-                        EmptyText(text = if (vm.appFilter.showAllAppFlow.collectAsStateWithLifecycle().value) "暂无搜索结果" else "暂无搜索结果，或修改筛选")
+                        EmptyText(text = if (vm.appFilter.showAllAppFlow.collectAsStateWithLifecycle().value) li.songe.gkd.sdp.app.getString(R.string.s_8f8274c754) else li.songe.gkd.sdp.app.getString(R.string.s_9e7d3ee61c))
                         Spacer(modifier = Modifier.height(EmptyHeight / 2))
                     }
                 }

@@ -48,6 +48,8 @@ import li.songe.gkd.sdp.app
 import li.songe.gkd.sdp.ui.component.AppIcon
 import li.songe.gkd.sdp.ui.component.PerfIcon
 import li.songe.gkd.sdp.util.appInfoMapFlow
+import androidx.compose.ui.res.stringResource
+import li.songe.gkd.sdp.R
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
@@ -67,7 +69,7 @@ internal fun QuickStartSheet(
                 .padding(16.dp)
         ) {
             Text(
-                text = "立即开始专注",
+                text = stringResource(R.string.s_eb4f824680),
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold
             )
@@ -76,7 +78,7 @@ internal fun QuickStartSheet(
 
             // 时长选择
             Text(
-                text = "专注时长",
+                text = stringResource(R.string.s_427069f0a2),
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.Medium
             )
@@ -92,7 +94,7 @@ internal fun QuickStartSheet(
                         val hours = it.toIntOrNull()?.coerceIn(0, 48) ?: 0
                         vm.manualHours = hours
                     },
-                    label = { Text("小时") },
+                    label = { Text(stringResource(R.string.s_99f6904ff3)) },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     modifier = Modifier.weight(1f),
                     singleLine = true
@@ -104,7 +106,7 @@ internal fun QuickStartSheet(
                         val minutes = it.toIntOrNull()?.coerceIn(0, 59) ?: 0
                         vm.manualMinutes = minutes
                     },
-                    label = { Text("分钟") },
+                    label = { Text(stringResource(R.string.s_28bf227b9b)) },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     modifier = Modifier.weight(1f),
                     singleLine = true
@@ -115,7 +117,7 @@ internal fun QuickStartSheet(
             if (vm.totalDurationMinutes < 5) {
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = "最短时长为 5 分钟",
+                    text = stringResource(R.string.s_09c309db65),
                     color = MaterialTheme.colorScheme.error,
                     style = MaterialTheme.typography.bodySmall
                 )
@@ -127,7 +129,7 @@ internal fun QuickStartSheet(
             OutlinedTextField(
                 value = vm.manualMessage,
                 onValueChange = { vm.manualMessage = it },
-                label = { Text("拦截提示语") },
+                label = { Text(stringResource(R.string.s_f82dffbf08)) },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true
             )
@@ -140,12 +142,12 @@ internal fun QuickStartSheet(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text(
-                    text = "白名单应用 (${vm.manualWhitelistApps.size})",
+                    text = stringResource(R.string.s_d6447fb450, (vm.manualWhitelistApps.size).toString()),
                     style = MaterialTheme.typography.bodyMedium,
                     modifier = Modifier.weight(1f)
                 )
                 TextButton(onClick = onShowWhitelistPicker) {
-                    Text("选择")
+                    Text(stringResource(R.string.s_70b208202c))
                 }
             }
 
@@ -184,7 +186,7 @@ internal fun QuickStartSheet(
                     onCheckedChange = { vm.manualIsLocked = it }
                 )
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("锁定（无法提前结束）")
+                Text(stringResource(R.string.s_9c66857925))
             }
 
             Spacer(modifier = Modifier.height(24.dp))
@@ -193,7 +195,7 @@ internal fun QuickStartSheet(
                 onClick = onStart,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text("开始专注")
+                Text(stringResource(R.string.s_a273727311))
             }
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -214,14 +216,14 @@ internal fun WhitelistPickerDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("选择白名单应用") },
+        title = { Text(stringResource(R.string.s_a63ec9e8f8)) },
         text = {
             Column(modifier = Modifier.fillMaxWidth()) {
                 // 搜索框
                 OutlinedTextField(
                     value = vm.whitelistSearchQuery,
                     onValueChange = { vm.whitelistSearchQuery = it },
-                    placeholder = { Text("搜索应用") },
+                    placeholder = { Text(li.songe.gkd.sdp.app.getString(R.string.s_897fdfef89)) },
                     leadingIcon = { Icon(PerfIcon.Search, null) },
                     trailingIcon = {
                         if (vm.whitelistSearchQuery.isNotEmpty()) {
@@ -245,7 +247,7 @@ internal fun WhitelistPickerDialog(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("显示系统应用")
+                    Text(stringResource(R.string.s_52c2b4e02d))
                     Switch(
                         checked = vm.showSystemAppsInWhitelist,
                         onCheckedChange = { vm.showSystemAppsInWhitelist = it }
@@ -319,12 +321,12 @@ internal fun WhitelistPickerDialog(
         },
         confirmButton = {
             TextButton(onClick = { onConfirm(selectedApps.toList()) }) {
-                Text("确定")
+                Text(stringResource(R.string.s_f526c89937))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("取消")
+                Text(stringResource(R.string.s_4d0b4688c7))
             }
         }
     )

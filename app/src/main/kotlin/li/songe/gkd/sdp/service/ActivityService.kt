@@ -41,6 +41,7 @@ import li.songe.gkd.sdp.ui.style.iconTextSize
 import li.songe.gkd.sdp.util.copyText
 import li.songe.gkd.sdp.util.startForegroundServiceByClass
 import li.songe.gkd.sdp.util.stopServiceByClass
+import li.songe.gkd.sdp.R
 
 
 class ActivityService : OverlayWindowService(
@@ -66,7 +67,7 @@ class ActivityService : OverlayWindowService(
                 val topActivity by topActivityFlow.collectAsStateWithLifecycle()
                 val hasAuth by activityOkFlow.collectAsStateWithLifecycle()
                 ClosableTitle(
-                    title = if (hasAuth) "记录服务" else "记录服务(无权限)"
+                    title = if (hasAuth) li.songe.gkd.sdp.app.getString(R.string.s_14b8a7bf3c) else li.songe.gkd.sdp.app.getString(R.string.s_7a1cbaff45)
                 )
                 if (hasAuth) {
                     Box {
@@ -137,7 +138,7 @@ class ActivityService : OverlayWindowService(
 @Composable
 private fun RowText(text: String?, color: Color = Color.Unspecified) {
     Row {
-        Text(text = text ?: "null", color = color, modifier = Modifier.weight(1f, false))
+        Text(text = text ?: li.songe.gkd.sdp.app.getString(R.string.s_2be88ca424), color = color, modifier = Modifier.weight(1f, false))
         if (text != null) {
             Spacer(modifier = Modifier.width(4.dp))
             PerfIcon(

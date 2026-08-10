@@ -6,6 +6,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import li.songe.gkd.sdp.util.UsageGuardPolicy
 import li.songe.gkd.sdp.util.UsageGuardUiStatePolicy
+import androidx.compose.ui.res.stringResource
+import li.songe.gkd.sdp.R
 
 @Composable
 internal fun UsageGuardStatusSection(state: UsageGuardSettingsRenderState) {
@@ -13,15 +15,15 @@ internal fun UsageGuardStatusSection(state: UsageGuardSettingsRenderState) {
     val vm = state.vm
     val durationOptions = state.durationOptions
     SectionCard(
-        title = "保护状态",
-        subtitle = "先确认总开关，再核对当前保护范围和默认策略。",
+        title = stringResource(R.string.s_e88c1f786e),
+        subtitle = stringResource(R.string.s_21e2314ce6),
     ) {
         SettingRow(
-            title = "使用申请总开关",
+            title = li.songe.gkd.sdp.app.getString(R.string.s_2755dbd77c),
             subtitle = if (settings.usageGuardEnabled) {
-                "已启用，打开受控应用前需要先申请"
+                li.songe.gkd.sdp.app.getString(R.string.s_bc3692dc28)
             } else {
-                "未启用，当前不会拦截受控应用"
+                li.songe.gkd.sdp.app.getString(R.string.s_d0b1c07c8f)
             },
             trailing = {
                 Switch(
@@ -32,7 +34,7 @@ internal fun UsageGuardStatusSection(state: UsageGuardSettingsRenderState) {
         )
         HorizontalDivider()
         CompactInfoRow(
-            label = "当前范围",
+            label = li.songe.gkd.sdp.app.getString(R.string.s_96b029d1e1),
             value = if (settings.usageGuardScopeMode == UsageGuardPolicy.SCOPE_SELECTED_ONLY) {
                 "仅选中应用"
             } else {
@@ -40,7 +42,7 @@ internal fun UsageGuardStatusSection(state: UsageGuardSettingsRenderState) {
             },
         )
         CompactInfoRow(
-            label = "默认授权",
+            label = li.songe.gkd.sdp.app.getString(R.string.s_ae2399c597),
             value = if (settings.usageGuardDefaultGrantMode == UsageGuardPolicy.GRANT_MODE_STRICT) {
                 "严格模式"
             } else {
@@ -48,7 +50,7 @@ internal fun UsageGuardStatusSection(state: UsageGuardSettingsRenderState) {
             },
         )
         CompactInfoRow(
-            label = "快速时长",
+            label = li.songe.gkd.sdp.app.getString(R.string.s_30a60b1367),
             value = durationOptions.joinToString(" / ", transform = ::usageGuardDurationLabel),
         )
         Text(

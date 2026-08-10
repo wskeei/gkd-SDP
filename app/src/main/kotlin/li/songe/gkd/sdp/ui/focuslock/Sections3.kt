@@ -22,6 +22,8 @@ import androidx.compose.ui.unit.dp
 import li.songe.gkd.sdp.ui.component.PerfIcon
 import li.songe.gkd.sdp.ui.style.surfaceCardColors
 import li.songe.gkd.sdp.util.format
+import androidx.compose.ui.res.stringResource
+import li.songe.gkd.sdp.R
 
 @Composable
 fun AutoReenableGuardCard(
@@ -60,37 +62,37 @@ fun AutoReenableGuardCard(
             verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
             Text(
-                text = "自动重开保护",
+                text = stringResource(R.string.s_ca18550e48),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold
             )
             Text(
-                text = "自动重开始终启用，无法关闭；会恢复规则、使用申请开关与无障碍权限守护",
+                text = stringResource(R.string.s_0f4580b7db),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.primary
             )
             Text(
-                text = "当前间隔：$intervalMinutes 分钟（0 为高频巡检）",
+                text = stringResource(R.string.s_826d077913, (intervalMinutes).toString()),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Text(
-                text = "下次可修改：$nextEditableText",
+                text = stringResource(R.string.s_e6f8000ed3, (nextEditableText).toString()),
                 style = MaterialTheme.typography.bodySmall,
                 color = if (!autoReenableUiState.canEditInterval) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.onSurfaceVariant
             )
             Text(
-                text = "下一次自动重开：$nextEnforceText",
+                text = stringResource(R.string.s_70d1eab884, (nextEnforceText).toString()),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Text(
-                text = "今日关闭次数：${autoReenableUiState.dailyDisableUsed}/${autoReenableUiState.dailyDisableLimit}（剩余 ${autoReenableUiState.dailyDisableRemaining}）",
+                text = stringResource(R.string.s_e0498a9bce, (autoReenableUiState.dailyDisableUsed).toString(), (autoReenableUiState.dailyDisableLimit).toString(), (autoReenableUiState.dailyDisableRemaining).toString()),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Text(
-                text = "下次配额重置：$nextDailyResetText",
+                text = stringResource(R.string.s_841a72191f, (nextDailyResetText).toString()),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -124,12 +126,12 @@ fun UrlBlockerCard(
             Spacer(modifier = Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "网址拦截",
+                    text = stringResource(R.string.s_dcbbbab7a5),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold
                 )
                 Text(
-                    text = if (enabled) "已启用" else "未启用",
+                    text = if (enabled) stringResource(R.string.s_25d2843150) else stringResource(R.string.s_8bb38ef00c),
                     style = MaterialTheme.typography.bodySmall,
                     color = if (enabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -168,12 +170,12 @@ fun FocusModeCard(
             Spacer(modifier = Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "专注模式",
+                    text = stringResource(R.string.s_63c1371c03),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold
                 )
                 Text(
-                    text = if (isActive) "进行中" else "未启动",
+                    text = if (isActive) stringResource(R.string.s_6f1972e48e) else stringResource(R.string.s_5464aca4a1),
                     style = MaterialTheme.typography.bodySmall,
                     color = if (isActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -213,7 +215,7 @@ fun AppBlockerCard(
             Spacer(modifier = Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "应用拦截",
+                    text = stringResource(R.string.s_e6bbd743b3),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold
                 )
@@ -262,7 +264,7 @@ fun UsageGuardCard(
             Spacer(modifier = Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "使用申请",
+                    text = stringResource(R.string.s_356c996618),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold
                 )
@@ -310,12 +312,12 @@ fun AppInstallMonitorCard(
             Spacer(modifier = Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "软件安装监测",
+                    text = stringResource(R.string.s_c27031c740),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold
                 )
                 Text(
-                    text = "记录分心软件安装历史",
+                    text = stringResource(R.string.s_1ae2d653ce),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

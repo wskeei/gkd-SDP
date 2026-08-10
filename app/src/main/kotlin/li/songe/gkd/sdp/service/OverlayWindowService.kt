@@ -55,6 +55,7 @@ import li.songe.gkd.sdp.util.runMainPost
 import li.songe.gkd.sdp.util.throttle
 import li.songe.gkd.sdp.util.toast
 import kotlin.math.abs
+import li.songe.gkd.sdp.R
 
 private var tempShareContext: ShareContext? = null
 private fun OverlayWindowService.useShareContext(): ShareContext {
@@ -91,7 +92,7 @@ private class ShareContext {
                         val newV = canDrawOverlaysState.updateAndGet()
                         canDrawOverlays = newV
                         if (!newV && oldV) {
-                            toast("当前界面拒绝显示悬浮窗")
+                            toast(li.songe.gkd.sdp.app.getString(R.string.s_812f4a9e8a))
                             break
                         }
                         delay(500)

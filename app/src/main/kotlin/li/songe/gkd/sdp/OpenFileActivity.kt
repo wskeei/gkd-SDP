@@ -10,6 +10,7 @@ import li.songe.gkd.sdp.util.ZipUtils
 import li.songe.gkd.sdp.util.createGkdTempDir
 import li.songe.gkd.sdp.util.launchTry
 import li.songe.gkd.sdp.util.toast
+import li.songe.gkd.sdp.R
 
 class OpenFileActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -19,7 +20,7 @@ class OpenFileActivity : Activity() {
             if (valid) {
                 navToMainActivity()
             } else {
-                toast("备份文件无效或未授予读取权限")
+                toast(li.songe.gkd.sdp.app.getString(R.string.s_a5b44b3b94))
                 finish()
             }
         }

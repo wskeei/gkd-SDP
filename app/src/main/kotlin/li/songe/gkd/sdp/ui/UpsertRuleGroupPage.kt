@@ -42,6 +42,7 @@ import li.songe.gkd.sdp.ui.style.getJson5Transformation
 import li.songe.gkd.sdp.ui.style.scaffoldPadding
 import li.songe.gkd.sdp.util.launchAsFn
 import li.songe.gkd.sdp.util.throttle
+import li.songe.gkd.sdp.R
 
 @Serializable
 data class UpsertRuleGroupRoute(
@@ -66,8 +67,8 @@ fun UpsertRuleGroupPage(route: UpsertRuleGroupRoute) {
         if (vm.hasTextChanged()) {
             context.justHideSoftInput()
             mainVm.dialogFlow.waitResult(
-                title = "提示",
-                text = "当前内容未保存，是否放弃编辑？",
+                title = li.songe.gkd.sdp.app.getString(R.string.s_ab3656a956),
+                text = li.songe.gkd.sdp.app.getString(R.string.s_aebc195621),
             )
         } else {
             context.hideSoftInput()
@@ -105,7 +106,7 @@ fun UpsertRuleGroupPage(route: UpsertRuleGroupRoute) {
                 PerfIconButton(imageVector = PerfIcon.ArrowBack, onClick = checkIfSaveText)
             },
             title = {
-                Text(text = if (vm.isEdit) "编辑规则" else "添加规则")
+                Text(text = if (vm.isEdit) li.songe.gkd.sdp.app.getString(R.string.s_13794d2141) else li.songe.gkd.sdp.app.getString(R.string.s_d2fc32282a))
             },
             actions = {
                 PerfIconButton(
@@ -147,7 +148,7 @@ fun UpsertRuleGroupPage(route: UpsertRuleGroupRoute) {
                     colors = textColors,
                     visualTransformation = getJson5Transformation(LocalDarkTheme.current),
                     placeholder = {
-                        Text(text = if (vm.isApp) "请输入应用规则\n" else "请输入全局规则\n")
+                        Text(text = if (vm.isApp) li.songe.gkd.sdp.app.getString(R.string.s_2b37101eb6) else li.songe.gkd.sdp.app.getString(R.string.s_f4af79e75c))
                     },
                 )
             }

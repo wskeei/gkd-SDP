@@ -276,6 +276,8 @@ loc {
 }
 
 dependencies {
+    lintChecks(project(":quality-lint"))
+
     implementation(libs.kotlin.stdlib)
 
     implementation(project(":selector"))

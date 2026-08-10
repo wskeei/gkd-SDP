@@ -69,6 +69,7 @@ import li.songe.gkd.sdp.util.launchAsFn
 import li.songe.gkd.sdp.util.switchItem
 import li.songe.gkd.sdp.util.throttle
 import li.songe.gkd.sdp.util.toast
+import androidx.compose.ui.res.stringResource
 
 @Serializable
 data object BlockA11yAppListRoute : NavKey
@@ -88,8 +89,8 @@ fun BlockA11yAppListPage() {
         context.justHideSoftInput()
         if (vm.textChanged) {
             mainVm.dialogFlow.waitResult(
-                title = "提示",
-                text = "当前内容未保存，是否放弃编辑？",
+                title = li.songe.gkd.sdp.app.getString(R.string.s_ab3656a956),
+                text = li.songe.gkd.sdp.app.getString(R.string.s_aebc195621),
             )
         }
         editable = false
@@ -107,8 +108,8 @@ fun BlockA11yAppListPage() {
                                 if (vm.textChanged) {
                                     context.justHideSoftInput()
                                     mainVm.dialogFlow.waitResult(
-                                        title = "提示",
-                                        text = "当前内容未保存，是否放弃编辑？",
+                                        title = li.songe.gkd.sdp.app.getString(R.string.s_ab3656a956),
+                                        text = li.songe.gkd.sdp.app.getString(R.string.s_aebc195621),
                                     )
                                 }
                                 editable = !editable
@@ -146,7 +147,7 @@ fun BlockA11yAppListPage() {
                             )
                         Text(
                             modifier = titleModifier,
-                            text = "无障碍白名单",
+                            text = li.songe.gkd.sdp.app.getString(R.string.s_fb2cc4f730),
                         )
                     }
                 },
@@ -161,9 +162,9 @@ fun BlockA11yAppListPage() {
                                     if (vm.textChanged) {
                                         blockA11yAppListFlow.value =
                                             AppListString.decode(vm.textFlow.value)
-                                        toast("更新成功")
+                                        toast(li.songe.gkd.sdp.app.getString(R.string.s_e2cff77372))
                                     } else {
-                                        toast("未修改")
+                                        toast(li.songe.gkd.sdp.app.getString(R.string.s_fff8cc4d94))
                                     }
                                     context.justHideSoftInput()
                                     editable = false
@@ -261,7 +262,7 @@ fun BlockA11yAppListPage() {
             ) {
                 Spacer(modifier = Modifier.height(EmptyHeight))
                 Text(
-                    text = "已设置为跟随应用白名单",
+                    text = stringResource(R.string.s_6cbc419758),
                     textAlign = TextAlign.Center,
                     modifier = Modifier.fillMaxWidth(),
                     color = MaterialTheme.colorScheme.tertiary,
@@ -295,7 +296,7 @@ fun BlockA11yAppListPage() {
                 item(ListPlaceholder.KEY, ListPlaceholder.TYPE) {
                     Spacer(modifier = Modifier.height(EmptyHeight))
                     if (appInfos.isEmpty() && searchStr.isNotEmpty()) {
-                        EmptyText(text = "暂无搜索结果")
+                        EmptyText(text = li.songe.gkd.sdp.app.getString(R.string.s_8f8274c754))
                         Spacer(modifier = Modifier.height(EmptyHeight / 2))
                     }
                 }

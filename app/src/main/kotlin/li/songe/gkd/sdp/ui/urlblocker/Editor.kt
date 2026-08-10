@@ -27,6 +27,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import li.songe.gkd.sdp.data.UrlBlockRule
 import li.songe.gkd.sdp.data.UrlRuleGroup
+import androidx.compose.ui.res.stringResource
+import li.songe.gkd.sdp.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -43,8 +45,8 @@ fun UrlGroupEditorSheet(
         Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
             Text(
                 text = if (vm.editingGroup != null) {
-                    if (isLocked) "查看规则组 (已锁定)" else "编辑规则组"
-                } else "添加规则组",
+                    if (isLocked) stringResource(R.string.s_769abeb44a) else stringResource(R.string.s_6cede3740a)
+                } else stringResource(R.string.s_1658680c1d),
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
             )
@@ -52,8 +54,8 @@ fun UrlGroupEditorSheet(
             OutlinedTextField(
                 value = vm.groupName,
                 onValueChange = { vm.groupName = it },
-                label = { Text("规则组名称") },
-                placeholder = { Text("如：视频网站") },
+                label = { Text(stringResource(R.string.s_8b779bd414)) },
+                placeholder = { Text(li.songe.gkd.sdp.app.getString(R.string.s_62a6243ff9)) },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
                 enabled = !isLocked,
@@ -62,8 +64,8 @@ fun UrlGroupEditorSheet(
             OutlinedTextField(
                 value = vm.groupQuickUrls,
                 onValueChange = { vm.groupQuickUrls = it },
-                label = { Text("批量添加网址 (可选)") },
-                placeholder = { Text("每行一个，如：\nbilibili.com\nyoutube.com") },
+                label = { Text(stringResource(R.string.s_beea7e4cae)) },
+                placeholder = { Text(li.songe.gkd.sdp.app.getString(R.string.s_115793186c)) },
                 modifier = Modifier.fillMaxWidth(),
                 minLines = 3,
                 maxLines = 5,
@@ -71,7 +73,7 @@ fun UrlGroupEditorSheet(
             )
             Spacer(modifier = Modifier.height(24.dp))
             if (!isLocked) {
-                Button(onClick = onSave, modifier = Modifier.fillMaxWidth()) { Text("保存") }
+                Button(onClick = onSave, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.s_fadf24dbc5)) }
             } else {
                 Button(
                     onClick = onDismiss,
@@ -80,7 +82,7 @@ fun UrlGroupEditorSheet(
                         containerColor = MaterialTheme.colorScheme.secondaryContainer,
                         contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
                     ),
-                ) { Text("确定") }
+                ) { Text(li.songe.gkd.sdp.app.getString(R.string.s_f526c89937)) }
             }
             Spacer(modifier = Modifier.height(16.dp))
         }
@@ -115,8 +117,8 @@ fun UrlRuleEditorSheet(
 private fun UrlRuleIdentityFields(vm: UrlBlockVm, isLocked: Boolean) {
     Text(
         text = if (vm.editingUrlRule != null) {
-            if (isLocked) "查看规则 (已锁定)" else "编辑规则"
-        } else "添加规则",
+            if (isLocked) stringResource(R.string.s_f387d20cb8) else stringResource(R.string.s_13794d2141)
+        } else stringResource(R.string.s_d2fc32282a),
         style = MaterialTheme.typography.titleLarge,
         fontWeight = FontWeight.Bold,
     )
@@ -124,14 +126,14 @@ private fun UrlRuleIdentityFields(vm: UrlBlockVm, isLocked: Boolean) {
     OutlinedTextField(
         value = vm.urlPattern,
         onValueChange = { vm.urlPattern = it },
-        label = { Text("网址匹配模式") },
-        placeholder = { Text("如：bilibili.com") },
+        label = { Text(stringResource(R.string.s_86629471c3)) },
+        placeholder = { Text(li.songe.gkd.sdp.app.getString(R.string.s_29aa760a1e)) },
         modifier = Modifier.fillMaxWidth(),
         singleLine = true,
         enabled = !isLocked,
     )
     Text(
-        text = "不带 http://，支持域名或前缀",
+        text = stringResource(R.string.s_6662277b90),
         style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
         modifier = Modifier.padding(start = 4.dp, top = 4.dp),
@@ -140,26 +142,26 @@ private fun UrlRuleIdentityFields(vm: UrlBlockVm, isLocked: Boolean) {
     OutlinedTextField(
         value = vm.urlName,
         onValueChange = { vm.urlName = it },
-        label = { Text("规则名称 (可选)") },
-        placeholder = { Text("如：B站") },
+        label = { Text(stringResource(R.string.s_5f519ca1d8)) },
+        placeholder = { Text(li.songe.gkd.sdp.app.getString(R.string.s_f4fb517c9c)) },
         modifier = Modifier.fillMaxWidth(),
         singleLine = true,
         enabled = !isLocked,
     )
     Spacer(modifier = Modifier.height(16.dp))
-    Text("匹配方式", style = MaterialTheme.typography.bodyMedium)
+    Text(stringResource(R.string.s_6a05dbdc88), style = MaterialTheme.typography.bodyMedium)
     Spacer(modifier = Modifier.height(8.dp))
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         FilterChip(
             selected = vm.urlMatchType == UrlBlockRule.MATCH_TYPE_DOMAIN,
             onClick = { vm.urlMatchType = UrlBlockRule.MATCH_TYPE_DOMAIN },
-            label = { Text("域名匹配") },
+            label = { Text(stringResource(R.string.s_8cda652587)) },
             enabled = !isLocked,
         )
         FilterChip(
             selected = vm.urlMatchType == UrlBlockRule.MATCH_TYPE_PREFIX,
             onClick = { vm.urlMatchType = UrlBlockRule.MATCH_TYPE_PREFIX },
-            label = { Text("前缀匹配") },
+            label = { Text(stringResource(R.string.s_036f009257)) },
             enabled = !isLocked,
         )
     }
@@ -169,13 +171,13 @@ private fun UrlRuleIdentityFields(vm: UrlBlockVm, isLocked: Boolean) {
 @Composable
 private fun UrlRuleGroupFields(vm: UrlBlockVm, allGroups: List<UrlRuleGroup>, isLocked: Boolean) {
     Spacer(modifier = Modifier.height(16.dp))
-    Text("所属规则组", style = MaterialTheme.typography.bodyMedium)
+    Text(stringResource(R.string.s_8e9d261743), style = MaterialTheme.typography.bodyMedium)
     Spacer(modifier = Modifier.height(8.dp))
     FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         FilterChip(
             selected = vm.urlGroupId == 0L,
             onClick = { vm.urlGroupId = 0L },
-            label = { Text("未分组") },
+            label = { Text(stringResource(R.string.s_8de957a7b7)) },
             enabled = !isLocked,
         )
         allGroups.forEach { group ->
@@ -195,21 +197,21 @@ private fun UrlRuleTimeFields(vm: UrlBlockVm, isLocked: Boolean) {
     Spacer(modifier = Modifier.height(24.dp))
     HorizontalDivider()
     Spacer(modifier = Modifier.height(16.dp))
-    Text("时间设置 (拦截生效时间)", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+    Text(stringResource(R.string.s_9748286edf), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
     Spacer(modifier = Modifier.height(16.dp))
-    Text("规则模式", style = MaterialTheme.typography.bodyMedium)
+    Text(stringResource(R.string.s_a89571c669), style = MaterialTheme.typography.bodyMedium)
     Spacer(modifier = Modifier.height(8.dp))
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         FilterChip(
             selected = !vm.timeRuleIsAllowMode,
             onClick = { vm.timeRuleIsAllowMode = false },
-            label = { Text("🚫 禁止时间段") },
+            label = { Text(stringResource(R.string.s_837212d5ad)) },
             enabled = !isLocked,
         )
         FilterChip(
             selected = vm.timeRuleIsAllowMode,
             onClick = { vm.timeRuleIsAllowMode = true },
-            label = { Text("✓ 允许时间段") },
+            label = { Text(stringResource(R.string.s_78bb3ad69e)) },
             enabled = !isLocked,
         )
     }
@@ -218,7 +220,7 @@ private fun UrlRuleTimeFields(vm: UrlBlockVm, isLocked: Boolean) {
         OutlinedTextField(
             value = vm.timeRuleStartTime,
             onValueChange = { vm.timeRuleStartTime = it },
-            label = { Text("开始时间") },
+            label = { Text(stringResource(R.string.s_e8868af6eb)) },
             modifier = Modifier.weight(1f),
             singleLine = true,
             enabled = !isLocked,
@@ -226,14 +228,14 @@ private fun UrlRuleTimeFields(vm: UrlBlockVm, isLocked: Boolean) {
         OutlinedTextField(
             value = vm.timeRuleEndTime,
             onValueChange = { vm.timeRuleEndTime = it },
-            label = { Text("结束时间") },
+            label = { Text(stringResource(R.string.s_a0bb9f49ab)) },
             modifier = Modifier.weight(1f),
             singleLine = true,
             enabled = !isLocked,
         )
     }
     Spacer(modifier = Modifier.height(16.dp))
-    Text("生效日期", style = MaterialTheme.typography.bodyMedium)
+    Text(stringResource(R.string.s_d642f8ef29), style = MaterialTheme.typography.bodyMedium)
     Spacer(modifier = Modifier.height(8.dp))
     FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         val dayNames = listOf("一", "二", "三", "四", "五", "六", "日")
@@ -244,7 +246,7 @@ private fun UrlRuleTimeFields(vm: UrlBlockVm, isLocked: Boolean) {
                 onClick = {
                     vm.timeRuleDaysOfWeek = if (currentDays.contains(day)) currentDays - day else (currentDays + day).sorted()
                 },
-                label = { Text("周${dayNames[day - 1]}") },
+                label = { Text(li.songe.gkd.sdp.app.getString(R.string.s_a94243a9c8, (dayNames[day - 1]).toString())) },
                 enabled = !isLocked,
             )
         }
@@ -255,7 +257,7 @@ private fun UrlRuleTimeFields(vm: UrlBlockVm, isLocked: Boolean) {
 private fun UrlRuleSaveButton(isLocked: Boolean, onDismiss: () -> Unit, onSave: () -> Unit) {
     Spacer(modifier = Modifier.height(24.dp))
     if (!isLocked) {
-        Button(onClick = onSave, modifier = Modifier.fillMaxWidth()) { Text("保存") }
+        Button(onClick = onSave, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.s_fadf24dbc5)) }
     } else {
         Button(
             onClick = onDismiss,
@@ -264,7 +266,7 @@ private fun UrlRuleSaveButton(isLocked: Boolean, onDismiss: () -> Unit, onSave: 
                 containerColor = MaterialTheme.colorScheme.secondaryContainer,
                 contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
             ),
-        ) { Text("确定") }
+        ) { Text(li.songe.gkd.sdp.app.getString(R.string.s_f526c89937)) }
     }
     Spacer(modifier = Modifier.height(16.dp))
 }
