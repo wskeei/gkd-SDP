@@ -34,6 +34,13 @@ fun resolveCapabilityGraph(
     refreshKey: Int,
 ): CapabilityGraph {
     val automatorMode by mainVm.automatorModeFlow.collectAsStateWithLifecycle()
+    val a11yReady by accessA11yState.stateFlow.collectAsStateWithLifecycle()
+    val shizukuReady by shizukuGrantedState.stateFlow.collectAsStateWithLifecycle()
+    val overlayReady by canDrawOverlaysState.stateFlow.collectAsStateWithLifecycle()
+    val notificationReady by notificationState.stateFlow.collectAsStateWithLifecycle()
+    val batteryExempted by ignoreBatteryOptimizationsState.stateFlow.collectAsStateWithLifecycle()
+    val appListReady by canQueryPkgState.stateFlow.collectAsStateWithLifecycle()
+    val store by storeFlow.collectAsStateWithLifecycle()
     var activeLock by remember { mutableStateOf(false) }
     produceState(initialValue = activeLock, key1 = refreshKey) {
         value = runCatching {
@@ -41,20 +48,19 @@ fun resolveCapabilityGraph(
         }.getOrDefault(false)
         activeLock = value
     }
-    val guardEnabled = storeFlow.value.accessibilityGuardEnabled
     val input = CapabilityInput(
         chosenMode = when (automatorMode?.value) {
             AutomatorModeOption.A11yMode.value -> RuntimeModeChoice.ACCESSIBILITY
             AutomatorModeOption.AutomationMode.value -> RuntimeModeChoice.AUTOMATION
             else -> null
         },
-        a11yReady = accessA11yState.value,
-        shizukuReady = shizukuGrantedState.value,
-        overlayReady = canDrawOverlaysState.value,
-        notificationReady = notificationState.value,
-        batteryExempted = ignoreBatteryOptimizationsState.value,
-        a11yGuardEnabled = guardEnabled,
-        appListReady = canQueryPkgState.value,
+        a11yReady = a11yReady,
+        shizukuReady = shizukuReady,
+        overlayReady = overlayReady,
+        notificationReady = notificationReady,
+        batteryExempted = batteryExempted,
+        a11yGuardEnabled = store.accessibilityGuardEnabled,
+        appListReady = appListReady,
         selfControlLocked = activeLock,
         isGkdFlavor = META.isGkdChannel,
     )
