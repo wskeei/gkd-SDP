@@ -79,6 +79,7 @@ import li.songe.gkd.sdp.service.StatusService
 import li.songe.gkd.sdp.service.TrackService
 import li.songe.gkd.sdp.service.fixRestartAutomatorService
 import li.songe.gkd.sdp.shizuku.shizukuContextFlow
+import li.songe.gkd.sdp.settings.SettingsFormPolicy
 import li.songe.gkd.sdp.store.storeFlow
 import li.songe.gkd.sdp.ui.AboutRoute
 import li.songe.gkd.sdp.ui.AdvancedPageRoute
@@ -255,8 +256,8 @@ private fun SettingsNotificationDialog(
         confirmButton = {
             TextButton(onClick = {
                 context.justHideSoftInput()
-                if (store.customNotifTitle != titleValue || store.customNotifText != textValue) {
-                    storeFlow.update { it.copy(customNotifTitle = titleValue, customNotifText = textValue) }
+                if (SettingsFormPolicy.notificationTextChanged(store, titleValue, textValue)) {
+                    storeFlow.update { SettingsFormPolicy.notificationTextUpdate(it, titleValue, textValue) }
                     toast(li.songe.gkd.sdp.app.getString(R.string.s_e2cff77372))
                 }
                 showNotifTextInputDlg.value = false
