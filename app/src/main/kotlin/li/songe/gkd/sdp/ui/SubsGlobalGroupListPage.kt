@@ -58,7 +58,6 @@ import li.songe.gkd.sdp.util.switchItem
 import li.songe.gkd.sdp.util.throttle
 import li.songe.gkd.sdp.util.toast
 import li.songe.gkd.sdp.util.updateSubscription
-import androidx.compose.ui.res.stringResource
 import li.songe.gkd.sdp.R
 import li.songe.gkd.sdp.app
 
@@ -278,7 +277,7 @@ fun SubsGlobalGroupListPage(route: SubsGlobalGroupListRoute) {
             item(ListPlaceholder.KEY, ListPlaceholder.TYPE) {
                 Spacer(modifier = Modifier.height(EmptyHeight))
                 if (globalGroups.isEmpty()) {
-                    EmptyText(text = stringResource(R.string.s_cff584d9ab))
+                    EmptyText(text = app.getString(R.string.s_cff584d9ab))
                 }
             }
         }

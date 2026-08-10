@@ -20,7 +20,6 @@ import androidx.compose.ui.unit.dp
 import li.songe.gkd.sdp.data.FocusRule
 import li.songe.gkd.sdp.db.DbSet
 import li.songe.gkd.sdp.ui.style.AppTheme
-import androidx.compose.ui.res.stringResource
 import li.songe.gkd.sdp.R
 import li.songe.gkd.sdp.app
 
@@ -136,7 +135,7 @@ fun FocusWidgetConfigScreen(onSave: (Set<Long>) -> Unit) {
                     .fillMaxWidth()
                     .padding(16.dp)
             ) {
-                Text(stringResource(R.string.s_fadf24dbc5))
+                Text(app.getString(R.string.s_fadf24dbc5))
             }
         }
     }

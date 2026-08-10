@@ -64,7 +64,6 @@ import li.songe.gkd.sdp.util.appInfoMapFlow
 import li.songe.gkd.sdp.util.launchAsFn
 import li.songe.gkd.sdp.util.throttle
 import li.songe.gkd.sdp.util.toast
-import androidx.compose.ui.res.stringResource
 import li.songe.gkd.sdp.R
 import li.songe.gkd.sdp.app
 
@@ -134,7 +133,7 @@ fun ActivityLogPage() {
             item(ListPlaceholder.KEY, ListPlaceholder.TYPE) {
                 Spacer(modifier = Modifier.height(EmptyHeight))
                 if (logCount == 0 && list.loadState.refresh !is LoadState.Loading) {
-                    EmptyText(text = stringResource(R.string.s_b246458f20))
+                    EmptyText(text = app.getString(R.string.s_b246458f20))
                 }
             }
         }

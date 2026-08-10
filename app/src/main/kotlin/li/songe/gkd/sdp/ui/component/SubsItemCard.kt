@@ -46,7 +46,6 @@ import li.songe.gkd.sdp.util.subsLoadErrorsFlow
 import li.songe.gkd.sdp.util.subsRefreshErrorsFlow
 import li.songe.gkd.sdp.util.throttle
 import li.songe.gkd.sdp.util.updateSubsMutex
-import androidx.compose.ui.res.stringResource
 import li.songe.gkd.sdp.R
 import li.songe.gkd.sdp.app
 
@@ -123,7 +122,7 @@ fun SubsItemCard(
                         modifier = Modifier.semantics {
                             contentDescription = app.getString(R.string.s_0f40d8d7de, index, subscription.name)
                         },
-                        text = stringResource(R.string.s_dc9c537d48, index, subscription.name),
+                        text = app.getString(R.string.s_dc9c537d48, index, subscription.name),
                         maxLines = 1,
                         softWrap = false,
                         overflow = TextOverflow.Ellipsis,
@@ -155,7 +154,7 @@ fun SubsItemCard(
                                 modifier = Modifier.semantics {
                                     contentDescription = app.getString(R.string.s_213bcdc0f2, subscription.version)
                                 },
-                                text = stringResource(R.string.s_858598e1e1, (subscription.version.toString())),
+                                text = app.getString(R.string.s_858598e1e1, (subscription.version.toString())),
                                 style = MaterialTheme.typography.labelSmall,
                             )
                         } else {
@@ -197,7 +196,7 @@ fun SubsItemCard(
                 }
                 if (subsRefreshError != null) {
                     Text(
-                        text = stringResource(R.string.s_7d38b53290, subsRefreshError?.message),
+                        text = app.getString(R.string.s_7d38b53290, subsRefreshError?.message),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.error
                     )

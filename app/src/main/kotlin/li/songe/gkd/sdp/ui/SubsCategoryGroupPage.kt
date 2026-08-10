@@ -68,7 +68,6 @@ import li.songe.gkd.sdp.util.launchAsFn
 import li.songe.gkd.sdp.util.throttle
 import li.songe.gkd.sdp.util.toast
 import li.songe.gkd.sdp.util.updateSubscription
-import androidx.compose.ui.res.stringResource
 import li.songe.gkd.sdp.R
 import li.songe.gkd.sdp.app
 
@@ -307,7 +306,7 @@ fun SubsCategoryGroupPage(route: SubsCategoryGroupRoute) {
             item(ListPlaceholder.KEY, ListPlaceholder.TYPE) {
                 Spacer(modifier = Modifier.height(EmptyHeight))
                 if (apps.isEmpty()) {
-                    EmptyText(text = if (vm.showAllAppFlow.collectAsStateWithLifecycle().value) stringResource(R.string.s_b246458f20) else stringResource(R.string.s_53e5dc587c))
+                    EmptyText(text = if (vm.showAllAppFlow.collectAsStateWithLifecycle().value) app.getString(R.string.s_b246458f20) else app.getString(R.string.s_53e5dc587c))
                     Spacer(modifier = Modifier.height(EmptyHeight))
                 }
             }

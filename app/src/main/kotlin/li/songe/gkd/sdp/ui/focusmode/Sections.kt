@@ -147,12 +147,12 @@ private fun FocusModeRulesList(
         }
         if (!isActive) {
             item(key = "quick_start") {
-                Button(onClick = onQuickStart, modifier = Modifier.fillMaxWidth().itemPadding()) { Text(stringResource(R.string.s_eb4f824680)) }
+                Button(onClick = onQuickStart, modifier = Modifier.fillMaxWidth().itemPadding()) { Text(app.getString(R.string.s_eb4f824680)) }
                 Spacer(modifier = Modifier.height(16.dp))
             }
         }
         item(key = "quick_rules_header") {
-            Text(stringResource(R.string.s_fa25aa2cc7), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, modifier = Modifier.itemPadding())
+            Text(app.getString(R.string.s_fa25aa2cc7), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, modifier = Modifier.itemPadding())
             Spacer(modifier = Modifier.height(8.dp))
         }
         FocusModeRuleItems(
@@ -163,7 +163,7 @@ private fun FocusModeRulesList(
             onLock = onLock,
         )
         item(key = "scheduled_rules_header") {
-            Text(stringResource(R.string.s_a497f76289), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, modifier = Modifier.itemPadding())
+            Text(app.getString(R.string.s_a497f76289), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, modifier = Modifier.itemPadding())
             Spacer(modifier = Modifier.height(8.dp))
         }
         FocusModeRuleItems(

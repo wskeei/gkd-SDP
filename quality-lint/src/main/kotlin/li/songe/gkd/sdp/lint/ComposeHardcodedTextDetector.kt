@@ -7,13 +7,12 @@ import com.android.tools.lint.detector.api.Implementation
 import com.android.tools.lint.detector.api.Issue
 import com.android.tools.lint.detector.api.JavaContext
 import com.android.tools.lint.detector.api.Scope
+import com.android.tools.lint.detector.api.SourceCodeScanner
 import com.android.tools.lint.detector.api.Severity
 import org.jetbrains.uast.UCallExpression
 import org.jetbrains.uast.UExpression
 import org.jetbrains.uast.ULiteralExpression
 import org.jetbrains.uast.UNamedExpression
-import org.jetbrains.uast.USimpleNameExpression
-import org.jetbrains.uast.UTemplateExpression
 
 /**
  * Rejects hardcoded user-visible strings passed to known UI calls so all
@@ -23,7 +22,7 @@ import org.jetbrains.uast.UTemplateExpression
  * error codes and protocol constants never pass through these calls and are
  * therefore exempt by construction.
  */
-class ComposeHardcodedTextDetector : Detector(), Detector.SourceCodeScanner {
+class ComposeHardcodedTextDetector : Detector(), SourceCodeScanner {
 
     override fun getApplicableMethodNames(): List<String> = SCANNED_METHODS
 
@@ -32,7 +31,7 @@ class ComposeHardcodedTextDetector : Detector(), Detector.SourceCodeScanner {
             override fun visitCallExpression(node: UCallExpression) {
                 val methodName = node.methodName ?: return
                 if (methodName !in SCANNED_METHODS) return
-                val receiverName = (node.receiver as? USimpleNameExpression)?.identifier
+                val receiverName = (node.receiver as? org.jetbrains.uast.UReferenceExpression)?.resolveName()
                 if (receiverName != null && receiverName !in ALLOWED_RECEIVERS) return
 
                 node.valueArguments.forEachIndexed { index, argument ->
@@ -70,8 +69,7 @@ class ComposeHardcodedTextDetector : Detector(), Detector.SourceCodeScanner {
     private fun UExpression.isHardcodedText(): Boolean = when (this) {
         is UNamedExpression -> expression.isHardcodedText()
         is ULiteralExpression -> value is String || value is Char
-        is UTemplateExpression -> true
-        else -> false
+        else -> asSourceString().startsWith("\"")
     }
 
     companion object {

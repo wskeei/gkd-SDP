@@ -314,23 +314,23 @@ internal fun BlockA11yDialog(onDismissRequest: () -> Unit) = FullscreenDialog(on
                 .padding(horizontal = itemHorizontalPadding)
         ) {
             CompositionLocalProvider(LocalTextStyle provides MaterialTheme.typography.bodyMedium) {
-                Text(text = stringResource(R.string.s_be7bf1f6b3))
+                Text(text = app.getString(R.string.s_be7bf1f6b3))
                 Spacer(modifier = Modifier.height(16.dp))
-                Text(text = stringResource(R.string.s_59e2c8e61d), style = MaterialTheme.typography.titleMedium)
+                Text(text = app.getString(R.string.s_59e2c8e61d), style = MaterialTheme.typography.titleMedium)
                 Column(
                     verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
-                    RequiredTextItem(text = stringResource(R.string.s_cbdc0c0a7a))
-                    RequiredTextItem(text = stringResource(R.string.s_ace5fab374))
-                    RequiredTextItem(text = stringResource(R.string.s_610a7f9c61))
+                    RequiredTextItem(text = app.getString(R.string.s_cbdc0c0a7a))
+                    RequiredTextItem(text = app.getString(R.string.s_ace5fab374))
+                    RequiredTextItem(text = app.getString(R.string.s_610a7f9c61))
                 }
                 Spacer(modifier = Modifier.height(16.dp))
-                Text(text = stringResource(R.string.s_b412fa069d), style = MaterialTheme.typography.titleMedium)
+                Text(text = app.getString(R.string.s_b412fa069d), style = MaterialTheme.typography.titleMedium)
                 Column(
                     verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
                     RequiredTextItem(
-                        text = stringResource(R.string.s_0f0c48af67),
+                        text = app.getString(R.string.s_0f0c48af67),
                         enabled = !shizukuContext.ok,
                         imageVector = if (shizukuContext.ok) PerfIcon.Check else PerfIcon.ArrowForward,
                         onClick = mainVm.viewModelScope.launchAsFn(Dispatchers.IO) {
@@ -338,7 +338,7 @@ internal fun BlockA11yDialog(onDismissRequest: () -> Unit) = FullscreenDialog(on
                         },
                     )
                     RequiredTextItem(
-                        text = stringResource(R.string.s_6325cb01af),
+                        text = app.getString(R.string.s_6325cb01af),
                         enabled = !statusRunning,
                         imageVector = if (statusRunning) PerfIcon.Check else PerfIcon.ArrowForward,
                         onClick = mainVm.viewModelScope.launchAsFn {
@@ -346,28 +346,28 @@ internal fun BlockA11yDialog(onDismissRequest: () -> Unit) = FullscreenDialog(on
                         },
                     )
                     RequiredTextItem(
-                        text = stringResource(R.string.s_37cf171b6d),
+                        text = app.getString(R.string.s_37cf171b6d),
                         enabled = !ignoreBatteryOptimizations,
                         imageVector = if (ignoreBatteryOptimizations) PerfIcon.Check else PerfIcon.ArrowForward,
-                        onClickLabel = stringResource(R.string.s_b2c141c8e1),
+                        onClickLabel = app.getString(R.string.s_b2c141c8e1),
                         onClick = mainVm.viewModelScope.launchAsFn {
                             requiredPermission(context, ignoreBatteryOptimizationsState)
                         },
                     )
                     RequiredTextItem(
-                        text = stringResource(R.string.s_a31eb38058),
+                        text = app.getString(R.string.s_a31eb38058),
                         enabled = true,
                         imageVector = PerfIcon.OpenInNew,
-                        onClickLabel = stringResource(R.string.s_3714fd1374),
+                        onClickLabel = app.getString(R.string.s_3714fd1374),
                         onClick = {
                             openAppDetailsSettings()
                         },
                     )
                     RequiredTextItem(
-                        text = stringResource(R.string.s_5e5ac93cc0),
+                        text = app.getString(R.string.s_5e5ac93cc0),
                         enabled = true,
                         imageVector = PerfIcon.OpenInNew,
-                        onClickLabel = stringResource(R.string.s_3714fd1374),
+                        onClickLabel = app.getString(R.string.s_3714fd1374),
                         onClick = {
                             val m = shizukuContextFlow.value.inputManager
                             if (m != null) {
@@ -379,7 +379,7 @@ internal fun BlockA11yDialog(onDismissRequest: () -> Unit) = FullscreenDialog(on
                     )
                 }
                 Spacer(modifier = Modifier.height(16.dp))
-                Text(text = stringResource(R.string.s_d0cd80bc26))
+                Text(text = app.getString(R.string.s_d0cd80bc26))
             }
             Spacer(modifier = Modifier.height(EmptyHeight))
         }

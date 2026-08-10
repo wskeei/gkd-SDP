@@ -38,7 +38,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import li.songe.gkd.sdp.app
 import li.songe.gkd.sdp.ui.component.AppPickerDialog
-import androidx.compose.ui.res.stringResource
 import li.songe.gkd.sdp.R
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
@@ -109,7 +108,7 @@ internal fun GroupEditorSheet(
             OutlinedTextField(
                 value = vm.groupName,
                 onValueChange = { vm.groupName = it },
-                label = { Text(stringResource(R.string.s_67f4598335)) },
+                label = { Text(app.getString(R.string.s_67f4598335)) },
                 placeholder = { Text(app.getString(R.string.s_6deabd286d)) },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
@@ -119,7 +118,7 @@ internal fun GroupEditorSheet(
             if (isExistingGroup) {
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = stringResource(R.string.s_06e3aae567),
+                    text = app.getString(R.string.s_06e3aae567),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -132,13 +131,13 @@ internal fun GroupEditorSheet(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text(
-                    text = stringResource(R.string.s_71e649ba01, vm.groupApps.size),
+                    text = app.getString(R.string.s_71e649ba01, vm.groupApps.size),
                     style = MaterialTheme.typography.bodyMedium,
                     modifier = Modifier.weight(1f)
                 )
                 if (canOpenAppPicker) {
                     TextButton(onClick = { showAppPicker = true }) {
-                        Text(if (isAppendMode) stringResource(R.string.s_ea8e8dbcb9) else stringResource(R.string.s_70b208202c))
+                        Text(if (isAppendMode) app.getString(R.string.s_ea8e8dbcb9) else app.getString(R.string.s_70b208202c))
                     }
                 }
             }
@@ -179,7 +178,7 @@ internal fun GroupEditorSheet(
                     onClick = onSave,
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text(stringResource(R.string.s_fadf24dbc5))
+                    Text(app.getString(R.string.s_fadf24dbc5))
                 }
             } else {
                 Button(

@@ -77,7 +77,6 @@ import li.songe.gkd.sdp.util.saveFileToDownloads
 import li.songe.gkd.sdp.util.shareFile
 import li.songe.gkd.sdp.util.throttle
 import li.songe.gkd.sdp.util.toast
-import androidx.compose.ui.res.stringResource
 import li.songe.gkd.sdp.R
 import li.songe.gkd.sdp.app
 
@@ -151,7 +150,7 @@ fun SnapshotPage() {
                 item(ListPlaceholder.KEY, ListPlaceholder.TYPE) {
                     Spacer(modifier = Modifier.height(EmptyHeight))
                     if (snapshots.isEmpty() && !firstLoading) {
-                        EmptyText(text = stringResource(R.string.s_b246458f20))
+                        EmptyText(text = app.getString(R.string.s_b246458f20))
                     }
                 }
             }

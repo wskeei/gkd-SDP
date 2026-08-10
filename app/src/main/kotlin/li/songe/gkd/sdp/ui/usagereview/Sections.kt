@@ -56,7 +56,6 @@ import li.songe.gkd.sdp.ui.style.AppTheme
 import li.songe.gkd.sdp.util.DigitalSelfDisciplineReviewPolicy
 import java.time.LocalDate
 import java.time.ZoneId
-import androidx.compose.ui.res.stringResource
 import li.songe.gkd.sdp.R
 import li.songe.gkd.sdp.app
 
@@ -113,7 +112,7 @@ fun UsageGuardReviewPageSections() {
                                 )
                             }
                         }
-                        Text(stringResource(R.string.s_302471b81d), style = MaterialTheme.typography.titleSmall)
+                        Text(app.getString(R.string.s_302471b81d), style = MaterialTheme.typography.titleSmall)
                         SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
                             DigitalSelfDisciplineReviewPolicy.Range.entries.forEach { range ->
                                 SegmentedButton(
@@ -134,7 +133,7 @@ fun UsageGuardReviewPageSections() {
                             }
                         }
                         if (DigitalSelfDisciplineReviewPresentation.showInterceptFilters(selectedType)) {
-                            Text(stringResource(R.string.s_1278802e6e), style = MaterialTheme.typography.titleSmall)
+                            Text(app.getString(R.string.s_1278802e6e), style = MaterialTheme.typography.titleSmall)
                             FlowRow(
                                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                                 verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -159,7 +158,7 @@ fun UsageGuardReviewPageSections() {
             when (val state = reviewState) {
                 DigitalSelfDisciplineReviewUiState.Loading -> item(key = "loading") {
                     ReviewSectionCard("正在读取复盘数据", "统计只在本机生成，不会上传。") {
-                        Text(stringResource(R.string.s_3b39242124), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(app.getString(R.string.s_3b39242124), color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
                 is DigitalSelfDisciplineReviewUiState.Error -> item(key = "error") {
@@ -253,7 +252,7 @@ internal fun ReviewRankedBarList(
 ) {
     ReviewSectionCard(title, "按数量排序，比例同时用文字和进度表达") {
         if (bars.isEmpty()) {
-            Text(stringResource(R.string.s_6c53cda00c), color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(app.getString(R.string.s_6c53cda00c), color = MaterialTheme.colorScheme.onSurfaceVariant)
         } else {
             bars.forEach { bar ->
                 Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
@@ -276,7 +275,7 @@ internal fun ReviewRankedBarList(
 internal fun RecentRowsCard(rows: List<DigitalSelfDisciplineReviewPresentation.RecentRow>) {
     ReviewSectionCard("最近明细", "最多显示最近 10 条，不包含申请理由、网址或选择器文本") {
         if (rows.isEmpty()) {
-            Text(stringResource(R.string.s_fa8cdd2a46), color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(app.getString(R.string.s_fa8cdd2a46), color = MaterialTheme.colorScheme.onSurfaceVariant)
         } else {
             rows.forEach { row ->
                 Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {

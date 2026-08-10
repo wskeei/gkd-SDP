@@ -74,7 +74,6 @@ import li.songe.gkd.sdp.util.launchAsFn
 import li.songe.gkd.sdp.util.switchItem
 import li.songe.gkd.sdp.util.throttle
 import li.songe.gkd.sdp.util.toJson5String
-import androidx.compose.ui.res.stringResource
 import li.songe.gkd.sdp.R
 import li.songe.gkd.sdp.app
 
@@ -381,7 +380,7 @@ fun AppConfigPage(route: AppConfigRoute) {
             item(ListPlaceholder.KEY, ListPlaceholder.TYPE) {
                 Spacer(modifier = Modifier.height(EmptyHeight))
                 if (groupSize == 0 && !firstLoading) {
-                    EmptyText(text = if (vm.showDisabledRuleFlow.collectAsStateWithLifecycle().value) stringResource(R.string.s_b246458f20) else stringResource(R.string.s_53e5dc587c))
+                    EmptyText(text = if (vm.showDisabledRuleFlow.collectAsStateWithLifecycle().value) app.getString(R.string.s_b246458f20) else app.getString(R.string.s_53e5dc587c))
                 }
             }
         }

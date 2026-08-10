@@ -335,14 +335,14 @@ fun BatchActionButtonGroup(vm: ViewModel, selectedDataSet: Set<ShowGroupState>) 
         contentDescription = stringResource(R.string.s_4f453fb431),
         onClick = throttle(vm.viewModelScope.launchAsFn(Dispatchers.Default) {
             mainVm.dialogFlow.waitResult(
-                title = stringResource(R.string.s_93564a7ced),
-                text = stringResource(R.string.s_3d7090e33e)
+                title = app.getString(R.string.s_93564a7ced),
+                text = app.getString(R.string.s_3d7090e33e)
             )
             val list = batchUpdateGroupEnable(selectedDataSet, false)
             if (list.isNotEmpty()) {
-                toast(stringResource(R.string.s_102626a5cc, list.size))
+                toast(app.getString(R.string.s_102626a5cc, list.size))
             } else {
-                toast(stringResource(R.string.s_1e010b148d))
+                toast(app.getString(R.string.s_1e010b148d))
             }
         })
     )
@@ -351,14 +351,14 @@ fun BatchActionButtonGroup(vm: ViewModel, selectedDataSet: Set<ShowGroupState>) 
         contentDescription = stringResource(R.string.s_627b07784f),
         onClick = throttle(vm.viewModelScope.launchAsFn(Dispatchers.Default) {
             mainVm.dialogFlow.waitResult(
-                title = stringResource(R.string.s_93564a7ced),
-                text = stringResource(R.string.s_f68f9ce68b)
+                title = app.getString(R.string.s_93564a7ced),
+                text = app.getString(R.string.s_f68f9ce68b)
             )
             val list = batchUpdateGroupEnable(selectedDataSet, true)
             if (list.isNotEmpty()) {
-                toast(stringResource(R.string.s_b8c5d58816, list.size))
+                toast(app.getString(R.string.s_b8c5d58816, list.size))
             } else {
-                toast(stringResource(R.string.s_1e010b148d))
+                toast(app.getString(R.string.s_1e010b148d))
             }
         })
     )
@@ -367,14 +367,14 @@ fun BatchActionButtonGroup(vm: ViewModel, selectedDataSet: Set<ShowGroupState>) 
         contentDescription = stringResource(R.string.s_35f7c52ddd),
         onClick = throttle(vm.viewModelScope.launchAsFn(Dispatchers.Default) {
             mainVm.dialogFlow.waitResult(
-                title = stringResource(R.string.s_93564a7ced),
-                text = stringResource(R.string.s_1f54fb7d63)
+                title = app.getString(R.string.s_93564a7ced),
+                text = app.getString(R.string.s_1f54fb7d63)
             )
             val list = batchUpdateGroupEnable(selectedDataSet, null)
             if (list.isNotEmpty()) {
-                toast(stringResource(R.string.s_f988888fa2, list.size))
+                toast(app.getString(R.string.s_f988888fa2, list.size))
             } else {
-                toast(stringResource(R.string.s_1e010b148d))
+                toast(app.getString(R.string.s_1e010b148d))
             }
         })
     )

@@ -225,7 +225,7 @@ private fun AdvancedHttpRunningContent(
                     }),
                 )
                 Spacer(modifier = Modifier.width(2.dp))
-                Text(stringResource(R.string.s_93794c92ab))
+                Text(app.getString(R.string.s_93794c92ab))
             }
             if (remoteSession.mode == RemoteListenMode.LAN) {
                 localNetworkIps.forEach { host ->
@@ -240,11 +240,11 @@ private fun AdvancedHttpRunningContent(
                         }),
                     )
                 }
-                TextButton(onClick = HttpService::disconnectLanSession) { Text(stringResource(R.string.s_6579a5ba64)) }
+                TextButton(onClick = HttpService::disconnectLanSession) { Text(app.getString(R.string.s_6579a5ba64)) }
             } else {
                 TextButton(onClick = HttpService::startLanSession) { Text(app.getString(R.string.s_f989d9d7f9)) }
             }
-            Text(stringResource(R.string.s_00e778c519), style = MaterialTheme.typography.titleSmall)
+            Text(app.getString(R.string.s_00e778c519), style = MaterialTheme.typography.titleSmall)
             RemoteScope.entries.forEach { scope ->
                 TextSwitch(
                     title = remoteScopeLabel(scope),

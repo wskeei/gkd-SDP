@@ -223,7 +223,7 @@ fun AppInstallMonitorPage() {
                                 )
                                 if (app.isCurrentlyInstalled) {
                                     Text(
-                                        stringResource(R.string.s_0b97786e44),
+                                        app.getString(R.string.s_0b97786e44),
                                         style = MaterialTheme.typography.bodySmall,
                                         color = MaterialTheme.colorScheme.error
                                     )
@@ -238,7 +238,7 @@ fun AppInstallMonitorPage() {
                             IconButton(onClick = { vm.deleteMonitoredApp(app) }) {
                                 Icon(
                                     Icons.Default.Delete,
-                                    contentDescription = stringResource(R.string.s_3755f56f2f),
+                                    contentDescription = app.getString(R.string.s_3755f56f2f),
                                     tint = MaterialTheme.colorScheme.error
                                 )
                             }
@@ -370,12 +370,12 @@ private fun AddMonitoredAppDialog(
                     Tab(
                         selected = selectedTab == 0,
                         onClick = { selectedTab = 0 },
-                        text = { Text(stringResource(R.string.s_081a44d5f5)) }
+                        text = { Text(app.getString(R.string.s_081a44d5f5)) }
                     )
                     Tab(
                         selected = selectedTab == 1,
                         onClick = { selectedTab = 1 },
-                        text = { Text(stringResource(R.string.s_58dc64c81a)) }
+                        text = { Text(app.getString(R.string.s_58dc64c81a)) }
                     )
                 }
             }

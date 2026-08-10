@@ -87,7 +87,6 @@ import li.songe.gkd.sdp.util.switchItem
 import li.songe.gkd.sdp.util.throttle
 import li.songe.gkd.sdp.util.updateAllAppInfo
 import li.songe.gkd.sdp.util.updateAppMutex
-import androidx.compose.ui.res.stringResource
 import li.songe.gkd.sdp.app
 
 @Composable
@@ -337,7 +336,7 @@ fun useAppListPage(): ScaffoldExt {
                 item(ListPlaceholder.KEY, ListPlaceholder.TYPE) {
                     Spacer(modifier = Modifier.height(EmptyHeight))
                     if (appInfos.isEmpty() && searchStr.isNotEmpty()) {
-                        EmptyText(text = if (vm.appFilter.showAllAppFlow.collectAsStateWithLifecycle().value) stringResource(R.string.s_8f8274c754) else stringResource(R.string.s_9e7d3ee61c))
+                        EmptyText(text = if (vm.appFilter.showAllAppFlow.collectAsStateWithLifecycle().value) app.getString(R.string.s_8f8274c754) else app.getString(R.string.s_9e7d3ee61c))
                         Spacer(modifier = Modifier.height(EmptyHeight / 2))
                     }
                 }

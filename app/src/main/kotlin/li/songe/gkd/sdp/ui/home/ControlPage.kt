@@ -145,7 +145,7 @@ fun useControlPage(): ScaffoldExt {
                     modifier = Modifier
                         .fillMaxWidth()
                         .semantics(mergeDescendants = true) {
-                            this.onClick(label = stringResource(R.string.s_25e98173d1), action = null)
+                            this.onClick(label = app.getString(R.string.s_25e98173d1), action = null)
                         },
                     shape = MaterialTheme.shapes.large,
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer),
@@ -395,7 +395,7 @@ private fun PageSwitchItemCard(
         modifier = Modifier
             .fillMaxWidth()
             .semantics(mergeDescendants = true) {
-                this.onClick(label = stringResource(R.string.s_282a6986b9, title), action = null)
+                this.onClick(label = app.getString(R.string.s_282a6986b9, title), action = null)
             },
         shape = MaterialTheme.shapes.large,
         colors = surfaceCardColors,

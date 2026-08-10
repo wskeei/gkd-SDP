@@ -104,7 +104,7 @@ internal fun ActionLogDialog(
             shape = RoundedCornerShape(16.dp),
         ) {
             ItemText(
-                text = stringResource(R.string.s_451bb58ff2),
+                text = app.getString(R.string.s_451bb58ff2),
                 onClick = {
                     onDismissRequest()
                     if (actionLog.groupType == SubsConfig.AppGroupType) {
@@ -182,7 +182,7 @@ private fun ActionLogDialogSummary(
             modifier = Modifier.padding(top = 2.dp),
         )
         Text(
-            text = stringResource(R.string.s_2e56559e95, actionLog.groupType, actionLog.groupKey, actionLog.ruleIndex, actionLog.ruleKey?.let { "key=$it" } ?:)未设置 key"}",
+            text = stringResource(R.string.s_2e56559e95, actionLog.groupType, actionLog.groupKey, actionLog.ruleIndex, actionLog.ruleKey?.let { "key=$it" } ?: "未设置 key"),
             style = MaterialTheme.typography.bodySmall,
             modifier = Modifier.padding(top = 2.dp),
         )

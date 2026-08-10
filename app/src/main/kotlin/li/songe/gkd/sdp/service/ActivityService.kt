@@ -41,7 +41,6 @@ import li.songe.gkd.sdp.ui.style.iconTextSize
 import li.songe.gkd.sdp.util.copyText
 import li.songe.gkd.sdp.util.startForegroundServiceByClass
 import li.songe.gkd.sdp.util.stopServiceByClass
-import androidx.compose.ui.res.stringResource
 import li.songe.gkd.sdp.R
 import li.songe.gkd.sdp.app
 
@@ -69,7 +68,7 @@ class ActivityService : OverlayWindowService(
                 val topActivity by topActivityFlow.collectAsStateWithLifecycle()
                 val hasAuth by activityOkFlow.collectAsStateWithLifecycle()
                 ClosableTitle(
-                    title = if (hasAuth) stringResource(R.string.s_14b8a7bf3c) else stringResource(R.string.s_7a1cbaff45)
+                    title = if (hasAuth) app.getString(R.string.s_14b8a7bf3c) else app.getString(R.string.s_7a1cbaff45)
                 )
                 if (hasAuth) {
                     Box {

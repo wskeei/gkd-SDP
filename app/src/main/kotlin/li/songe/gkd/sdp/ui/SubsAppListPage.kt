@@ -56,7 +56,6 @@ import li.songe.gkd.sdp.util.AppSortOption
 import li.songe.gkd.sdp.util.LOCAL_SUBS_IDS
 import li.songe.gkd.sdp.util.launchAsFn
 import li.songe.gkd.sdp.util.throttle
-import androidx.compose.ui.res.stringResource
 import li.songe.gkd.sdp.app
 
 
@@ -229,9 +228,9 @@ fun SubsAppListPage(route: SubsAppListRoute) {
                 if (appTripleList.isEmpty() && !firstLoading) {
                     EmptyText(
                         text = if (searchStr.isNotEmpty()) {
-                            if (vm.showAllAppFlow.collectAsStateWithLifecycle().value) stringResource(R.string.s_8f8274c754) else stringResource(R.string.s_9e7d3ee61c)
+                            if (vm.showAllAppFlow.collectAsStateWithLifecycle().value) app.getString(R.string.s_8f8274c754) else app.getString(R.string.s_9e7d3ee61c)
                         } else {
-                            stringResource(R.string.s_cff584d9ab)
+                            app.getString(R.string.s_cff584d9ab)
                         }
                     )
                     Spacer(modifier = Modifier.height(EmptyHeight / 2))

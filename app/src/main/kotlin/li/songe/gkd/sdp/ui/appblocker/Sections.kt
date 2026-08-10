@@ -229,7 +229,7 @@ private fun AppBlockerPageList(
         }
         item(key = "groups_header") {
             AppBlockerSectionHeader(
-                title = stringResource(R.string.s_b5f6acf594, allGroups.size),
+                title = app.getString(R.string.s_b5f6acf594, allGroups.size),
                 onAdd = {
                     vm.resetGroupForm()
                     vm.showGroupEditor = true
@@ -271,7 +271,7 @@ private fun AppBlockerPageList(
         }
         item(key = "app_rules_header") {
             AppBlockerSectionHeader(
-                title = stringResource(R.string.s_74c7776c98),
+                title = app.getString(R.string.s_74c7776c98),
                 onAdd = {
                     vm.resetRuleForm()
                     vm.ruleTargetType = BlockTimeRule.TARGET_TYPE_APP

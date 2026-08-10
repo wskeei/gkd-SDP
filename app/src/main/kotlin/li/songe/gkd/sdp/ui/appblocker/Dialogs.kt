@@ -36,6 +36,7 @@ import androidx.compose.ui.unit.dp
 import li.songe.gkd.sdp.data.BlockTimeRule
 import androidx.compose.ui.res.stringResource
 import li.songe.gkd.sdp.R
+import li.songe.gkd.sdp.app
 
 @Composable
 internal fun AppBlockerTemplatePickerDialog(
@@ -115,7 +116,7 @@ internal fun LockSheet(
                 val remaining = currentLockEndTime - System.currentTimeMillis()
                 val remainingMinutes = (remaining / 60000).coerceAtLeast(0)
                 Text(
-                    text = stringResource(R.string.s_1090ec0cd1, if (remainingMinutes >= 60) "${remainingMinutes / 60}小时${remainingMinutes % 60}分钟" else "${remainingMinutes}分钟"),
+                    text = app.getString(R.string.s_1090ec0cd1, if (remainingMinutes >= 60) "${remainingMinutes / 60}小时${remainingMinutes % 60}分钟" else "${remainingMinutes}分钟"),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.padding(bottom = 16.dp)
@@ -130,7 +131,7 @@ internal fun LockSheet(
             }
 
             Text(
-                text = stringResource(R.string.s_80e9287545),
+                text = app.getString(R.string.s_80e9287545),
                 style = MaterialTheme.typography.labelMedium,
                 modifier = Modifier.padding(bottom = 8.dp)
             )
@@ -172,7 +173,7 @@ internal fun LockSheet(
                     onCheckedChange = { vm.isCustomLockDuration = it }
                 )
                 Spacer(modifier = Modifier.width(8.dp))
-                Text(stringResource(R.string.s_ea6dccc0a6), style = MaterialTheme.typography.bodyMedium)
+                Text(app.getString(R.string.s_ea6dccc0a6), style = MaterialTheme.typography.bodyMedium)
             }
 
             if (vm.isCustomLockDuration) {
@@ -184,7 +185,7 @@ internal fun LockSheet(
                     OutlinedTextField(
                         value = vm.customLockDaysText,
                         onValueChange = { vm.customLockDaysText = it },
-                        label = { Text(stringResource(R.string.s_c3304d1e49)) },
+                        label = { Text(app.getString(R.string.s_c3304d1e49)) },
                         modifier = Modifier.weight(1f),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         singleLine = true
@@ -192,7 +193,7 @@ internal fun LockSheet(
                     OutlinedTextField(
                         value = vm.customLockHoursText,
                         onValueChange = { vm.customLockHoursText = it },
-                        label = { Text(stringResource(R.string.s_99f6904ff3)) },
+                        label = { Text(app.getString(R.string.s_99f6904ff3)) },
                         modifier = Modifier.weight(1f),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         singleLine = true
@@ -206,7 +207,7 @@ internal fun LockSheet(
                 onClick = onLock,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text(stringResource(R.string.s_648f1e98b5))
+                Text(app.getString(R.string.s_648f1e98b5))
             }
 
             Spacer(modifier = Modifier.height(16.dp))

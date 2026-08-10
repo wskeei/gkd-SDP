@@ -29,7 +29,6 @@ import li.songe.gkd.sdp.util.launchTry
 import li.songe.gkd.sdp.util.saveFileToDownloads
 import li.songe.gkd.sdp.util.shareFile
 import li.songe.gkd.sdp.util.throttle
-import androidx.compose.ui.res.stringResource
 import li.songe.gkd.sdp.R
 import li.songe.gkd.sdp.app
 
@@ -52,24 +51,24 @@ fun ShareLogDlg(showShareLogDlgFlow: MutableStateFlow<Boolean>) {
                     .padding(16.dp)
                 Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
                     Text(
-                        text = if (confirmationStep) stringResource(R.string.s_4be37702c8) else stringResource(R.string.s_782087b38b),
+                        text = if (confirmationStep) app.getString(R.string.s_4be37702c8) else app.getString(R.string.s_782087b38b),
                         modifier = modifier,
                     )
                     if (!confirmationStep) {
                         Text(
-                            text = stringResource(R.string.s_357a190b67),
+                            text = app.getString(R.string.s_357a190b67),
                             modifier = modifier,
                         )
                         Text(
-                            text = stringResource(R.string.s_e17a2ef166),
+                            text = app.getString(R.string.s_e17a2ef166),
                             modifier = modifier,
                         )
                         Text(
-                            text = stringResource(R.string.s_89ae336abd),
+                            text = app.getString(R.string.s_89ae336abd),
                             modifier = modifier,
                         )
                         Text(
-                            text = stringResource(R.string.s_1fc1afc5c5),
+                            text = app.getString(R.string.s_1fc1afc5c5),
                             modifier = Modifier
                                 .clickable(onClick = throttle { confirmationStep = true })
                                 .then(modifier),

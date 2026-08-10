@@ -342,7 +342,7 @@ private fun ShizukuAuthButton(
         onClick = throttle(vm.viewModelScope.launchAsFn(Dispatchers.IO) {
             mainVm.guardShizukuContext()
             if (writeSecureSettingsState.value) {
-                toast(stringResource(R.string.s_027b905228))
+                toast(app.getString(R.string.s_027b905228))
                 updateEnableAutomator(true)
                 fixRestartAutomatorService()
             }

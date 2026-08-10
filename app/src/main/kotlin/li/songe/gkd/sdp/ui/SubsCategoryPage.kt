@@ -57,7 +57,6 @@ import li.songe.gkd.sdp.util.launchAsFn
 import li.songe.gkd.sdp.util.throttle
 import li.songe.gkd.sdp.util.toast
 import li.songe.gkd.sdp.util.updateSubscription
-import androidx.compose.ui.res.stringResource
 import li.songe.gkd.sdp.R
 import li.songe.gkd.sdp.app
 
@@ -124,7 +123,7 @@ fun SubsCategoryPage(@Suppress("unused") route: SubsCategoryRoute) {
             item(ListPlaceholder.KEY, ListPlaceholder.TYPE) {
                 Spacer(modifier = Modifier.height(EmptyHeight))
                 if (categories.isEmpty()) {
-                    EmptyText(text = stringResource(R.string.s_90fa56d24c))
+                    EmptyText(text = app.getString(R.string.s_90fa56d24c))
                 }
             }
         }
@@ -285,7 +284,7 @@ fun UpsertCategoryDialog(
                     .padding(horizontal = 16.dp),
             ) {
                 OutlinedTextField(
-                    label = { Text(stringResource(R.string.s_54900435fc)) },
+                    label = { Text(app.getString(R.string.s_54900435fc)) },
                     value = nameValue,
                     onValueChange = { nameValue = it.trim() },
                     modifier = Modifier
@@ -296,7 +295,7 @@ fun UpsertCategoryDialog(
                 )
                 Spacer(modifier = Modifier.height(12.dp))
                 OutlinedTextField(
-                    label = { Text(stringResource(R.string.s_3aba810f58)) },
+                    label = { Text(app.getString(R.string.s_3aba810f58)) },
                     value = descValue,
                     onValueChange = { descValue = it.trim() },
                     modifier = Modifier.fillMaxWidth(),

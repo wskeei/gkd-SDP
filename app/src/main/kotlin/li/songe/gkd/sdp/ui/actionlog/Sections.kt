@@ -204,7 +204,7 @@ fun ActionLogPageSections(route: ActionLogRoute) {
                         item(ListPlaceholder.KEY, ListPlaceholder.TYPE) {
                             Spacer(modifier = Modifier.height(EmptyHeight))
                             if (list.itemCount == 0 && list.loadState.refresh !is LoadState.Loading) {
-                                EmptyText(text = stringResource(R.string.s_b246458f20))
+                                EmptyText(text = app.getString(R.string.s_b246458f20))
                             }
                         }
                     }
@@ -304,7 +304,7 @@ internal fun ActionLogStatsView(vm: ActionLogVm) {
             ) {
                 Text(text = stat.date, style = MaterialTheme.typography.bodyMedium)
                 Text(
-                    text = stringResource(R.string.s_f768d9701d, stat.count),
+                    text = app.getString(R.string.s_f768d9701d, stat.count),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.secondary
                 )

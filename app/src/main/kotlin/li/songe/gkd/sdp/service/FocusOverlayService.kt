@@ -302,11 +302,11 @@ private fun WhitelistPickerContent(
             modifier = Modifier.fillMaxWidth()
         ) {
             IconButton(onClick = onBack) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.s_11d0241540))
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = app.getString(R.string.s_11d0241540))
             }
             Spacer(modifier = Modifier.width(8.dp))
             Text(
-                text = stringResource(R.string.s_a63ec9e8f8),
+                text = app.getString(R.string.s_a63ec9e8f8),
                 style = MaterialTheme.typography.titleLarge
             )
         }

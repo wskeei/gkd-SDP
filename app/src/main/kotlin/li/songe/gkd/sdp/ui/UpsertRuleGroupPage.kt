@@ -42,7 +42,6 @@ import li.songe.gkd.sdp.ui.style.getJson5Transformation
 import li.songe.gkd.sdp.ui.style.scaffoldPadding
 import li.songe.gkd.sdp.util.launchAsFn
 import li.songe.gkd.sdp.util.throttle
-import androidx.compose.ui.res.stringResource
 import li.songe.gkd.sdp.R
 import li.songe.gkd.sdp.app
 
@@ -69,8 +68,8 @@ fun UpsertRuleGroupPage(route: UpsertRuleGroupRoute) {
         if (vm.hasTextChanged()) {
             context.justHideSoftInput()
             mainVm.dialogFlow.waitResult(
-                title = stringResource(R.string.s_ab3656a956),
-                text = stringResource(R.string.s_aebc195621),
+                title = app.getString(R.string.s_ab3656a956),
+                text = app.getString(R.string.s_aebc195621),
             )
         } else {
             context.hideSoftInput()

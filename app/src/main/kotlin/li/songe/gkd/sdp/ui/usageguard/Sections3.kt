@@ -20,9 +20,9 @@ internal fun UsageGuardStatusSection(state: UsageGuardSettingsRenderState) {
         subtitle = stringResource(R.string.s_21e2314ce6),
     ) {
         SettingRow(
-            title = stringResource(R.string.s_2755dbd77c),
+            title = app.getString(R.string.s_2755dbd77c),
             subtitle = if (settings.usageGuardEnabled) {
-                stringResource(R.string.s_bc3692dc28)
+                app.getString(R.string.s_bc3692dc28)
             } else {
                 app.getString(R.string.s_d0b1c07c8f)
             },
@@ -35,7 +35,7 @@ internal fun UsageGuardStatusSection(state: UsageGuardSettingsRenderState) {
         )
         HorizontalDivider()
         CompactInfoRow(
-            label = stringResource(R.string.s_96b029d1e1),
+            label = app.getString(R.string.s_96b029d1e1),
             value = if (settings.usageGuardScopeMode == UsageGuardPolicy.SCOPE_SELECTED_ONLY) {
                 "仅选中应用"
             } else {
@@ -43,7 +43,7 @@ internal fun UsageGuardStatusSection(state: UsageGuardSettingsRenderState) {
             },
         )
         CompactInfoRow(
-            label = stringResource(R.string.s_ae2399c597),
+            label = app.getString(R.string.s_ae2399c597),
             value = if (settings.usageGuardDefaultGrantMode == UsageGuardPolicy.GRANT_MODE_STRICT) {
                 "严格模式"
             } else {
@@ -51,7 +51,7 @@ internal fun UsageGuardStatusSection(state: UsageGuardSettingsRenderState) {
             },
         )
         CompactInfoRow(
-            label = stringResource(R.string.s_30a60b1367),
+            label = app.getString(R.string.s_30a60b1367),
             value = durationOptions.joinToString(" / ", transform = ::usageGuardDurationLabel),
         )
         Text(

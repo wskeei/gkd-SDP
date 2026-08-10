@@ -129,7 +129,7 @@ internal fun UsageRequestTags(
         enabled = !isSubmitting,
         onClick = { showAddTagEditor.value = !showAddTagEditor.value },
     ) {
-        Text(if (showAddTagEditor.value) stringResource(R.string.s_8f68cd6535) else stringResource(R.string.s_12460118b0))
+        Text(if (showAddTagEditor.value) app.getString(R.string.s_8f68cd6535) else app.getString(R.string.s_12460118b0))
     }
     if (showAddTagEditor.value) {
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -232,7 +232,7 @@ internal fun UsageRequestReasonAndDuration(
         enabled = !isSubmitting,
         onClick = { showCustomDuration.value = !showCustomDuration.value },
     ) {
-        Text(if (showCustomDuration.value) stringResource(R.string.s_bda66bc5a5) else stringResource(R.string.s_ea6dccc0a6))
+        Text(if (showCustomDuration.value) app.getString(R.string.s_bda66bc5a5) else app.getString(R.string.s_ea6dccc0a6))
     }
     if (showCustomDuration.value) {
         OutlinedTextField(
@@ -322,6 +322,6 @@ internal fun UsageRequestActions(
         onClick = onCancel,
         modifier = Modifier.fillMaxWidth(),
     ) {
-        Text(stringResource(R.string.s_4d0b4688c7))
+        Text(app.getString(R.string.s_4d0b4688c7))
     }
 }

@@ -545,7 +545,7 @@ fun AccessRestrictedSettingsDlg() {
     val isA11yPage = mainVm.topRoute is AuthA11yRoute
     LaunchedEffect(isA11yPage, accessRestrictedSettingsShow) {
         if (isA11yPage && accessRestrictedSettingsShow && !a11yRunning) {
-            toast(stringResource(R.string.s_a0995a1cf8))
+            toast(app.getString(R.string.s_a0995a1cf8))
             accessRestrictedSettingsShowFlow.value = false
         }
     }

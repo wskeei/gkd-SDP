@@ -119,14 +119,21 @@ def find_literals(text: str) -> list[Literal]:
             if text[j] == "\\":
                 j += 2
                 continue
-            if text[j] == '"' and depth == 0:
+            if depth > 0:
+                # inside a ${...} expression every brace counts, so lambdas
+                # like `let { ... }` do not close the template early
+                if text[j] == "{":
+                    depth += 1
+                elif text[j] == "}":
+                    depth -= 1
+                j += 1
+                continue
+            if text[j] == '"':
                 break
             if text[j] == "$" and j + 1 < n and text[j + 1] == "{":
-                depth += 1
+                depth = 1
                 j += 2
                 continue
-            if text[j] == "}" and depth > 0:
-                depth -= 1
             j += 1
         if j >= n:
             break
@@ -189,6 +196,16 @@ def enclosing_call(masked: str, lit: Literal) -> tuple[str, str | None, int] | N
         return name, None, idx
     return None
 
+
+# Calls whose trailing lambda is NOT composable.
+PLAIN_LAMBDA_CALLS = {
+    "LaunchedEffect", "DisposableEffect", "SideEffect", "remember",
+    "rememberCoroutineScope", "produceState", "derivedStateOf",
+    "snapshotFlow", "collectAsStateWithLifecycle", "collectAsState",
+    "launch", "launchAsFn", "runBlocking", "withContext", "runCatching",
+    "let", "also", "apply", "run", "with", "takeIf", "takeUnless",
+    "delay", "throttle", "debounce", "update", "waitResult",
+}
 
 # Calls whose trailing/content lambdas run in a composable context.
 COMPOSABLE_CONTENT_CALLS = {
@@ -351,17 +368,29 @@ def enclosing_call_of(masked: str, pos: int) -> re.Match | None:
 def classify_lambda(masked: str, brace: int) -> bool | None:
     """Classify the brace at [brace].
 
-    True: composable content lambda. False: plain lambda (onClick, builder,
-    throttle). None: a plain code block (if/else/try/when) that inherits the
-    context.
+    True: composable content lambda. False: plain lambda (onClick, builders,
+    LaunchedEffect, launch). None: a plain code block (if/else/try/when) that
+    inherits the context.
     """
     head = masked[max(0, brace - 120):brace].rstrip()
     if head.endswith(")"):
-        # if (...)/for (...)/when (...) control blocks
+        # trailing lambda `name(...) {` or control block `if (...) {`
+        call = call_attached_to_brace(head)
+        if call:
+            name = call.group(1)
+            if name in BLOCK_KEYWORDS:
+                return None
+            if name in PLAIN_LAMBDA_CALLS:
+                return False
+            if name in COMPOSABLE_CONTENT_CALLS:
+                return True
+            return False
         return None
     call = CALL_START.search(head)
     if call:
         name = call.group(1)
+        if name in PLAIN_LAMBDA_CALLS:
+            return False
         if name in COMPOSABLE_CONTENT_CALLS:
             return True
         return False
@@ -380,7 +409,29 @@ def classify_lambda(masked: str, brace: int) -> bool | None:
     tail_word = re.search(r"([A-Za-z_][A-Za-z0-9_]*)\s*$", head)
     if tail_word and tail_word.group(1) not in BLOCK_KEYWORDS:
         # trailing lambda of a call written without parens, e.g. throttle {}
-        return tail_word.group(1) in COMPOSABLE_CONTENT_CALLS
+        name = tail_word.group(1)
+        if name in PLAIN_LAMBDA_CALLS:
+            return False
+        return name in COMPOSABLE_CONTENT_CALLS
+    return None
+
+
+
+
+def call_attached_to_brace(head: str) -> re.Match | None:
+    """The call whose ')' sits directly before the lambda brace."""
+    close = head.rfind(")")
+    if close < 0:
+        return None
+    depth = 1
+    for i in range(close - 1, -1, -1):
+        ch = head[i]
+        if ch == ")":
+            depth += 1
+        elif ch == "(":
+            depth -= 1
+            if depth == 0:
+                return CALL_START.search(head[max(0, i - 40):i + 1])
     return None
 
 

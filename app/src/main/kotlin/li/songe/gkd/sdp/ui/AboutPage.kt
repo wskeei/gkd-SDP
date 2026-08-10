@@ -342,7 +342,7 @@ fun AboutPage() {
                 "分享到其他应用" to mainVm.viewModelScope.launchAsFn(Dispatchers.IO) {
                     if (!META.isGkdChannel) {
                         mainVm.dialogFlow.waitResult(
-                            title = stringResource(R.string.s_ba964c4042),
+                            title = app.getString(R.string.s_ba964c4042),
                             textContent = { Text(text = exportPlayTipTemplate()) },
                             confirmText = "继续",
                         )
@@ -352,7 +352,7 @@ fun AboutPage() {
                 "保存到下载" to mainVm.viewModelScope.launchAsFn(Dispatchers.IO) {
                     if (!META.isGkdChannel) {
                         mainVm.dialogFlow.waitResult(
-                            title = stringResource(R.string.s_108a9199f2),
+                            title = app.getString(R.string.s_108a9199f2),
                             textContent = { Text(text = exportPlayTipTemplate()) },
                             confirmText = "继续",
                         )

@@ -104,7 +104,7 @@ fun AppOpsAllowPage() {
                         buttons = listOf(
                             "Shizuku 授权" to vm.viewModelScope.launchAsFn(Dispatchers.IO) {
                                 mainVm.guardShizukuContext()
-                                toast(stringResource(R.string.s_027b905228))
+                                toast(app.getString(R.string.s_027b905228))
                             },
                             "命令授权" to {
                                 vm.showCopyDlgFlow.value = true

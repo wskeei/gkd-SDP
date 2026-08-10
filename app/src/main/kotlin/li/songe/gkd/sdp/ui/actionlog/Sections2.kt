@@ -202,7 +202,7 @@ private fun ActionLogCardBody(
                             Text(
                                 text = actionLog.subsNameSnapshot
                                     ?: subscription?.name
-                                    ?: stringResource(R.string.s_fbc86835e2, actionLog.subsId)
+                                    ?: app.getString(R.string.s_fbc86835e2, actionLog.subsId)
                             )
                             val lineHeightDp = LocalDensity.current.run {
                                 LocalTextStyle.current.lineHeight.toDp()
@@ -214,7 +214,7 @@ private fun ActionLogCardBody(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text(
-                                    text = stringResource(R.string.s_f498bf1ba7, item.first.subsVersion),
+                                    text = app.getString(R.string.s_f498bf1ba7, item.first.subsVersion),
                                     style = MaterialTheme.typography.labelMedium,
                                     color = MaterialTheme.colorScheme.tertiary,
                                     modifier = Modifier
