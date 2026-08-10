@@ -14,12 +14,12 @@ class UsageGuardRequestLayoutContractTest {
         val form = source.substringAfter("internal fun UsageGuardRequestContent(")
 
         val elapsed = form.indexOf("SelfControlElapsedCard(")
-        val tags = form.indexOf("stringResource(R.string.s_608b8e137e")
-        val reason = form.indexOf("stringResource(R.string.s_781d71bd97")
-        val duration = form.indexOf("stringResource(R.string.s_7c0311beef")
+        val tags = form.indexOf("R.string.s_608b8e137e")
+        val reason = form.indexOf("R.string.s_781d71bd97")
+        val duration = form.indexOf("R.string.s_7c0311beef")
         val ratio = form.indexOf("UsageDurationRatioFeedback(")
-        val submit = form.indexOf("stringResource(R.string.s_60ff133549")
-        val cancel = form.indexOf("stringResource(R.string.s_4d0b4688c7")
+        val submit = form.indexOf("R.string.s_60ff133549")
+        val cancel = form.indexOf("R.string.s_4d0b4688c7")
 
         assertTrue(elapsed >= 0)
         assertTrue(elapsed < tags)
