@@ -4,15 +4,7 @@ All notable GKD-SDP changes are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
-
-### Internal reliability
-
-- Make self-control clocks and dispatchers injectable, collect Compose state only
-  while its lifecycle is started, and restore semantic navigation across activity
-  recreation.
-- Keep UI and overlay host boundaries small and enforce the directory contract in CI;
-  no user data format or runtime policy is changed by this internal refactor.
+## [2.2.0] - 2026-08-11
 
 ### Added
 
@@ -20,7 +12,13 @@ All notable GKD-SDP changes are documented here. The format follows
   architecture with adaptive bottom navigation and navigation rail.
 - Add a runtime capability center with one next action per state.
 - Add searchable settings and a privacy & data page with local retention
-  summaries and history deletion.
+  summaries, per-category deletion, full data deletion, and encrypted exports.
+- Add encrypted, transactional backup v2 for settings, subscriptions,
+  self-control configuration and history, and upstream history, with legacy
+  import support and rollback recovery.
+- Add whitelist support bundles that summarize diagnostics without including
+  databases, raw settings, subscriptions, request reasons, URLs, screenshots,
+  node text, contacts, cookies, or tokens.
 - Align review ranges to rolling 24-hour, 7-day, and 30-day windows with the
   matching 1-hour, 6-hour, and 1-day buckets.
 
@@ -29,11 +27,58 @@ All notable GKD-SDP changes are documented here. The format follows
 - Make usage-request validation, duration presentation, and interval queries
   explicit pure-Kotlin contracts; interval insight queries are half-open and
   no longer load through a capped recent-record list.
+- Harden local HTTP and shell-command interfaces with loopback-only defaults,
+  pairing sessions, scoped bearer tokens, rate and size limits, and one-time
+  command tokens.
+- Restrict Android Auto Backup to non-sensitive theme and display preferences.
+- Keep the countdown and request-reason overlays protected with `FLAG_SECURE`;
+  the explicit screenshot mode only hides the overlay for ten seconds and does
+  not alter third-party window flags.
+- Make self-control clocks and dispatchers injectable, collect Compose state
+  only while its lifecycle is started, restore semantic navigation across
+  activity recreation, and split large UI and overlay hosts.
+- Unify design tokens, accessible touch targets, English resources,
+  state/error/save feedback, charts, and large-text presentation across core
+  flows.
+
+### Fixed
+
+- Fail closed for malformed archives, backup decryption, remote session,
+  command-token, WebView origin, and exported-component entry points.
+- Keep diagnostic, crash, support-bundle, privacy summary, and deletion
+  surfaces free of request reasons, URLs, selectors, node text, contacts,
+  absolute paths, and credentials.
 
 ### Security
 
-- Privacy summaries and deletion actions do not display request reasons, URLs,
-  selectors, node text, contacts, or other sensitive payload fields.
+- Remove sensitive fields from production diagnostics and support bundles.
+- Require explicit authorization for HTTP subscription sources and keep
+  WebView and remote debug surfaces on fixed HTTPS origins.
+- Add immutable explicit PendingIntent and exported-component contract checks
+  for notification, widget, tile, file, scheme, and service entry points.
+
+### Testing
+
+- Replace placeholder/source-string contracts with behavioral JVM and
+  instrumentation tests, Room 32→33 migration coverage, and test-quality
+  policy checks.
+- Add Compose screenshot regression references, Kover business-policy
+  coverage gates, managed-device definitions, performance threshold
+  contracts, and four-variant CI builds.
+- Add navigation, capability, backup, data deletion, settings search, review
+  dashboard, and usage-request instrumentation coverage.
+- Managed-device and macrobenchmark execution remains deferred until a
+  compatible AGP/plugin combination and KVM-capable CI runner are available;
+  the device definitions and performance verification contracts are
+  committed.
+
+### Known limitations
+
+- Physical-device/OEM validation is not claimed by automated release evidence.
+  After this Release is public, the user should verify upgrade installation,
+  Accessibility/Automation behavior, notification and overlay permissions,
+  `FLAG_SECURE` screenshot composition, force-stop/back/home flows, and in-app
+  update manually.
 
 ## [2.1.1] - 2026-08-09
 
@@ -241,7 +286,8 @@ since that base rather than repeating upstream release notes.
   when the required service permission is disabled.
 - Added screenshot protection for the usage reason overlay.
 
-[Unreleased]: https://github.com/wskeei/gkd-SDP/compare/v2.1.1...HEAD
+[2.2.0]: https://github.com/wskeei/gkd-SDP/compare/v2.1.1...v2.2.0
+[Unreleased]: https://github.com/wskeei/gkd-SDP/compare/v2.2.0...HEAD
 [2.1.1]: https://github.com/wskeei/gkd-SDP/compare/v2.1.0...v2.1.1
 [2.1.0]: https://github.com/wskeei/gkd-SDP/compare/v2.0.0-beta.6...v2.1.0
 [2.0.0-beta.6]: https://github.com/wskeei/gkd-SDP/compare/v2.0.0-beta.5...v2.0.0-beta.6
