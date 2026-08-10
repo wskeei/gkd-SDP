@@ -10,10 +10,10 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 
-val itemHorizontalPadding = 16.dp
-val itemVerticalPadding = 12.dp
+val itemHorizontalPadding = DimensionTokens.SpacingBase
+val itemVerticalPadding = DimensionTokens.SpacingMd
 val EmptyHeight = 80.dp
-val cardHorizontalPadding = 12.dp
+val cardHorizontalPadding = DimensionTokens.SpacingMd
 
 fun Modifier.itemPadding() = this.padding(itemHorizontalPadding, itemVerticalPadding)
 
