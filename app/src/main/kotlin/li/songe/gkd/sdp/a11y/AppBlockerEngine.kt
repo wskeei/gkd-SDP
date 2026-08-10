@@ -181,7 +181,7 @@ object AppBlockerEngine {
             if (owner != null && !sdpRuntimeFeatureCoordinator.isCurrent(owner)) return
             val result = showBlockerOverlay(
                 packageName = packageName,
-                message = message ?: app.getString(R.string.s_b3d972565c),
+                message = message ?: li.songe.gkd.sdp.app.getString(R.string.s_b3d972565c),
                 rule = blockingRule,
                 owner = owner,
             )

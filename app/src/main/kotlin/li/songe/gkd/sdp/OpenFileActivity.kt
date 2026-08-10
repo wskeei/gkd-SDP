@@ -11,7 +11,6 @@ import li.songe.gkd.sdp.util.createGkdTempDir
 import li.songe.gkd.sdp.util.launchTry
 import li.songe.gkd.sdp.util.toast
 import li.songe.gkd.sdp.R
-import li.songe.gkd.sdp.app
 
 class OpenFileActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -21,7 +20,7 @@ class OpenFileActivity : Activity() {
             if (valid) {
                 navToMainActivity()
             } else {
-                toast(app.getString(R.string.s_a5b44b3b94))
+                toast(li.songe.gkd.sdp.app.getString(R.string.s_a5b44b3b94))
                 finish()
             }
         }

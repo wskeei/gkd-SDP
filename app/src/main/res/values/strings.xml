@@ -109,13 +109,13 @@ youtube.com</string>
     <string name="s_188896795f" formatted="false">导出</string>
     <string name="s_18a07b6ed5">模式：%1$s · 引擎：%2$s</string>
     <string name="s_1937bcb105" formatted="false">规则名称</string>
-    <string name="s_1941b8aa85">触发文案支持变量替换，规则如下
-%1$s 子规则名称
-%2$s 规则名称
-%3$s 触发次数
+    <string name="s_1941b8aa85" formatted="false">触发文案支持变量替换，规则如下
+${1} 子规则名称
+${2} 规则名称
+${3} 触发次数
 
 示例模板
-%4$s/%5$s/%6$s
+${1}/${2}/${3}
 
 替换结果
 子规则a/规则A/3</string>
@@ -210,14 +210,14 @@ youtube.com</string>
     <string name="s_2e8b6dcd1b" formatted="false">时间规则已删除</string>
     <string name="s_2f752c005e" formatted="false">移除</string>
     <string name="s_302471b81d" formatted="false">复盘范围</string>
-    <string name="s_3036ac5688">通知文案支持变量替换，规则如下
-%1$s 全局规则数
-%2$s 应用数
-%3$s 应用规则数
-%4$s 触发次数
+    <string name="s_3036ac5688" formatted="false">通知文案支持变量替换，规则如下
+${i} 全局规则数
+${k} 应用数
+${u} 应用规则数
+${n} 触发次数
 
 示例模板
-%5$s全局/%6$s应用/%7$s规则/%8$s触发
+${i}全局/${k}应用/${u}规则/${n}触发
 
 替换结果
 0全局/1应用/2规则/3触发</string>

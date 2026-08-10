@@ -21,7 +21,6 @@ import li.songe.gkd.sdp.data.FocusRule
 import li.songe.gkd.sdp.db.DbSet
 import li.songe.gkd.sdp.ui.style.AppTheme
 import li.songe.gkd.sdp.R
-import li.songe.gkd.sdp.app
 
 class FocusWidgetConfigActivity : ComponentActivity() {
     private var appWidgetId = AppWidgetManager.INVALID_APPWIDGET_ID
@@ -93,7 +92,7 @@ fun FocusWidgetConfigScreen(onSave: (Set<Long>) -> Unit) {
     Scaffold(
         topBar = {
             TopAppBar(
-                 title = { Text(app.getString(R.string.s_63ef694432)) }
+                 title = { Text(li.songe.gkd.sdp.app.getString(R.string.s_63ef694432)) }
             )
         }
     ) { padding ->
@@ -135,7 +134,7 @@ fun FocusWidgetConfigScreen(onSave: (Set<Long>) -> Unit) {
                     .fillMaxWidth()
                     .padding(16.dp)
             ) {
-                Text(app.getString(R.string.s_fadf24dbc5))
+                Text(li.songe.gkd.sdp.app.getString(R.string.s_fadf24dbc5))
             }
         }
     }

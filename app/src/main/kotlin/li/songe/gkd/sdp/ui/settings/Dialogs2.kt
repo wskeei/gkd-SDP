@@ -25,7 +25,6 @@ import li.songe.gkd.sdp.util.UriUtils
 import li.songe.gkd.sdp.util.toast
 import androidx.compose.ui.res.stringResource
 import li.songe.gkd.sdp.R
-import li.songe.gkd.sdp.app
 
 @Composable
 internal fun SettingsBackupDialogs(
@@ -143,7 +142,7 @@ private fun BackupWorkflowStageContent(
             BackupCatalog.categories.forEach { category ->
                 TextSwitch(
                     title = backupCategoryTitle(category.id),
-                    subtitle = if (category.sensitive) app.getString(R.string.s_e317d798a8) else backupCategorySubtitle(category.id),
+                    subtitle = if (category.sensitive) li.songe.gkd.sdp.app.getString(R.string.s_e317d798a8) else backupCategorySubtitle(category.id),
                     checked = category.id in workflow.selectedCategoryIds,
                     onCheckedChange = { checked ->
                         workflowState.value = workflow.copy(
@@ -181,7 +180,7 @@ private fun BackupWorkflowStageContent(
         }
         BackupWorkflowStage.EXPORT_SUMMARY -> {
             Text(stringResource(R.string.s_e8c1720f03))
-            workflow.selectedCategoryIds.forEach { Text(app.getString(R.string.s_28b124759e, backupCategoryTitle(it))) }
+            workflow.selectedCategoryIds.forEach { Text(li.songe.gkd.sdp.app.getString(R.string.s_28b124759e, backupCategoryTitle(it))) }
             Text(stringResource(R.string.s_58bad7a807))
             Text(stringResource(R.string.s_d2e08cab80))
             Text(stringResource(R.string.s_6ed70747fd))
@@ -195,11 +194,11 @@ private fun BackupWorkflowStageContent(
                 },
             )
             Text(stringResource(R.string.s_f3c459c9c3))
-            prepared.payload.manifest.categoryIds.forEach { Text(app.getString(R.string.s_28b124759e, backupCategoryTitle(it))) }
+            prepared.payload.manifest.categoryIds.forEach { Text(li.songe.gkd.sdp.app.getString(R.string.s_28b124759e, backupCategoryTitle(it))) }
             Text(stringResource(R.string.s_9eba7fa3e2))
             Text(stringResource(R.string.s_b3af13eb8f))
             prepared.conflicts.forEach { conflict ->
-                Text(app.getString(R.string.s_a237a78c90, backupCategoryTitle(conflict.categoryId), conflict.added, conflict.overwritten, conflict.deleted))
+                Text(li.songe.gkd.sdp.app.getString(R.string.s_a237a78c90, backupCategoryTitle(conflict.categoryId), conflict.added, conflict.overwritten, conflict.deleted))
             }
         }
     }
@@ -230,7 +229,7 @@ private fun launchBackupWorkflowAction(
                         filename = "gkd-sdp-backup-v2-${System.currentTimeMillis()}.gkdbak",
                     )
                     if (targetUri == null) {
-                        workflowState.value = BackupWorkflowState(stage = BackupWorkflowStage.EXPORT_PASSWORD, selectedCategoryIds = selectedCategoryIds, errorText = app.getString(R.string.s_6349c9a19f))
+                        workflowState.value = BackupWorkflowState(stage = BackupWorkflowStage.EXPORT_PASSWORD, selectedCategoryIds = selectedCategoryIds, errorText = li.songe.gkd.sdp.app.getString(R.string.s_6349c9a19f))
                         return@launch
                     }
                     when (val result = withContext(Dispatchers.IO) { BackupUtils.exportBackUpData(selectedCategoryIds, password) }) {
@@ -240,9 +239,9 @@ private fun launchBackupWorkflowAction(
                             file.delete()
                             if (copied.isSuccess) {
                                 workflowState.value = null
-                                toast(app.getString(R.string.s_fad8721370))
+                                toast(li.songe.gkd.sdp.app.getString(R.string.s_fad8721370))
                             } else {
-                                workflowState.value = BackupWorkflowState(stage = BackupWorkflowStage.EXPORT_PASSWORD, selectedCategoryIds = selectedCategoryIds, errorText = app.getString(R.string.s_13df62ffcf))
+                                workflowState.value = BackupWorkflowState(stage = BackupWorkflowStage.EXPORT_PASSWORD, selectedCategoryIds = selectedCategoryIds, errorText = li.songe.gkd.sdp.app.getString(R.string.s_13df62ffcf))
                             }
                         }
                         is BackupResult.Failure -> {
@@ -288,14 +287,14 @@ private fun launchBackupWorkflowAction(
                 }
                 val refreshedImport = (refreshed as BackupResult.Success).value
                 if (refreshedImport.previewStateHash != preparedImport.previewStateHash || refreshedImport.conflicts != preparedImport.conflicts) {
-                    workflowState.value = BackupWorkflowState(stage = BackupWorkflowStage.IMPORT_PREVIEW, sourceUri = sourceUri, preparedImport = refreshedImport, errorText = app.getString(R.string.s_53c71581fe))
+                    workflowState.value = BackupWorkflowState(stage = BackupWorkflowStage.IMPORT_PREVIEW, sourceUri = sourceUri, preparedImport = refreshedImport, errorText = li.songe.gkd.sdp.app.getString(R.string.s_53c71581fe))
                     return@launch
                 }
                 when (val result = withContext(Dispatchers.IO) { BackupUtils.applyImport(refreshedImport, confirmed = true) }) {
                     is BackupResult.Success -> {
                         workflowState.value = null
                         BackupUtils.pendingImportUriFlow.value = null
-                        toast(app.getString(R.string.s_74010fe072))
+                        toast(li.songe.gkd.sdp.app.getString(R.string.s_74010fe072))
                     }
                     is BackupResult.Failure -> {
                         workflowState.value = BackupWorkflowState(stage = BackupWorkflowStage.IMPORT_PREVIEW, sourceUri = sourceUri, preparedImport = refreshedImport, errorText = backupErrorText(result.code))

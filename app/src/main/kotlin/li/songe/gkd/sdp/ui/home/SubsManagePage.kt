@@ -87,7 +87,6 @@ import li.songe.gkd.sdp.util.usedSubsEntriesFlow
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
 import androidx.compose.ui.res.stringResource
-import li.songe.gkd.sdp.app
 
 @Composable
 fun useSubsManagePage(): ScaffoldExt {
@@ -132,14 +131,14 @@ fun useSubsManagePage(): ScaffoldExt {
             content = {
                 val store by storeFlow.collectAsStateWithLifecycle()
                 TextMenu(
-                    title = app.getString(R.string.s_ecae7085ce),
+                    title = li.songe.gkd.sdp.app.getString(R.string.s_ecae7085ce),
                     option = UpdateTimeOption.objects.findOption(store.updateSubsInterval)
                 ) {
                     storeFlow.update { s -> s.copy(updateSubsInterval = it.value) }
                 }
                 TextSwitch(
-                    title = app.getString(R.string.s_b151485175),
-                    subtitle = app.getString(R.string.s_19ce2aa525),
+                    title = li.songe.gkd.sdp.app.getString(R.string.s_b151485175),
+                    subtitle = li.songe.gkd.sdp.app.getString(R.string.s_19ce2aa525),
                     checked = store.subsPowerWarn,
                     onCheckedChange = throttle<Boolean> {
                         storeFlow.update { s -> s.copy(subsPowerWarn = it) }
@@ -166,7 +165,7 @@ fun useSubsManagePage(): ScaffoldExt {
                 if (isSelectedMode) {
                     PerfIconButton(
                         imageVector = PerfIcon.Close,
-                        contentDescription = app.getString(R.string.s_f02e943954),
+                        contentDescription = li.songe.gkd.sdp.app.getString(R.string.s_f02e943954),
                         onClick = { isSelectedMode = false },
                     )
                 }
@@ -195,15 +194,15 @@ fun useSubsManagePage(): ScaffoldExt {
                                 selectedIds
                             }
                             if (canDeleteIds.isNotEmpty()) {
-                                val text = app.getString(R.string.s_0ee51f3213, canDeleteIds.size).let { s ->
-                                    if (selectedIds.contains(LOCAL_SUBS_ID)) app.getString(R.string.s_9f3eea9816, s) else s
+                                val text = li.songe.gkd.sdp.app.getString(R.string.s_0ee51f3213, canDeleteIds.size).let { s ->
+                                    if (selectedIds.contains(LOCAL_SUBS_ID)) li.songe.gkd.sdp.app.getString(R.string.s_9f3eea9816, s) else s
                                 }
                                 PerfIconButton(
                                     imageVector = PerfIcon.Delete,
-                                    contentDescription = app.getString(R.string.s_7c50210d69),
+                                    contentDescription = li.songe.gkd.sdp.app.getString(R.string.s_7c50210d69),
                                     onClick = vm.viewModelScope.launchAsFn {
                                         mainVm.dialogFlow.waitResult(
-                                            title = app.getString(R.string.s_fe7b16b5c0),
+                                            title = li.songe.gkd.sdp.app.getString(R.string.s_fe7b16b5c0),
                                             text = text,
                                             error = true,
                                         )
@@ -224,8 +223,8 @@ fun useSubsManagePage(): ScaffoldExt {
                             ) {
                                 PerfIconButton(
                                     imageVector = PerfIcon.Eco,
-                                    contentDescription = app.getString(R.string.s_dee6fc9517),
-                                    onClickLabel = app.getString(R.string.s_00c3630ef4),
+                                    contentDescription = li.songe.gkd.sdp.app.getString(R.string.s_dee6fc9517),
+                                    onClickLabel = li.songe.gkd.sdp.app.getString(R.string.s_00c3630ef4),
                                     onClick = throttle {
                                         mainVm.navigatePage(SlowGroupRoute)
                                     })
@@ -243,14 +242,14 @@ fun useSubsManagePage(): ScaffoldExt {
                                         LocalContentColor.current
                                     }
                                 ),
-                                contentDescription = app.getString(R.string.s_ff942d85f0, if (enableMatch) "已启用" else "已禁用"),
-                                onClickLabel = app.getString(R.string.s_d7ee5b2dac),
+                                contentDescription = li.songe.gkd.sdp.app.getString(R.string.s_ff942d85f0, if (enableMatch) "已启用" else "已禁用"),
+                                onClickLabel = li.songe.gkd.sdp.app.getString(R.string.s_d7ee5b2dac),
                                 onClick = throttle { switchStoreEnableMatch() },
                             )
                             PerfIconButton(
                                 id = R.drawable.ic_page_info,
-                                contentDescription = app.getString(R.string.s_65f3531c34),
-                                onClickLabel = app.getString(R.string.s_c184e4944d),
+                                contentDescription = li.songe.gkd.sdp.app.getString(R.string.s_65f3531c34),
+                                onClickLabel = li.songe.gkd.sdp.app.getString(R.string.s_c184e4944d),
                                 onClick = {
                                     showSettingsDlg = true
                                 })
@@ -259,10 +258,10 @@ fun useSubsManagePage(): ScaffoldExt {
                 }
                 PerfIconButton(
                     imageVector = PerfIcon.MoreVert,
-                    contentDescription = app.getString(R.string.s_77836d3a99),
+                    contentDescription = li.songe.gkd.sdp.app.getString(R.string.s_77836d3a99),
                     onClick = {
                         if (updateSubsMutex.mutex.isLocked) {
-                            toast(app.getString(R.string.s_db8d309a8e))
+                            toast(li.songe.gkd.sdp.app.getString(R.string.s_db8d309a8e))
                         } else {
                             expanded = true
                         }
@@ -278,7 +277,7 @@ fun useSubsManagePage(): ScaffoldExt {
                             if (isSelectedMode) {
                                 DropdownMenuItem(
                                     text = {
-                                        Text(text = app.getString(R.string.s_3e44b2a933))
+                                        Text(text = li.songe.gkd.sdp.app.getString(R.string.s_3e44b2a933))
                                     },
                                     onClick = {
                                         expanded = false
@@ -287,7 +286,7 @@ fun useSubsManagePage(): ScaffoldExt {
                                 )
                                 DropdownMenuItem(
                                     text = {
-                                        Text(text = app.getString(R.string.s_ae05880411))
+                                        Text(text = li.songe.gkd.sdp.app.getString(R.string.s_ae05880411))
                                     },
                                     onClick = {
                                         expanded = false
@@ -301,7 +300,7 @@ fun useSubsManagePage(): ScaffoldExt {
                                 )
                             } else {
                                 DropdownMenuItem(
-                                    text = { Text(text = app.getString(R.string.s_0d9a428066)) },
+                                    text = { Text(text = li.songe.gkd.sdp.app.getString(R.string.s_0d9a428066)) },
                                     onClick = throttle {
                                         expanded = false
                                         mainVm.navigatePage(
@@ -315,7 +314,7 @@ fun useSubsManagePage(): ScaffoldExt {
                                     },
                                 )
                                 DropdownMenuItem(
-                                    text = { Text(text = app.getString(R.string.s_d039ea532e)) },
+                                    text = { Text(text = li.songe.gkd.sdp.app.getString(R.string.s_d039ea532e)) },
                                     onClick = throttle {
                                         expanded = false
                                         mainVm.navigatePage(
@@ -336,12 +335,12 @@ fun useSubsManagePage(): ScaffoldExt {
         },
         floatingActionButton = {
             AnimationFloatingActionButton(
-                contentDescription = app.getString(R.string.s_6debaa8885),
-                onClickLabel = app.getString(R.string.s_907c36fc94),
+                contentDescription = li.songe.gkd.sdp.app.getString(R.string.s_6debaa8885),
+                onClickLabel = li.songe.gkd.sdp.app.getString(R.string.s_907c36fc94),
                 visible = !isSelectedMode,
                 onClick = {
                     if (updateSubsMutex.mutex.isLocked) {
-                        toast(app.getString(R.string.s_2c20f3fd5e))
+                        toast(li.songe.gkd.sdp.app.getString(R.string.s_2c20f3fd5e))
                     } else {
                         mainVm.viewModelScope.launchTry {
                             val url = mainVm.inputSubsLinkOption.getResult() ?: return@launchTry
@@ -422,12 +421,12 @@ fun useSubsManagePage(): ScaffoldExt {
                             onCheckedChange = mainVm.viewModelScope.launchAsFn { checked ->
                                 if (checked && storeFlow.value.subsPowerWarn && !subItem.isLocal && usedSubsEntriesFlow.value.any { !it.subsItem.isLocal }) {
                                     mainVm.dialogFlow.waitResult(
-                                        title = app.getString(R.string.s_b151485175),
+                                        title = li.songe.gkd.sdp.app.getString(R.string.s_b151485175),
                                         textContent = {
                                             Column {
-                                                Text(text = app.getString(R.string.s_e8c5028e79))
+                                                Text(text = li.songe.gkd.sdp.app.getString(R.string.s_e8c5028e79))
                                                 Text(
-                                                    text = app.getString(R.string.s_9454e9b90d),
+                                                    text = li.songe.gkd.sdp.app.getString(R.string.s_9454e9b90d),
                                                     modifier = Modifier.clickable(onClick = throttle {
                                                         mainVm.dialogFlow.value = null
                                                         mainVm.navigatePage(
@@ -448,7 +447,7 @@ fun useSubsManagePage(): ScaffoldExt {
                                 if (subItem.enable && !checked) {
                                     val attempt = AutoReenableDisableGuard.tryConsumeForDisable()
                                     if (!attempt.allowed) {
-                                        toast(app.getString(R.string.s_b0bb6964b5, attempt.limit))
+                                        toast(li.songe.gkd.sdp.app.getString(R.string.s_b0bb6964b5, attempt.limit))
                                         return@launchAsFn
                                     }
                                 }

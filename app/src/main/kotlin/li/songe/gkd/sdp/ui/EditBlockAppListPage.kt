@@ -25,7 +25,6 @@ import li.songe.gkd.sdp.util.launchAsFn
 import li.songe.gkd.sdp.util.throttle
 import li.songe.gkd.sdp.util.toast
 import li.songe.gkd.sdp.R
-import li.songe.gkd.sdp.app
 
 @Serializable
 data object EditBlockAppListRoute : NavKey
@@ -39,8 +38,8 @@ fun EditBlockAppListPage() {
         if (vm.getChangedSet() != null) {
             context.justHideSoftInput()
             mainVm.dialogFlow.waitResult(
-                title = app.getString(R.string.s_ab3656a956),
-                text = app.getString(R.string.s_aebc195621),
+                title = li.songe.gkd.sdp.app.getString(R.string.s_ab3656a956),
+                text = li.songe.gkd.sdp.app.getString(R.string.s_aebc195621),
             )
         } else {
             context.hideSoftInput()
@@ -57,7 +56,7 @@ fun EditBlockAppListPage() {
                     onClick = onBack,
                 )
             },
-            title = { Text(text = app.getString(R.string.s_7395ba05d0)) },
+            title = { Text(text = li.songe.gkd.sdp.app.getString(R.string.s_7395ba05d0)) },
             actions = {
                 PerfIconButton(
                     imageVector = PerfIcon.Save,
@@ -65,9 +64,9 @@ fun EditBlockAppListPage() {
                         val newSet = vm.getChangedSet()
                         if (newSet != null) {
                             blockMatchAppListFlow.value = newSet
-                            toast(app.getString(R.string.s_e2cff77372))
+                            toast(li.songe.gkd.sdp.app.getString(R.string.s_e2cff77372))
                         } else {
-                            toast(app.getString(R.string.s_fff8cc4d94))
+                            toast(li.songe.gkd.sdp.app.getString(R.string.s_fff8cc4d94))
                         }
                         context.hideSoftInput()
                         mainVm.popPage()

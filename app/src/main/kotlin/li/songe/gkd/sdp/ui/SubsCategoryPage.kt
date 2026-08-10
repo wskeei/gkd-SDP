@@ -58,7 +58,6 @@ import li.songe.gkd.sdp.util.throttle
 import li.songe.gkd.sdp.util.toast
 import li.songe.gkd.sdp.util.updateSubscription
 import li.songe.gkd.sdp.R
-import li.songe.gkd.sdp.app
 
 @Serializable
 data class SubsCategoryRoute(val subsItemId: Long) : NavKey
@@ -84,13 +83,13 @@ fun SubsCategoryPage(@Suppress("unused") route: SubsCategoryRoute) {
         }, title = {
             TowLineText(
                 title = subs.name,
-                subtitle = app.getString(R.string.s_53c76c1349),
+                subtitle = li.songe.gkd.sdp.app.getString(R.string.s_53c76c1349),
                 modifier = Modifier.noRippleClickable(onClick = { scrollKey.intValue++ })
             )
         }, actions = {
             PerfIconButton(imageVector = PerfIcon.Info, onClick = throttle {
                 mainVm.dialogFlow.updateDialogOptions(
-                    title = app.getString(R.string.s_a866534a0d),
+                    title = li.songe.gkd.sdp.app.getString(R.string.s_a866534a0d),
                     text = arrayOf(
                         "类别会捕获以当前类别开头的所有应用规则, 因此可调整类别开关(分类手动配置)来批量开关规则",
                         "规则开关优先级为:\n规则手动配置 > 分类手动配置 > 分类默认 > 规则默认",
@@ -123,7 +122,7 @@ fun SubsCategoryPage(@Suppress("unused") route: SubsCategoryRoute) {
             item(ListPlaceholder.KEY, ListPlaceholder.TYPE) {
                 Spacer(modifier = Modifier.height(EmptyHeight))
                 if (categories.isEmpty()) {
-                    EmptyText(text = app.getString(R.string.s_90fa56d24c))
+                    EmptyText(text = li.songe.gkd.sdp.app.getString(R.string.s_90fa56d24c))
                 }
             }
         }
@@ -183,7 +182,7 @@ private fun CategoryItemCard(
                     )
                 } else {
                     Text(
-                        text = app.getString(R.string.s_cff584d9ab),
+                        text = li.songe.gkd.sdp.app.getString(R.string.s_cff584d9ab),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
                     )
@@ -234,9 +233,9 @@ fun UpsertCategoryDialog(
                         )
                     })
                 )
-                toast(app.getString(R.string.s_e2cff77372))
+                toast(li.songe.gkd.sdp.app.getString(R.string.s_e2cff77372))
             } else {
-                toast(app.getString(R.string.s_fff8cc4d94))
+                toast(li.songe.gkd.sdp.app.getString(R.string.s_fff8cc4d94))
             }
         } else {
             if (subs.categories.any { c -> c.name == nameValue }) {
@@ -254,7 +253,7 @@ fun UpsertCategoryDialog(
                     add(c)
                 })
             )
-            toast(app.getString(R.string.s_6950d05c09))
+            toast(li.songe.gkd.sdp.app.getString(R.string.s_6950d05c09))
         }
     }
     FullscreenDialog(onDismissRequest = onDismissRequest) {
@@ -267,7 +266,7 @@ fun UpsertCategoryDialog(
                             onClick = throttle(onDismissRequest),
                         )
                     },
-                    title = { Text(text = if (category == null) app.getString(R.string.s_f0250d57b9) else app.getString(R.string.s_40635c4228)) },
+                    title = { Text(text = if (category == null) li.songe.gkd.sdp.app.getString(R.string.s_f0250d57b9) else li.songe.gkd.sdp.app.getString(R.string.s_40635c4228)) },
                     actions = {
                         PerfIconButton(
                             imageVector = PerfIcon.Save,
@@ -284,22 +283,22 @@ fun UpsertCategoryDialog(
                     .padding(horizontal = 16.dp),
             ) {
                 OutlinedTextField(
-                    label = { Text(app.getString(R.string.s_54900435fc)) },
+                    label = { Text(li.songe.gkd.sdp.app.getString(R.string.s_54900435fc)) },
                     value = nameValue,
                     onValueChange = { nameValue = it.trim() },
                     modifier = Modifier
                         .fillMaxWidth()
                         .autoFocus(),
-                    placeholder = { Text(text = app.getString(R.string.s_b4676e2715)) },
+                    placeholder = { Text(text = li.songe.gkd.sdp.app.getString(R.string.s_b4676e2715)) },
                     singleLine = true,
                 )
                 Spacer(modifier = Modifier.height(12.dp))
                 OutlinedTextField(
-                    label = { Text(app.getString(R.string.s_3aba810f58)) },
+                    label = { Text(li.songe.gkd.sdp.app.getString(R.string.s_3aba810f58)) },
                     value = descValue,
                     onValueChange = { descValue = it.trim() },
                     modifier = Modifier.fillMaxWidth(),
-                    placeholder = { Text(text = app.getString(R.string.s_90059a73fc)) },
+                    placeholder = { Text(text = li.songe.gkd.sdp.app.getString(R.string.s_90059a73fc)) },
                     singleLine = true,
                 )
             }

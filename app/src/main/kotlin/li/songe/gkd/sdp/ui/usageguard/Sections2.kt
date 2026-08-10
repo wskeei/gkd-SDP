@@ -23,7 +23,6 @@ import li.songe.gkd.sdp.util.UsageGuardPolicy
 import li.songe.gkd.sdp.util.UsageGuardUiStatePolicy
 import androidx.compose.ui.res.stringResource
 import li.songe.gkd.sdp.R
-import li.songe.gkd.sdp.app
 @Composable
 internal fun UsageGuardSettingsList(
     mainVm: MainViewModel,
@@ -80,7 +79,7 @@ private fun UsageGuardSettingsScaffold(state: UsageGuardSettingsRenderState) {
                         onClick = { state.mainVm.popPage() },
                     )
                 },
-                title = { Text(app.getString(R.string.s_356c996618)) },
+                title = { Text(li.songe.gkd.sdp.app.getString(R.string.s_356c996618)) },
             )
         },
     ) { padding ->
@@ -108,7 +107,7 @@ private fun UsageGuardRulesSection(state: UsageGuardSettingsRenderState) {
         subtitle = stringResource(R.string.s_0c81c7ca27),
     ) {
         PreferenceBlock(
-            title = app.getString(R.string.s_a6a2d4845d),
+            title = li.songe.gkd.sdp.app.getString(R.string.s_a6a2d4845d),
             supporting = "选中应用适合精细控制；全局模式适合高压场景。",
         ) {
             FlowRow(
@@ -118,18 +117,18 @@ private fun UsageGuardRulesSection(state: UsageGuardSettingsRenderState) {
                 FilterChip(
                     selected = settings.usageGuardScopeMode == UsageGuardPolicy.SCOPE_SELECTED_ONLY,
                     onClick = { vm.updateScopeMode(UsageGuardPolicy.SCOPE_SELECTED_ONLY) },
-                    label = { Text(app.getString(R.string.s_2a5a0db475)) },
+                    label = { Text(li.songe.gkd.sdp.app.getString(R.string.s_2a5a0db475)) },
                 )
                 FilterChip(
                     selected = settings.usageGuardScopeMode == UsageGuardPolicy.SCOPE_GLOBAL_EXCEPT_WHITELIST,
                     onClick = { vm.updateScopeMode(UsageGuardPolicy.SCOPE_GLOBAL_EXCEPT_WHITELIST) },
-                    label = { Text(app.getString(R.string.s_3af2ad9aac)) },
+                    label = { Text(li.songe.gkd.sdp.app.getString(R.string.s_3af2ad9aac)) },
                 )
             }
         }
         HorizontalDivider()
         PreferenceBlock(
-            title = app.getString(R.string.s_cb1d1e7bde),
+            title = li.songe.gkd.sdp.app.getString(R.string.s_cb1d1e7bde),
             supporting = "严格模式离开即失效，普通模式在到时前可继续返回。",
         ) {
             FlowRow(
@@ -139,18 +138,18 @@ private fun UsageGuardRulesSection(state: UsageGuardSettingsRenderState) {
                 FilterChip(
                     selected = settings.usageGuardDefaultGrantMode == UsageGuardPolicy.GRANT_MODE_STRICT,
                     onClick = { vm.updateDefaultGrantMode(UsageGuardPolicy.GRANT_MODE_STRICT) },
-                    label = { Text(app.getString(R.string.s_cce3d12ecc)) },
+                    label = { Text(li.songe.gkd.sdp.app.getString(R.string.s_cce3d12ecc)) },
                 )
                 FilterChip(
                     selected = settings.usageGuardDefaultGrantMode == UsageGuardPolicy.GRANT_MODE_RESUMABLE,
                     onClick = { vm.updateDefaultGrantMode(UsageGuardPolicy.GRANT_MODE_RESUMABLE) },
-                    label = { Text(app.getString(R.string.s_e8a4554eb3)) },
+                    label = { Text(li.songe.gkd.sdp.app.getString(R.string.s_e8a4554eb3)) },
                 )
             }
         }
         HorizontalDivider()
         PreferenceBlock(
-            title = app.getString(R.string.s_be695b05b4),
+            title = li.songe.gkd.sdp.app.getString(R.string.s_be695b05b4),
             supporting = "保存后会直接影响申请弹窗的最少字数要求。",
         ) {
             Row(
@@ -163,7 +162,7 @@ private fun UsageGuardRulesSection(state: UsageGuardSettingsRenderState) {
                         if (value.all(Char::isDigit)) minReasonLengthText.value = value
                     },
                     modifier = Modifier.width(132.dp),
-                    label = { Text(app.getString(R.string.s_dec2ec4618)) },
+                    label = { Text(li.songe.gkd.sdp.app.getString(R.string.s_dec2ec4618)) },
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 )
@@ -174,13 +173,13 @@ private fun UsageGuardRulesSection(state: UsageGuardSettingsRenderState) {
                         )
                     },
                 ) {
-                    Text(app.getString(R.string.s_fadf24dbc5))
+                    Text(li.songe.gkd.sdp.app.getString(R.string.s_fadf24dbc5))
                 }
             }
         }
         HorizontalDivider()
         PreferenceBlock(
-            title = app.getString(R.string.s_067f4e9588),
+            title = li.songe.gkd.sdp.app.getString(R.string.s_067f4e9588),
             supporting = "申请弹窗会优先展示这四个固定时长，把自定义留在次级入口。",
         ) {
             FlowRow(
@@ -198,7 +197,7 @@ private fun UsageGuardRulesSection(state: UsageGuardSettingsRenderState) {
                             }
                         },
                         modifier = Modifier.width(112.dp),
-                        label = { Text(app.getString(R.string.s_fc0d628dd8, index + 1)) },
+                        label = { Text(li.songe.gkd.sdp.app.getString(R.string.s_fc0d628dd8, index + 1)) },
                         singleLine = true,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     )
@@ -210,12 +209,12 @@ private fun UsageGuardRulesSection(state: UsageGuardSettingsRenderState) {
                     vm.updateDurationOptions(durationOptionTexts.value.map { it.toIntOrNull() ?: 0 })
                 },
             ) {
-                Text(app.getString(R.string.s_b0871a4a6b))
+                Text(li.songe.gkd.sdp.app.getString(R.string.s_b0871a4a6b))
             }
         }
         HorizontalDivider()
         PreferenceBlock(
-            title = app.getString(R.string.s_9d227c591a),
+            title = li.songe.gkd.sdp.app.getString(R.string.s_9d227c591a),
             supporting = "预设标签负责快速说明动机，自定义标签只保留你真正常用的词。",
         ) {
             FlowRow(
@@ -228,7 +227,7 @@ private fun UsageGuardRulesSection(state: UsageGuardSettingsRenderState) {
                         onClick = { if (!tag.isPreset) vm.deleteCustomTag(tag) },
                         label = {
                             Text(
-                                if (tag.isPreset) tag.name else app.getString(R.string.s_fd325af405, tag.name),
+                                if (tag.isPreset) tag.name else li.songe.gkd.sdp.app.getString(R.string.s_fd325af405, tag.name),
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
                             )
@@ -245,7 +244,7 @@ private fun UsageGuardRulesSection(state: UsageGuardSettingsRenderState) {
                     value = customTagText.value,
                     onValueChange = { customTagText.value = it },
                     modifier = Modifier.width(132.dp),
-                    label = { Text(app.getString(R.string.s_71f86583e1)) },
+                    label = { Text(li.songe.gkd.sdp.app.getString(R.string.s_71f86583e1)) },
                     singleLine = true,
                 )
                 Button(
@@ -254,7 +253,7 @@ private fun UsageGuardRulesSection(state: UsageGuardSettingsRenderState) {
                         customTagText.value = ""
                     },
                 ) {
-                    Text(app.getString(R.string.s_94191ce210))
+                    Text(li.songe.gkd.sdp.app.getString(R.string.s_94191ce210))
                 }
             }
         }
@@ -287,7 +286,7 @@ private fun UsageGuardAppsSection(state: UsageGuardSettingsRenderState) {
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text(app.getString(R.string.s_2a5a0db475), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+                    Text(li.songe.gkd.sdp.app.getString(R.string.s_2a5a0db475), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
                     Text(
                         if (draggingAppId.value == null) {
                             "点按图标可改模式，长按拖到另一列可直接切换。"
@@ -298,12 +297,12 @@ private fun UsageGuardAppsSection(state: UsageGuardSettingsRenderState) {
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
-                TextButton(onClick = { showSelectedPicker.value = true }) { Text(app.getString(R.string.s_e0c8442c8f)) }
+                TextButton(onClick = { showSelectedPicker.value = true }) { Text(li.songe.gkd.sdp.app.getString(R.string.s_e0c8442c8f)) }
             }
             Spacer(modifier = Modifier.height(12.dp))
             SelectedAppModeBoard(
-                title = app.getString(R.string.s_cce3d12ecc),
-                subtitle = app.getString(R.string.s_a12b6a9ddd),
+                title = li.songe.gkd.sdp.app.getString(R.string.s_cce3d12ecc),
+                subtitle = li.songe.gkd.sdp.app.getString(R.string.s_a12b6a9ddd),
                 appIds = groupedApps.strictAppIds,
                 appInfoMap = appInfoMap,
                 onBoardBoundsChanged = { strictBoardBounds.value = it },
@@ -327,8 +326,8 @@ private fun UsageGuardAppsSection(state: UsageGuardSettingsRenderState) {
             )
             Spacer(modifier = Modifier.height(16.dp))
             SelectedAppModeBoard(
-                title = app.getString(R.string.s_e8a4554eb3),
-                subtitle = app.getString(R.string.s_c288fd13e0),
+                title = li.songe.gkd.sdp.app.getString(R.string.s_e8a4554eb3),
+                subtitle = li.songe.gkd.sdp.app.getString(R.string.s_c288fd13e0),
                 appIds = groupedApps.resumableAppIds,
                 appInfoMap = appInfoMap,
                 onBoardBoundsChanged = { resumableBoardBounds.value = it },
@@ -357,14 +356,14 @@ private fun UsageGuardAppsSection(state: UsageGuardSettingsRenderState) {
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text(app.getString(R.string.s_8a87deaa49), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+                    Text(li.songe.gkd.sdp.app.getString(R.string.s_8a87deaa49), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
                     Text(
-                        app.getString(R.string.s_4c57a177b2),
+                        li.songe.gkd.sdp.app.getString(R.string.s_4c57a177b2),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
-                TextButton(onClick = { showWhitelistPicker.value = true }) { Text(app.getString(R.string.s_4adcd23b06)) }
+                TextButton(onClick = { showWhitelistPicker.value = true }) { Text(li.songe.gkd.sdp.app.getString(R.string.s_4adcd23b06)) }
             }
             Spacer(modifier = Modifier.height(12.dp))
             IconAppFlow(
@@ -382,14 +381,14 @@ private fun UsageGuardAppsSection(state: UsageGuardSettingsRenderState) {
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text(app.getString(R.string.s_3bddb65762), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+                    Text(li.songe.gkd.sdp.app.getString(R.string.s_3bddb65762), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
                     Text(
-                        app.getString(R.string.s_a597b31e88),
+                        li.songe.gkd.sdp.app.getString(R.string.s_a597b31e88),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
-                TextButton(onClick = { showOverridePicker.value = true }) { Text(app.getString(R.string.s_3ab400ba10)) }
+                TextButton(onClick = { showOverridePicker.value = true }) { Text(li.songe.gkd.sdp.app.getString(R.string.s_3ab400ba10)) }
             }
             Spacer(modifier = Modifier.height(12.dp))
             IconAppFlow(
@@ -419,9 +418,9 @@ private fun UsageGuardHistorySection(state: UsageGuardSettingsRenderState) {
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text(app.getString(R.string.s_2cf75123ae), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+                Text(li.songe.gkd.sdp.app.getString(R.string.s_2cf75123ae), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
                 Text(
-                    app.getString(R.string.s_5a46f954cd, selectedDate.value.format(usageGuardDateFormatter)),
+                    li.songe.gkd.sdp.app.getString(R.string.s_5a46f954cd, selectedDate.value.format(usageGuardDateFormatter)),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -444,7 +443,7 @@ private fun UsageGuardHistorySection(state: UsageGuardSettingsRenderState) {
         }
         Spacer(modifier = Modifier.height(12.dp))
         if (history.isEmpty()) {
-            Text(app.getString(R.string.s_3e964b109c), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(li.songe.gkd.sdp.app.getString(R.string.s_3e964b109c), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         } else {
             history.forEachIndexed { index, record ->
                 HistoryRow(record = record, appName = appInfoMap[record.appId]?.name ?: record.appName)

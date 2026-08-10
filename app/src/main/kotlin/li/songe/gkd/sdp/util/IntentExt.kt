@@ -68,7 +68,7 @@ suspend fun MainActivity.saveFileToDownloads(file: File) {
         )
         targetFile.writeBytes(file.readBytes())
     }
-    toast(app.getString(R.string.s_9376a4238e, file.name))
+    toast(li.songe.gkd.sdp.app.getString(R.string.s_9376a4238e, file.name))
 }
 
 fun Context.tryStartActivity(intent: Intent): Boolean {
@@ -77,7 +77,7 @@ fun Context.tryStartActivity(intent: Intent): Boolean {
         return true
     } catch (e: Exception) {
         LogUtils.d("tryStartActivity", e)
-        toast(app.getString(R.string.s_475787d680, DiagnosticLogger.userMessage(e)))
+        toast(li.songe.gkd.sdp.app.getString(R.string.s_475787d680, DiagnosticLogger.userMessage(e)))
         return false
     }
 }
@@ -87,7 +87,7 @@ fun openWeChatScaner() {
         putExtra("LauncherUI.From.Scaner.Shortcut", true)
     }
     if (intent == null) {
-        toast(app.getString(R.string.s_60d171dc16))
+        toast(li.songe.gkd.sdp.app.getString(R.string.s_60d171dc16))
         return
     }
     app.tryStartActivity(intent)
@@ -115,7 +115,7 @@ fun openUri(uri: String) {
         uri.toUri()
     } catch (e: Exception) {
         LogUtils.d("invalid URI", e)
-        toast(app.getString(R.string.s_e7e0ffcd50))
+        toast(li.songe.gkd.sdp.app.getString(R.string.s_e7e0ffcd50))
         return
     }
     openUri(u)
@@ -133,7 +133,7 @@ fun openApp(appId: String) {
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         app.tryStartActivity(intent)
     } else {
-        toast(app.getString(R.string.s_a7e6272535))
+        toast(li.songe.gkd.sdp.app.getString(R.string.s_a7e6272535))
     }
 }
 
@@ -152,7 +152,7 @@ fun <T : Service> startForegroundServiceByClass(clazz: KClass<T>): Boolean {
     } catch (e: Throwable) {
         LogUtils.d(e)
         val prefix = if (isActivityVisible) "" else "${META.appName}: "
-        toast(app.getString(R.string.s_73e7e97c6d, prefix, DiagnosticLogger.userMessage(e)), forced = true)
+        toast(li.songe.gkd.sdp.app.getString(R.string.s_73e7e97c6d, prefix, DiagnosticLogger.userMessage(e)), forced = true)
         return false
     }
 }

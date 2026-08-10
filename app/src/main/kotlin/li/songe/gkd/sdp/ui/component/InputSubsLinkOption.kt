@@ -28,7 +28,6 @@ import li.songe.gkd.sdp.util.toast
 import kotlin.coroutines.resume
 import androidx.compose.ui.res.stringResource
 import li.songe.gkd.sdp.R
-import li.songe.gkd.sdp.app
 
 
 class InputSubsLinkOption {
@@ -50,23 +49,23 @@ class InputSubsLinkOption {
     private fun submit(authorizeCleartext: Boolean) {
         val value = valueFlow.value
         if (!URLUtil.isNetworkUrl(value)) {
-            toast(app.getString(R.string.s_e7e0ffcd50))
+            toast(li.songe.gkd.sdp.app.getString(R.string.s_e7e0ffcd50))
             return
         }
         val initValue = initValueFlow.value
         if (initValue.isNotEmpty() && initValue == value) {
-            toast(app.getString(R.string.s_fff8cc4d94))
+            toast(li.songe.gkd.sdp.app.getString(R.string.s_fff8cc4d94))
             resume(null)
             return
         }
         if (subsItemsFlow.value.any { it.updateUrl == value }) {
-            toast(app.getString(R.string.s_d41dda6f65))
+            toast(li.songe.gkd.sdp.app.getString(R.string.s_d41dda6f65))
             return
         }
         val cleartextOrigin = CleartextOriginPolicy.canonicalOrigin(value)
         if (cleartextOrigin != null && cleartextOrigin !in CleartextOriginAuthorizations.originsFlow.value) {
             if (!authorizeCleartext) {
-                toast(app.getString(R.string.s_34ba6b190f))
+                toast(li.songe.gkd.sdp.app.getString(R.string.s_34ba6b190f))
                 return
             }
             CleartextOriginAuthorizations.authorize(value)
@@ -126,7 +125,7 @@ class InputSubsLinkOption {
                                 .fillMaxWidth()
                                 .autoFocus(),
                             placeholder = {
-                                Text(text = app.getString(R.string.s_a00626547a))
+                                Text(text = li.songe.gkd.sdp.app.getString(R.string.s_a00626547a))
                             },
                             isError = value.isNotEmpty() && !URLUtil.isNetworkUrl(value),
                         )

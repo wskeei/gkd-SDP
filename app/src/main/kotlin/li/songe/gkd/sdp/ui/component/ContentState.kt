@@ -22,7 +22,6 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
 import li.songe.gkd.sdp.ui.style.DimensionTokens
 import androidx.compose.ui.res.stringResource
-import li.songe.gkd.sdp.R
 
 /**
  * The only page content states. Screens render through [ContentStateBox] so

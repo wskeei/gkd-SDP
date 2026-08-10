@@ -172,7 +172,6 @@ import kotlin.concurrent.Volatile
 import kotlin.reflect.jvm.jvmName
 import androidx.compose.ui.res.stringResource
 import li.songe.gkd.sdp.R
-import li.songe.gkd.sdp.app
 
 class MainActivity : ComponentActivity() {
     val startTime = System.currentTimeMillis()
@@ -246,7 +245,7 @@ class MainActivity : ComponentActivity() {
             type = contentType
         }).data?.data
         if (u == null) {
-            toast(app.getString(R.string.s_dbb4430dc0))
+            toast(li.songe.gkd.sdp.app.getString(R.string.s_dbb4430dc0))
         }
         return u
     }
@@ -384,7 +383,7 @@ class MainActivity : ComponentActivity() {
         if (META.isGkdChannel && storeFlow.value.accessibilityGuardEnabled &&
             !canDrawOverlaysState.updateAndGet()
         ) {
-            toast(app.getString(R.string.s_4a6c3f7937))
+            toast(li.songe.gkd.sdp.app.getString(R.string.s_4a6c3f7937))
         }
         if (topActivityFlow.value.appId != META.appId) {
             synchronized(topActivityFlow) {
@@ -545,7 +544,7 @@ fun AccessRestrictedSettingsDlg() {
     val isA11yPage = mainVm.topRoute is AuthA11yRoute
     LaunchedEffect(isA11yPage, accessRestrictedSettingsShow) {
         if (isA11yPage && accessRestrictedSettingsShow && !a11yRunning) {
-            toast(app.getString(R.string.s_a0995a1cf8))
+            toast(li.songe.gkd.sdp.app.getString(R.string.s_a0995a1cf8))
             accessRestrictedSettingsShowFlow.value = false
         }
     }

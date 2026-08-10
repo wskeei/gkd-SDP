@@ -42,13 +42,14 @@ CONCAT_BINARY = re.compile(r"^\s*([\"']?[^\"']*?)\s*\+\s*(.+)$", re.S)
 
 
 class Literal:
-    __slots__ = ("start", "end", "raw", "line")
+    __slots__ = ("start", "end", "raw", "line", "dollar_raw")
 
-    def __init__(self, start, end, raw, line):
+    def __init__(self, start, end, raw, line, dollar_raw=False):
         self.start = start
         self.end = end
         self.raw = raw
         self.line = line
+        self.dollar_raw = dollar_raw
 
     @property
     def is_template(self) -> bool:
@@ -113,6 +114,7 @@ def find_literals(text: str) -> list[Literal]:
             i += 1
             continue
         start = i
+        dollar_raw = i >= 2 and text[i - 2:i] == "$$"
         j = i + 1
         depth = 0
         while j < n:
@@ -130,7 +132,7 @@ def find_literals(text: str) -> list[Literal]:
                 continue
             if text[j] == '"':
                 break
-            if text[j] == "$" and j + 1 < n and text[j + 1] == "{":
+            if not dollar_raw and text[j] == "$" and j + 1 < n and text[j + 1] == "{":
                 depth = 1
                 j += 2
                 continue
@@ -138,7 +140,7 @@ def find_literals(text: str) -> list[Literal]:
         if j >= n:
             break
         raw = text[start + 1:j]
-        literals.append(Literal(start, j + 1, raw, line))
+        literals.append(Literal(start, j + 1, raw, line, dollar_raw=dollar_raw))
         i = j + 1
     return literals
 
@@ -679,28 +681,26 @@ def migrate_file(path: pathlib.Path, dry_run: bool = False) -> tuple[dict[str, s
                 wants_imports.add("androidx.compose.ui.res.stringResource")
             else:
                 if args:
-                    call = f"app.getString(R.string.{key}, {', '.join(args)})"
+                    call = f"li.songe.gkd.sdp.app.getString(R.string.{key}, {', '.join(args)})"
                 else:
-                    call = f"app.getString(R.string.{key})"
-                wants_imports.add("li.songe.gkd.sdp.app")
-            wants_imports.add("li.songe.gkd.sdp.R")
+                    call = f"li.songe.gkd.sdp.app.getString(R.string.{key})"
+                    wants_imports.add("li.songe.gkd.sdp.R")
             resources[key] = fmt
             segments.append((c_start, c_end, call))
             continue
         call_name, named_arg, idx = ctx
         key = key_for(lit.raw)
-        if lit.is_template:
+        if lit.is_template and not lit.dollar_raw:
             fmt, args = decode_template(lit.raw)
             use_composable = is_composable_context(masked, lit)
             if use_composable:
                 call = f"stringResource(R.string.{key}, {', '.join(args)})"
                 wants_imports.add("androidx.compose.ui.res.stringResource")
             else:
-                call = f"app.getString(R.string.{key}, {', '.join(args)})"
-                wants_imports.add("li.songe.gkd.sdp.app")
-            wants_imports.add("li.songe.gkd.sdp.R")
+                call = f"li.songe.gkd.sdp.app.getString(R.string.{key}, {', '.join(args)})"
+                wants_imports.add("li.songe.gkd.sdp.R")
             resources[key] = fmt
-            segments.append((lit.start, lit.end, call))
+            segments.append((lit.start - (2 if lit.dollar_raw else 0), lit.end, call))
             continue
         if call_name == "__named__":
             use_composable = is_composable_context(masked, lit)
@@ -708,9 +708,8 @@ def migrate_file(path: pathlib.Path, dry_run: bool = False) -> tuple[dict[str, s
                 call = f"stringResource(R.string.{key})"
                 wants_imports.add("androidx.compose.ui.res.stringResource")
             else:
-                call = f"app.getString(R.string.{key})"
-                wants_imports.add("li.songe.gkd.sdp.app")
-            wants_imports.add("li.songe.gkd.sdp.R")
+                call = f"li.songe.gkd.sdp.app.getString(R.string.{key})"
+                wants_imports.add("li.songe.gkd.sdp.R")
             resources[key] = lit.raw.replace("%", "%%").replace("\\n", "\n").replace("\\t", "\t").replace("\\\"", "\"")
             segments.append((lit.start, lit.end, call))
             continue
@@ -725,9 +724,8 @@ def migrate_file(path: pathlib.Path, dry_run: bool = False) -> tuple[dict[str, s
                     call = f"stringResource(R.string.{key}, {', '.join(args)})"
                     wants_imports.add("androidx.compose.ui.res.stringResource")
                 else:
-                    call = f"app.getString(R.string.{key}, {', '.join(args)})"
-                    wants_imports.add("li.songe.gkd.sdp.app")
-                wants_imports.add("li.songe.gkd.sdp.R")
+                    call = f"li.songe.gkd.sdp.app.getString(R.string.{key}, {', '.join(args)})"
+                    wants_imports.add("li.songe.gkd.sdp.R")
                 resources[key] = fmt
                 segments.append((lit.start, lit.end, call))
                 continue
@@ -736,11 +734,10 @@ def migrate_file(path: pathlib.Path, dry_run: bool = False) -> tuple[dict[str, s
             call = f"stringResource(R.string.{key})"
             wants_imports.add("androidx.compose.ui.res.stringResource")
         else:
-            call = f"app.getString(R.string.{key})"
-            wants_imports.add("li.songe.gkd.sdp.app")
-        wants_imports.add("li.songe.gkd.sdp.R")
+            call = f"li.songe.gkd.sdp.app.getString(R.string.{key})"
+            wants_imports.add("li.songe.gkd.sdp.R")
         resources[key] = lit.raw.replace("%", "%%").replace("\\n", "\n").replace("\\t", "\t").replace("\\\"", "\"")
-        segments.append((lit.start, lit.end, call))
+        segments.append((lit.start - (2 if lit.dollar_raw else 0), lit.end, call))
     for start, end, call in reversed(segments):
         text = text[:start] + call + text[end:]
     text = inject_imports(text, wants_imports)

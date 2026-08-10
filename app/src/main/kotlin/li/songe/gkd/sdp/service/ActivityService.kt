@@ -42,7 +42,6 @@ import li.songe.gkd.sdp.util.copyText
 import li.songe.gkd.sdp.util.startForegroundServiceByClass
 import li.songe.gkd.sdp.util.stopServiceByClass
 import li.songe.gkd.sdp.R
-import li.songe.gkd.sdp.app
 
 
 class ActivityService : OverlayWindowService(
@@ -68,7 +67,7 @@ class ActivityService : OverlayWindowService(
                 val topActivity by topActivityFlow.collectAsStateWithLifecycle()
                 val hasAuth by activityOkFlow.collectAsStateWithLifecycle()
                 ClosableTitle(
-                    title = if (hasAuth) app.getString(R.string.s_14b8a7bf3c) else app.getString(R.string.s_7a1cbaff45)
+                    title = if (hasAuth) li.songe.gkd.sdp.app.getString(R.string.s_14b8a7bf3c) else li.songe.gkd.sdp.app.getString(R.string.s_7a1cbaff45)
                 )
                 if (hasAuth) {
                     Box {
@@ -139,7 +138,7 @@ class ActivityService : OverlayWindowService(
 @Composable
 private fun RowText(text: String?, color: Color = Color.Unspecified) {
     Row {
-        Text(text = text ?: app.getString(R.string.s_2be88ca424), color = color, modifier = Modifier.weight(1f, false))
+        Text(text = text ?: li.songe.gkd.sdp.app.getString(R.string.s_2be88ca424), color = color, modifier = Modifier.weight(1f, false))
         if (text != null) {
             Spacer(modifier = Modifier.width(4.dp))
             PerfIcon(

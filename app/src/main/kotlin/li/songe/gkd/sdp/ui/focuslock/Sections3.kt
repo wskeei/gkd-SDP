@@ -23,7 +23,6 @@ import li.songe.gkd.sdp.ui.component.PerfIcon
 import li.songe.gkd.sdp.ui.style.surfaceCardColors
 import li.songe.gkd.sdp.util.format
 import androidx.compose.ui.res.stringResource
-import li.songe.gkd.sdp.R
 
 @Composable
 fun AutoReenableGuardCard(

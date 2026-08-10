@@ -29,7 +29,6 @@ import li.songe.gkd.sdp.ui.share.LocalMainViewModel
 import li.songe.gkd.sdp.ui.style.itemPadding
 import li.songe.gkd.sdp.ui.style.scaffoldPadding
 import li.songe.gkd.sdp.R
-import li.songe.gkd.sdp.app
 
 @Composable
 fun FocusLockPageSections() {
@@ -81,7 +80,7 @@ private fun FocusLockPageScaffold(
                         onClick = { mainVm.popPage() },
                     )
                 },
-                title = { Text(text = app.getString(R.string.s_6337015d1f)) },
+                title = { Text(text = li.songe.gkd.sdp.app.getString(R.string.s_6337015d1f)) },
             )
         },
     ) { padding ->
@@ -157,7 +156,7 @@ private fun FocusLockPageScaffold(
             if (subStates.isEmpty()) {
                 item {
                     Text(
-                        text = app.getString(R.string.s_86539a3eb0),
+                        text = li.songe.gkd.sdp.app.getString(R.string.s_86539a3eb0),
                         style = MaterialTheme.typography.bodyMedium,
                         modifier = Modifier.itemPadding(),
                     )

@@ -19,7 +19,6 @@ import li.songe.gkd.sdp.util.LogUtils
 import li.songe.gkd.sdp.util.toast
 import kotlin.random.Random
 import li.songe.gkd.sdp.R
-import li.songe.gkd.sdp.app
 
 data class FetchState(
     val isFetching: Boolean = false,
@@ -70,7 +69,7 @@ object WechatContactFetcher {
         }
         
         if (target != null) {
-            toast(app.getString(R.string.s_0cc07c757c, target))
+            toast(li.songe.gkd.sdp.app.getString(R.string.s_0cc07c757c, target))
         }
         if (text != null && (text.contains("失败") || text.contains("完成") || text.contains("停止"))) {
             toast(text)
@@ -79,13 +78,13 @@ object WechatContactFetcher {
 
     fun startFetch(accessibilityService: AccessibilityService) {
         if (isFetching) {
-            toast(app.getString(R.string.s_c136c74156))
+            toast(li.songe.gkd.sdp.app.getString(R.string.s_c136c74156))
             return
         }
 
         service = accessibilityService
         isFetching = true
-        updateStatus(text = app.getString(R.string.s_fdfd732b8c), count = 0, fetching = true)
+        updateStatus(text = li.songe.gkd.sdp.app.getString(R.string.s_fdfd732b8c), count = 0, fetching = true)
         
         fetchedContacts.clear()
         fetchCount = 0
@@ -105,7 +104,7 @@ object WechatContactFetcher {
 
         appScope.launch(Dispatchers.IO) {
             try {
-                toast(app.getString(R.string.s_439ce2d1bb))
+                toast(li.songe.gkd.sdp.app.getString(R.string.s_439ce2d1bb))
                 updateStatus("等待进入微信通讯录...")
 
                 // 等待用户打开通讯录
@@ -114,7 +113,7 @@ object WechatContactFetcher {
                 fetchContactsFromCurrentScreen()
             } catch (err: Exception) {
                 LogUtils.d("contact fetch failed", err)
-                toast(app.getString(R.string.s_81cf2f474d, DiagnosticLogger.userMessage(err)))
+                toast(li.songe.gkd.sdp.app.getString(R.string.s_81cf2f474d, DiagnosticLogger.userMessage(err)))
             } finally {
                 finishFetch()
             }
@@ -617,10 +616,10 @@ object WechatContactFetcher {
             if (text.isEmpty()) continue
             
             // 排除系统关键词
-            if (text == app.getString(R.string.s_11d0241540) || text == app.getString(R.string.s_9b0c6c7858) || text == app.getString(R.string.s_30a9fec1a4) || text == app.getString(R.string.s_bf45558407)) continue
+            if (text == li.songe.gkd.sdp.app.getString(R.string.s_11d0241540) || text == li.songe.gkd.sdp.app.getString(R.string.s_9b0c6c7858) || text == li.songe.gkd.sdp.app.getString(R.string.s_30a9fec1a4) || text == li.songe.gkd.sdp.app.getString(R.string.s_bf45558407)) continue
             if (text.startsWith("微信号")) continue
             if (text.startsWith("地区")) continue
-            if (text == app.getString(R.string.s_78345bb06c) || text == app.getString(R.string.s_5a88ff5da1)) continue
+            if (text == li.songe.gkd.sdp.app.getString(R.string.s_78345bb06c) || text == li.songe.gkd.sdp.app.getString(R.string.s_5a88ff5da1)) continue
             
             // 排除长文本 (功能描述)
             if (text.length > 40) continue 
@@ -675,10 +674,10 @@ object WechatContactFetcher {
         if (fetchedContacts.isNotEmpty()) {
             // 保存到数据库
             DbSet.wechatContactDao.insertAll(fetchedContacts)
-            toast(app.getString(R.string.s_375b87905f, fetchedContacts.size))
+            toast(li.songe.gkd.sdp.app.getString(R.string.s_375b87905f, fetchedContacts.size))
             updateStatus("抓取完成：${fetchedContacts.size} 个联系人")
         } else {
-            toast(app.getString(R.string.s_464d02f662))
+            toast(li.songe.gkd.sdp.app.getString(R.string.s_464d02f662))
             updateStatus("未抓取到联系人")
         }
 
@@ -695,11 +694,11 @@ object WechatContactFetcher {
 
     fun stopFetch() {
         isFetching = false
-        updateStatus(text = app.getString(R.string.s_a759881bbf), fetching = false)
+        updateStatus(text = li.songe.gkd.sdp.app.getString(R.string.s_a759881bbf), fetching = false)
         FetchOverlayController.hide()
         collectJob?.cancel()
         collectJob = null
         service = null
-        toast(app.getString(R.string.s_a759881bbf))
+        toast(li.songe.gkd.sdp.app.getString(R.string.s_a759881bbf))
     }
 }

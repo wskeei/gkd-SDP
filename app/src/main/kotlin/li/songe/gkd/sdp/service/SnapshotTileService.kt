@@ -11,7 +11,6 @@ import li.songe.gkd.sdp.util.SnapshotExt
 import li.songe.gkd.sdp.util.launchTry
 import li.songe.gkd.sdp.util.toast
 import li.songe.gkd.sdp.R
-import li.songe.gkd.sdp.app
 
 class SnapshotTileService() : BaseTileService() {
     override val activeFlow = MutableStateFlow(false)
@@ -26,7 +25,7 @@ private fun execSnapshot() {
     val service = A11yRuleEngine.instance
     if (service == null) {
         A11yRuleEngine.performActionBack()
-        toast(app.getString(R.string.s_035bb01220), forced = true)
+        toast(li.songe.gkd.sdp.app.getString(R.string.s_035bb01220), forced = true)
         return
     }
     appScope.launchTry(Dispatchers.IO) {
@@ -34,7 +33,7 @@ private fun execSnapshot() {
 
         if (oldAppId == null) {
             A11yRuleEngine.performActionBack()
-            toast(app.getString(R.string.s_1acf004269), forced = true)
+            toast(li.songe.gkd.sdp.app.getString(R.string.s_1acf004269), forced = true)
             return@launchTry
         }
 
@@ -50,7 +49,7 @@ private fun execSnapshot() {
                 // https://github.com/gkd-kit/gkd/issues/713
                 delay(250)
                 if (timeout()) {
-                    toast(app.getString(R.string.s_b4450d038a), forced = true)
+                    toast(li.songe.gkd.sdp.app.getString(R.string.s_b4450d038a), forced = true)
                     break
                 }
             } else if (latestAppId != oldAppId) {
@@ -62,7 +61,7 @@ private fun execSnapshot() {
                 A11yRuleEngine.performActionBack()
                 delay(500)
                 if (timeout()) {
-                    toast(app.getString(R.string.s_c6d8dd919b), forced = true)
+                    toast(li.songe.gkd.sdp.app.getString(R.string.s_c6d8dd919b), forced = true)
                     break
                 }
             }

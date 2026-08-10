@@ -21,7 +21,6 @@ import androidx.compose.ui.unit.dp
 import li.songe.gkd.sdp.ui.style.DimensionTokens
 import androidx.compose.ui.res.stringResource
 import li.songe.gkd.sdp.R
-import li.songe.gkd.sdp.app
 
 object FullDeletionPolicy {
     /** Exact phrase required to confirm a full data wipe. */
@@ -77,7 +76,7 @@ fun AppConfirmationDialog(
                         errorText = if (phraseConfirmed || phraseInput.isBlank()) {
                             null
                         } else {
-                            app.getString(R.string.s_89c340d11d)
+                            li.songe.gkd.sdp.app.getString(R.string.s_89c340d11d)
                         },
                     )
                 }

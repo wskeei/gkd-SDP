@@ -31,7 +31,6 @@ import androidx.compose.ui.unit.dp
 import li.songe.gkd.sdp.util.appInfoMapFlow
 import androidx.compose.ui.res.stringResource
 import li.songe.gkd.sdp.R
-import li.songe.gkd.sdp.app
 
 @Composable
 fun AppPickerDialog(
@@ -79,7 +78,7 @@ fun AppPickerDialog(
                     value = searchQuery,
                     onValueChange = { searchQuery = it },
                     label = { Text(stringResource(R.string.s_897fdfef89)) },
-                    placeholder = { Text(app.getString(R.string.s_e1dfdd0c28)) },
+                    placeholder = { Text(li.songe.gkd.sdp.app.getString(R.string.s_e1dfdd0c28)) },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
                     leadingIcon = {
@@ -177,7 +176,7 @@ fun AppPickerDialog(
                                     )
                                     if (appInfo.isSystem) {
                                         Text(
-                                            text = app.getString(R.string.s_a4be5dfa64),
+                                            text = li.songe.gkd.sdp.app.getString(R.string.s_a4be5dfa64),
                                             style = MaterialTheme.typography.bodySmall,
                                             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
                                         )

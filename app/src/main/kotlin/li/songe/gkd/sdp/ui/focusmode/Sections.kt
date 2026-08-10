@@ -78,13 +78,13 @@ fun FocusModePageSections() {
                         onClick = { mainVm.popPage() },
                     )
                 },
-                title = { Text(text = app.getString(R.string.s_63c1371c03)) },
+                title = { Text(text = li.songe.gkd.sdp.app.getString(R.string.s_63c1371c03)) },
                 actions = {
                     IconButton(onClick = {
                         vm.resetRuleForm()
                         showRuleEditorSheet = true
                     }) {
-                        Icon(PerfIcon.Add, contentDescription = app.getString(R.string.s_d2fc32282a))
+                        Icon(PerfIcon.Add, contentDescription = li.songe.gkd.sdp.app.getString(R.string.s_d2fc32282a))
                     }
                 }
             )
@@ -147,12 +147,12 @@ private fun FocusModeRulesList(
         }
         if (!isActive) {
             item(key = "quick_start") {
-                Button(onClick = onQuickStart, modifier = Modifier.fillMaxWidth().itemPadding()) { Text(app.getString(R.string.s_eb4f824680)) }
+                Button(onClick = onQuickStart, modifier = Modifier.fillMaxWidth().itemPadding()) { Text(li.songe.gkd.sdp.app.getString(R.string.s_eb4f824680)) }
                 Spacer(modifier = Modifier.height(16.dp))
             }
         }
         item(key = "quick_rules_header") {
-            Text(app.getString(R.string.s_fa25aa2cc7), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, modifier = Modifier.itemPadding())
+            Text(li.songe.gkd.sdp.app.getString(R.string.s_fa25aa2cc7), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, modifier = Modifier.itemPadding())
             Spacer(modifier = Modifier.height(8.dp))
         }
         FocusModeRuleItems(
@@ -163,7 +163,7 @@ private fun FocusModeRulesList(
             onLock = onLock,
         )
         item(key = "scheduled_rules_header") {
-            Text(app.getString(R.string.s_a497f76289), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, modifier = Modifier.itemPadding())
+            Text(li.songe.gkd.sdp.app.getString(R.string.s_a497f76289), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, modifier = Modifier.itemPadding())
             Spacer(modifier = Modifier.height(8.dp))
         }
         FocusModeRuleItems(

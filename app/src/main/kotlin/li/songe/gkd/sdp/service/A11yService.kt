@@ -31,7 +31,6 @@ import li.songe.gkd.sdp.util.runMainPost
 import li.songe.gkd.sdp.util.toast
 import kotlin.coroutines.resume
 import li.songe.gkd.sdp.R
-import li.songe.gkd.sdp.app
 
 @SuppressLint("AccessibilityPolicy")
 abstract class A11yService : AccessibilityService(), OnA11yLife by DefaultA11yLifeImpl(),
@@ -117,15 +116,15 @@ abstract class A11yService : AccessibilityService(), OnA11yLife by DefaultA11yLi
                 AccessibilityGuardRuntime.clearTemporaryShutdownExpected()
                 updateEnableAutomator(true)
             } else {
-                toast(app.getString(R.string.s_c5fd22b186), forced = true)
+                toast(li.songe.gkd.sdp.app.getString(R.string.s_c5fd22b186), forced = true)
                 runMainPost(1) { shutdown(true) }
             }
         }
         onDestroyed {
             if (tempShutdownFlag) {
-                toast(app.getString(R.string.s_6b683e741b))
+                toast(li.songe.gkd.sdp.app.getString(R.string.s_6b683e741b))
             } else {
-                toast(app.getString(R.string.s_a6fa6ad6cb))
+                toast(li.songe.gkd.sdp.app.getString(R.string.s_a6fa6ad6cb))
                 updateEnableAutomator(false)
             }
         }
@@ -145,7 +144,7 @@ abstract class A11yService : AccessibilityService(), OnA11yLife by DefaultA11yLi
         onDestroyed { ruleEngine.onA11yDisconnected() }
         onA11yConnected {
             connected = true
-            toast(app.getString(R.string.s_c0e820383d))
+            toast(li.songe.gkd.sdp.app.getString(R.string.s_c0e820383d))
             if (currentAppUseA11y) {
                 AccessibilityGuardRuntime.clearTemporaryShutdownExpected()
                 ruleEngine.onA11yConnected()
@@ -154,7 +153,7 @@ abstract class A11yService : AccessibilityService(), OnA11yLife by DefaultA11yLi
         onCreated {
             runMainPost(3000) {
                 if (!(destroyed || connected)) {
-                    toast(app.getString(R.string.s_4fd3d72b67), forced = true)
+                    toast(li.songe.gkd.sdp.app.getString(R.string.s_4fd3d72b67), forced = true)
                 }
             }
         }
@@ -201,7 +200,7 @@ private fun A11yService.useAliveOverlayView() {
         } catch (e: Throwable) {
             aliveView = null
             LogUtils.d(e)
-            toast(app.getString(R.string.s_1d51cdc0f2))
+            toast(li.songe.gkd.sdp.app.getString(R.string.s_1d51cdc0f2))
         }
     }
     onA11yConnected { addA11View() }

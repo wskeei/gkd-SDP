@@ -54,7 +54,6 @@ import li.songe.gkd.sdp.util.SelfControlElapsedPolicy
 import li.songe.gkd.sdp.util.SelfControlInsightWindowPolicy
 import li.songe.gkd.sdp.util.AppBlockerDecisionPolicy
 import androidx.compose.ui.res.stringResource
-import li.songe.gkd.sdp.R
 
 class AppBlockerOverlayService : LifecycleService(), SavedStateRegistryOwner {
 

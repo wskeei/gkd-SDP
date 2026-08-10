@@ -17,7 +17,6 @@ import androidx.compose.ui.unit.dp
 import li.songe.gkd.sdp.ui.style.DimensionTokens
 import li.songe.gkd.sdp.ui.style.ResponsiveTokens
 import androidx.compose.ui.res.stringResource
-import li.songe.gkd.sdp.R
 
 object AppActionBarPolicy {
     /** Compact windows anchor the bar to the screen bottom. */

@@ -29,7 +29,6 @@ import li.songe.gkd.sdp.data.UrlBlockRule
 import li.songe.gkd.sdp.data.UrlRuleGroup
 import androidx.compose.ui.res.stringResource
 import li.songe.gkd.sdp.R
-import li.songe.gkd.sdp.app
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -56,7 +55,7 @@ fun UrlGroupEditorSheet(
                 value = vm.groupName,
                 onValueChange = { vm.groupName = it },
                 label = { Text(stringResource(R.string.s_8b779bd414)) },
-                placeholder = { Text(app.getString(R.string.s_62a6243ff9)) },
+                placeholder = { Text(li.songe.gkd.sdp.app.getString(R.string.s_62a6243ff9)) },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
                 enabled = !isLocked,
@@ -66,7 +65,7 @@ fun UrlGroupEditorSheet(
                 value = vm.groupQuickUrls,
                 onValueChange = { vm.groupQuickUrls = it },
                 label = { Text(stringResource(R.string.s_beea7e4cae)) },
-                placeholder = { Text(app.getString(R.string.s_115793186c)) },
+                placeholder = { Text(li.songe.gkd.sdp.app.getString(R.string.s_115793186c)) },
                 modifier = Modifier.fillMaxWidth(),
                 minLines = 3,
                 maxLines = 5,
@@ -83,7 +82,7 @@ fun UrlGroupEditorSheet(
                         containerColor = MaterialTheme.colorScheme.secondaryContainer,
                         contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
                     ),
-                ) { Text(app.getString(R.string.s_f526c89937)) }
+                ) { Text(li.songe.gkd.sdp.app.getString(R.string.s_f526c89937)) }
             }
             Spacer(modifier = Modifier.height(16.dp))
         }
@@ -128,7 +127,7 @@ private fun UrlRuleIdentityFields(vm: UrlBlockVm, isLocked: Boolean) {
         value = vm.urlPattern,
         onValueChange = { vm.urlPattern = it },
         label = { Text(stringResource(R.string.s_86629471c3)) },
-        placeholder = { Text(app.getString(R.string.s_29aa760a1e)) },
+        placeholder = { Text(li.songe.gkd.sdp.app.getString(R.string.s_29aa760a1e)) },
         modifier = Modifier.fillMaxWidth(),
         singleLine = true,
         enabled = !isLocked,
@@ -144,7 +143,7 @@ private fun UrlRuleIdentityFields(vm: UrlBlockVm, isLocked: Boolean) {
         value = vm.urlName,
         onValueChange = { vm.urlName = it },
         label = { Text(stringResource(R.string.s_5f519ca1d8)) },
-        placeholder = { Text(app.getString(R.string.s_f4fb517c9c)) },
+        placeholder = { Text(li.songe.gkd.sdp.app.getString(R.string.s_f4fb517c9c)) },
         modifier = Modifier.fillMaxWidth(),
         singleLine = true,
         enabled = !isLocked,
@@ -247,7 +246,7 @@ private fun UrlRuleTimeFields(vm: UrlBlockVm, isLocked: Boolean) {
                 onClick = {
                     vm.timeRuleDaysOfWeek = if (currentDays.contains(day)) currentDays - day else (currentDays + day).sorted()
                 },
-                label = { Text(app.getString(R.string.s_a94243a9c8, dayNames[day - 1])) },
+                label = { Text(li.songe.gkd.sdp.app.getString(R.string.s_a94243a9c8, dayNames[day - 1])) },
                 enabled = !isLocked,
             )
         }
@@ -267,7 +266,7 @@ private fun UrlRuleSaveButton(isLocked: Boolean, onDismiss: () -> Unit, onSave: 
                 containerColor = MaterialTheme.colorScheme.secondaryContainer,
                 contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
             ),
-        ) { Text(app.getString(R.string.s_f526c89937)) }
+        ) { Text(li.songe.gkd.sdp.app.getString(R.string.s_f526c89937)) }
     }
     Spacer(modifier = Modifier.height(16.dp))
 }

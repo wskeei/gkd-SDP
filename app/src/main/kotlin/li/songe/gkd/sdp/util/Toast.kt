@@ -194,7 +194,7 @@ private fun showA11yToast(message: CharSequence) {
 
 fun copyText(text: String) {
     app.clipboardManager.setPrimaryClip(ClipData.newPlainText(app.packageName, text))
-    toast(app.getString(R.string.s_c1ef062e06))
+    toast(li.songe.gkd.sdp.app.getString(R.string.s_c1ef062e06))
 }
 
 fun initToast() {

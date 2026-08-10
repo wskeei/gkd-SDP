@@ -58,7 +58,7 @@ private suspend fun enableOrRepairA11yService() {
     if (A11yService.isRunning.value) return
     if (!writeSecureSettingsState.updateAndGet()) {
         if (!writeSecureSettingsState.value) {
-            toast(app.getString(R.string.s_c54815f2f8))
+            toast(li.songe.gkd.sdp.app.getString(R.string.s_c54815f2f8))
             return
         }
     }
@@ -74,7 +74,7 @@ private suspend fun enableOrRepairA11yService() {
     delay(A11Y_AWAIT_START_TIME)
     // https://github.com/orgs/gkd-kit/discussions/799
     if (!A11yService.isRunning.value) {
-        toast(app.getString(R.string.s_f744422fe2))
+        toast(li.songe.gkd.sdp.app.getString(R.string.s_f744422fe2))
         accessRestrictedSettingsShowFlow.value = true
     }
 }
@@ -143,7 +143,7 @@ private suspend fun fixA11yService() {
         app.putSecureA11yServices(names)
         delay(A11Y_AWAIT_START_TIME)
         if (currentAppUseA11y && !A11yService.isRunning.value) {
-            toast(app.getString(R.string.s_96c7288776))
+            toast(li.songe.gkd.sdp.app.getString(R.string.s_96c7288776))
             accessRestrictedSettingsShowFlow.value = true
         }
     }

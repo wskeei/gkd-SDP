@@ -56,7 +56,6 @@ import li.songe.gkd.sdp.util.AppSortOption
 import li.songe.gkd.sdp.util.LOCAL_SUBS_IDS
 import li.songe.gkd.sdp.util.launchAsFn
 import li.songe.gkd.sdp.util.throttle
-import li.songe.gkd.sdp.app
 
 
 @Serializable
@@ -112,7 +111,7 @@ fun SubsAppListPage(route: SubsAppListRoute) {
                 } else {
                     TowLineText(
                         title = useSubs(subsItemId)?.name ?: subsItemId.toString(),
-                        subtitle = app.getString(R.string.s_da6a6dc1af),
+                        subtitle = li.songe.gkd.sdp.app.getString(R.string.s_da6a6dc1af),
                         modifier = Modifier.noRippleClickable {
                             vm.resetKey.intValue++
                         }
@@ -144,7 +143,7 @@ fun SubsAppListPage(route: SubsAppListRoute) {
                     modifier = Modifier.wrapContentSize(Alignment.TopStart)
                 ) {
                     DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-                        MenuGroupCard(inTop = true, title = app.getString(R.string.s_dc35af8d69)) {
+                        MenuGroupCard(inTop = true, title = li.songe.gkd.sdp.app.getString(R.string.s_dc35af8d69)) {
                             var sortType by vm.sortTypeFlow.asMutableState()
                             AppSortOption.objects.forEach { option ->
                                 MenuItemRadioButton(
@@ -154,7 +153,7 @@ fun SubsAppListPage(route: SubsAppListRoute) {
                                 )
                             }
                         }
-                        MenuGroupCard(title = app.getString(R.string.s_97d8a6c05b)) {
+                        MenuGroupCard(title = li.songe.gkd.sdp.app.getString(R.string.s_97d8a6c05b)) {
                             var appGroupType by vm.appGroupTypeFlow.asMutableState()
                             AppGroupOption.allObjects.forEach { option ->
                                 val newValue = option.invert(appGroupType)
@@ -166,9 +165,9 @@ fun SubsAppListPage(route: SubsAppListRoute) {
                                 )
                             }
                         }
-                        MenuGroupCard(title = app.getString(R.string.s_dcce9a144a)) {
+                        MenuGroupCard(title = li.songe.gkd.sdp.app.getString(R.string.s_dcce9a144a)) {
                             MenuItemCheckbox(
-                                text = app.getString(R.string.s_8f74cd015b),
+                                text = li.songe.gkd.sdp.app.getString(R.string.s_8f74cd015b),
                                 stateFlow = vm.showBlockAppFlow,
                             )
                         }
@@ -228,9 +227,9 @@ fun SubsAppListPage(route: SubsAppListRoute) {
                 if (appTripleList.isEmpty() && !firstLoading) {
                     EmptyText(
                         text = if (searchStr.isNotEmpty()) {
-                            if (vm.showAllAppFlow.collectAsStateWithLifecycle().value) app.getString(R.string.s_8f8274c754) else app.getString(R.string.s_9e7d3ee61c)
+                            if (vm.showAllAppFlow.collectAsStateWithLifecycle().value) li.songe.gkd.sdp.app.getString(R.string.s_8f8274c754) else li.songe.gkd.sdp.app.getString(R.string.s_9e7d3ee61c)
                         } else {
-                            app.getString(R.string.s_cff584d9ab)
+                            li.songe.gkd.sdp.app.getString(R.string.s_cff584d9ab)
                         }
                     )
                     Spacer(modifier = Modifier.height(EmptyHeight / 2))

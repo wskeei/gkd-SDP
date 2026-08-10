@@ -34,7 +34,6 @@ import java.text.SimpleDateFormat
 import java.util.*
 import androidx.compose.ui.res.stringResource
 import li.songe.gkd.sdp.R
-import li.songe.gkd.sdp.app
 
 @Serializable
 data object AppInstallMonitorRoute : NavKey
@@ -56,18 +55,18 @@ fun AppInstallMonitorPage() {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(app.getString(R.string.s_c27031c740)) },
+                title = { Text(li.songe.gkd.sdp.app.getString(R.string.s_c27031c740)) },
                 navigationIcon = {
                     IconButton(onClick = { mainVm.popPage() }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = app.getString(R.string.s_11d0241540))
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = li.songe.gkd.sdp.app.getString(R.string.s_11d0241540))
                     }
                 },
                 actions = {
                     IconButton(onClick = { vm.exportToCsv() }) {
-                        Icon(Icons.Default.Share, contentDescription = app.getString(R.string.s_188896795f))
+                        Icon(Icons.Default.Share, contentDescription = li.songe.gkd.sdp.app.getString(R.string.s_188896795f))
                     }
                     IconButton(onClick = { showAddDialog = true }) {
-                        Icon(Icons.Default.Add, contentDescription = app.getString(R.string.s_ed773d5b65))
+                        Icon(Icons.Default.Add, contentDescription = li.songe.gkd.sdp.app.getString(R.string.s_ed773d5b65))
                     }
                 }
             )
@@ -83,7 +82,7 @@ fun AppInstallMonitorPage() {
             // 热力图区域
             item {
                 Text(
-                    app.getString(R.string.s_7e8190abeb),
+                    li.songe.gkd.sdp.app.getString(R.string.s_7e8190abeb),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )
@@ -113,20 +112,20 @@ fun AppInstallMonitorPage() {
                                 modifier = Modifier.fillMaxWidth()
                             ) {
                                 Text(
-                                    app.getString(R.string.s_867057108e, selectedDate),
+                                    li.songe.gkd.sdp.app.getString(R.string.s_867057108e, selectedDate),
                                     style = MaterialTheme.typography.titleSmall,
                                     fontWeight = FontWeight.Bold,
                                     modifier = Modifier.weight(1f)
                                 )
                                 TextButton(onClick = { selectedDate = null }) {
-                                    Text(app.getString(R.string.s_6c14bd7f6f))
+                                    Text(li.songe.gkd.sdp.app.getString(R.string.s_6c14bd7f6f))
                                 }
                             }
                             
                             Spacer(modifier = Modifier.height(8.dp))
                             
                             if (presentApps.isEmpty()) {
-                                Text(app.getString(R.string.s_0bdb9d76df))
+                                Text(li.songe.gkd.sdp.app.getString(R.string.s_0bdb9d76df))
                             } else {
                                 presentApps.forEach { app ->
                                     Row(
@@ -151,7 +150,7 @@ fun AppInstallMonitorPage() {
                                             )
                                             val installWaitDays = (System.currentTimeMillis() - app.installTime) / (1000 * 60 * 60 * 24)
                                             Text(
-                                                app.getString(R.string.s_ca924a6012, formatTime(app.installTime), installWaitDays),
+                                                li.songe.gkd.sdp.app.getString(R.string.s_ca924a6012, formatTime(app.installTime), installWaitDays),
                                                 style = MaterialTheme.typography.bodySmall,
                                                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                                             )
@@ -159,7 +158,7 @@ fun AppInstallMonitorPage() {
                                                 val uninstallDate = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()).format(Date(app.uninstallTime))
                                                 val durationDays = (app.uninstallTime - app.installTime) / (1000 * 60 * 60 * 24)
                                                 Text(
-                                                    app.getString(R.string.s_6eaf52dd96, uninstallDate, durationDays),
+                                                    li.songe.gkd.sdp.app.getString(R.string.s_6eaf52dd96, uninstallDate, durationDays),
                                                     style = MaterialTheme.typography.bodySmall,
                                                     color = MaterialTheme.colorScheme.error.copy(alpha = 0.8f)
                                                 )
@@ -168,7 +167,7 @@ fun AppInstallMonitorPage() {
                                         
                                         // 是否现在仍存在
                                         Text(
-                                            if (app.isStillInstalledNow) app.getString(R.string.s_9dd4b09b8d) else app.getString(R.string.s_2ad07a9506),
+                                            if (app.isStillInstalledNow) li.songe.gkd.sdp.app.getString(R.string.s_9dd4b09b8d) else li.songe.gkd.sdp.app.getString(R.string.s_2ad07a9506),
                                             style = MaterialTheme.typography.bodySmall,
                                             color = if (app.isStillInstalledNow) Color(0xFF4CAF50) else Color(0xFFF44336)
                                         )
@@ -188,13 +187,13 @@ fun AppInstallMonitorPage() {
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Text(
-                        app.getString(R.string.s_a837990204),
+                        li.songe.gkd.sdp.app.getString(R.string.s_a837990204),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold
                     )
                     Icon(
                         if (vm.isListExpanded) Icons.Filled.KeyboardArrowUp else Icons.Filled.KeyboardArrowDown,
-                        contentDescription = app.getString(R.string.s_f9c5942b1f)
+                        contentDescription = li.songe.gkd.sdp.app.getString(R.string.s_f9c5942b1f)
                     )
                 }
             }
@@ -223,7 +222,7 @@ fun AppInstallMonitorPage() {
                                 )
                                 if (app.isCurrentlyInstalled) {
                                     Text(
-                                        app.getString(R.string.s_0b97786e44),
+                                        li.songe.gkd.sdp.app.getString(R.string.s_0b97786e44),
                                         style = MaterialTheme.typography.bodySmall,
                                         color = MaterialTheme.colorScheme.error
                                     )
@@ -238,7 +237,7 @@ fun AppInstallMonitorPage() {
                             IconButton(onClick = { vm.deleteMonitoredApp(app) }) {
                                 Icon(
                                     Icons.Default.Delete,
-                                    contentDescription = app.getString(R.string.s_3755f56f2f),
+                                    contentDescription = li.songe.gkd.sdp.app.getString(R.string.s_3755f56f2f),
                                     tint = MaterialTheme.colorScheme.error
                                 )
                             }
@@ -370,12 +369,12 @@ private fun AddMonitoredAppDialog(
                     Tab(
                         selected = selectedTab == 0,
                         onClick = { selectedTab = 0 },
-                        text = { Text(app.getString(R.string.s_081a44d5f5)) }
+                        text = { Text(li.songe.gkd.sdp.app.getString(R.string.s_081a44d5f5)) }
                     )
                     Tab(
                         selected = selectedTab == 1,
                         onClick = { selectedTab = 1 },
-                        text = { Text(app.getString(R.string.s_58dc64c81a)) }
+                        text = { Text(li.songe.gkd.sdp.app.getString(R.string.s_58dc64c81a)) }
                     )
                 }
             }
@@ -388,7 +387,7 @@ private fun AddMonitoredAppDialog(
                         value = searchKeyword,
                         onValueChange = { vm.searchKeyword.value = it },
                         modifier = Modifier.fillMaxWidth(),
-                        placeholder = { Text(app.getString(R.string.s_5a73d0b9c6)) },
+                        placeholder = { Text(li.songe.gkd.sdp.app.getString(R.string.s_5a73d0b9c6)) },
                         leadingIcon = { Icon(androidx.compose.material.icons.Icons.Default.Search, null) },
                         singleLine = true
                     )
@@ -440,7 +439,7 @@ private fun AddMonitoredAppDialog(
                                     }
                                     
                                     if (isAdded) {
-                                        Text(app.getString(R.string.s_57828673c0), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
+                                        Text(li.songe.gkd.sdp.app.getString(R.string.s_57828673c0), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
                                     }
                                 }
                             }
@@ -454,7 +453,7 @@ private fun AddMonitoredAppDialog(
                         value = inputPackageName,
                         onValueChange = { inputPackageName = it },
                         label = { Text(stringResource(R.string.s_03c2d07a24)) },
-                        placeholder = { Text(app.getString(R.string.s_a003f1da17)) },
+                        placeholder = { Text(li.songe.gkd.sdp.app.getString(R.string.s_a003f1da17)) },
                         modifier = Modifier.fillMaxWidth()
                     )
                     Spacer(modifier = Modifier.height(8.dp))
@@ -462,7 +461,7 @@ private fun AddMonitoredAppDialog(
                         value = inputDisplayName,
                         onValueChange = { inputDisplayName = it },
                         label = { Text(stringResource(R.string.s_75ae6a8a7d)) },
-                        placeholder = { Text(app.getString(R.string.s_6c19fe0177)) },
+                        placeholder = { Text(li.songe.gkd.sdp.app.getString(R.string.s_6c19fe0177)) },
                         modifier = Modifier.fillMaxWidth()
                     )
                 }

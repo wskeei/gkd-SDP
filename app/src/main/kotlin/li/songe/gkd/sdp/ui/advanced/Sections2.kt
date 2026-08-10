@@ -59,7 +59,6 @@ import li.songe.gkd.sdp.util.launchAsFn
 import li.songe.gkd.sdp.util.throttle
 import li.songe.gkd.sdp.util.toast
 import androidx.compose.ui.res.stringResource
-import li.songe.gkd.sdp.app
 
 internal fun remoteScopeLabel(scope: RemoteScope): String = when (scope) {
     RemoteScope.SERVER_INFO -> "服务信息"
@@ -89,7 +88,7 @@ internal fun AdvancedPageContent(
             PerfTopAppBar(
                 scrollBehavior = scrollBehavior,
                 navigationIcon = { PerfIconButton(imageVector = PerfIcon.ArrowBack, onClick = mainVm::popPage) },
-                title = { Text(app.getString(R.string.s_dd07e641ca)) },
+                title = { Text(li.songe.gkd.sdp.app.getString(R.string.s_dd07e641ca)) },
             )
         },
     ) { contentPadding ->
@@ -167,10 +166,10 @@ private fun AdvancedHttpSection(
             PerfCustomIconButton(
                 size = 32.dp,
                 iconSize = 20.dp,
-                onClickLabel = app.getString(R.string.s_66b10cf5e5),
+                onClickLabel = li.songe.gkd.sdp.app.getString(R.string.s_66b10cf5e5),
                 onClick = { showHttpSettingDlg.value = !showHttpSettingDlg.value },
                 id = R.drawable.ic_page_info,
-                contentDescription = app.getString(R.string.s_c5f42f5a0f),
+                contentDescription = li.songe.gkd.sdp.app.getString(R.string.s_c5f42f5a0f),
                 tint = if (showHttpSettingDlg.value) MaterialTheme.colorScheme.primary else LocalContentColor.current,
             )
         },
@@ -211,8 +210,8 @@ private fun AdvancedHttpRunningContent(
                     "监听范围：局域网｜剩余 $remainingMinutes 分钟"
                 },
             )
-            remoteSession.pairingCode?.let { Text(app.getString(R.string.s_cc0dd8de47, it)) }
-            remoteSession.clientSummary?.let { Text(app.getString(R.string.s_759c95ad54, it)) }
+            remoteSession.pairingCode?.let { Text(li.songe.gkd.sdp.app.getString(R.string.s_cc0dd8de47, it)) }
+            remoteSession.clientSummary?.let { Text(li.songe.gkd.sdp.app.getString(R.string.s_759c95ad54, it)) }
             Row {
                 val localUrl = "http://127.0.0.1:${store.httpServerPort}"
                 Text(
@@ -221,11 +220,11 @@ private fun AdvancedHttpRunningContent(
                     style = LocalTextStyle.current.copy(textDecoration = TextDecoration.Underline),
                     modifier = Modifier.clickable(onClick = throttle {
                         copyText(localUrl)
-                        toast(app.getString(R.string.s_6c0be6e7b0))
+                        toast(li.songe.gkd.sdp.app.getString(R.string.s_6c0be6e7b0))
                     }),
                 )
                 Spacer(modifier = Modifier.width(2.dp))
-                Text(app.getString(R.string.s_93794c92ab))
+                Text(li.songe.gkd.sdp.app.getString(R.string.s_93794c92ab))
             }
             if (remoteSession.mode == RemoteListenMode.LAN) {
                 localNetworkIps.forEach { host ->
@@ -236,19 +235,19 @@ private fun AdvancedHttpRunningContent(
                         style = LocalTextStyle.current.copy(textDecoration = TextDecoration.Underline),
                         modifier = Modifier.clickable(onClick = throttle {
                             copyText(lanUrl)
-                            toast(app.getString(R.string.s_7774d11343))
+                            toast(li.songe.gkd.sdp.app.getString(R.string.s_7774d11343))
                         }),
                     )
                 }
-                TextButton(onClick = HttpService::disconnectLanSession) { Text(app.getString(R.string.s_6579a5ba64)) }
+                TextButton(onClick = HttpService::disconnectLanSession) { Text(li.songe.gkd.sdp.app.getString(R.string.s_6579a5ba64)) }
             } else {
-                TextButton(onClick = HttpService::startLanSession) { Text(app.getString(R.string.s_f989d9d7f9)) }
+                TextButton(onClick = HttpService::startLanSession) { Text(li.songe.gkd.sdp.app.getString(R.string.s_f989d9d7f9)) }
             }
-            Text(app.getString(R.string.s_00e778c519), style = MaterialTheme.typography.titleSmall)
+            Text(li.songe.gkd.sdp.app.getString(R.string.s_00e778c519), style = MaterialTheme.typography.titleSmall)
             RemoteScope.entries.forEach { scope ->
                 TextSwitch(
                     title = remoteScopeLabel(scope),
-                    subtitle = if (scope in setOf(RemoteScope.SERVER_INFO, RemoteScope.SNAPSHOT_LIST)) app.getString(R.string.s_0748ac7579) else app.getString(R.string.s_da3b95b64a),
+                    subtitle = if (scope in setOf(RemoteScope.SERVER_INFO, RemoteScope.SNAPSHOT_LIST)) li.songe.gkd.sdp.app.getString(R.string.s_0748ac7579) else li.songe.gkd.sdp.app.getString(R.string.s_da3b95b64a),
                     checked = scope in remoteSession.enabledScopes,
                     onCheckedChange = { HttpService.setRemoteScope(scope, it) },
                 )
@@ -283,9 +282,9 @@ private fun AdvancedHttpSettingsContent(
             cleartextOrigins.sorted().forEach { origin ->
                 SettingItem(
                     title = origin,
-                    subtitle = app.getString(R.string.s_7cce6f6775),
+                    subtitle = li.songe.gkd.sdp.app.getString(R.string.s_7cce6f6775),
                     imageVector = PerfIcon.Delete,
-                    onClickLabel = app.getString(R.string.s_8bba24fe03),
+                    onClickLabel = li.songe.gkd.sdp.app.getString(R.string.s_8bba24fe03),
                     onClick = { CleartextOriginAuthorizations.revoke(origin) },
                 )
             }
@@ -318,16 +317,16 @@ private fun AdvancedSnapshotSection(
             PerfCustomIconButton(
                 size = 32.dp,
                 iconSize = 20.dp,
-                onClickLabel = app.getString(R.string.s_c41137ca16),
+                onClickLabel = li.songe.gkd.sdp.app.getString(R.string.s_c41137ca16),
                 onClick = throttle { showCaptureScreenshotDlg.value = true },
                 id = R.drawable.ic_page_info,
-                contentDescription = app.getString(R.string.s_bd7b6c1ed1),
+                contentDescription = li.songe.gkd.sdp.app.getString(R.string.s_bd7b6c1ed1),
             )
         },
         onCheckedChange = {
             storeFlow.value = store.copy(captureScreenshot = it)
             if (it && store.screenshotTargetAppId.isEmpty() || store.screenshotEventSelector.isEmpty()) {
-                toast(app.getString(R.string.s_c456ae2487))
+                toast(li.songe.gkd.sdp.app.getString(R.string.s_c456ae2487))
             }
         },
     )

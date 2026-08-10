@@ -36,7 +36,6 @@ import li.songe.gkd.sdp.util.subsMapFlow
 import li.songe.gkd.sdp.util.toast
 import androidx.compose.ui.res.stringResource
 import li.songe.gkd.sdp.R
-import li.songe.gkd.sdp.app
 
 @Composable
 internal fun ActionLogDialog(
@@ -104,7 +103,7 @@ internal fun ActionLogDialog(
             shape = RoundedCornerShape(16.dp),
         ) {
             ItemText(
-                text = app.getString(R.string.s_451bb58ff2),
+                text = li.songe.gkd.sdp.app.getString(R.string.s_451bb58ff2),
                 onClick = {
                     onDismissRequest()
                     if (actionLog.groupType == SubsConfig.AppGroupType) {
@@ -225,7 +224,7 @@ private fun ActionLogDialogActions(
                             ).stringify(),
                         ),
                     )
-                    toast(app.getString(R.string.s_e2cff77372))
+                    toast(li.songe.gkd.sdp.app.getString(R.string.s_e2cff77372))
                 },
             )
             HorizontalDivider()
@@ -256,7 +255,7 @@ private fun ActionLogDialogActions(
                         exclude = oldExclude.switch(actionLog.appId, actionLog.activityId).stringify(),
                     ),
                 )
-                toast(app.getString(R.string.s_e2cff77372))
+                toast(li.songe.gkd.sdp.app.getString(R.string.s_e2cff77372))
             },
         )
         HorizontalDivider()

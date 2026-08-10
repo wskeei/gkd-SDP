@@ -16,7 +16,6 @@ import li.songe.gkd.sdp.data.BlockTimeRule
 import li.songe.gkd.sdp.data.SelectorRuleSnapshot
 import li.songe.gkd.sdp.data.SubsConfig
 import li.songe.gkd.sdp.R
-import li.songe.gkd.sdp.app
 
 data class InterceptionSourcePresentation(
     val title: String,
@@ -43,7 +42,7 @@ data class InterceptionSourcePresentation(
                 SelectorRuleSnapshot.shortActivityId(snapshot.activityId)?.let { add("页面：$it") }
             }
             return InterceptionSourcePresentation(
-                title = app.getString(R.string.s_f7cd1d0204),
+                title = li.songe.gkd.sdp.app.getString(R.string.s_f7cd1d0204),
                 lines = lines,
             )
         }
@@ -51,7 +50,7 @@ data class InterceptionSourcePresentation(
         fun url(ruleId: Long, ruleName: String?): InterceptionSourcePresentation {
             val safeName = ruleName?.trim().takeUnless { it.isNullOrEmpty() } ?: "网址规则"
             return InterceptionSourcePresentation(
-                title = app.getString(R.string.s_81ee0d54c9),
+                title = li.songe.gkd.sdp.app.getString(R.string.s_81ee0d54c9),
                 lines = listOf(
                     "规则：$safeName",
                     "规则编号：${String.format(Locale.ROOT, "%,d", ruleId)}",
@@ -61,7 +60,7 @@ data class InterceptionSourcePresentation(
 
         fun appBlocker(rule: BlockTimeRule): InterceptionSourcePresentation =
             InterceptionSourcePresentation(
-                title = app.getString(R.string.s_30e4e17387),
+                title = li.songe.gkd.sdp.app.getString(R.string.s_30e4e17387),
                 lines = listOf(
                     "规则 #${rule.id}",
                     "目标：${if (rule.targetType == BlockTimeRule.TARGET_TYPE_GROUP) "应用组" else "应用"} · ${rule.targetId}",
@@ -72,7 +71,7 @@ data class InterceptionSourcePresentation(
             )
 
         fun unknown(): InterceptionSourcePresentation = InterceptionSourcePresentation(
-            title = app.getString(R.string.s_31669c3d6f),
+            title = li.songe.gkd.sdp.app.getString(R.string.s_31669c3d6f),
             lines = listOf("本次规则信息暂不可用"),
         )
     }

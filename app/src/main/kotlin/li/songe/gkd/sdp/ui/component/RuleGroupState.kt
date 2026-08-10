@@ -35,7 +35,6 @@ import li.songe.gkd.sdp.util.throttle
 import li.songe.gkd.sdp.util.toast
 import li.songe.gkd.sdp.util.updateSubscription
 import li.songe.gkd.sdp.R
-import li.songe.gkd.sdp.app
 
 data class ShowGroupState(
     val subsId: Long,
@@ -209,7 +208,7 @@ suspend fun batchUpdateGroupEnable(
     if (enable == false && diffDataList.isNotEmpty()) {
         val attempt = AutoReenableDisableGuard.tryConsumeForDisable()
         if (!attempt.allowed) {
-            toast(app.getString(R.string.s_b0bb6964b5, attempt.limit))
+            toast(li.songe.gkd.sdp.app.getString(R.string.s_b0bb6964b5, attempt.limit))
             return emptyList()
         }
     }
@@ -320,7 +319,7 @@ class RuleGroupState(
                                             ).stringify()
                                         )
                                     )
-                                    toast(app.getString(R.string.s_9f8659b8b5))
+                                    toast(li.songe.gkd.sdp.app.getString(R.string.s_9f8659b8b5))
                                 }
                             } else {
                                 null
@@ -329,7 +328,7 @@ class RuleGroupState(
                             subsConfig.enable?.let {
                                 mainVm.viewModelScope.launchAsFn {
                                     DbSet.subsConfigDao.update(subsConfig.copy(enable = null))
-                                    toast(app.getString(R.string.s_59ec2d9a54))
+                                    toast(li.songe.gkd.sdp.app.getString(R.string.s_59ec2d9a54))
                                 }
                             }
                         }
@@ -337,7 +336,7 @@ class RuleGroupState(
                         subsConfig.enable?.let {
                             mainVm.viewModelScope.launchAsFn {
                                 DbSet.subsConfigDao.update(subsConfig.copy(enable = null))
-                                toast(app.getString(R.string.s_59ec2d9a54))
+                                toast(li.songe.gkd.sdp.app.getString(R.string.s_59ec2d9a54))
                             }
                         }
                     }
@@ -345,8 +344,8 @@ class RuleGroupState(
                 onClickDelete = mainVm.viewModelScope.launchAsFn {
                     dismissGroupShow()
                     val r = mainVm.dialogFlow.getResult(
-                        title = app.getString(R.string.s_2d646aa66b),
-                        text = app.getString(R.string.s_e14c6a817a, showGroup.name),
+                        title = li.songe.gkd.sdp.app.getString(R.string.s_2d646aa66b),
+                        text = li.songe.gkd.sdp.app.getString(R.string.s_e14c6a817a, showGroup.name),
                         error = true,
                     )
                     if (!r) {
@@ -377,7 +376,7 @@ class RuleGroupState(
                             showGroupState.groupKey
                         )
                     }
-                    toast(app.getString(R.string.s_86e8d12a79))
+                    toast(li.songe.gkd.sdp.app.getString(R.string.s_86e8d12a79))
                 }
             )
         }
@@ -394,8 +393,8 @@ class RuleGroupState(
                     val newValue = changedExcludeData
                     if (newValue != null) {
                         mainVm.dialogFlow.waitResult(
-                            title = app.getString(R.string.s_ab3656a956),
-                            text = app.getString(R.string.s_aebc195621),
+                            title = li.songe.gkd.sdp.app.getString(R.string.s_ab3656a956),
+                            text = li.songe.gkd.sdp.app.getString(R.string.s_aebc195621),
                         )
                     }
                     dismissExcludeGroupShow()
@@ -413,14 +412,14 @@ class RuleGroupState(
                             title = {
                                 TowLineText(
                                     title = excludeGroup.name,
-                                    subtitle = app.getString(R.string.s_427bec7575),
+                                    subtitle = li.songe.gkd.sdp.app.getString(R.string.s_427bec7575),
                                 )
                             },
                             actions = {
                                 PerfIconButton(imageVector = PerfIcon.Save, onClick = throttle {
                                     val newValue = changedExcludeData
                                     if (newValue == null) {
-                                        toast(app.getString(R.string.s_a2a69342dd))
+                                        toast(li.songe.gkd.sdp.app.getString(R.string.s_a2a69342dd))
                                         dismissExcludeGroupShow()
                                     } else {
                                         val newSubsConfig =
@@ -435,7 +434,7 @@ class RuleGroupState(
                                         dismissExcludeGroupShow()
                                         mainVm.viewModelScope.launchTry {
                                             DbSet.subsConfigDao.insert(newSubsConfig)
-                                            toast(app.getString(R.string.s_e2cff77372))
+                                            toast(li.songe.gkd.sdp.app.getString(R.string.s_e2cff77372))
                                         }
                                     }
                                 })

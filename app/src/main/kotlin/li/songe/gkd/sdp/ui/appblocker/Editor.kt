@@ -108,8 +108,8 @@ internal fun GroupEditorSheet(
             OutlinedTextField(
                 value = vm.groupName,
                 onValueChange = { vm.groupName = it },
-                label = { Text(app.getString(R.string.s_67f4598335)) },
-                placeholder = { Text(app.getString(R.string.s_6deabd286d)) },
+                label = { Text(li.songe.gkd.sdp.app.getString(R.string.s_67f4598335)) },
+                placeholder = { Text(li.songe.gkd.sdp.app.getString(R.string.s_6deabd286d)) },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
                 enabled = !isLocked && !isAppendMode
@@ -118,7 +118,7 @@ internal fun GroupEditorSheet(
             if (isExistingGroup) {
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = app.getString(R.string.s_06e3aae567),
+                    text = li.songe.gkd.sdp.app.getString(R.string.s_06e3aae567),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -131,13 +131,13 @@ internal fun GroupEditorSheet(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text(
-                    text = app.getString(R.string.s_71e649ba01, vm.groupApps.size),
+                    text = li.songe.gkd.sdp.app.getString(R.string.s_71e649ba01, vm.groupApps.size),
                     style = MaterialTheme.typography.bodyMedium,
                     modifier = Modifier.weight(1f)
                 )
                 if (canOpenAppPicker) {
                     TextButton(onClick = { showAppPicker = true }) {
-                        Text(if (isAppendMode) app.getString(R.string.s_ea8e8dbcb9) else app.getString(R.string.s_70b208202c))
+                        Text(if (isAppendMode) li.songe.gkd.sdp.app.getString(R.string.s_ea8e8dbcb9) else li.songe.gkd.sdp.app.getString(R.string.s_70b208202c))
                     }
                 }
             }
@@ -178,7 +178,7 @@ internal fun GroupEditorSheet(
                     onClick = onSave,
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text(app.getString(R.string.s_fadf24dbc5))
+                    Text(li.songe.gkd.sdp.app.getString(R.string.s_fadf24dbc5))
                 }
             } else {
                 Button(
@@ -189,7 +189,7 @@ internal fun GroupEditorSheet(
                         contentColor = MaterialTheme.colorScheme.onSecondaryContainer
                     )
                 ) {
-                    Text(app.getString(R.string.s_f526c89937))
+                    Text(li.songe.gkd.sdp.app.getString(R.string.s_f526c89937))
                 }
             }
 

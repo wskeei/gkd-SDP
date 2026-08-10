@@ -108,7 +108,7 @@ val foregroundServiceSpecialUseState by lazy {
             }
         },
         reason = AuthReason(
-            text = { app.getString(R.string.s_8d4148193c) },
+            text = { li.songe.gkd.sdp.app.getString(R.string.s_8d4148193c) },
             confirm = {
                 AppNavigationRequests.request(AppDestination.SETTINGS_CAPABILITIES)
             },
@@ -201,7 +201,7 @@ val notificationState by lazy {
         },
         request = { asyncRequestPermission(it, permission) },
         reason = AuthReason(
-            text = { app.getString(R.string.s_73424c2092) },
+            text = { li.songe.gkd.sdp.app.getString(R.string.s_73424c2092) },
             confirm = {
                 XXPermissions.startPermissionActivity(app, permission)
             }
@@ -226,7 +226,7 @@ val canQueryPkgState by lazy {
             asyncRequestPermission(it, permission)
         },
         reason = AuthReason(
-            text = { app.getString(R.string.s_3d81f289fc) },
+            text = { li.songe.gkd.sdp.app.getString(R.string.s_3d81f289fc) },
             confirm = {
                 XXPermissions.startPermissionActivity(app, permission)
             }
@@ -243,7 +243,7 @@ val canDrawOverlaysState by lazy {
         },
         reason = AuthReason(
             text = {
-                app.getString(R.string.s_01cb84d347)
+                li.songe.gkd.sdp.app.getString(R.string.s_01cb84d347)
             },
             confirm = {
                 XXPermissions.startPermissionActivity(
@@ -273,7 +273,7 @@ val canWriteExternalStorage by lazy {
             }
         },
         reason = AuthReason(
-            text = { app.getString(R.string.s_7e9ca9ca7e) },
+            text = { li.songe.gkd.sdp.app.getString(R.string.s_7e9ca9ca7e) },
             confirm = {
                 XXPermissions.startPermissionActivity(
                     app,
@@ -295,7 +295,7 @@ val ignoreBatteryOptimizationsState by lazy {
             asyncRequestPermission(it, permission)
         },
         reason = AuthReason(
-            text = { app.getString(R.string.s_1572c59617) },
+            text = { li.songe.gkd.sdp.app.getString(R.string.s_1572c59617) },
             confirm = {
                 XXPermissions.startPermissionActivity(
                     app,

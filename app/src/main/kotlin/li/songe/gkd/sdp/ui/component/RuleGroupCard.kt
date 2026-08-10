@@ -52,7 +52,6 @@ import li.songe.gkd.sdp.util.toast
 import java.util.Objects
 import androidx.compose.ui.res.stringResource
 import li.songe.gkd.sdp.R
-import li.songe.gkd.sdp.app
 
 
 @Composable
@@ -118,7 +117,7 @@ fun RuleGroupCard(
     val isLocked = FocusLockUtils.isRuleLocked(subs.id, appId, group.key)
     val onCheckedChange = appScope.launchAsFn<Boolean> { newChecked ->
         if (!newChecked && isLocked) {
-            toast(app.getString(R.string.s_e27c087656))
+            toast(li.songe.gkd.sdp.app.getString(R.string.s_e27c087656))
             return@launchAsFn
         }
         val newConfig = if (appId != null) {
@@ -238,7 +237,7 @@ fun RuleGroupCard(
                         }
                     } else {
                         Text(
-                            text = group.errorDesc ?: app.getString(R.string.s_5f76edc5de),
+                            text = group.errorDesc ?: li.songe.gkd.sdp.app.getString(R.string.s_5f76edc5de),
                             modifier = Modifier.fillMaxWidth(),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.error
@@ -284,7 +283,7 @@ fun RuleGroupCard(
             if (hasExcludeActivity) {
                 PerfIcon(
                     imageVector = PerfIcon.Block,
-                    contentDescription = app.getString(R.string.s_d8e83cfbba),
+                    contentDescription = li.songe.gkd.sdp.app.getString(R.string.s_d8e83cfbba),
                     tint = if (isSelectedMode) {
                         LocalContentColor.current.copy(alpha = 0.5f)
                     } else {
@@ -335,14 +334,14 @@ fun BatchActionButtonGroup(vm: ViewModel, selectedDataSet: Set<ShowGroupState>) 
         contentDescription = stringResource(R.string.s_4f453fb431),
         onClick = throttle(vm.viewModelScope.launchAsFn(Dispatchers.Default) {
             mainVm.dialogFlow.waitResult(
-                title = app.getString(R.string.s_93564a7ced),
-                text = app.getString(R.string.s_3d7090e33e)
+                title = li.songe.gkd.sdp.app.getString(R.string.s_93564a7ced),
+                text = li.songe.gkd.sdp.app.getString(R.string.s_3d7090e33e)
             )
             val list = batchUpdateGroupEnable(selectedDataSet, false)
             if (list.isNotEmpty()) {
-                toast(app.getString(R.string.s_102626a5cc, list.size))
+                toast(li.songe.gkd.sdp.app.getString(R.string.s_102626a5cc, list.size))
             } else {
-                toast(app.getString(R.string.s_1e010b148d))
+                toast(li.songe.gkd.sdp.app.getString(R.string.s_1e010b148d))
             }
         })
     )
@@ -351,14 +350,14 @@ fun BatchActionButtonGroup(vm: ViewModel, selectedDataSet: Set<ShowGroupState>) 
         contentDescription = stringResource(R.string.s_627b07784f),
         onClick = throttle(vm.viewModelScope.launchAsFn(Dispatchers.Default) {
             mainVm.dialogFlow.waitResult(
-                title = app.getString(R.string.s_93564a7ced),
-                text = app.getString(R.string.s_f68f9ce68b)
+                title = li.songe.gkd.sdp.app.getString(R.string.s_93564a7ced),
+                text = li.songe.gkd.sdp.app.getString(R.string.s_f68f9ce68b)
             )
             val list = batchUpdateGroupEnable(selectedDataSet, true)
             if (list.isNotEmpty()) {
-                toast(app.getString(R.string.s_b8c5d58816, list.size))
+                toast(li.songe.gkd.sdp.app.getString(R.string.s_b8c5d58816, list.size))
             } else {
-                toast(app.getString(R.string.s_1e010b148d))
+                toast(li.songe.gkd.sdp.app.getString(R.string.s_1e010b148d))
             }
         })
     )
@@ -367,14 +366,14 @@ fun BatchActionButtonGroup(vm: ViewModel, selectedDataSet: Set<ShowGroupState>) 
         contentDescription = stringResource(R.string.s_35f7c52ddd),
         onClick = throttle(vm.viewModelScope.launchAsFn(Dispatchers.Default) {
             mainVm.dialogFlow.waitResult(
-                title = app.getString(R.string.s_93564a7ced),
-                text = app.getString(R.string.s_1f54fb7d63)
+                title = li.songe.gkd.sdp.app.getString(R.string.s_93564a7ced),
+                text = li.songe.gkd.sdp.app.getString(R.string.s_1f54fb7d63)
             )
             val list = batchUpdateGroupEnable(selectedDataSet, null)
             if (list.isNotEmpty()) {
-                toast(app.getString(R.string.s_f988888fa2, list.size))
+                toast(li.songe.gkd.sdp.app.getString(R.string.s_f988888fa2, list.size))
             } else {
-                toast(app.getString(R.string.s_1e010b148d))
+                toast(li.songe.gkd.sdp.app.getString(R.string.s_1e010b148d))
             }
         })
     )

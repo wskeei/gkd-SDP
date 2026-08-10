@@ -32,7 +32,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import li.songe.gkd.sdp.R
-import li.songe.gkd.sdp.app
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
@@ -56,8 +55,8 @@ fun TimeRuleEditorSheet(
             item {
                 Text(
                     text = if (vm.editingTimeRule != null) {
-                        if (isLocked) app.getString(R.string.s_3352552afe) else app.getString(R.string.s_3fb9d5b75c)
-                    } else app.getString(R.string.s_ca22cd537c),
+                        if (isLocked) li.songe.gkd.sdp.app.getString(R.string.s_3352552afe) else li.songe.gkd.sdp.app.getString(R.string.s_3fb9d5b75c)
+                    } else li.songe.gkd.sdp.app.getString(R.string.s_ca22cd537c),
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold
                 )
@@ -70,7 +69,7 @@ fun TimeRuleEditorSheet(
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text(
-                        text = app.getString(R.string.s_a36a90e3d1),
+                        text = li.songe.gkd.sdp.app.getString(R.string.s_a36a90e3d1),
                         style = MaterialTheme.typography.bodyMedium,
                         modifier = Modifier.weight(1f)
                     )
@@ -78,26 +77,26 @@ fun TimeRuleEditorSheet(
                         onClick = { showTemplateDialog = true },
                         enabled = !isLocked
                     ) {
-                        Text(app.getString(R.string.s_860cb31951))
+                        Text(li.songe.gkd.sdp.app.getString(R.string.s_860cb31951))
                     }
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
 
                 // 模式选择
-                Text(app.getString(R.string.s_a89571c669), style = MaterialTheme.typography.bodyMedium)
+                Text(li.songe.gkd.sdp.app.getString(R.string.s_a89571c669), style = MaterialTheme.typography.bodyMedium)
                 Spacer(modifier = Modifier.height(8.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     FilterChip(
                         selected = !vm.timeRuleIsAllowMode,
                         onClick = { vm.timeRuleIsAllowMode = false },
-                        label = { Text(app.getString(R.string.s_837212d5ad)) },
+                        label = { Text(li.songe.gkd.sdp.app.getString(R.string.s_837212d5ad)) },
                         enabled = !isLocked
                     )
                     FilterChip(
                         selected = vm.timeRuleIsAllowMode,
                         onClick = { vm.timeRuleIsAllowMode = true },
-                        label = { Text(app.getString(R.string.s_78bb3ad69e)) },
+                        label = { Text(li.songe.gkd.sdp.app.getString(R.string.s_78bb3ad69e)) },
                         enabled = !isLocked
                     )
                 }
@@ -112,7 +111,7 @@ fun TimeRuleEditorSheet(
                     OutlinedTextField(
                         value = vm.timeRuleStartTime,
                         onValueChange = { vm.timeRuleStartTime = it },
-                        label = { Text(app.getString(R.string.s_e8868af6eb)) },
+                        label = { Text(li.songe.gkd.sdp.app.getString(R.string.s_e8868af6eb)) },
                         modifier = Modifier.weight(1f),
                         singleLine = true,
                         enabled = !isLocked
@@ -120,7 +119,7 @@ fun TimeRuleEditorSheet(
                     OutlinedTextField(
                         value = vm.timeRuleEndTime,
                         onValueChange = { vm.timeRuleEndTime = it },
-                        label = { Text(app.getString(R.string.s_a0bb9f49ab)) },
+                        label = { Text(li.songe.gkd.sdp.app.getString(R.string.s_a0bb9f49ab)) },
                         modifier = Modifier.weight(1f),
                         singleLine = true,
                         enabled = !isLocked
@@ -130,7 +129,7 @@ fun TimeRuleEditorSheet(
                 Spacer(modifier = Modifier.height(16.dp))
 
                 // 星期选择
-                Text(app.getString(R.string.s_d642f8ef29), style = MaterialTheme.typography.bodyMedium)
+                Text(li.songe.gkd.sdp.app.getString(R.string.s_d642f8ef29), style = MaterialTheme.typography.bodyMedium)
                 Spacer(modifier = Modifier.height(8.dp))
                 FlowRow(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -149,7 +148,7 @@ fun TimeRuleEditorSheet(
                                 }
                                 vm.timeRuleDaysOfWeek = newDays
                             },
-                            label = { Text(app.getString(R.string.s_a94243a9c8, dayNames[day - 1])) },
+                            label = { Text(li.songe.gkd.sdp.app.getString(R.string.s_a94243a9c8, dayNames[day - 1])) },
                             enabled = !isLocked
                         )
                     }
@@ -159,7 +158,7 @@ fun TimeRuleEditorSheet(
 
                 if (!isLocked) {
                     Button(onClick = onSave, modifier = Modifier.fillMaxWidth()) {
-                        Text(app.getString(R.string.s_fadf24dbc5))
+                        Text(li.songe.gkd.sdp.app.getString(R.string.s_fadf24dbc5))
                     }
                 } else {
                     Button(
@@ -170,7 +169,7 @@ fun TimeRuleEditorSheet(
                             contentColor = MaterialTheme.colorScheme.onSecondaryContainer
                         )
                     ) {
-                        Text(app.getString(R.string.s_f526c89937))
+                        Text(li.songe.gkd.sdp.app.getString(R.string.s_f526c89937))
                     }
                 }
 

@@ -196,7 +196,7 @@ class StatusService : Service(), OnSimpleLife by DefaultSimpleLifeImpl() {
         fun start() = startForegroundServiceByClass(StatusService::class)
         fun stop() {
             if (storeFlow.value.accessibilityGuardEnabled) {
-                toast(app.getString(R.string.s_f10262d528))
+                toast(li.songe.gkd.sdp.app.getString(R.string.s_f10262d528))
                 return
             }
             stopServiceByClass(StatusService::class)

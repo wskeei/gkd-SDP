@@ -28,7 +28,6 @@ import li.songe.gkd.sdp.util.ruleSummaryFlow
 import li.songe.gkd.sdp.util.toast
 import kotlinx.coroutines.flow.update
 import li.songe.gkd.sdp.R
-import li.songe.gkd.sdp.app
 
 data class RuleState(
     val group: ResolvedGroup,
@@ -229,7 +228,7 @@ class FocusLockVm : BaseViewModel() {
         }
 
         if (durationMinutes <= 0) {
-            toast(app.getString(R.string.s_40d80a0879))
+            toast(li.songe.gkd.sdp.app.getString(R.string.s_40d80a0879))
             return@launchTry
         }
 
@@ -259,12 +258,12 @@ class FocusLockVm : BaseViewModel() {
         )
         
         DbSet.constraintConfigDao.insert(config)
-        toast(app.getString(R.string.s_5dffc801c0))
+        toast(li.songe.gkd.sdp.app.getString(R.string.s_5dffc801c0))
     }
 
     fun updateInterceptConfig(subsId: Long, appId: String?, groupKey: Int, enabled: Boolean, cooldown: Int, message: String) = viewModelScope.launch(Dispatchers.IO) {
         if (!enabled && FocusLockUtils.isRuleLocked(subsId, appId, groupKey)) {
-            toast(app.getString(R.string.s_919924d7fe))
+            toast(li.songe.gkd.sdp.app.getString(R.string.s_919924d7fe))
             return@launch
         }
         val currentEnabled = resolveCurrentInterceptEnabled(subsId, appId, groupKey)
@@ -338,9 +337,9 @@ class FocusLockVm : BaseViewModel() {
             updatedCount++
         }
         if (skippedCount > 0) {
-            toast(app.getString(R.string.s_db9c6063a5, updatedCount, skippedCount))
+            toast(li.songe.gkd.sdp.app.getString(R.string.s_db9c6063a5, updatedCount, skippedCount))
         } else {
-            toast(app.getString(R.string.s_58aafa922e))
+            toast(li.songe.gkd.sdp.app.getString(R.string.s_58aafa922e))
         }
     }
 
@@ -363,7 +362,7 @@ class FocusLockVm : BaseViewModel() {
                 autoReenableDailyDisableDayStartAt = currentDayStartAt
             )
         }
-        toast(app.getString(R.string.s_6e166bc0d5, normalizedLimit))
+        toast(li.songe.gkd.sdp.app.getString(R.string.s_6e166bc0d5, normalizedLimit))
     }
 
     private fun resolveCurrentInterceptEnabled(subsId: Long, appId: String?, groupKey: Int): Boolean {
@@ -390,7 +389,7 @@ class FocusLockVm : BaseViewModel() {
         )
 
         if (!result.accepted) {
-            toast(app.getString(R.string.s_078163778f, formatCooldown(result.remainingCooldownMs)))
+            toast(li.songe.gkd.sdp.app.getString(R.string.s_078163778f, formatCooldown(result.remainingCooldownMs)))
             return
         }
 
@@ -400,7 +399,7 @@ class FocusLockVm : BaseViewModel() {
                 autoReenableIntervalChangedAt = result.changedAt
             )
         }
-        toast(app.getString(R.string.s_0c3d6aa510, result.intervalMinutes))
+        toast(li.songe.gkd.sdp.app.getString(R.string.s_0c3d6aa510, result.intervalMinutes))
     }
 
     companion object {

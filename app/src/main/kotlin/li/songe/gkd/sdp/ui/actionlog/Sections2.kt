@@ -51,7 +51,6 @@ import li.songe.gkd.sdp.util.throttle
 import li.songe.gkd.sdp.util.toast
 import androidx.compose.ui.res.stringResource
 import li.songe.gkd.sdp.R
-import li.songe.gkd.sdp.app
 
 @Composable
 internal fun ActionLogCard(
@@ -185,7 +184,7 @@ private fun ActionLogCardBody(
                         )
                     } else {
                         Text(
-                            text = app.getString(R.string.s_2be88ca424),
+                            text = li.songe.gkd.sdp.app.getString(R.string.s_2be88ca424),
                             color = LocalContentColor.current.copy(alpha = 0.5f),
                         )
                     }
@@ -195,14 +194,14 @@ private fun ActionLogCardBody(
                                 if (subsItemsFlow.value.any { it.id == actionLog.subsId }) {
                                     mainVm.sheetSubsIdFlow.value = actionLog.subsId
                                 } else {
-                                    toast(app.getString(R.string.s_9e5cc3140b))
+                                    toast(li.songe.gkd.sdp.app.getString(R.string.s_9e5cc3140b))
                                 }
                             })
                         ) {
                             Text(
                                 text = actionLog.subsNameSnapshot
                                     ?: subscription?.name
-                                    ?: app.getString(R.string.s_fbc86835e2, actionLog.subsId)
+                                    ?: li.songe.gkd.sdp.app.getString(R.string.s_fbc86835e2, actionLog.subsId)
                             )
                             val lineHeightDp = LocalDensity.current.run {
                                 LocalTextStyle.current.lineHeight.toDp()
@@ -214,7 +213,7 @@ private fun ActionLogCardBody(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text(
-                                    text = app.getString(R.string.s_f498bf1ba7, item.first.subsVersion),
+                                    text = li.songe.gkd.sdp.app.getString(R.string.s_f498bf1ba7, item.first.subsVersion),
                                     style = MaterialTheme.typography.labelMedium,
                                     color = MaterialTheme.colorScheme.tertiary,
                                     modifier = Modifier

@@ -61,7 +61,6 @@ import li.songe.gkd.sdp.util.json
 import li.songe.gkd.sdp.util.throttle
 import java.net.URI
 import li.songe.gkd.sdp.R
-import li.songe.gkd.sdp.app
 
 @Serializable
 data class WebViewRoute(val initUrl: String) : NavKey
@@ -122,8 +121,8 @@ fun WebViewPage(route: WebViewRoute) {
                         imageVector = PerfIcon.WarningAmber,
                         onClick = throttle {
                             mainVm.dialogFlow.updateDialogOptions(
-                                title = app.getString(R.string.s_6276f4ee6d),
-                                text = app.getString(R.string.s_73b0be10ba, chromeVersion),
+                                title = li.songe.gkd.sdp.app.getString(R.string.s_6276f4ee6d),
+                                text = li.songe.gkd.sdp.app.getString(R.string.s_73b0be10ba, chromeVersion),
                             )
                         },
                     )
@@ -137,7 +136,7 @@ fun WebViewPage(route: WebViewRoute) {
                     ) {
                         if (!loading) {
                             DropdownMenuItem(
-                                text = { Text(app.getString(R.string.s_5a5a7a890c)) },
+                                text = { Text(li.songe.gkd.sdp.app.getString(R.string.s_5a5a7a890c)) },
                                 onClick = {
                                     expanded = false
                                     webView?.reload()
@@ -145,14 +144,14 @@ fun WebViewPage(route: WebViewRoute) {
                             )
                         }
                         DropdownMenuItem(
-                            text = { Text(app.getString(R.string.s_abb22bd95c)) },
+                            text = { Text(li.songe.gkd.sdp.app.getString(R.string.s_abb22bd95c)) },
                             onClick = {
                                 expanded = false
                                 copyText(webView?.url ?: initUrl)
                             },
                         )
                         DropdownMenuItem(
-                            text = { Text(app.getString(R.string.s_fc350beec5)) },
+                            text = { Text(li.songe.gkd.sdp.app.getString(R.string.s_fc350beec5)) },
                             onClick = {
                                 expanded = false
                                 val current = webView?.url ?: initUrl

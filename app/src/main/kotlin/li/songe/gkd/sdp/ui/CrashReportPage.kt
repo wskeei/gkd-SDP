@@ -35,7 +35,6 @@ import li.songe.gkd.sdp.ui.style.itemVerticalPadding
 import li.songe.gkd.sdp.util.ISSUES_URL
 import li.songe.gkd.sdp.util.throttle
 import li.songe.gkd.sdp.R
-import li.songe.gkd.sdp.app
 
 
 @Serializable
@@ -60,7 +59,7 @@ fun CrashReportPage() {
                 },
                 title = {
                     Text(
-                        text = app.getString(R.string.s_90d5529440),
+                        text = li.songe.gkd.sdp.app.getString(R.string.s_90d5529440),
                         modifier = Modifier.noRippleClickable(onClick = throttle { scrollKey.intValue++ })
                     )
                 },
@@ -73,13 +72,13 @@ fun CrashReportPage() {
                     TextButton(
                         onClick = throttle { mainVm.openUrl(ISSUES_URL) },
                     ) {
-                        Text(text = app.getString(R.string.s_8d263a68b8))
+                        Text(text = li.songe.gkd.sdp.app.getString(R.string.s_8d263a68b8))
                     }
                     Spacer(modifier = Modifier.width(itemHorizontalPadding))
                     TextButton(
                         onClick = { mainVm.showShareLogDlgFlow.value = true },
                     ) {
-                        Text(text = app.getString(R.string.s_252fed9478))
+                        Text(text = li.songe.gkd.sdp.app.getString(R.string.s_252fed9478))
                     }
                     Spacer(modifier = Modifier.width(itemHorizontalPadding))
                 }

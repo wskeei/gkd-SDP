@@ -25,7 +25,6 @@ import li.songe.gkd.sdp.util.ShortUrlSet
 import li.songe.gkd.sdp.util.copyText
 import li.songe.gkd.sdp.util.throttle
 import androidx.compose.ui.res.stringResource
-import li.songe.gkd.sdp.R
 
 @Composable
 fun ManualAuthDialog(

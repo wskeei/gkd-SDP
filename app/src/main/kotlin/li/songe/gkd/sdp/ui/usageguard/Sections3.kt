@@ -8,7 +8,6 @@ import li.songe.gkd.sdp.util.UsageGuardPolicy
 import li.songe.gkd.sdp.util.UsageGuardUiStatePolicy
 import androidx.compose.ui.res.stringResource
 import li.songe.gkd.sdp.R
-import li.songe.gkd.sdp.app
 
 @Composable
 internal fun UsageGuardStatusSection(state: UsageGuardSettingsRenderState) {
@@ -20,11 +19,11 @@ internal fun UsageGuardStatusSection(state: UsageGuardSettingsRenderState) {
         subtitle = stringResource(R.string.s_21e2314ce6),
     ) {
         SettingRow(
-            title = app.getString(R.string.s_2755dbd77c),
+            title = li.songe.gkd.sdp.app.getString(R.string.s_2755dbd77c),
             subtitle = if (settings.usageGuardEnabled) {
-                app.getString(R.string.s_bc3692dc28)
+                li.songe.gkd.sdp.app.getString(R.string.s_bc3692dc28)
             } else {
-                app.getString(R.string.s_d0b1c07c8f)
+                li.songe.gkd.sdp.app.getString(R.string.s_d0b1c07c8f)
             },
             trailing = {
                 Switch(
@@ -35,7 +34,7 @@ internal fun UsageGuardStatusSection(state: UsageGuardSettingsRenderState) {
         )
         HorizontalDivider()
         CompactInfoRow(
-            label = app.getString(R.string.s_96b029d1e1),
+            label = li.songe.gkd.sdp.app.getString(R.string.s_96b029d1e1),
             value = if (settings.usageGuardScopeMode == UsageGuardPolicy.SCOPE_SELECTED_ONLY) {
                 "仅选中应用"
             } else {
@@ -43,7 +42,7 @@ internal fun UsageGuardStatusSection(state: UsageGuardSettingsRenderState) {
             },
         )
         CompactInfoRow(
-            label = app.getString(R.string.s_ae2399c597),
+            label = li.songe.gkd.sdp.app.getString(R.string.s_ae2399c597),
             value = if (settings.usageGuardDefaultGrantMode == UsageGuardPolicy.GRANT_MODE_STRICT) {
                 "严格模式"
             } else {
@@ -51,7 +50,7 @@ internal fun UsageGuardStatusSection(state: UsageGuardSettingsRenderState) {
             },
         )
         CompactInfoRow(
-            label = app.getString(R.string.s_30a60b1367),
+            label = li.songe.gkd.sdp.app.getString(R.string.s_30a60b1367),
             value = durationOptions.joinToString(" / ", transform = ::usageGuardDurationLabel),
         )
         Text(

@@ -313,24 +313,24 @@ class AppInstallMonitorVm : BaseViewModel() {
     
     fun addMonitoredApp(packageName: String, displayName: String) = viewModelScope.launch(Dispatchers.IO) {
         if (packageName.isBlank() || displayName.isBlank()) {
-            toast(app.getString(R.string.s_3745f91a8c))
+            toast(li.songe.gkd.sdp.app.getString(R.string.s_3745f91a8c))
             return@launch
         }
         
         val existing = DbSet.monitoredAppDao.getByPackageName(packageName)
         if (existing != null) {
-            toast(app.getString(R.string.s_d8f6d7b5a9))
+            toast(li.songe.gkd.sdp.app.getString(R.string.s_d8f6d7b5a9))
             return@launch
         }
         
         DbSet.monitoredAppDao.insert(MonitoredApp(packageName, displayName))
-        toast(app.getString(R.string.s_e9e6e68873, displayName))
+        toast(li.songe.gkd.sdp.app.getString(R.string.s_e9e6e68873, displayName))
         refreshInstalledStatus()
     }
     
     fun deleteMonitoredApp(app: MonitoredApp) = viewModelScope.launch(Dispatchers.IO) {
         DbSet.monitoredAppDao.delete(app)
-        toast(app.getString(R.string.s_151577da08, app.displayName))
+        toast(li.songe.gkd.sdp.app.getString(R.string.s_151577da08, app.displayName))
     }
     
     fun exportToCsv() = viewModelScope.launch(Dispatchers.IO) {
@@ -338,7 +338,7 @@ class AppInstallMonitorVm : BaseViewModel() {
             val logs = DbSet.appInstallLogDao.queryAll().stateIn(viewModelScope, SharingStarted.Eagerly, emptyList()).value
             
             if (logs.isEmpty()) {
-                toast(app.getString(R.string.s_73fb671025))
+                toast(li.songe.gkd.sdp.app.getString(R.string.s_73fb671025))
                 return@launch
             }
             
@@ -380,7 +380,7 @@ class AppInstallMonitorVm : BaseViewModel() {
             })
             
         } catch (e: Exception) {
-            toast(app.getString(R.string.s_9839a9c90b, DiagnosticLogger.userMessage(e)))
+            toast(li.songe.gkd.sdp.app.getString(R.string.s_9839a9c90b, DiagnosticLogger.userMessage(e)))
         }
     }
 }

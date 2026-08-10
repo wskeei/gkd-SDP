@@ -140,7 +140,7 @@ private fun AppGroupCardHeader(
             Spacer(modifier = Modifier.height(4.dp))
             Row {
                 Text(
-                    text = app.getString(R.string.s_1e09b684d4, group.getAppList().size),
+                    text = li.songe.gkd.sdp.app.getString(R.string.s_1e09b684d4, group.getAppList().size),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                 )
@@ -151,7 +151,7 @@ private fun AppGroupCardHeader(
                     ).format(java.util.Date(group.lockEndTime))
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = app.getString(R.string.s_f30b55361a, lockEndTime),
+                        text = li.songe.gkd.sdp.app.getString(R.string.s_f30b55361a, lockEndTime),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.error,
                     )
@@ -260,25 +260,25 @@ private fun AppGroupRuleList(rules: List<BlockTimeRule>) {
             Column(modifier = Modifier.weight(1f)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                        text = if (rule.isAllowMode) app.getString(R.string.s_698a879938) else app.getString(R.string.s_1fee3b4a52),
+                        text = if (rule.isAllowMode) li.songe.gkd.sdp.app.getString(R.string.s_698a879938) else li.songe.gkd.sdp.app.getString(R.string.s_1fee3b4a52),
                         style = MaterialTheme.typography.bodySmall,
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
-                        text = app.getString(R.string.s_e713116e5e, rule.formatTimeRange(), rule.formatDaysOfWeek()),
+                        text = li.songe.gkd.sdp.app.getString(R.string.s_e713116e5e, rule.formatTimeRange(), rule.formatDaysOfWeek()),
                         style = MaterialTheme.typography.bodyMedium,
                     )
                 }
                 if (rule.isAllowMode) {
                     Text(
-                        text = app.getString(R.string.s_6d17c9576a),
+                        text = li.songe.gkd.sdp.app.getString(R.string.s_6d17c9576a),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.primary,
                     )
                 }
                 if (rule.isCurrentlyLocked) {
                     Text(
-                        text = app.getString(R.string.s_3cc7a5af4c),
+                        text = li.songe.gkd.sdp.app.getString(R.string.s_3cc7a5af4c),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.error,
                     )

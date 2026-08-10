@@ -74,7 +74,6 @@ import li.songe.gkd.sdp.util.throttle
 import li.songe.gkd.sdp.util.toast
 import androidx.compose.ui.res.stringResource
 import li.songe.gkd.sdp.R
-import li.songe.gkd.sdp.app
 
 @Composable
 fun ActionLogPageSections(route: ActionLogRoute) {
@@ -101,7 +100,7 @@ fun ActionLogPageSections(route: ActionLogRoute) {
                 )
             },
             title = {
-                val title = app.getString(R.string.s_50532745b5)
+                val title = li.songe.gkd.sdp.app.getString(R.string.s_50532745b5)
                 val titleModifier = Modifier.noRippleClickable {
                     resetKey.intValue++
                 }
@@ -131,14 +130,14 @@ fun ActionLogPageSections(route: ActionLogRoute) {
                         imageVector = PerfIcon.Delete,
                         onClick = throttle(fn = mainVm.viewModelScope.launchAsFn {
                             val text = if (subsId != null) {
-                                app.getString(R.string.s_1e540d190c)
+                                li.songe.gkd.sdp.app.getString(R.string.s_1e540d190c)
                             } else if (appId != null) {
-                                app.getString(R.string.s_c3a7a48256)
+                                li.songe.gkd.sdp.app.getString(R.string.s_c3a7a48256)
                             } else {
-                                app.getString(R.string.s_cffd230efd)
+                                li.songe.gkd.sdp.app.getString(R.string.s_cffd230efd)
                             }
                             mainVm.dialogFlow.waitResult(
-                                title = app.getString(R.string.s_8f22c9908e),
+                                title = li.songe.gkd.sdp.app.getString(R.string.s_8f22c9908e),
                                 text = text,
                                 error = true,
                             )
@@ -149,7 +148,7 @@ fun ActionLogPageSections(route: ActionLogRoute) {
                             } else {
                                 DbSet.actionLogDao.deleteAll()
                             }
-                            toast(app.getString(R.string.s_86e8d12a79))
+                            toast(li.songe.gkd.sdp.app.getString(R.string.s_86e8d12a79))
                         })
                     )
                 }
@@ -204,7 +203,7 @@ fun ActionLogPageSections(route: ActionLogRoute) {
                         item(ListPlaceholder.KEY, ListPlaceholder.TYPE) {
                             Spacer(modifier = Modifier.height(EmptyHeight))
                             if (list.itemCount == 0 && list.loadState.refresh !is LoadState.Loading) {
-                                EmptyText(text = app.getString(R.string.s_b246458f20))
+                                EmptyText(text = li.songe.gkd.sdp.app.getString(R.string.s_b246458f20))
                             }
                         }
                     }
@@ -256,7 +255,7 @@ internal fun ActionLogStatsView(vm: ActionLogVm) {
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(
-                        text = app.getString(R.string.s_d7e65414e9),
+                        text = li.songe.gkd.sdp.app.getString(R.string.s_d7e65414e9),
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.primary
                     )
@@ -289,7 +288,7 @@ internal fun ActionLogStatsView(vm: ActionLogVm) {
 
         item {
             Text(
-                text = app.getString(R.string.s_c62e341470),
+                text = li.songe.gkd.sdp.app.getString(R.string.s_c62e341470),
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                 style = MaterialTheme.typography.titleSmall
             )
@@ -304,7 +303,7 @@ internal fun ActionLogStatsView(vm: ActionLogVm) {
             ) {
                 Text(text = stat.date, style = MaterialTheme.typography.bodyMedium)
                 Text(
-                    text = app.getString(R.string.s_f768d9701d, stat.count),
+                    text = li.songe.gkd.sdp.app.getString(R.string.s_f768d9701d, stat.count),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.secondary
                 )

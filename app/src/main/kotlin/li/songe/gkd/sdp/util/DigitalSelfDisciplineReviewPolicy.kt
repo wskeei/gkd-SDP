@@ -10,7 +10,6 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 import li.songe.gkd.sdp.R
-import li.songe.gkd.sdp.app
 
 /** Pure aggregation rules for the Digital Self-Discipline review page. */
 object DigitalSelfDisciplineReviewPolicy {
@@ -373,7 +372,7 @@ object DigitalSelfDisciplineReviewPolicy {
             deltaAverageMs = null,
             currentIntervalAverageMs = metrics.intervalAverageMs,
             currentRatioAverage = metrics.ratioAverage,
-            message = app.getString(R.string.s_cd13b6f64a),
+            message = li.songe.gkd.sdp.app.getString(R.string.s_cd13b6f64a),
         )
     }
 

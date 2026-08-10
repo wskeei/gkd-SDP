@@ -14,7 +14,6 @@ import androidx.compose.ui.unit.dp
 import li.songe.gkd.sdp.ui.style.itemPadding
 import li.songe.gkd.sdp.util.throttle
 import androidx.compose.ui.res.stringResource
-import li.songe.gkd.sdp.R
 
 @Composable
 fun AuthCard(

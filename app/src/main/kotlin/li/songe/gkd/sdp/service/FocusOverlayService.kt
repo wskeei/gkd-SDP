@@ -277,7 +277,7 @@ private fun MainInterceptContent(
             }
         } else {
             Text(
-                text = app.getString(R.string.s_877a0e2923),
+                text = li.songe.gkd.sdp.app.getString(R.string.s_877a0e2923),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f),
                 textAlign = TextAlign.Center
@@ -302,11 +302,11 @@ private fun WhitelistPickerContent(
             modifier = Modifier.fillMaxWidth()
         ) {
             IconButton(onClick = onBack) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = app.getString(R.string.s_11d0241540))
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = li.songe.gkd.sdp.app.getString(R.string.s_11d0241540))
             }
             Spacer(modifier = Modifier.width(8.dp))
             Text(
-                text = app.getString(R.string.s_a63ec9e8f8),
+                text = li.songe.gkd.sdp.app.getString(R.string.s_a63ec9e8f8),
                 style = MaterialTheme.typography.titleLarge
             )
         }
@@ -326,7 +326,7 @@ private fun WhitelistPickerContent(
                 if (whitelist.isNotEmpty()) {
                     item {
                         Text(
-                            text = app.getString(R.string.s_8a87deaa49),
+                            text = li.songe.gkd.sdp.app.getString(R.string.s_8a87deaa49),
                             style = MaterialTheme.typography.titleMedium,
                             modifier = Modifier.padding(vertical = 8.dp)
                         )

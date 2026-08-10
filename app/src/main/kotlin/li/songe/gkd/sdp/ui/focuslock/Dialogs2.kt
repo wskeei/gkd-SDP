@@ -32,7 +32,6 @@ import li.songe.gkd.sdp.util.format
 import li.songe.gkd.sdp.util.toast
 import androidx.compose.ui.res.stringResource
 import li.songe.gkd.sdp.R
-import li.songe.gkd.sdp.app
 
 internal class FocusLockDialogState {
     var showLockSheet by mutableStateOf(false)
@@ -132,7 +131,7 @@ internal fun FocusLockPageDialogs(
                 scope.launch {
                     when (AccessibilityGuardController.enable(activity)) {
                         AccessibilityGuardController.EnableResult.RequiresA11yMode -> {
-                            toast(app.getString(R.string.s_ce953b779c))
+                            toast(li.songe.gkd.sdp.app.getString(R.string.s_ce953b779c))
                             mainVm.navigatePage(AuthA11yRoute)
                         }
                         AccessibilityGuardController.EnableResult.UnavailableChannel,
@@ -152,9 +151,9 @@ internal fun FocusLockPageDialogs(
                 scope.launch {
                     when (val result = AccessibilityGuardController.disable()) {
                         AccessibilityGuardController.DisableResult.BlockedByLock ->
-                            toast(app.getString(R.string.s_5c6b661917))
+                            toast(li.songe.gkd.sdp.app.getString(R.string.s_5c6b661917))
                         is AccessibilityGuardController.DisableResult.BlockedByQuota ->
-                            toast(app.getString(R.string.s_ba1f755996, result.limit))
+                            toast(li.songe.gkd.sdp.app.getString(R.string.s_ba1f755996, result.limit))
                         AccessibilityGuardController.DisableResult.Disabled,
                         AccessibilityGuardController.DisableResult.NoChange -> Unit
                     }

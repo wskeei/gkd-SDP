@@ -47,7 +47,6 @@ import li.songe.gkd.sdp.util.throttle
 import li.songe.gkd.sdp.util.toast
 import androidx.compose.ui.res.stringResource
 import li.songe.gkd.sdp.R
-import li.songe.gkd.sdp.app
 
 @Composable
 fun RuleGroupDialog(
@@ -83,7 +82,7 @@ fun RuleGroupDialog(
                         .background(MaterialTheme.colorScheme.secondaryContainer)
                         .verticalScroll(rememberScrollState())
                         .clearAndSetSemantics {
-                            contentDescription = app.getString(R.string.s_542a10514e)
+                            contentDescription = li.songe.gkd.sdp.app.getString(R.string.s_542a10514e)
                         }
                 ) {
                     SelectionContainer {

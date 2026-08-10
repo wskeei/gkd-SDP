@@ -94,7 +94,7 @@ internal fun AppRulesCard(
                     )
                     when {
                         rules.none { it.enabled } -> Text(
-                            text = app.getString(R.string.s_f3cf657a3f),
+                            text = li.songe.gkd.sdp.app.getString(R.string.s_f3cf657a3f),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.error,
                         )
@@ -104,12 +104,12 @@ internal fun AppRulesCard(
                                     !AppBlockerDecisionPolicy.isValidTime(it.endTime) ||
                                     !AppBlockerDecisionPolicy.isValidDays(it.daysOfWeek))
                         } -> Text(
-                            text = app.getString(R.string.s_d5bc80c5db),
+                            text = li.songe.gkd.sdp.app.getString(R.string.s_d5bc80c5db),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.error,
                         )
                         rules.none { it.enabled && it.isActiveNow() } -> Text(
-                            text = app.getString(R.string.s_9f3c6b0775),
+                            text = li.songe.gkd.sdp.app.getString(R.string.s_9f3c6b0775),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -135,18 +135,18 @@ internal fun AppRulesCard(
                     Column(modifier = Modifier.weight(1f)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(
-                                text = if (rule.isAllowMode) app.getString(R.string.s_698a879938) else app.getString(R.string.s_1fee3b4a52),
+                                text = if (rule.isAllowMode) li.songe.gkd.sdp.app.getString(R.string.s_698a879938) else li.songe.gkd.sdp.app.getString(R.string.s_1fee3b4a52),
                                 style = MaterialTheme.typography.bodySmall
                             )
                             Spacer(modifier = Modifier.width(4.dp))
                             Text(
-                                text = app.getString(R.string.s_e713116e5e, rule.formatTimeRange(), rule.formatDaysOfWeek()),
+                                text = li.songe.gkd.sdp.app.getString(R.string.s_e713116e5e, rule.formatTimeRange(), rule.formatDaysOfWeek()),
                                 style = MaterialTheme.typography.bodyMedium
                             )
                         }
                         if (rule.isAllowMode) {
                             Text(
-                                text = app.getString(R.string.s_6d17c9576a),
+                                text = li.songe.gkd.sdp.app.getString(R.string.s_6d17c9576a),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.primary
                             )
@@ -156,7 +156,7 @@ internal fun AppRulesCard(
                             val lockEndTime = java.text.SimpleDateFormat("MM-dd HH:mm", java.util.Locale.getDefault())
                                 .format(java.util.Date(rule.lockEndTime))
                             Text(
-                                text = app.getString(R.string.s_f30b55361a, lockEndTime),
+                                text = li.songe.gkd.sdp.app.getString(R.string.s_f30b55361a, lockEndTime),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.error
                             )
@@ -167,7 +167,7 @@ internal fun AppRulesCard(
                     IconButton(onClick = { onLock(rule) }) {
                         Icon(
                             PerfIcon.Lock,
-                            contentDescription = if (rule.isCurrentlyLocked) app.getString(R.string.s_eae5fd957e) else app.getString(R.string.s_0b707d6dcc),
+                            contentDescription = if (rule.isCurrentlyLocked) li.songe.gkd.sdp.app.getString(R.string.s_eae5fd957e) else li.songe.gkd.sdp.app.getString(R.string.s_0b707d6dcc),
                             tint = if (rule.isCurrentlyLocked) {
                                 MaterialTheme.colorScheme.error
                             } else {
@@ -181,7 +181,7 @@ internal fun AppRulesCard(
                         IconButton(onClick = { showDeleteConfirm = true }) {
                             Icon(
                                 PerfIcon.Delete,
-                                contentDescription = app.getString(R.string.s_3755f56f2f),
+                                contentDescription = li.songe.gkd.sdp.app.getString(R.string.s_3755f56f2f),
                                 tint = MaterialTheme.colorScheme.error
                             )
                         }
@@ -198,19 +198,19 @@ internal fun AppRulesCard(
                 if (showDeleteConfirm) {
                     AlertDialog(
                         onDismissRequest = { showDeleteConfirm = false },
-                        title = { Text(app.getString(R.string.s_f9ad34b946)) },
-                        text = { Text(app.getString(R.string.s_e09b9cc9e4)) },
+                        title = { Text(li.songe.gkd.sdp.app.getString(R.string.s_f9ad34b946)) },
+                        text = { Text(li.songe.gkd.sdp.app.getString(R.string.s_e09b9cc9e4)) },
                         confirmButton = {
                             TextButton(onClick = {
                                 onDelete(rule)
                                 showDeleteConfirm = false
                             }) {
-                                Text(app.getString(R.string.s_3755f56f2f))
+                                Text(li.songe.gkd.sdp.app.getString(R.string.s_3755f56f2f))
                             }
                         },
                         dismissButton = {
                             TextButton(onClick = { showDeleteConfirm = false }) {
-                                Text(app.getString(R.string.s_4d0b4688c7))
+                                Text(li.songe.gkd.sdp.app.getString(R.string.s_4d0b4688c7))
                             }
                         }
                     )

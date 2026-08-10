@@ -91,7 +91,6 @@ import li.songe.gkd.sdp.util.throttle
 import li.songe.gkd.sdp.util.toast
 import li.songe.gkd.sdp.remote.RemoteListenMode
 import li.songe.gkd.sdp.remote.RemoteScope
-import li.songe.gkd.sdp.app
 
 @Composable
 fun useControlPage(): ScaffoldExt {
@@ -119,8 +118,8 @@ fun useControlPage(): ScaffoldExt {
             }, actions = {
                 PerfIconButton(
                     imageVector = PerfIcon.RocketLaunch,
-                    onClickLabel = app.getString(R.string.s_bb296f3841),
-                    contentDescription = app.getString(R.string.s_f8b4c14ff9),
+                    onClickLabel = li.songe.gkd.sdp.app.getString(R.string.s_bb296f3841),
+                    contentDescription = li.songe.gkd.sdp.app.getString(R.string.s_f8b4c14ff9),
                     onClick = throttle {
                         mainVm.navigatePage(AuthA11yRoute)
                     },
@@ -145,7 +144,7 @@ fun useControlPage(): ScaffoldExt {
                     modifier = Modifier
                         .fillMaxWidth()
                         .semantics(mergeDescendants = true) {
-                            this.onClick(label = app.getString(R.string.s_25e98173d1), action = null)
+                            this.onClick(label = li.songe.gkd.sdp.app.getString(R.string.s_25e98173d1), action = null)
                         },
                     shape = MaterialTheme.shapes.large,
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer),
@@ -238,7 +237,7 @@ fun useControlPage(): ScaffoldExt {
                     if (it) {
                         StatusService.requestStart(context)
                     } else if (store.accessibilityGuardEnabled) {
-                        toast(app.getString(R.string.s_f10262d528))
+                        toast(li.songe.gkd.sdp.app.getString(R.string.s_f10262d528))
                     } else {
                         StatusService.stop()
                         storeFlow.value = store.copy(
@@ -395,7 +394,7 @@ private fun PageSwitchItemCard(
         modifier = Modifier
             .fillMaxWidth()
             .semantics(mergeDescendants = true) {
-                this.onClick(label = app.getString(R.string.s_282a6986b9, title), action = null)
+                this.onClick(label = li.songe.gkd.sdp.app.getString(R.string.s_282a6986b9, title), action = null)
             },
         shape = MaterialTheme.shapes.large,
         colors = surfaceCardColors,

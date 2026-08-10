@@ -223,7 +223,7 @@ internal fun WhitelistPickerDialog(
                 OutlinedTextField(
                     value = vm.whitelistSearchQuery,
                     onValueChange = { vm.whitelistSearchQuery = it },
-                    placeholder = { Text(app.getString(R.string.s_897fdfef89)) },
+                    placeholder = { Text(li.songe.gkd.sdp.app.getString(R.string.s_897fdfef89)) },
                     leadingIcon = { Icon(PerfIcon.Search, null) },
                     trailingIcon = {
                         if (vm.whitelistSearchQuery.isNotEmpty()) {

@@ -115,43 +115,43 @@ val abNotif by lazy {
     Notif(
         id = 100,
         title = META.appName,
-        text = app.getString(R.string.s_f106cde067),
+        text = li.songe.gkd.sdp.app.getString(R.string.s_f106cde067),
     )
 }
 
 val screenshotNotif = Notif(
     id = 101,
-    title = app.getString(R.string.s_57e70da3fd),
-    text = app.getString(R.string.s_5d6266ee33),
+    title = li.songe.gkd.sdp.app.getString(R.string.s_57e70da3fd),
+    text = li.songe.gkd.sdp.app.getString(R.string.s_5d6266ee33),
     uri = "gkd://settings/privacy-data",
     stopService = ScreenshotService::class,
 )
 
 val buttonNotif = Notif(
     id = 102,
-    title = app.getString(R.string.s_beb79c5e2c),
-    text = app.getString(R.string.s_34a7b235f7),
+    title = li.songe.gkd.sdp.app.getString(R.string.s_beb79c5e2c),
+    text = li.songe.gkd.sdp.app.getString(R.string.s_34a7b235f7),
     uri = "gkd://settings/privacy-data",
     stopService = ButtonService::class,
 )
 
 val httpNotif = Notif(
     id = 103,
-    title = app.getString(R.string.s_9662efa45c),
+    title = li.songe.gkd.sdp.app.getString(R.string.s_9662efa45c),
     uri = "gkd://settings/privacy-data",
     stopService = HttpService::class,
 )
 
 val exposeNotif = Notif(
     id = 104,
-    title = app.getString(R.string.s_3ab5c7597f),
-    text = app.getString(R.string.s_013126c115),
+    title = li.songe.gkd.sdp.app.getString(R.string.s_3ab5c7597f),
+    text = li.songe.gkd.sdp.app.getString(R.string.s_013126c115),
 )
 
 val snapshotNotif = Notif(
     channel = NotifChannel.Snapshot,
     id = 105,
-    title = app.getString(R.string.s_502b37c699),
+    title = li.songe.gkd.sdp.app.getString(R.string.s_502b37c699),
     ongoing = false,
     autoCancel = true,
     uri = "gkd://snapshots",
@@ -159,21 +159,21 @@ val snapshotNotif = Notif(
 
 val recordNotif = Notif(
     id = 106,
-    title = app.getString(R.string.s_120cd9d42a),
+    title = li.songe.gkd.sdp.app.getString(R.string.s_120cd9d42a),
     uri = "gkd://settings/privacy-data",
     stopService = ActivityService::class,
 )
 
 val eventNotif = Notif(
     id = 107,
-    title = app.getString(R.string.s_3067d10f92),
+    title = li.songe.gkd.sdp.app.getString(R.string.s_3067d10f92),
     uri = "gkd://settings/privacy-data",
     stopService = EventService::class,
 )
 
 val trackNotif = Notif(
     id = 108,
-    title = app.getString(R.string.s_41ae4345a1),
+    title = li.songe.gkd.sdp.app.getString(R.string.s_41ae4345a1),
     uri = "gkd://settings",
     stopService = TrackService::class,
 )
@@ -181,8 +181,8 @@ val trackNotif = Notif(
 val focusEndNotif = Notif(
     channel = NotifChannel.FocusMode,
     id = 109,
-    title = app.getString(R.string.s_ef92a87fbc),
-    text = app.getString(R.string.s_7825ddac17),
+    title = li.songe.gkd.sdp.app.getString(R.string.s_ef92a87fbc),
+    text = li.songe.gkd.sdp.app.getString(R.string.s_7825ddac17),
     ongoing = false,
     autoCancel = true,
 )

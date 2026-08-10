@@ -25,7 +25,6 @@ import li.songe.gkd.sdp.util.ShortUrlSet
 import li.songe.gkd.sdp.util.throttle
 import androidx.compose.ui.res.stringResource
 import li.songe.gkd.sdp.R
-import li.songe.gkd.sdp.app
 
 
 @Composable
@@ -67,10 +66,10 @@ fun TermsAcceptDialog() {
                     },
                 )
             },
-            app.getString(R.string.s_6152aa364d) to @Composable {
+            li.songe.gkd.sdp.app.getString(R.string.s_6152aa364d) to @Composable {
                 Text(
                     modifier = modifier,
-                    text = app.getString(R.string.s_37c53d9dc0),
+                    text = li.songe.gkd.sdp.app.getString(R.string.s_37c53d9dc0),
                 )
             }
         )

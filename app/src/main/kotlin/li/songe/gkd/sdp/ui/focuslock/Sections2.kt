@@ -42,7 +42,6 @@ import li.songe.gkd.sdp.ui.style.surfaceCardColors
 import li.songe.gkd.sdp.util.format
 import androidx.compose.ui.res.stringResource
 import li.songe.gkd.sdp.R
-import li.songe.gkd.sdp.app
 
 @Composable
 fun SelfControlRuntimeStatusCard() {
@@ -89,7 +88,7 @@ fun SelfControlRuntimeStatusCard() {
             )
             runtime.lastDecision?.let { decision ->
                 Text(
-                    text = app.getString(R.string.s_af2816cc17, decision.feature, decision.decision, li.songe.gkd.sdp.util.SelfControlElapsedPolicy.formatAbsolute(decision.atEpochMs)),
+                    text = li.songe.gkd.sdp.app.getString(R.string.s_af2816cc17, decision.feature, decision.decision, li.songe.gkd.sdp.util.SelfControlElapsedPolicy.formatAbsolute(decision.atEpochMs)),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -151,7 +150,7 @@ fun SubscriptionCard(
                 // Global Rules
                 if (subState.globalRules.isNotEmpty()) {
                     Text(
-                        text = app.getString(R.string.s_9effd4ccc9),
+                        text = li.songe.gkd.sdp.app.getString(R.string.s_9effd4ccc9),
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.padding(start = 56.dp, top = 8.dp, bottom = 4.dp)
@@ -193,7 +192,7 @@ fun SubscriptionCard(
                             )
                             if (appState.isLocked) {
                                 Text(
-                                    text = app.getString(R.string.s_1ebce11b0b, formatRemainingTime(appState.lockEndTime - System.currentTimeMillis())),
+                                    text = li.songe.gkd.sdp.app.getString(R.string.s_1ebce11b0b, formatRemainingTime(appState.lockEndTime - System.currentTimeMillis())),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.primary
                                 )

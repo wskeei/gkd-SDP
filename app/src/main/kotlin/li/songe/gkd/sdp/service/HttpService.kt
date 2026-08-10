@@ -116,7 +116,7 @@ class HttpService : Service(), OnSimpleLife by DefaultSimpleLifeImpl() {
                         remoteSessionPolicy.revoke(RemoteRevocationReason.EXPIRED)
                         remoteSessionStateFlow.value = remoteSessionPolicy.snapshot()
                         listenModeFlow.value = RemoteListenMode.LOCAL_ONLY
-                        toast(app.getString(R.string.s_a0ec31af81))
+                        toast(li.songe.gkd.sdp.app.getString(R.string.s_a0ec31af81))
                     } else {
                         notifyRemoteState(state, now)
                     }
@@ -147,7 +147,7 @@ class HttpService : Service(), OnSimpleLife by DefaultSimpleLifeImpl() {
         remoteSessionPolicy.revoke(RemoteRevocationReason.REPLACED)
         rateLimiter.clear()
         if (!isPortAvailable(port)) {
-            toast(app.getString(R.string.s_bba5c9298c, port))
+            toast(li.songe.gkd.sdp.app.getString(R.string.s_bba5c9298c, port))
             stopSelf()
             return
         }
@@ -161,14 +161,14 @@ class HttpService : Service(), OnSimpleLife by DefaultSimpleLifeImpl() {
             scope.createServer(port, mode.host).apply { start() }
         } catch (error: Exception) {
             LogUtils.d("HTTP service start failed")
-            toast(app.getString(R.string.s_6340271cde))
+            toast(li.songe.gkd.sdp.app.getString(R.string.s_6340271cde))
             null
         }
         if (httpServerFlow.value == null) {
             stopSelf()
         } else {
             notifyRemoteState(remoteSessionStateFlow.value, System.currentTimeMillis())
-            if (wasRunning) toast(app.getString(R.string.s_6e75461ed4))
+            if (wasRunning) toast(li.songe.gkd.sdp.app.getString(R.string.s_6e75461ed4))
         }
     }
 

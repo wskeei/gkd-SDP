@@ -42,7 +42,6 @@ import li.songe.gkd.sdp.ui.style.scaffoldPadding
 import li.songe.gkd.sdp.ui.style.surfaceCardColors
 import androidx.compose.ui.res.stringResource
 import li.songe.gkd.sdp.R
-import li.songe.gkd.sdp.app
 
 @Composable
 fun AppBlockerPageSections() {
@@ -175,12 +174,12 @@ private fun AppBlockerPageScaffold(
                         onClick = onNavigateBack,
                     )
                 },
-                title = { Text(text = app.getString(R.string.s_e6bbd743b3)) },
+                title = { Text(text = li.songe.gkd.sdp.app.getString(R.string.s_e6bbd743b3)) },
                 actions = {
                     IconButton(onClick = onShowGlobalLock) {
                         Icon(
                             PerfIcon.Lock,
-                            contentDescription = app.getString(R.string.s_0261a6c710),
+                            contentDescription = li.songe.gkd.sdp.app.getString(R.string.s_0261a6c710),
                             tint = if (globalLock?.isCurrentlyLocked == true) {
                                 MaterialTheme.colorScheme.error
                             } else {
@@ -229,7 +228,7 @@ private fun AppBlockerPageList(
         }
         item(key = "groups_header") {
             AppBlockerSectionHeader(
-                title = app.getString(R.string.s_b5f6acf594, allGroups.size),
+                title = li.songe.gkd.sdp.app.getString(R.string.s_b5f6acf594, allGroups.size),
                 onAdd = {
                     vm.resetGroupForm()
                     vm.showGroupEditor = true
@@ -271,7 +270,7 @@ private fun AppBlockerPageList(
         }
         item(key = "app_rules_header") {
             AppBlockerSectionHeader(
-                title = app.getString(R.string.s_74c7776c98),
+                title = li.songe.gkd.sdp.app.getString(R.string.s_74c7776c98),
                 onAdd = {
                     vm.resetRuleForm()
                     vm.ruleTargetType = BlockTimeRule.TARGET_TYPE_APP

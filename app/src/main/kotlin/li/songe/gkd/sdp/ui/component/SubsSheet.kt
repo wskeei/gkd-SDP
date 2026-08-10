@@ -58,7 +58,6 @@ import li.songe.gkd.sdp.util.toast
 import li.songe.gkd.sdp.util.updateSubsMutex
 import androidx.compose.ui.res.stringResource
 import li.songe.gkd.sdp.R
-import li.songe.gkd.sdp.app
 
 @Composable
 fun SubsSheet(
@@ -137,7 +136,7 @@ fun SubsSheet(
                     Column(
                         modifier = childModifier.clearAndSetSemantics {
                             contentDescription =
-                                app.getString(R.string.s_488fdbc26e, subscription.author ?: "未知", subscription.version, subsItem.mtimeStr)
+                                li.songe.gkd.sdp.app.getString(R.string.s_488fdbc26e, subscription.author ?: "未知", subscription.version, subsItem.mtimeStr)
                         }
                     ) {
                         Row(
@@ -307,7 +306,7 @@ fun SubsSheet(
                             modifier = Modifier
                                 .clickable(onClickLabel = stringResource(R.string.s_29741d0a11), onClick = throttle {
                                     if (updateSubsMutex.mutex.isLocked) {
-                                        toast(app.getString(R.string.s_2c20f3fd5e))
+                                        toast(li.songe.gkd.sdp.app.getString(R.string.s_2c20f3fd5e))
                                         return@throttle
                                     }
                                     mainVm.viewModelScope.launchTry {
@@ -359,12 +358,12 @@ fun SubsSheet(
                             CircularProgressIndicator()
                         } else {
                             Text(
-                                text = app.getString(R.string.s_c3159c4450),
+                                text = li.songe.gkd.sdp.app.getString(R.string.s_c3159c4450),
                                 style = MaterialTheme.typography.labelLarge,
                                 color = MaterialTheme.colorScheme.error,
                             )
                             TextButton(onClick = throttle { checkSubsUpdate(showToast = true) }) {
-                                Text(text = app.getString(R.string.s_5982c44c18))
+                                Text(text = li.songe.gkd.sdp.app.getString(R.string.s_5982c44c18))
                             }
                         }
                     }
@@ -393,8 +392,8 @@ fun SubsSheet(
                             onClick = throttle(
                                 vm.viewModelScope.launchAsFn {
                                     mainVm.dialogFlow.waitResult(
-                                        title = app.getString(R.string.s_fe7b16b5c0),
-                                        text = app.getString(R.string.s_59fbf95a82, subscription?.name ?: subsItem.id),
+                                        title = li.songe.gkd.sdp.app.getString(R.string.s_fe7b16b5c0),
+                                        text = li.songe.gkd.sdp.app.getString(R.string.s_59fbf95a82, subscription?.name ?: subsItem.id),
                                         error = true,
                                     )
                                     sheetSubsIdFlow.value = null

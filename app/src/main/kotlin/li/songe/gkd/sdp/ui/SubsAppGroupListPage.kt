@@ -61,7 +61,6 @@ import li.songe.gkd.sdp.util.toJson5String
 import li.songe.gkd.sdp.util.toast
 import li.songe.gkd.sdp.util.updateSubscription
 import li.songe.gkd.sdp.R
-import li.songe.gkd.sdp.app
 
 @Serializable
 data class SubsAppGroupListRoute(
@@ -163,8 +162,8 @@ fun SubsAppGroupListPage(route: SubsAppGroupListRoute) {
                                 imageVector = PerfIcon.Delete,
                                 onClick = throttle(vm.viewModelScope.launchAsFn {
                                     mainVm.dialogFlow.waitResult(
-                                        title = app.getString(R.string.s_f9ad34b946),
-                                        text = app.getString(R.string.s_e0d623ba29),
+                                        title = li.songe.gkd.sdp.app.getString(R.string.s_f9ad34b946),
+                                        text = li.songe.gkd.sdp.app.getString(R.string.s_e0d623ba29),
                                         error = true,
                                     )
                                     val keys = selectedDataSet.mapNotNull { g -> g.groupKey }
@@ -196,7 +195,7 @@ fun SubsAppGroupListPage(route: SubsAppGroupListRoute) {
                                             keys
                                         )
                                     }
-                                    toast(app.getString(R.string.s_86e8d12a79))
+                                    toast(li.songe.gkd.sdp.app.getString(R.string.s_86e8d12a79))
                                 })
                             )
                         }
@@ -217,7 +216,7 @@ fun SubsAppGroupListPage(route: SubsAppGroupListRoute) {
                     ) {
                         DropdownMenuItem(
                             text = {
-                                Text(text = app.getString(R.string.s_3e44b2a933))
+                                Text(text = li.songe.gkd.sdp.app.getString(R.string.s_3e44b2a933))
                             },
                             onClick = {
                                 expanded = false
@@ -231,7 +230,7 @@ fun SubsAppGroupListPage(route: SubsAppGroupListRoute) {
                         )
                         DropdownMenuItem(
                             text = {
-                                Text(text = app.getString(R.string.s_ae05880411))
+                                Text(text = li.songe.gkd.sdp.app.getString(R.string.s_ae05880411))
                             },
                             onClick = {
                                 expanded = false
@@ -261,7 +260,7 @@ fun SubsAppGroupListPage(route: SubsAppGroupListRoute) {
                         )
                     )
                 },
-                contentDescription = app.getString(R.string.s_d2fc32282a),
+                contentDescription = li.songe.gkd.sdp.app.getString(R.string.s_d2fc32282a),
                 imageVector = PerfIcon.Add,
             )
         }
@@ -308,7 +307,7 @@ fun SubsAppGroupListPage(route: SubsAppGroupListRoute) {
             item(ListPlaceholder.KEY, ListPlaceholder.TYPE) {
                 Spacer(modifier = Modifier.height(EmptyHeight))
                 if (app.groups.isEmpty()) {
-                    EmptyText(text = app.getString(R.string.s_cff584d9ab))
+                    EmptyText(text = li.songe.gkd.sdp.app.getString(R.string.s_cff584d9ab))
                 }
             }
         }

@@ -30,7 +30,6 @@ import li.songe.gkd.sdp.util.saveFileToDownloads
 import li.songe.gkd.sdp.util.shareFile
 import li.songe.gkd.sdp.util.throttle
 import li.songe.gkd.sdp.R
-import li.songe.gkd.sdp.app
 
 @Composable
 fun ShareLogDlg(showShareLogDlgFlow: MutableStateFlow<Boolean>) {
@@ -51,35 +50,35 @@ fun ShareLogDlg(showShareLogDlgFlow: MutableStateFlow<Boolean>) {
                     .padding(16.dp)
                 Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
                     Text(
-                        text = if (confirmationStep) app.getString(R.string.s_4be37702c8) else app.getString(R.string.s_782087b38b),
+                        text = if (confirmationStep) li.songe.gkd.sdp.app.getString(R.string.s_4be37702c8) else li.songe.gkd.sdp.app.getString(R.string.s_782087b38b),
                         modifier = modifier,
                     )
                     if (!confirmationStep) {
                         Text(
-                            text = app.getString(R.string.s_357a190b67),
+                            text = li.songe.gkd.sdp.app.getString(R.string.s_357a190b67),
                             modifier = modifier,
                         )
                         Text(
-                            text = app.getString(R.string.s_e17a2ef166),
+                            text = li.songe.gkd.sdp.app.getString(R.string.s_e17a2ef166),
                             modifier = modifier,
                         )
                         Text(
-                            text = app.getString(R.string.s_89ae336abd),
+                            text = li.songe.gkd.sdp.app.getString(R.string.s_89ae336abd),
                             modifier = modifier,
                         )
                         Text(
-                            text = app.getString(R.string.s_1fc1afc5c5),
+                            text = li.songe.gkd.sdp.app.getString(R.string.s_1fc1afc5c5),
                             modifier = Modifier
                                 .clickable(onClick = throttle { confirmationStep = true })
                                 .then(modifier),
                         )
                     } else {
                         Text(
-                            text = app.getString(R.string.s_7fad32f141),
+                            text = li.songe.gkd.sdp.app.getString(R.string.s_7fad32f141),
                             modifier = modifier,
                         )
                         Text(
-                            text = app.getString(R.string.s_6605382d7c),
+                            text = li.songe.gkd.sdp.app.getString(R.string.s_6605382d7c),
                             modifier = Modifier
                                 .clickable(onClick = throttle {
                                     visible = false
@@ -91,7 +90,7 @@ fun ShareLogDlg(showShareLogDlgFlow: MutableStateFlow<Boolean>) {
                                 .then(modifier),
                         )
                         Text(
-                            text = app.getString(R.string.s_b21acfde65),
+                            text = li.songe.gkd.sdp.app.getString(R.string.s_b21acfde65),
                             modifier = Modifier
                                 .clickable(onClick = throttle {
                                     visible = false
@@ -103,7 +102,7 @@ fun ShareLogDlg(showShareLogDlgFlow: MutableStateFlow<Boolean>) {
                                 .then(modifier),
                         )
                         Text(
-                            text = app.getString(R.string.s_81b17d1c10),
+                            text = li.songe.gkd.sdp.app.getString(R.string.s_81b17d1c10),
                             modifier = Modifier
                                 .clickable(onClick = throttle {
                                     visible = false
@@ -114,7 +113,7 @@ fun ShareLogDlg(showShareLogDlgFlow: MutableStateFlow<Boolean>) {
                                 .then(modifier),
                         )
                         Text(
-                            text = app.getString(R.string.s_22a7b0d512),
+                            text = li.songe.gkd.sdp.app.getString(R.string.s_22a7b0d512),
                             modifier = Modifier
                                 .clickable(onClick = throttle { confirmationStep = false })
                                 .then(modifier),

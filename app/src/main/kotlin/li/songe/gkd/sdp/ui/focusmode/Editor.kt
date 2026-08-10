@@ -72,7 +72,7 @@ private fun RuleEditorHeader(vm: FocusModeVm) {
         value = vm.ruleName,
         onValueChange = { vm.ruleName = it },
         label = { Text(stringResource(R.string.s_1937bcb105)) },
-        placeholder = { Text(app.getString(R.string.s_1eb2bb81e0)) },
+        placeholder = { Text(li.songe.gkd.sdp.app.getString(R.string.s_1eb2bb81e0)) },
         modifier = Modifier.fillMaxWidth(),
         singleLine = true,
     )
@@ -136,22 +136,22 @@ private fun RuleEditorTypeFields(vm: FocusModeVm) {
             OutlinedTextField(
                 value = vm.ruleStartTime,
                 onValueChange = { vm.ruleStartTime = it },
-                label = { Text(app.getString(R.string.s_e8868af6eb)) },
-                placeholder = { Text(app.getString(R.string.s_9f82f6d52b)) },
+                label = { Text(li.songe.gkd.sdp.app.getString(R.string.s_e8868af6eb)) },
+                placeholder = { Text(li.songe.gkd.sdp.app.getString(R.string.s_9f82f6d52b)) },
                 modifier = Modifier.weight(1f),
                 singleLine = true,
             )
             OutlinedTextField(
                 value = vm.ruleEndTime,
                 onValueChange = { vm.ruleEndTime = it },
-                label = { Text(app.getString(R.string.s_a0bb9f49ab)) },
-                placeholder = { Text(app.getString(R.string.s_df4803c166)) },
+                label = { Text(li.songe.gkd.sdp.app.getString(R.string.s_a0bb9f49ab)) },
+                placeholder = { Text(li.songe.gkd.sdp.app.getString(R.string.s_df4803c166)) },
                 modifier = Modifier.weight(1f),
                 singleLine = true,
             )
         }
         Spacer(modifier = Modifier.height(16.dp))
-        Text(app.getString(R.string.s_d642f8ef29), style = MaterialTheme.typography.bodyMedium)
+        Text(li.songe.gkd.sdp.app.getString(R.string.s_d642f8ef29), style = MaterialTheme.typography.bodyMedium)
         Spacer(modifier = Modifier.height(8.dp))
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             val dayNames = listOf("一", "二", "三", "四", "五", "六", "日")
@@ -165,7 +165,7 @@ private fun RuleEditorTypeFields(vm: FocusModeVm) {
                             (vm.ruleDaysOfWeek + day).sorted()
                         }
                     },
-                    label = { Text(app.getString(R.string.s_a94243a9c8, dayNames[day - 1])) },
+                    label = { Text(li.songe.gkd.sdp.app.getString(R.string.s_a94243a9c8, dayNames[day - 1])) },
                 )
             }
         }

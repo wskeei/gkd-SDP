@@ -47,7 +47,6 @@ import li.songe.gkd.sdp.ui.component.PerfIcon
 import li.songe.gkd.sdp.util.appInfoMapFlow
 import androidx.compose.ui.res.stringResource
 import li.songe.gkd.sdp.R
-import li.songe.gkd.sdp.app
 
 @Composable
 fun UrlLockSheet(
@@ -83,7 +82,7 @@ fun UrlLockSheet(
                 val remaining = currentLockEndTime - System.currentTimeMillis()
                 val remainingMinutes = (remaining / 60000).coerceAtLeast(0)
                 Text(
-                    text = app.getString(R.string.s_1090ec0cd1, if (remainingMinutes >= 60) "${remainingMinutes / 60}小时${remainingMinutes % 60}分钟" else "${remainingMinutes}分钟"),
+                    text = li.songe.gkd.sdp.app.getString(R.string.s_1090ec0cd1, if (remainingMinutes >= 60) "${remainingMinutes / 60}小时${remainingMinutes % 60}分钟" else "${remainingMinutes}分钟"),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.padding(bottom = 16.dp)
@@ -98,7 +97,7 @@ fun UrlLockSheet(
             }
 
             Text(
-                text = app.getString(R.string.s_80e9287545),
+                text = li.songe.gkd.sdp.app.getString(R.string.s_80e9287545),
                 style = MaterialTheme.typography.labelMedium,
                 modifier = Modifier.padding(bottom = 8.dp)
             )
@@ -140,7 +139,7 @@ fun UrlLockSheet(
                     onCheckedChange = { vm.isCustomLockDuration = it }
                 )
                 Spacer(modifier = Modifier.width(8.dp))
-                Text(app.getString(R.string.s_ea6dccc0a6), style = MaterialTheme.typography.bodyMedium)
+                Text(li.songe.gkd.sdp.app.getString(R.string.s_ea6dccc0a6), style = MaterialTheme.typography.bodyMedium)
             }
 
             if (vm.isCustomLockDuration) {
@@ -152,7 +151,7 @@ fun UrlLockSheet(
                     OutlinedTextField(
                         value = vm.customLockDaysText,
                         onValueChange = { vm.customLockDaysText = it },
-                        label = { Text(app.getString(R.string.s_c3304d1e49)) },
+                        label = { Text(li.songe.gkd.sdp.app.getString(R.string.s_c3304d1e49)) },
                         modifier = Modifier.weight(1f),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         singleLine = true
@@ -160,7 +159,7 @@ fun UrlLockSheet(
                     OutlinedTextField(
                         value = vm.customLockHoursText,
                         onValueChange = { vm.customLockHoursText = it },
-                        label = { Text(app.getString(R.string.s_99f6904ff3)) },
+                        label = { Text(li.songe.gkd.sdp.app.getString(R.string.s_99f6904ff3)) },
                         modifier = Modifier.weight(1f),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         singleLine = true
@@ -174,7 +173,7 @@ fun UrlLockSheet(
                 onClick = onLock,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text(app.getString(R.string.s_648f1e98b5))
+                Text(li.songe.gkd.sdp.app.getString(R.string.s_648f1e98b5))
             }
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -239,7 +238,7 @@ fun BrowserListSheet(
                                 if (browser.isBuiltin) {
                                     Spacer(modifier = Modifier.width(4.dp))
                                     Text(
-                                        text = app.getString(R.string.s_85e76f58dc),
+                                        text = li.songe.gkd.sdp.app.getString(R.string.s_85e76f58dc),
                                         style = MaterialTheme.typography.labelSmall,
                                         color = MaterialTheme.colorScheme.tertiary
                                     )
@@ -258,7 +257,7 @@ fun BrowserListSheet(
                             IconButton(onClick = { onDelete(browser) }) {
                                 Icon(
                                     PerfIcon.Delete,
-                                    contentDescription = app.getString(R.string.s_3755f56f2f),
+                                    contentDescription = li.songe.gkd.sdp.app.getString(R.string.s_3755f56f2f),
                                     tint = MaterialTheme.colorScheme.error.copy(alpha = 0.7f)
                                 )
                             }
@@ -307,7 +306,7 @@ fun BrowserEditSheet(
                 value = vm.browserName,
                 onValueChange = { vm.browserName = it },
                 label = { Text(stringResource(R.string.s_5c07ed58a8)) },
-                placeholder = { Text(app.getString(R.string.s_874487d6ea)) },
+                placeholder = { Text(li.songe.gkd.sdp.app.getString(R.string.s_874487d6ea)) },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true
             )
@@ -319,7 +318,7 @@ fun BrowserEditSheet(
                     value = vm.browserPackageName,
                     onValueChange = { if (!isBuiltin) vm.browserPackageName = it },
                     label = { Text(stringResource(R.string.s_a495040b76)) },
-                    placeholder = { Text(app.getString(R.string.s_6d322b1bac)) },
+                    placeholder = { Text(li.songe.gkd.sdp.app.getString(R.string.s_6d322b1bac)) },
                     modifier = Modifier.weight(1f),
                     singleLine = true,
                     enabled = !isBuiltin
@@ -338,7 +337,7 @@ fun BrowserEditSheet(
                 value = vm.browserUrlBarId,
                 onValueChange = { vm.browserUrlBarId = it },
                 label = { Text(stringResource(R.string.s_fa0e1bf898)) },
-                placeholder = { Text(app.getString(R.string.s_341bcd0a2b)) },
+                placeholder = { Text(li.songe.gkd.sdp.app.getString(R.string.s_341bcd0a2b)) },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true
             )

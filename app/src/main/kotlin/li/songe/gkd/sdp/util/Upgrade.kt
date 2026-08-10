@@ -64,7 +64,7 @@ class UpdateStatus(val scope: CoroutineScope) {
             val beta = storeFlow.value.updateChannel == UpdateChannelOption.Beta.value
             val newVersion = GitHubReleaseUpdateSource.fetchLatest(client, beta)
             if (newVersion == null || !GitHubReleaseUpdateSource.isNewer(newVersion, META.versionCode)) {
-                if (manual) toast(app.getString(R.string.s_f0ece473ea))
+                if (manual) toast(li.songe.gkd.sdp.app.getString(R.string.s_f0ece473ea))
                 return@launchTry
             }
             if (!manual && ignoreVersionListFlow.value.contains(newVersion.versionCode)) return@launchTry
@@ -167,7 +167,7 @@ class UpdateStatus(val scope: CoroutineScope) {
             }
             AlertDialog(
                 title = {
-                    Text(text = app.getString(R.string.s_b0b9270849))
+                    Text(text = li.songe.gkd.sdp.app.getString(R.string.s_b0b9270849))
                 },
                 text = {
                     Text(
@@ -184,12 +184,12 @@ class UpdateStatus(val scope: CoroutineScope) {
                         newVersionFlow.value = null
                         startDownload(newVersionVal)
                     }) {
-                        Text(text = app.getString(R.string.s_c1f18f4e0a))
+                        Text(text = li.songe.gkd.sdp.app.getString(R.string.s_c1f18f4e0a))
                     }
                 },
                 dismissButton = {
                     TextButton(onClick = { newVersionFlow.value = null }) {
-                        Text(text = app.getString(R.string.s_4d0b4688c7))
+                        Text(text = li.songe.gkd.sdp.app.getString(R.string.s_4d0b4688c7))
                     }
                     if (!lastManual) {
                         TextButton(onClick = {
@@ -197,9 +197,9 @@ class UpdateStatus(val scope: CoroutineScope) {
                             ignoreVersionListFlow.update {
                                 it + newVersionVal.versionCode
                             }
-                            toast(app.getString(R.string.s_d1dcaf9ad6))
+                            toast(li.songe.gkd.sdp.app.getString(R.string.s_d1dcaf9ad6))
                         }) {
-                            Text(text = app.getString(R.string.s_d84129b8be))
+                            Text(text = li.songe.gkd.sdp.app.getString(R.string.s_d84129b8be))
                         }
                     }
                 },
@@ -210,7 +210,7 @@ class UpdateStatus(val scope: CoroutineScope) {
             when (downloadStatusVal) {
                 is LoadStatus.Loading -> {
                     AlertDialog(
-                        title = { Text(text = app.getString(R.string.s_327d59b5bd)) },
+                        title = { Text(text = li.songe.gkd.sdp.app.getString(R.string.s_327d59b5bd)) },
                         text = {
                             LinearProgressIndicator(
                                 progress = { downloadStatusVal.progress },
@@ -224,7 +224,7 @@ class UpdateStatus(val scope: CoroutineScope) {
                                 )
                                 downloadJob?.cancel()
                             }) {
-                                Text(text = app.getString(R.string.s_20bf3bc4ef))
+                                Text(text = li.songe.gkd.sdp.app.getString(R.string.s_20bf3bc4ef))
                             }
                         },
                     )
@@ -232,7 +232,7 @@ class UpdateStatus(val scope: CoroutineScope) {
 
                 is LoadStatus.Failure -> {
                     AlertDialog(
-                        title = { Text(text = app.getString(R.string.s_e0dab22b1a)) },
+                        title = { Text(text = li.songe.gkd.sdp.app.getString(R.string.s_e0dab22b1a)) },
                         text = {
                             Text(text = downloadStatusVal.exception.let {
                                 it.message ?: it.toString()
@@ -243,7 +243,7 @@ class UpdateStatus(val scope: CoroutineScope) {
                             TextButton(onClick = {
                                 downloadStatusFlow.value = null
                             }) {
-                                Text(text = app.getString(R.string.s_6c14bd7f6f))
+                                Text(text = li.songe.gkd.sdp.app.getString(R.string.s_6c14bd7f6f))
                             }
                         },
                     )
@@ -251,23 +251,23 @@ class UpdateStatus(val scope: CoroutineScope) {
 
                 is LoadStatus.Success -> {
                     AlertDialog(
-                        title = { Text(text = app.getString(R.string.s_9edcdf6586)) },
+                        title = { Text(text = li.songe.gkd.sdp.app.getString(R.string.s_9edcdf6586)) },
                         text = {
-                            Text(text = app.getString(R.string.s_12abdcba31))
+                            Text(text = li.songe.gkd.sdp.app.getString(R.string.s_12abdcba31))
                         },
                         onDismissRequest = {},
                         dismissButton = {
                             TextButton(onClick = {
                                 downloadStatusFlow.value = null
                             }) {
-                                Text(text = app.getString(R.string.s_6c14bd7f6f))
+                                Text(text = li.songe.gkd.sdp.app.getString(R.string.s_6c14bd7f6f))
                             }
                         },
                         confirmButton = {
                             TextButton(onClick = throttle {
                                 installApk(downloadStatusVal.result)
                             }) {
-                                Text(text = app.getString(R.string.s_087db63ab1))
+                                Text(text = li.songe.gkd.sdp.app.getString(R.string.s_087db63ab1))
                             }
                         })
                 }

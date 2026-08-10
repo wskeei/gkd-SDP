@@ -31,7 +31,6 @@ import li.songe.gkd.sdp.ui.style.AppTheme
 import li.songe.gkd.sdp.ui.share.ServiceOverlayLifecycleOwner
 import li.songe.gkd.sdp.util.LogUtils
 import androidx.compose.ui.res.stringResource
-import li.songe.gkd.sdp.R
 
 class UsageGuardTimeoutOverlayService : LifecycleService(), SavedStateRegistryOwner {
     private val windowManager by lazy { getSystemService(WINDOW_SERVICE) as WindowManager }

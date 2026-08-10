@@ -65,7 +65,6 @@ import li.songe.gkd.sdp.util.launchAsFn
 import li.songe.gkd.sdp.util.throttle
 import li.songe.gkd.sdp.util.toast
 import li.songe.gkd.sdp.R
-import li.songe.gkd.sdp.app
 
 @Serializable
 data object ActivityLogRoute : NavKey
@@ -92,7 +91,7 @@ fun ActivityLogPage() {
             },
             title = {
                 Text(
-                    text = app.getString(R.string.s_48ff47e21f),
+                    text = li.songe.gkd.sdp.app.getString(R.string.s_48ff47e21f),
                     modifier = Modifier.noRippleClickable { resetKey.intValue++ },
                 )
             },
@@ -102,12 +101,12 @@ fun ActivityLogPage() {
                         imageVector = PerfIcon.Delete,
                         onClick = throttle(fn = vm.viewModelScope.launchAsFn {
                             mainVm.dialogFlow.waitResult(
-                                title = app.getString(R.string.s_0c42f43e47),
-                                text = app.getString(R.string.s_76e76680f1),
+                                title = li.songe.gkd.sdp.app.getString(R.string.s_0c42f43e47),
+                                text = li.songe.gkd.sdp.app.getString(R.string.s_76e76680f1),
                                 error = true,
                             )
                             DbSet.activityLogDao.deleteAll()
-                            toast(app.getString(R.string.s_86e8d12a79))
+                            toast(li.songe.gkd.sdp.app.getString(R.string.s_86e8d12a79))
                         })
                     )
                 }
@@ -133,7 +132,7 @@ fun ActivityLogPage() {
             item(ListPlaceholder.KEY, ListPlaceholder.TYPE) {
                 Spacer(modifier = Modifier.height(EmptyHeight))
                 if (logCount == 0 && list.loadState.refresh !is LoadState.Loading) {
-                    EmptyText(text = app.getString(R.string.s_b246458f20))
+                    EmptyText(text = li.songe.gkd.sdp.app.getString(R.string.s_b246458f20))
                 }
             }
         }
@@ -232,7 +231,7 @@ private fun ActivityLogCard(
                         )
                     } else {
                         Text(
-                            text = app.getString(R.string.s_2be88ca424),
+                            text = li.songe.gkd.sdp.app.getString(R.string.s_2be88ca424),
                             color = LocalContentColor.current.copy(alpha = 0.5f),
                         )
                     }

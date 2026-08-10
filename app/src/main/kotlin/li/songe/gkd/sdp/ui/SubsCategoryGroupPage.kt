@@ -69,7 +69,6 @@ import li.songe.gkd.sdp.util.throttle
 import li.songe.gkd.sdp.util.toast
 import li.songe.gkd.sdp.util.updateSubscription
 import li.songe.gkd.sdp.R
-import li.songe.gkd.sdp.app
 
 @Serializable
 data class SubsCategoryGroupRoute(val subsId: Long, val categoryKey: Int) : NavKey
@@ -136,8 +135,8 @@ fun SubsCategoryGroupPage(route: SubsCategoryGroupRoute) {
             )
             val resetAll = suspend {
                 mainVm.dialogFlow.waitResult(
-                    title = app.getString(R.string.s_b2f0b173eb),
-                    text = app.getString(R.string.s_902609e57e),
+                    title = li.songe.gkd.sdp.app.getString(R.string.s_b2f0b173eb),
+                    text = li.songe.gkd.sdp.app.getString(R.string.s_902609e57e),
                 )
                 val updatedList = DbSet.subsConfigDao.batchResetAppGroupEnable(
                     subs.id,
@@ -145,9 +144,9 @@ fun SubsCategoryGroupPage(route: SubsCategoryGroupRoute) {
                         .map { g -> g to subs.getAppByGroup(g) },
                 )
                 if (updatedList.isNotEmpty()) {
-                    toast(app.getString(R.string.s_9672b434b8, updatedList.size))
+                    toast(li.songe.gkd.sdp.app.getString(R.string.s_9672b434b8, updatedList.size))
                 } else {
-                    toast(app.getString(R.string.s_8e1d999ba4))
+                    toast(li.songe.gkd.sdp.app.getString(R.string.s_8e1d999ba4))
                 }
             }
             if (subs.isLocal) {
@@ -164,7 +163,7 @@ fun SubsCategoryGroupPage(route: SubsCategoryGroupRoute) {
                         if (groupSize > 0) {
                             DropdownMenuItem(
                                 leadingIcon = { PerfIcon(imageVector = ResetSettings) },
-                                text = { Text(text = app.getString(R.string.s_3d81345303)) },
+                                text = { Text(text = li.songe.gkd.sdp.app.getString(R.string.s_3d81345303)) },
                                 onClick = throttle(vm.viewModelScope.launchAsFn {
                                     expanded = false
                                     resetAll()
@@ -173,7 +172,7 @@ fun SubsCategoryGroupPage(route: SubsCategoryGroupRoute) {
                         }
                         DropdownMenuItem(
                             leadingIcon = { PerfIcon(imageVector = PerfIcon.Edit) },
-                            text = { Text(text = app.getString(R.string.s_a7f814c0a4)) },
+                            text = { Text(text = li.songe.gkd.sdp.app.getString(R.string.s_a7f814c0a4)) },
                             onClick = {
                                 expanded = false
                                 vm.showEditCategoryFlow.value = true
@@ -181,7 +180,7 @@ fun SubsCategoryGroupPage(route: SubsCategoryGroupRoute) {
                         )
                         DropdownMenuItem(
                             leadingIcon = { PerfIcon(imageVector = PerfIcon.Delete) },
-                            text = { Text(text = app.getString(R.string.s_3755f56f2f)) },
+                            text = { Text(text = li.songe.gkd.sdp.app.getString(R.string.s_3755f56f2f)) },
                             colors = MenuDefaults.itemColors(
                                 textColor = MaterialTheme.colorScheme.error,
                                 leadingIconColor = MaterialTheme.colorScheme.error,
@@ -189,8 +188,8 @@ fun SubsCategoryGroupPage(route: SubsCategoryGroupRoute) {
                             onClick = throttle(mainVm.viewModelScope.launchAsFn {
                                 expanded = false
                                 mainVm.dialogFlow.waitResult(
-                                    title = app.getString(R.string.s_0bfb53c9cd),
-                                    text = app.getString(R.string.s_2b96421a75, category.name),
+                                    title = li.songe.gkd.sdp.app.getString(R.string.s_0bfb53c9cd),
+                                    text = li.songe.gkd.sdp.app.getString(R.string.s_2b96421a75, category.name),
                                     error = true,
                                 )
                                 mainVm.popPage()
@@ -200,7 +199,7 @@ fun SubsCategoryGroupPage(route: SubsCategoryGroupRoute) {
                                         removeIf { it.key == category.key }
                                     })
                                 )
-                                toast(app.getString(R.string.s_86e8d12a79))
+                                toast(li.songe.gkd.sdp.app.getString(R.string.s_86e8d12a79))
                             })
                         )
                     }
@@ -222,7 +221,7 @@ fun SubsCategoryGroupPage(route: SubsCategoryGroupRoute) {
                 modifier = Modifier.wrapContentSize(Alignment.TopStart)
             ) {
                 DropdownMenu(expanded = sortExpanded, onDismissRequest = { sortExpanded = false }) {
-                    MenuGroupCard(inTop = true, title = app.getString(R.string.s_dc35af8d69)) {
+                    MenuGroupCard(inTop = true, title = li.songe.gkd.sdp.app.getString(R.string.s_dc35af8d69)) {
                         var sortType by vm.sortTypeFlow.asMutableState()
                         AppSortOption.objects.forEach { option ->
                             MenuItemRadioButton(
@@ -232,7 +231,7 @@ fun SubsCategoryGroupPage(route: SubsCategoryGroupRoute) {
                             )
                         }
                     }
-                    MenuGroupCard(title = app.getString(R.string.s_97d8a6c05b)) {
+                    MenuGroupCard(title = li.songe.gkd.sdp.app.getString(R.string.s_97d8a6c05b)) {
                         var appGroupType by vm.appGroupTypeFlow.asMutableState()
                         AppGroupOption.allObjects.forEach { option ->
                             val newValue = option.invert(appGroupType)
@@ -244,9 +243,9 @@ fun SubsCategoryGroupPage(route: SubsCategoryGroupRoute) {
                             )
                         }
                     }
-                    MenuGroupCard(title = app.getString(R.string.s_dcce9a144a)) {
+                    MenuGroupCard(title = li.songe.gkd.sdp.app.getString(R.string.s_dcce9a144a)) {
                         MenuItemCheckbox(
-                            text = app.getString(R.string.s_8f74cd015b),
+                            text = li.songe.gkd.sdp.app.getString(R.string.s_8f74cd015b),
                             stateFlow = vm.showBlockAppFlow,
                         )
                     }
@@ -306,7 +305,7 @@ fun SubsCategoryGroupPage(route: SubsCategoryGroupRoute) {
             item(ListPlaceholder.KEY, ListPlaceholder.TYPE) {
                 Spacer(modifier = Modifier.height(EmptyHeight))
                 if (apps.isEmpty()) {
-                    EmptyText(text = if (vm.showAllAppFlow.collectAsStateWithLifecycle().value) app.getString(R.string.s_b246458f20) else app.getString(R.string.s_53e5dc587c))
+                    EmptyText(text = if (vm.showAllAppFlow.collectAsStateWithLifecycle().value) li.songe.gkd.sdp.app.getString(R.string.s_b246458f20) else li.songe.gkd.sdp.app.getString(R.string.s_53e5dc587c))
                     Spacer(modifier = Modifier.height(EmptyHeight))
                 }
             }

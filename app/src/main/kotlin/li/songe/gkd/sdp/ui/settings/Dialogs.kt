@@ -122,7 +122,6 @@ import androidx.compose.runtime.MutableState
 import li.songe.gkd.sdp.MainViewModel
 import li.songe.gkd.sdp.store.SettingsStore
 import androidx.compose.ui.res.stringResource
-import li.songe.gkd.sdp.app
 
 @Composable
 internal fun SettingsTextDialogs(
@@ -158,8 +157,8 @@ private fun SettingsToastDialog(
                         showToastInputDlg.value = false
                         val confirmAction = { mainVm.dialogFlow.value = null; showToastInputDlg.value = true }
                         mainVm.dialogFlow.updateDialogOptions(
-                            title = app.getString(R.string.s_d88d6e6c25),
-                            text = $$app.getString(R.string.s_1941b8aa85, 1, 2, 3, 1, 2, 3),
+                            title = li.songe.gkd.sdp.app.getString(R.string.s_d88d6e6c25),
+                            text = li.songe.gkd.sdp.app.getString(R.string.s_1941b8aa85),
                             confirmAction = confirmAction,
                             onDismissRequest = confirmAction,
                         )
@@ -170,9 +169,9 @@ private fun SettingsToastDialog(
         text = {
             OutlinedTextField(
                 value = value,
-                placeholder = { Text(app.getString(R.string.s_29207cc695)) },
+                placeholder = { Text(li.songe.gkd.sdp.app.getString(R.string.s_29207cc695)) },
                 onValueChange = { value = it.take(maxCharLen) },
-                supportingText = { Text(app.getString(R.string.s_61485b8822, value.length, maxCharLen), modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.End) },
+                supportingText = { Text(li.songe.gkd.sdp.app.getString(R.string.s_61485b8822, value.length, maxCharLen), modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.End) },
                 modifier = Modifier.fillMaxWidth().autoFocus(),
             )
         },
@@ -183,7 +182,7 @@ private fun SettingsToastDialog(
                 onClick = {
                     if (value != storeFlow.value.actionToast) {
                         storeFlow.update { it.copy(actionToast = value) }
-                        toast(app.getString(R.string.s_e2cff77372))
+                        toast(li.songe.gkd.sdp.app.getString(R.string.s_e2cff77372))
                     }
                     showToastInputDlg.value = false
                 },
@@ -216,8 +215,8 @@ private fun SettingsNotificationDialog(
                         showNotifTextInputDlg.value = false
                         val confirmAction = { mainVm.dialogFlow.value = null; showNotifTextInputDlg.value = true }
                         mainVm.dialogFlow.updateDialogOptions(
-                            title = app.getString(R.string.s_d88d6e6c25),
-                            text = $$app.getString(R.string.s_3036ac5688, i, k, u, n, i, k, u, n),
+                            title = li.songe.gkd.sdp.app.getString(R.string.s_d88d6e6c25),
+                            text = li.songe.gkd.sdp.app.getString(R.string.s_3036ac5688),
                             confirmAction = confirmAction,
                             onDismissRequest = confirmAction,
                         )
@@ -230,22 +229,22 @@ private fun SettingsNotificationDialog(
                 val titleMaxLen = 32
                 val textMaxLen = 64
                 CustomOutlinedTextField(
-                    label = { Text(app.getString(R.string.s_e6dc2df4a4)) },
+                    label = { Text(li.songe.gkd.sdp.app.getString(R.string.s_e6dc2df4a4)) },
                     value = titleValue,
-                    placeholder = { Text(app.getString(R.string.s_d8eb8652a1)) },
+                    placeholder = { Text(li.songe.gkd.sdp.app.getString(R.string.s_d8eb8652a1)) },
                     onValueChange = { titleValue = it.take(titleMaxLen).filter { c -> c !in "\n\r" } },
-                    supportingText = { Text(app.getString(R.string.s_2990881615, titleValue.length, titleMaxLen), modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.End) },
+                    supportingText = { Text(li.songe.gkd.sdp.app.getString(R.string.s_2990881615, titleValue.length, titleMaxLen), modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.End) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                     contentPadding = PaddingValues(12.dp),
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 CustomOutlinedTextField(
-                    label = { Text(app.getString(R.string.s_8344831e7c)) },
+                    label = { Text(li.songe.gkd.sdp.app.getString(R.string.s_8344831e7c)) },
                     value = textValue,
-                    placeholder = { Text(app.getString(R.string.s_d8eb8652a1)) },
+                    placeholder = { Text(li.songe.gkd.sdp.app.getString(R.string.s_d8eb8652a1)) },
                     onValueChange = { textValue = it.take(textMaxLen) },
-                    supportingText = { Text(app.getString(R.string.s_98362e17dd, textValue.length, textMaxLen), modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.End) },
+                    supportingText = { Text(li.songe.gkd.sdp.app.getString(R.string.s_98362e17dd, textValue.length, textMaxLen), modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.End) },
                     maxLines = 4,
                     modifier = Modifier.fillMaxWidth().autoFocus(),
                     contentPadding = PaddingValues(12.dp),
@@ -258,7 +257,7 @@ private fun SettingsNotificationDialog(
                 context.justHideSoftInput()
                 if (store.customNotifTitle != titleValue || store.customNotifText != textValue) {
                     storeFlow.update { it.copy(customNotifTitle = titleValue, customNotifText = textValue) }
-                    toast(app.getString(R.string.s_e2cff77372))
+                    toast(li.songe.gkd.sdp.app.getString(R.string.s_e2cff77372))
                 }
                 showNotifTextInputDlg.value = false
             }) { Text(stringResource(R.string.s_b56d9ac6c5)) }
@@ -280,12 +279,12 @@ internal fun BlockA11yDialog(onDismissRequest: () -> Unit) = FullscreenDialog(on
                 navigationIcon = {
                     PerfIconButton(
                         imageVector = PerfIcon.Close,
-                        onClickLabel = app.getString(R.string.s_81f18d4d48),
+                        onClickLabel = li.songe.gkd.sdp.app.getString(R.string.s_81f18d4d48),
                         onClick = onDismissRequest,
                     )
                 },
                 title = {
-                    Text(text = app.getString(R.string.s_86613e925d))
+                    Text(text = li.songe.gkd.sdp.app.getString(R.string.s_86613e925d))
                 },
             )
         },
@@ -300,7 +299,7 @@ internal fun BlockA11yDialog(onDismissRequest: () -> Unit) = FullscreenDialog(on
                         storeFlow.update { it.copy(enableBlockA11yAppList = true) }
                     }
                 ) {
-                    Text(text = app.getString(R.string.s_1fc1afc5c5))
+                    Text(text = li.songe.gkd.sdp.app.getString(R.string.s_1fc1afc5c5))
                 }
                 Spacer(modifier = Modifier.width(itemHorizontalPadding))
             }
@@ -314,23 +313,23 @@ internal fun BlockA11yDialog(onDismissRequest: () -> Unit) = FullscreenDialog(on
                 .padding(horizontal = itemHorizontalPadding)
         ) {
             CompositionLocalProvider(LocalTextStyle provides MaterialTheme.typography.bodyMedium) {
-                Text(text = app.getString(R.string.s_be7bf1f6b3))
+                Text(text = li.songe.gkd.sdp.app.getString(R.string.s_be7bf1f6b3))
                 Spacer(modifier = Modifier.height(16.dp))
-                Text(text = app.getString(R.string.s_59e2c8e61d), style = MaterialTheme.typography.titleMedium)
+                Text(text = li.songe.gkd.sdp.app.getString(R.string.s_59e2c8e61d), style = MaterialTheme.typography.titleMedium)
                 Column(
                     verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
-                    RequiredTextItem(text = app.getString(R.string.s_cbdc0c0a7a))
-                    RequiredTextItem(text = app.getString(R.string.s_ace5fab374))
-                    RequiredTextItem(text = app.getString(R.string.s_610a7f9c61))
+                    RequiredTextItem(text = li.songe.gkd.sdp.app.getString(R.string.s_cbdc0c0a7a))
+                    RequiredTextItem(text = li.songe.gkd.sdp.app.getString(R.string.s_ace5fab374))
+                    RequiredTextItem(text = li.songe.gkd.sdp.app.getString(R.string.s_610a7f9c61))
                 }
                 Spacer(modifier = Modifier.height(16.dp))
-                Text(text = app.getString(R.string.s_b412fa069d), style = MaterialTheme.typography.titleMedium)
+                Text(text = li.songe.gkd.sdp.app.getString(R.string.s_b412fa069d), style = MaterialTheme.typography.titleMedium)
                 Column(
                     verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
                     RequiredTextItem(
-                        text = app.getString(R.string.s_0f0c48af67),
+                        text = li.songe.gkd.sdp.app.getString(R.string.s_0f0c48af67),
                         enabled = !shizukuContext.ok,
                         imageVector = if (shizukuContext.ok) PerfIcon.Check else PerfIcon.ArrowForward,
                         onClick = mainVm.viewModelScope.launchAsFn(Dispatchers.IO) {
@@ -338,7 +337,7 @@ internal fun BlockA11yDialog(onDismissRequest: () -> Unit) = FullscreenDialog(on
                         },
                     )
                     RequiredTextItem(
-                        text = app.getString(R.string.s_6325cb01af),
+                        text = li.songe.gkd.sdp.app.getString(R.string.s_6325cb01af),
                         enabled = !statusRunning,
                         imageVector = if (statusRunning) PerfIcon.Check else PerfIcon.ArrowForward,
                         onClick = mainVm.viewModelScope.launchAsFn {
@@ -346,40 +345,40 @@ internal fun BlockA11yDialog(onDismissRequest: () -> Unit) = FullscreenDialog(on
                         },
                     )
                     RequiredTextItem(
-                        text = app.getString(R.string.s_37cf171b6d),
+                        text = li.songe.gkd.sdp.app.getString(R.string.s_37cf171b6d),
                         enabled = !ignoreBatteryOptimizations,
                         imageVector = if (ignoreBatteryOptimizations) PerfIcon.Check else PerfIcon.ArrowForward,
-                        onClickLabel = app.getString(R.string.s_b2c141c8e1),
+                        onClickLabel = li.songe.gkd.sdp.app.getString(R.string.s_b2c141c8e1),
                         onClick = mainVm.viewModelScope.launchAsFn {
                             requiredPermission(context, ignoreBatteryOptimizationsState)
                         },
                     )
                     RequiredTextItem(
-                        text = app.getString(R.string.s_a31eb38058),
+                        text = li.songe.gkd.sdp.app.getString(R.string.s_a31eb38058),
                         enabled = true,
                         imageVector = PerfIcon.OpenInNew,
-                        onClickLabel = app.getString(R.string.s_3714fd1374),
+                        onClickLabel = li.songe.gkd.sdp.app.getString(R.string.s_3714fd1374),
                         onClick = {
                             openAppDetailsSettings()
                         },
                     )
                     RequiredTextItem(
-                        text = app.getString(R.string.s_5e5ac93cc0),
+                        text = li.songe.gkd.sdp.app.getString(R.string.s_5e5ac93cc0),
                         enabled = true,
                         imageVector = PerfIcon.OpenInNew,
-                        onClickLabel = app.getString(R.string.s_3714fd1374),
+                        onClickLabel = li.songe.gkd.sdp.app.getString(R.string.s_3714fd1374),
                         onClick = {
                             val m = shizukuContextFlow.value.inputManager
                             if (m != null) {
                                 m.key(KeyEvent.KEYCODE_APP_SWITCH)
                             } else {
-                                toast(app.getString(R.string.s_7b29e9051a))
+                                toast(li.songe.gkd.sdp.app.getString(R.string.s_7b29e9051a))
                             }
                         },
                     )
                 }
                 Spacer(modifier = Modifier.height(16.dp))
-                Text(text = app.getString(R.string.s_d0cd80bc26))
+                Text(text = li.songe.gkd.sdp.app.getString(R.string.s_d0cd80bc26))
             }
             Spacer(modifier = Modifier.height(EmptyHeight))
         }

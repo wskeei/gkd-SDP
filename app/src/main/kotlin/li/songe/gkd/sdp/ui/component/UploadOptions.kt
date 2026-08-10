@@ -23,7 +23,6 @@ import li.songe.gkd.sdp.util.uploadFileToGithub
 import java.io.File
 import androidx.compose.ui.res.stringResource
 import li.songe.gkd.sdp.R
-import li.songe.gkd.sdp.app
 
 class UploadOptions(
     private val mainVm: MainViewModel,
@@ -61,7 +60,7 @@ class UploadOptions(
     ) {
         val cookie = mainVm.githubCookieFlow.value
         if (cookie.isEmpty()) {
-            toast(app.getString(R.string.s_7f96c93415))
+            toast(li.songe.gkd.sdp.app.getString(R.string.s_7f96c93415))
             mainVm.showEditCookieDlgFlow.value = true
             return
         }
@@ -86,7 +85,7 @@ class UploadOptions(
             null -> {}
             is LoadStatus.Loading -> {
                 AlertDialog(
-                    title = { Text(text = app.getString(R.string.s_3219dbb398)) },
+                    title = { Text(text = li.songe.gkd.sdp.app.getString(R.string.s_3219dbb398)) },
                     text = {
                         val showExactProgress = 0f < status.progress && status.progress < 1f
                         AnimatedContent(showExactProgress) { showExact ->
@@ -104,7 +103,7 @@ class UploadOptions(
                         TextButton(onClick = {
                             stopTask()
                         }) {
-                            Text(text = app.getString(R.string.s_b387756d31))
+                            Text(text = li.songe.gkd.sdp.app.getString(R.string.s_b387756d31))
                         }
                     },
                 )

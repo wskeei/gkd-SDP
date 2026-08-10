@@ -33,7 +33,6 @@ import li.songe.gkd.sdp.ui.style.EmptyHeight
 import li.songe.gkd.sdp.ui.style.titleItemPadding
 import li.songe.gkd.sdp.util.*
 import androidx.compose.ui.res.stringResource
-import li.songe.gkd.sdp.app
 
 @Composable
 internal fun SettingsContent(
@@ -112,10 +111,10 @@ private fun SettingsGeneralSection(
             PerfCustomIconButton(
                 size = 32.dp,
                 iconSize = 20.dp,
-                onClickLabel = app.getString(R.string.s_be1e5b4074),
+                onClickLabel = li.songe.gkd.sdp.app.getString(R.string.s_be1e5b4074),
                 onClick = { vm.showToastSettingsDlgFlow.update { !it } },
                 id = R.drawable.ic_page_info,
-                contentDescription = app.getString(R.string.s_aaa3b3883f),
+                contentDescription = li.songe.gkd.sdp.app.getString(R.string.s_aaa3b3883f),
                 tint = if (showToastSettingsDlg) MaterialTheme.colorScheme.primary else LocalContentColor.current,
             )
         },
@@ -124,27 +123,27 @@ private fun SettingsGeneralSection(
     AnimatedVisibility(showToastSettingsDlg) {
         Column {
             TextSwitch(
-                title = app.getString(R.string.s_29ea25d303),
-                subtitle = app.getString(R.string.s_565e1ff87a),
+                title = li.songe.gkd.sdp.app.getString(R.string.s_29ea25d303),
+                subtitle = li.songe.gkd.sdp.app.getString(R.string.s_565e1ff87a),
                 suffix = "查看限制",
                 onSuffixClick = {
                     mainVm.dialogFlow.updateDialogOptions(
-                        title = app.getString(R.string.s_1b2219a307),
-                        text = app.getString(R.string.s_5118a80944),
+                        title = li.songe.gkd.sdp.app.getString(R.string.s_1b2219a307),
+                        text = li.songe.gkd.sdp.app.getString(R.string.s_5118a80944),
                     )
                 },
                 checked = store.useSystemToast,
                 onCheckedChange = { storeFlow.value = store.copy(useSystemToast = it) },
             )
             TextSwitch(
-                title = app.getString(R.string.s_6a1b839874),
-                subtitle = app.getString(R.string.s_e78582fda3),
+                title = li.songe.gkd.sdp.app.getString(R.string.s_6a1b839874),
+                subtitle = li.songe.gkd.sdp.app.getString(R.string.s_e78582fda3),
                 checked = TrackService.isRunning.collectAsStateWithLifecycle().value,
                 onCheckedChange = vm.viewModelScope.launchAsFn<Boolean> {
                     if (it) {
                         mainVm.dialogFlow.waitResult(
-                            title = app.getString(R.string.s_59e2c8e61d),
-                            text = app.getString(R.string.s_881aca9e23),
+                            title = li.songe.gkd.sdp.app.getString(R.string.s_59e2c8e61d),
+                            text = li.songe.gkd.sdp.app.getString(R.string.s_881aca9e23),
                             confirmText = "继续",
                         )
                         requiredPermission(context, foregroundServiceSpecialUseState)
@@ -172,8 +171,8 @@ private fun SettingsGeneralSection(
         onCheckedChange = vm.viewModelScope.launchAsFn<Boolean> {
             if (it) {
                 mainVm.dialogFlow.waitResult(
-                    title = app.getString(R.string.s_8c91b02262),
-                    text = app.getString(R.string.s_7834885df6),
+                    title = li.songe.gkd.sdp.app.getString(R.string.s_8c91b02262),
+                    text = li.songe.gkd.sdp.app.getString(R.string.s_7834885df6),
                     confirmText = "继续",
                 )
             }

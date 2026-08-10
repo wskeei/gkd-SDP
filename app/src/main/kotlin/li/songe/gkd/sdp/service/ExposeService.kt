@@ -62,7 +62,7 @@ class ExposeService : Service() {
             ExposeAction.STATUS_AUTOSTART -> StatusService.autoStart()
             ExposeAction.CAPTURE -> SnapshotExt.captureSnapshot()
             ExposeAction.SYNC_FIX -> {
-                toast(app.getString(R.string.s_6c189aad4d), forced = true)
+                toast(li.songe.gkd.sdp.app.getString(R.string.s_6c189aad4d), forced = true)
                 syncFixState()
             }
         }

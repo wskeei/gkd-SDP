@@ -246,7 +246,7 @@ fun updateAllAppInfo(): Unit = updateAppMutex.launchTry(appScope, Dispatchers.IO
     userAppInfoMapFlow.value = newAppMap
     userAppIconMapFlow.value = newIconMap
     if (!app.justStarted) {
-        toast(app.getString(R.string.s_8674184633))
+        toast(li.songe.gkd.sdp.app.getString(R.string.s_8674184633))
     }
     if (canQueryPkgState.value && mayAuthDenied && app.justStarted) {
         // 概率出现：即使有「读取应用列表权限」在刚启动时也只能获取到少量应用，延迟几秒再试一次

@@ -88,7 +88,6 @@ import li.songe.gkd.sdp.util.shareFile
 import li.songe.gkd.sdp.util.throttle
 import li.songe.gkd.sdp.util.toast
 import androidx.compose.ui.res.stringResource
-import li.songe.gkd.sdp.app
 
 @Serializable
 data object AboutRoute : NavKey
@@ -110,7 +109,7 @@ fun AboutPage() {
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     Column {
-                        Text(text = app.getString(R.string.s_25d3a49e6c))
+                        Text(text = li.songe.gkd.sdp.app.getString(R.string.s_25d3a49e6c))
                         Text(text = META.channel)
                     }
                     Column {
@@ -131,7 +130,7 @@ fun AboutPage() {
                         )
                     }
                     Column {
-                        Text(text = app.getString(R.string.s_e2ecfd6487))
+                        Text(text = li.songe.gkd.sdp.app.getString(R.string.s_e2ecfd6487))
                         Text(text = META.commitTime.format("yyyy-MM-dd HH:mm:ss ZZ"))
                     }
                 }
@@ -160,7 +159,7 @@ fun AboutPage() {
                         },
                     )
                 },
-                title = { Text(text = app.getString(R.string.s_bed172efc9)) },
+                title = { Text(text = li.songe.gkd.sdp.app.getString(R.string.s_bed172efc9)) },
                 actions = {
                     PerfIconButton(
                         imageVector = PerfIcon.Share,
@@ -187,7 +186,7 @@ fun AboutPage() {
                         .clickable(
                             indication = null,
                             interactionSource = remember { MutableInteractionSource() },
-                            onClick = throttle { toast(app.getString(R.string.s_e60faf5b29)) }
+                            onClick = throttle { toast(li.songe.gkd.sdp.app.getString(R.string.s_e60faf5b29)) }
                         )
                         .fillMaxWidth(0.33f)
                         .aspectRatio(1f)
@@ -249,7 +248,7 @@ fun AboutPage() {
                 modifier = Modifier
                     .clickable(onClick = throttle(mainVm.viewModelScope.launchAsFn {
                         mainVm.dialogFlow.waitResult(
-                            title = app.getString(R.string.s_17068dc79c),
+                            title = li.songe.gkd.sdp.app.getString(R.string.s_17068dc79c),
                             textContent = {
                                 Text(text = buildAnnotatedString {
                                     val highlightStyle = SpanStyle(
@@ -303,8 +302,8 @@ fun AboutPage() {
                     if (it.value == UpdateChannelOption.Beta.value) {
                         mainVm.viewModelScope.launchTry {
                             mainVm.dialogFlow.waitResult(
-                                title = app.getString(R.string.s_f5c895b864),
-                                text = app.getString(R.string.s_d63a373932),
+                                title = li.songe.gkd.sdp.app.getString(R.string.s_f5c895b864),
+                                text = li.songe.gkd.sdp.app.getString(R.string.s_d63a373932),
                             )
                             storeFlow.update { s -> s.copy(updateChannel = it.value) }
                         }
@@ -342,7 +341,7 @@ fun AboutPage() {
                 "分享到其他应用" to mainVm.viewModelScope.launchAsFn(Dispatchers.IO) {
                     if (!META.isGkdChannel) {
                         mainVm.dialogFlow.waitResult(
-                            title = app.getString(R.string.s_ba964c4042),
+                            title = li.songe.gkd.sdp.app.getString(R.string.s_ba964c4042),
                             textContent = { Text(text = exportPlayTipTemplate()) },
                             confirmText = "继续",
                         )
@@ -352,7 +351,7 @@ fun AboutPage() {
                 "保存到下载" to mainVm.viewModelScope.launchAsFn(Dispatchers.IO) {
                     if (!META.isGkdChannel) {
                         mainVm.dialogFlow.waitResult(
-                            title = app.getString(R.string.s_108a9199f2),
+                            title = li.songe.gkd.sdp.app.getString(R.string.s_108a9199f2),
                             textContent = { Text(text = exportPlayTipTemplate()) },
                             confirmText = "继续",
                         )

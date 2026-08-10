@@ -57,7 +57,6 @@ import li.songe.gkd.sdp.util.DigitalSelfDisciplineReviewPolicy
 import java.time.LocalDate
 import java.time.ZoneId
 import li.songe.gkd.sdp.R
-import li.songe.gkd.sdp.app
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -79,7 +78,7 @@ fun UsageGuardReviewPageSections() {
                 navigationIcon = {
                     PerfIconButton(PerfIcon.ArrowBack, onClick = { mainVm.popPage() })
                 },
-                title = { Text(app.getString(R.string.s_c7380c3c20)) },
+                title = { Text(li.songe.gkd.sdp.app.getString(R.string.s_c7380c3c20)) },
             )
         },
     ) { padding ->
@@ -112,7 +111,7 @@ fun UsageGuardReviewPageSections() {
                                 )
                             }
                         }
-                        Text(app.getString(R.string.s_302471b81d), style = MaterialTheme.typography.titleSmall)
+                        Text(li.songe.gkd.sdp.app.getString(R.string.s_302471b81d), style = MaterialTheme.typography.titleSmall)
                         SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
                             DigitalSelfDisciplineReviewPolicy.Range.entries.forEach { range ->
                                 SegmentedButton(
@@ -133,7 +132,7 @@ fun UsageGuardReviewPageSections() {
                             }
                         }
                         if (DigitalSelfDisciplineReviewPresentation.showInterceptFilters(selectedType)) {
-                            Text(app.getString(R.string.s_1278802e6e), style = MaterialTheme.typography.titleSmall)
+                            Text(li.songe.gkd.sdp.app.getString(R.string.s_1278802e6e), style = MaterialTheme.typography.titleSmall)
                             FlowRow(
                                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                                 verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -158,7 +157,7 @@ fun UsageGuardReviewPageSections() {
             when (val state = reviewState) {
                 DigitalSelfDisciplineReviewUiState.Loading -> item(key = "loading") {
                     ReviewSectionCard("正在读取复盘数据", "统计只在本机生成，不会上传。") {
-                        Text(app.getString(R.string.s_3b39242124), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(li.songe.gkd.sdp.app.getString(R.string.s_3b39242124), color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
                 is DigitalSelfDisciplineReviewUiState.Error -> item(key = "error") {
@@ -183,7 +182,7 @@ fun UsageGuardReviewPageSections() {
                                             .semantics {
                                                 stateDescription = if (selectedMetric == DigitalSelfDisciplineReviewPolicy.ReviewMetric.USAGE_RATIO) "间用比，已选择" else "间用比，未选择"
                                             },
-                                        label = { Text(app.getString(R.string.s_4cec547cf2)) },
+                                        label = { Text(li.songe.gkd.sdp.app.getString(R.string.s_4cec547cf2)) },
                                     )
                                     SegmentedButton(
                                         selected = selectedMetric == DigitalSelfDisciplineReviewPolicy.ReviewMetric.USAGE_GAP,
@@ -195,7 +194,7 @@ fun UsageGuardReviewPageSections() {
                                             .semantics {
                                                 stateDescription = if (selectedMetric == DigitalSelfDisciplineReviewPolicy.ReviewMetric.USAGE_GAP) "未使用间隔，已选择" else "未使用间隔，未选择"
                                             },
-                                        label = { Text(app.getString(R.string.s_41d7664f15)) },
+                                        label = { Text(li.songe.gkd.sdp.app.getString(R.string.s_41d7664f15)) },
                                     )
                                 }
                             }
@@ -252,13 +251,13 @@ internal fun ReviewRankedBarList(
 ) {
     ReviewSectionCard(title, "按数量排序，比例同时用文字和进度表达") {
         if (bars.isEmpty()) {
-            Text(app.getString(R.string.s_6c53cda00c), color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(li.songe.gkd.sdp.app.getString(R.string.s_6c53cda00c), color = MaterialTheme.colorScheme.onSurfaceVariant)
         } else {
             bars.forEach { bar ->
                 Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text(bar.label, modifier = Modifier.weight(1f))
-                        Text(app.getString(R.string.s_dda4842aee, bar.countText, bar.shareText))
+                        Text(li.songe.gkd.sdp.app.getString(R.string.s_dda4842aee, bar.countText, bar.shareText))
                     }
                     LinearProgressIndicator(
                         progress = { bar.share },
@@ -275,7 +274,7 @@ internal fun ReviewRankedBarList(
 internal fun RecentRowsCard(rows: List<DigitalSelfDisciplineReviewPresentation.RecentRow>) {
     ReviewSectionCard("最近明细", "最多显示最近 10 条，不包含申请理由、网址或选择器文本") {
         if (rows.isEmpty()) {
-            Text(app.getString(R.string.s_fa8cdd2a46), color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(li.songe.gkd.sdp.app.getString(R.string.s_fa8cdd2a46), color = MaterialTheme.colorScheme.onSurfaceVariant)
         } else {
             rows.forEach { row ->
                 Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {

@@ -11,7 +11,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import li.songe.gkd.sdp.util.openUri
 import li.songe.gkd.sdp.util.throttle
 import androidx.compose.ui.res.stringResource
-import li.songe.gkd.sdp.R
 
 @Composable
 fun TextDialog(

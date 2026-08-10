@@ -20,7 +20,6 @@ import li.songe.gkd.sdp.util.AppBlockerDecisionPolicy
 import li.songe.gkd.sdp.util.json
 import li.songe.gkd.sdp.util.toast
 import li.songe.gkd.sdp.R
-import li.songe.gkd.sdp.app
 
 class AppBlockerVm : BaseViewModel() {
     enum class GroupEditorMode {
@@ -85,21 +84,21 @@ class AppBlockerVm : BaseViewModel() {
 
     fun saveGroup() = viewModelScope.launch(Dispatchers.IO) {
         if (groupName.isBlank()) {
-            toast(app.getString(R.string.s_7f9cc8a658))
+            toast(li.songe.gkd.sdp.app.getString(R.string.s_7f9cc8a658))
             return@launch
         }
         if (groupApps.isEmpty()) {
-            toast(app.getString(R.string.s_53de29c90a))
+            toast(li.songe.gkd.sdp.app.getString(R.string.s_53de29c90a))
             return@launch
         }
 
         val globalLock = globalLockFlow.value
         if (globalLock?.isCurrentlyLocked == true) {
-            toast(app.getString(R.string.s_b60e11702a))
+            toast(li.songe.gkd.sdp.app.getString(R.string.s_b60e11702a))
             return@launch
         }
         if (editingGroup?.isCurrentlyLocked == true) {
-            toast(app.getString(R.string.s_2d310a6c50))
+            toast(li.songe.gkd.sdp.app.getString(R.string.s_2d310a6c50))
             return@launch
         }
 
@@ -114,29 +113,29 @@ class AppBlockerVm : BaseViewModel() {
         )
 
         DbSet.appGroupDao.insert(group)
-        toast(if (editingGroup != null) app.getString(R.string.s_69523749b4) else app.getString(R.string.s_06802d0346))
+        toast(if (editingGroup != null) li.songe.gkd.sdp.app.getString(R.string.s_69523749b4) else li.songe.gkd.sdp.app.getString(R.string.s_06802d0346))
         resetGroupForm()
     }
 
     fun deleteGroup(group: AppGroup) = viewModelScope.launch(Dispatchers.IO) {
         val globalLock = globalLockFlow.value
         if (globalLock?.isCurrentlyLocked == true) {
-            toast(app.getString(R.string.s_f668f3749f))
+            toast(li.songe.gkd.sdp.app.getString(R.string.s_f668f3749f))
             return@launch
         }
         if (group.isCurrentlyLocked) {
-            toast(app.getString(R.string.s_81287b9dd7))
+            toast(li.songe.gkd.sdp.app.getString(R.string.s_81287b9dd7))
             return@launch
         }
         DbSet.appGroupDao.delete(group)
         // 同时删除该应用组的所有规则
         DbSet.blockTimeRuleDao.deleteByTarget(BlockTimeRule.TARGET_TYPE_GROUP, group.id.toString())
-        toast(app.getString(R.string.s_dec1fa77b8))
+        toast(li.songe.gkd.sdp.app.getString(R.string.s_dec1fa77b8))
     }
 
     fun toggleGroupEnabled(group: AppGroup) = viewModelScope.launch(Dispatchers.IO) {
         if (group.enabled && (group.isCurrentlyLocked || globalLockFlow.value?.isCurrentlyLocked == true)) {
-            toast(app.getString(R.string.s_19c7b9ed28))
+            toast(li.songe.gkd.sdp.app.getString(R.string.s_19c7b9ed28))
             return@launch
         }
         val requestedEnabled = !group.enabled
@@ -194,33 +193,33 @@ class AppBlockerVm : BaseViewModel() {
 
     fun saveRule() = viewModelScope.launch(Dispatchers.IO) {
         if (ruleTargetId.isBlank()) {
-            toast(app.getString(R.string.s_bb81e3c8bd))
+            toast(li.songe.gkd.sdp.app.getString(R.string.s_bb81e3c8bd))
             return@launch
         }
         if (ruleTargetType != BlockTimeRule.TARGET_TYPE_APP &&
             ruleTargetType != BlockTimeRule.TARGET_TYPE_GROUP
         ) {
-            toast(app.getString(R.string.s_9d6d4b8017))
+            toast(li.songe.gkd.sdp.app.getString(R.string.s_9d6d4b8017))
             return@launch
         }
         if (!AppBlockerDecisionPolicy.isValidTime(ruleStartTime) ||
             !AppBlockerDecisionPolicy.isValidTime(ruleEndTime)
         ) {
-            toast(app.getString(R.string.s_952d0f0784))
+            toast(li.songe.gkd.sdp.app.getString(R.string.s_952d0f0784))
             return@launch
         }
         if (ruleDaysOfWeek.isEmpty() || ruleDaysOfWeek.any { it !in 1..7 }) {
-            toast(app.getString(R.string.s_97668429f3))
+            toast(li.songe.gkd.sdp.app.getString(R.string.s_97668429f3))
             return@launch
         }
 
         val globalLock = globalLockFlow.value
         if (globalLock?.isCurrentlyLocked == true) {
-            toast(app.getString(R.string.s_b60e11702a))
+            toast(li.songe.gkd.sdp.app.getString(R.string.s_b60e11702a))
             return@launch
         }
         if (editingRule?.isCurrentlyLocked == true) {
-            toast(app.getString(R.string.s_24250499b8))
+            toast(li.songe.gkd.sdp.app.getString(R.string.s_24250499b8))
             return@launch
         }
 
@@ -228,16 +227,16 @@ class AppBlockerVm : BaseViewModel() {
         if (ruleTargetType == BlockTimeRule.TARGET_TYPE_GROUP) {
             val groupId = ruleTargetId.toLongOrNull()
             if (groupId == null || groupId <= 0L) {
-                toast(app.getString(R.string.s_179a65fe24))
+                toast(li.songe.gkd.sdp.app.getString(R.string.s_179a65fe24))
                 return@launch
             }
             val group = DbSet.appGroupDao.getById(groupId)
             if (group == null) {
-                toast(app.getString(R.string.s_6be293f190))
+                toast(li.songe.gkd.sdp.app.getString(R.string.s_6be293f190))
                 return@launch
             }
             if (group.isCurrentlyLocked) {
-                toast(app.getString(R.string.s_e8446b01b9))
+                toast(li.songe.gkd.sdp.app.getString(R.string.s_e8446b01b9))
                 return@launch
             }
         }
@@ -258,22 +257,22 @@ class AppBlockerVm : BaseViewModel() {
         )
 
         DbSet.blockTimeRuleDao.insert(rule)
-        toast(if (editingRule != null) app.getString(R.string.s_fccd13d79e) else app.getString(R.string.s_4a96cba3d5))
+        toast(if (editingRule != null) li.songe.gkd.sdp.app.getString(R.string.s_fccd13d79e) else li.songe.gkd.sdp.app.getString(R.string.s_4a96cba3d5))
         resetRuleForm()
     }
 
     fun deleteRule(rule: BlockTimeRule) = viewModelScope.launch(Dispatchers.IO) {
         val globalLock = globalLockFlow.value
         if (globalLock?.isCurrentlyLocked == true) {
-            toast(app.getString(R.string.s_f668f3749f))
+            toast(li.songe.gkd.sdp.app.getString(R.string.s_f668f3749f))
             return@launch
         }
         if (rule.isCurrentlyLocked) {
-            toast(app.getString(R.string.s_7e2a3403ff))
+            toast(li.songe.gkd.sdp.app.getString(R.string.s_7e2a3403ff))
             return@launch
         }
         DbSet.blockTimeRuleDao.delete(rule)
-        toast(app.getString(R.string.s_91ba569081))
+        toast(li.songe.gkd.sdp.app.getString(R.string.s_91ba569081))
     }
 
     fun toggleRuleEnabled(rule: BlockTimeRule) = viewModelScope.launch(Dispatchers.IO) {
@@ -298,7 +297,7 @@ class AppBlockerVm : BaseViewModel() {
         }
 
         if (durationMinutes <= 0) {
-            toast(app.getString(R.string.s_40d80a0879))
+            toast(li.songe.gkd.sdp.app.getString(R.string.s_40d80a0879))
             return@launch
         }
 
@@ -320,7 +319,7 @@ class AppBlockerVm : BaseViewModel() {
         )
 
         DbSet.appBlockerLockDao.insert(lock)
-        toast(app.getString(R.string.s_32850ffc30))
+        toast(li.songe.gkd.sdp.app.getString(R.string.s_32850ffc30))
     }
 
     fun lockGroup(group: AppGroup) = viewModelScope.launch(Dispatchers.IO) {
@@ -333,7 +332,7 @@ class AppBlockerVm : BaseViewModel() {
         }
 
         if (durationMinutes <= 0) {
-            toast(app.getString(R.string.s_40d80a0879))
+            toast(li.songe.gkd.sdp.app.getString(R.string.s_40d80a0879))
             return@launch
         }
 
@@ -354,7 +353,7 @@ class AppBlockerVm : BaseViewModel() {
         )
 
         DbSet.appGroupDao.update(updatedGroup)
-        toast(app.getString(R.string.s_cb098574e7))
+        toast(li.songe.gkd.sdp.app.getString(R.string.s_cb098574e7))
     }
 
     fun lockRule(rule: BlockTimeRule) = viewModelScope.launch(Dispatchers.IO) {
@@ -367,7 +366,7 @@ class AppBlockerVm : BaseViewModel() {
         }
 
         if (durationMinutes <= 0) {
-            toast(app.getString(R.string.s_40d80a0879))
+            toast(li.songe.gkd.sdp.app.getString(R.string.s_40d80a0879))
             return@launch
         }
 
@@ -388,7 +387,7 @@ class AppBlockerVm : BaseViewModel() {
         )
 
         DbSet.blockTimeRuleDao.update(updatedRule)
-        toast(app.getString(R.string.s_7aa6790ed4))
+        toast(li.songe.gkd.sdp.app.getString(R.string.s_7aa6790ed4))
     }
 
     companion object {

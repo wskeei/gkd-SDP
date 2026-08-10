@@ -33,7 +33,6 @@ import java.nio.file.StandardCopyOption
 import java.util.UUID
 import kotlin.math.min
 import li.songe.gkd.sdp.R
-import li.songe.gkd.sdp.app
 
 object SnapshotExt {
 
@@ -311,7 +310,7 @@ object SnapshotExt {
                 A11yRuleEngine.instance?.safeActiveWindow
                     ?: throw RpcError("当前应用没有无障碍信息，捕获失败")
             if (storeFlow.value.showSaveSnapshotToast) {
-                toast(app.getString(R.string.s_cf174a6fa9), forced = true)
+                toast(li.songe.gkd.sdp.app.getString(R.string.s_cf174a6fa9), forced = true)
             }
             val (snapshot, screenResult) = coroutineScope {  // 快照数据+截图(图片 && 状态)
                 val d1 = async(Dispatchers.IO) {
@@ -404,7 +403,7 @@ object SnapshotExt {
             }
             toast(tip, forced = true)
             val desc = snapshot.appInfo?.name ?: snapshot.appId
-            snapshotNotif.copy(text = app.getString(R.string.s_658f2cd3e3, desc)).notifySelf()
+            snapshotNotif.copy(text = li.songe.gkd.sdp.app.getString(R.string.s_658f2cd3e3, desc)).notifySelf()
             return snapshot
         } finally {
             captureLoading.value = false

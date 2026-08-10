@@ -96,7 +96,6 @@ import li.songe.gkd.sdp.util.throttle
 import li.songe.gkd.sdp.util.toast
 import li.songe.selector.Selector
 import androidx.compose.ui.res.stringResource
-import li.songe.gkd.sdp.app
 
 @Composable
 fun AdvancedPageSections() {
@@ -150,7 +149,7 @@ private fun AdvancedPortDialog(
                 modifier = Modifier.fillMaxWidth().autoFocus(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 supportingText = {
-                    Text(app.getString(R.string.s_201d216690, value.length), modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.End)
+                    Text(li.songe.gkd.sdp.app.getString(R.string.s_201d216690, value.length), modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.End)
                 },
             )
         },
@@ -167,7 +166,7 @@ private fun AdvancedPortDialog(
                     showEditPortDlg.value = false
                     if (newPort != store.httpServerPort) {
                         storeFlow.value = store.copy(httpServerPort = newPort)
-                        toast(app.getString(R.string.s_e2cff77372))
+                        toast(li.songe.gkd.sdp.app.getString(R.string.s_e2cff77372))
                     }
                 },
             ) { Text(stringResource(R.string.s_b56d9ac6c5)) }
@@ -227,18 +226,18 @@ private fun AdvancedCaptureScreenshotDialog(
         text = {
             Column(modifier = Modifier.fillMaxWidth()) {
                 CustomOutlinedTextField(
-                    label = { Text(app.getString(R.string.s_be8af550f3)) },
+                    label = { Text(li.songe.gkd.sdp.app.getString(R.string.s_be8af550f3)) },
                     value = appIdValue,
-                    placeholder = { Text(text = app.getString(R.string.s_9fccef0027)) },
+                    placeholder = { Text(text = li.songe.gkd.sdp.app.getString(R.string.s_9fccef0027)) },
                     onValueChange = { appIdValue = it },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 CustomOutlinedTextField(
-                    label = { Text(app.getString(R.string.s_a08049752b)) },
+                    label = { Text(li.songe.gkd.sdp.app.getString(R.string.s_a08049752b)) },
                     value = eventSelectorValue,
-                    placeholder = { Text(text = app.getString(R.string.s_ea72227d80)) },
+                    placeholder = { Text(text = li.songe.gkd.sdp.app.getString(R.string.s_ea72227d80)) },
                     onValueChange = { eventSelectorValue = it },
                     maxLines = 4,
                     modifier = Modifier.fillMaxWidth().autoFocus(),
@@ -253,11 +252,11 @@ private fun AdvancedCaptureScreenshotDialog(
                     return@throttle
                 }
                 if (appIdValue.isNotEmpty() && !appInfoMapFlow.value.contains(appIdValue)) {
-                    toast(app.getString(R.string.s_34e21ea99c))
+                    toast(li.songe.gkd.sdp.app.getString(R.string.s_34e21ea99c))
                     return@throttle
                 }
                 if (eventSelectorValue.isNotEmpty() && Selector.parseOrNull(eventSelectorValue) == null) {
-                    toast(app.getString(R.string.s_8c9fbc6ef9))
+                    toast(li.songe.gkd.sdp.app.getString(R.string.s_8c9fbc6ef9))
                     return@throttle
                 }
                 storeFlow.update {
@@ -266,7 +265,7 @@ private fun AdvancedCaptureScreenshotDialog(
                         screenshotEventSelector = eventSelectorValue,
                     )
                 }
-                toast(app.getString(R.string.s_e2cff77372))
+                toast(li.songe.gkd.sdp.app.getString(R.string.s_e2cff77372))
                 showDialog.value = false
             }) { Text(stringResource(R.string.s_b56d9ac6c5)) }
         },

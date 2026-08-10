@@ -47,7 +47,6 @@ import li.songe.gkd.sdp.util.subsRefreshErrorsFlow
 import li.songe.gkd.sdp.util.throttle
 import li.songe.gkd.sdp.util.updateSubsMutex
 import li.songe.gkd.sdp.R
-import li.songe.gkd.sdp.app
 
 
 @Composable
@@ -100,8 +99,8 @@ fun SubsItemCard(
                 } else {
                     if (subsItem.enable) "已启用" else "已禁用"
                 }
-                this.onClick(label = app.getString(R.string.s_923ad9f855), action = null)
-                this.onLongClick(label = app.getString(R.string.s_d451243963), action = null)
+                this.onClick(label = li.songe.gkd.sdp.app.getString(R.string.s_923ad9f855), action = null)
+                this.onLongClick(label = li.songe.gkd.sdp.app.getString(R.string.s_d451243963), action = null)
             },
         shape = MaterialTheme.shapes.small,
         interactionSource = interactionSource,
@@ -120,9 +119,9 @@ fun SubsItemCard(
                 if (subscription != null) {
                     Text(
                         modifier = Modifier.semantics {
-                            contentDescription = app.getString(R.string.s_0f40d8d7de, index, subscription.name)
+                            contentDescription = li.songe.gkd.sdp.app.getString(R.string.s_0f40d8d7de, index, subscription.name)
                         },
-                        text = app.getString(R.string.s_dc9c537d48, index, subscription.name),
+                        text = li.songe.gkd.sdp.app.getString(R.string.s_dc9c537d48, index, subscription.name),
                         maxLines = 1,
                         softWrap = false,
                         overflow = TextOverflow.Ellipsis,
@@ -144,7 +143,7 @@ fun SubsItemCard(
                             if (subscription.author != null) {
                                 Text(
                                     modifier = Modifier.semantics {
-                                        contentDescription = app.getString(R.string.s_44d89b8e5a, subscription.author)
+                                        contentDescription = li.songe.gkd.sdp.app.getString(R.string.s_44d89b8e5a, subscription.author)
                                     },
                                     text = subscription.author,
                                     style = MaterialTheme.typography.labelSmall,
@@ -152,9 +151,9 @@ fun SubsItemCard(
                             }
                             Text(
                                 modifier = Modifier.semantics {
-                                    contentDescription = app.getString(R.string.s_213bcdc0f2, subscription.version)
+                                    contentDescription = li.songe.gkd.sdp.app.getString(R.string.s_213bcdc0f2, subscription.version)
                                 },
-                                text = app.getString(R.string.s_858598e1e1, (subscription.version.toString())),
+                                text = li.songe.gkd.sdp.app.getString(R.string.s_858598e1e1, (subscription.version.toString())),
                                 style = MaterialTheme.typography.labelSmall,
                             )
                         } else {
@@ -168,7 +167,7 @@ fun SubsItemCard(
                         val timeStr = formatTimeAgo(subsItem.mtime)
                         Text(
                             modifier = Modifier.semantics {
-                                contentDescription = app.getString(R.string.s_203d809fb1, timeStr)
+                                contentDescription = li.songe.gkd.sdp.app.getString(R.string.s_203d809fb1, timeStr)
                             },
                             text = timeStr,
                             style = MaterialTheme.typography.labelSmall,
@@ -176,7 +175,7 @@ fun SubsItemCard(
                     }
                 } else {
                     Text(
-                        text = app.getString(R.string.s_c8b05a26f8, subsItem.id),
+                        text = li.songe.gkd.sdp.app.getString(R.string.s_c8b05a26f8, subsItem.id),
                         maxLines = 1,
                         softWrap = false,
                         overflow = TextOverflow.Ellipsis,
@@ -189,14 +188,14 @@ fun SubsItemCard(
                     }
                     Text(
                         text = subsLoadError?.message
-                            ?: if (subsRefreshing) app.getString(R.string.s_514c33af5c) else app.getString(R.string.s_ffcf0a1eb0),
+                            ?: if (subsRefreshing) li.songe.gkd.sdp.app.getString(R.string.s_514c33af5c) else li.songe.gkd.sdp.app.getString(R.string.s_ffcf0a1eb0),
                         style = MaterialTheme.typography.bodyMedium,
                         color = color
                     )
                 }
                 if (subsRefreshError != null) {
                     Text(
-                        text = app.getString(R.string.s_7d38b53290, subsRefreshError?.message),
+                        text = li.songe.gkd.sdp.app.getString(R.string.s_7d38b53290, subsRefreshError?.message),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.error
                     )

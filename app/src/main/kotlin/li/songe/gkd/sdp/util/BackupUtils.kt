@@ -17,7 +17,6 @@ import li.songe.gkd.sdp.backup.LegacyBackupImporter
 import li.songe.gkd.sdp.backup.PreparedBackupImport
 import java.io.File
 import li.songe.gkd.sdp.R
-import li.songe.gkd.sdp.app
 
 object BackupUtils {
     private const val MAX_ENCRYPTED_BACKUP_BYTES = 65L * 1024L * 1024L
@@ -45,7 +44,7 @@ object BackupUtils {
 
     suspend fun importBackUpData(uri: Uri) {
         pendingImportUriFlow.value = uri
-        toast(app.getString(R.string.s_e907fcd7c0))
+        toast(li.songe.gkd.sdp.app.getString(R.string.s_e907fcd7c0))
     }
 
     suspend fun exportBackUpData(

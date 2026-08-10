@@ -226,7 +226,7 @@ private fun RuleTargetEditor(
             color = MaterialTheme.colorScheme.error,
         )
     } else {
-        Text(text = app.getString(R.string.s_e3e710b8a5), style = MaterialTheme.typography.bodySmall)
+        Text(text = li.songe.gkd.sdp.app.getString(R.string.s_e3e710b8a5), style = MaterialTheme.typography.bodySmall)
         Spacer(modifier = Modifier.height(8.dp))
         FlowRow(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -297,7 +297,7 @@ private fun RuleScheduleEditor(
             value = vm.ruleStartTime,
             onValueChange = { vm.ruleStartTime = it },
             label = { Text(stringResource(R.string.s_e8868af6eb)) },
-            placeholder = { Text(app.getString(R.string.s_9f82f6d52b)) },
+            placeholder = { Text(li.songe.gkd.sdp.app.getString(R.string.s_9f82f6d52b)) },
             modifier = Modifier.weight(1f),
             singleLine = true,
             enabled = !isLocked,
@@ -306,7 +306,7 @@ private fun RuleScheduleEditor(
             value = vm.ruleEndTime,
             onValueChange = { vm.ruleEndTime = it },
             label = { Text(stringResource(R.string.s_a0bb9f49ab)) },
-            placeholder = { Text(app.getString(R.string.s_a843b2d4ca)) },
+            placeholder = { Text(li.songe.gkd.sdp.app.getString(R.string.s_a843b2d4ca)) },
             modifier = Modifier.weight(1f),
             singleLine = true,
             enabled = !isLocked,
@@ -330,7 +330,7 @@ private fun RuleScheduleEditor(
                         (vm.ruleDaysOfWeek + day).sorted()
                     }
                 },
-                label = { Text(app.getString(R.string.s_a94243a9c8, dayNames[day - 1])) },
+                label = { Text(li.songe.gkd.sdp.app.getString(R.string.s_a94243a9c8, dayNames[day - 1])) },
                 enabled = !isLocked,
             )
         }
@@ -348,7 +348,7 @@ private fun RuleEditorActions(
         value = vm.ruleInterceptMessage,
         onValueChange = { vm.ruleInterceptMessage = it },
         label = { Text(stringResource(R.string.s_f82dffbf08)) },
-        placeholder = { Text(app.getString(R.string.s_b3d972565c)) },
+        placeholder = { Text(li.songe.gkd.sdp.app.getString(R.string.s_b3d972565c)) },
         modifier = Modifier.fillMaxWidth(),
         singleLine = true,
         enabled = !isLocked,
@@ -367,7 +367,7 @@ private fun RuleEditorActions(
                 contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
             ),
         ) {
-            Text(app.getString(R.string.s_f526c89937))
+            Text(li.songe.gkd.sdp.app.getString(R.string.s_f526c89937))
         }
     }
 }

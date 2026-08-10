@@ -43,7 +43,6 @@ import li.songe.gkd.sdp.ui.style.scaffoldPadding
 import li.songe.gkd.sdp.ui.style.surfaceCardColors
 import androidx.compose.ui.res.stringResource
 import li.songe.gkd.sdp.R
-import li.songe.gkd.sdp.app
 @OptIn(ExperimentalMaterial3Api::class)
 @Serializable
 data object UrlBlockRoute : NavKey
@@ -75,13 +74,13 @@ fun UrlBlockPage() {
                         onClick = { mainVm.popPage() },
                     )
                 },
-                title = { Text(text = app.getString(R.string.s_dcbbbab7a5)) },
+                title = { Text(text = li.songe.gkd.sdp.app.getString(R.string.s_dcbbbab7a5)) },
                 actions = {
                     // 浏览器适配按钮
                     IconButton(onClick = { vm.showBrowserList = true }) {
                         Icon(
                             PerfIcon.Settings,
-                            contentDescription = app.getString(R.string.s_362f11dc2a),
+                            contentDescription = li.songe.gkd.sdp.app.getString(R.string.s_362f11dc2a),
                             tint = MaterialTheme.colorScheme.onSurface
                         )
                     }
@@ -89,7 +88,7 @@ fun UrlBlockPage() {
                     IconButton(onClick = { showGlobalLockSheet = true }) {
                         Icon(
                             PerfIcon.Lock,
-                            contentDescription = app.getString(R.string.s_0261a6c710),
+                            contentDescription = li.songe.gkd.sdp.app.getString(R.string.s_0261a6c710),
                             tint = if (globalLock?.isCurrentlyLocked == true) {
                                 MaterialTheme.colorScheme.error
                             } else {
@@ -111,14 +110,14 @@ fun UrlBlockPage() {
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Text(
-                            text = app.getString(R.string.s_b2d1d6afd6),
+                            text = li.songe.gkd.sdp.app.getString(R.string.s_b2d1d6afd6),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.primary,
                             fontWeight = FontWeight.SemiBold
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            text = app.getString(R.string.s_ebf718dc74),
+                            text = li.songe.gkd.sdp.app.getString(R.string.s_ebf718dc74),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -146,13 +145,13 @@ fun UrlBlockPage() {
                             Spacer(modifier = Modifier.width(12.dp))
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
-                                    text = app.getString(R.string.s_1640da6876),
+                                    text = li.songe.gkd.sdp.app.getString(R.string.s_1640da6876),
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.Bold
                                 )
                                 val remainingMinutes = ((globalLock!!.lockEndTime - System.currentTimeMillis()) / 60000).coerceAtLeast(0)
                                 Text(
-                                    text = app.getString(R.string.s_7c36cdf41a, if (remainingMinutes >= 60) "${remainingMinutes / 60}小时${remainingMinutes % 60}分钟" else "${remainingMinutes}分钟"),
+                                    text = li.songe.gkd.sdp.app.getString(R.string.s_7c36cdf41a, if (remainingMinutes >= 60) "${remainingMinutes / 60}小时${remainingMinutes % 60}分钟" else "${remainingMinutes}分钟"),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.error
                                 )
@@ -173,7 +172,7 @@ fun UrlBlockPage() {
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = app.getString(R.string.s_bb218a940b, allGroups.size),
+                        text = li.songe.gkd.sdp.app.getString(R.string.s_bb218a940b, allGroups.size),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold
                     )
@@ -183,7 +182,7 @@ fun UrlBlockPage() {
                     }) {
                         Icon(PerfIcon.Add, contentDescription = null)
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text(app.getString(R.string.s_94191ce210))
+                        Text(li.songe.gkd.sdp.app.getString(R.string.s_94191ce210))
                     }
                 }
             }
@@ -191,7 +190,7 @@ fun UrlBlockPage() {
             if (allGroups.isEmpty()) {
                 item(key = "no_groups") {
                     Text(
-                        text = app.getString(R.string.s_5414239fa2),
+                        text = li.songe.gkd.sdp.app.getString(R.string.s_5414239fa2),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                         modifier = Modifier.itemPadding()
@@ -268,7 +267,7 @@ fun UrlBlockPage() {
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = app.getString(R.string.s_f6b45b5f13),
+                        text = li.songe.gkd.sdp.app.getString(R.string.s_f6b45b5f13),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold
                     )
@@ -278,7 +277,7 @@ fun UrlBlockPage() {
                     }) {
                         Icon(PerfIcon.Add, contentDescription = null)
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text(app.getString(R.string.s_94191ce210))
+                        Text(li.songe.gkd.sdp.app.getString(R.string.s_94191ce210))
                     }
                 }
             }
@@ -289,7 +288,7 @@ fun UrlBlockPage() {
             if (standaloneRules.isEmpty()) {
                 item(key = "no_rules") {
                     Text(
-                        text = app.getString(R.string.s_30808f105b),
+                        text = li.songe.gkd.sdp.app.getString(R.string.s_30808f105b),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                         modifier = Modifier.itemPadding()

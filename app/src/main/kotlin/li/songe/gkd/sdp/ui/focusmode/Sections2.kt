@@ -38,7 +38,6 @@ import li.songe.gkd.sdp.ui.style.itemPadding
 import li.songe.gkd.sdp.ui.style.surfaceCardColors
 import androidx.compose.ui.res.stringResource
 import li.songe.gkd.sdp.R
-import li.songe.gkd.sdp.app
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -114,7 +113,7 @@ internal fun FocusRuleCard(
                         }
                     } else {
                         Text(
-                            text = app.getString(R.string.s_b209e2ce8a, rule.startTime, rule.endTime),
+                            text = li.songe.gkd.sdp.app.getString(R.string.s_b209e2ce8a, rule.startTime, rule.endTime),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
                         )

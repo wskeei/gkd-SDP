@@ -1,7 +1,6 @@
 package li.songe.gkd.sdp.util
 
 import li.songe.gkd.sdp.R
-import li.songe.gkd.sdp.app
 
 /**
  * Pure copy and schedule rules for accessibility-permission reminders.
@@ -60,7 +59,7 @@ object AccessibilityGuardNotificationPolicy {
         if (enforcementStarted) {
             if (lastReminderIndex != ELAPSED_MINUTES.lastIndex) return null
             return GuardStatusNotification(
-                text = app.getString(R.string.s_04f6ac2dcf),
+                text = li.songe.gkd.sdp.app.getString(R.string.s_04f6ac2dcf),
                 targetEpochMs = null,
                 nextReminderIndex = null,
             )
@@ -71,7 +70,7 @@ object AccessibilityGuardNotificationPolicy {
         val targetEpochMs = disabledAtEpochMs +
             AccessibilityGuardPolicy.REMINDER_OFFSETS_MS[nextReminderIndex]
         return GuardStatusNotification(
-            text = app.getString(R.string.s_5b18d4fb40, nextReminderIndex + 1),
+            text = li.songe.gkd.sdp.app.getString(R.string.s_5b18d4fb40, nextReminderIndex + 1),
             targetEpochMs = targetEpochMs,
             nextReminderIndex = nextReminderIndex,
         )

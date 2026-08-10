@@ -44,7 +44,6 @@ import li.songe.json5.Json5
 import java.io.File
 import androidx.compose.ui.res.stringResource
 import li.songe.gkd.sdp.R
-import li.songe.gkd.sdp.app
 
 private fun HttpMessageBuilder.setCommonHeaders(cookie: String) {
     header("Cookie", cookie)
@@ -234,7 +233,7 @@ fun EditGithubCookieDlg() {
                     onValueChange = {
                         value = it.filter { c -> c != '\n' && c != '\r' }
                     },
-                    placeholder = { Text(text = app.getString(R.string.s_46de88b050)) },
+                    placeholder = { Text(text = li.songe.gkd.sdp.app.getString(R.string.s_46de88b050)) },
                     modifier = Modifier
                         .fillMaxWidth()
                         .autoFocus(),
@@ -245,7 +244,7 @@ fun EditGithubCookieDlg() {
                 TextButton(onClick = {
                     mainVm.showEditCookieDlgFlow.value = false
                     mainVm.githubCookieFlow.value = value.trim()
-                    toast(app.getString(R.string.s_e2cff77372))
+                    toast(li.songe.gkd.sdp.app.getString(R.string.s_e2cff77372))
                 }) {
                     Text(text = stringResource(R.string.s_b56d9ac6c5))
                 }

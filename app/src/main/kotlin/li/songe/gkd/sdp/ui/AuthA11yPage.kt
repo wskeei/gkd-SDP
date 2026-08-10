@@ -73,7 +73,6 @@ import li.songe.gkd.sdp.util.toast
 import li.songe.gkd.sdp.store.writeTextAtomically
 import androidx.compose.ui.res.stringResource
 import li.songe.gkd.sdp.R
-import li.songe.gkd.sdp.app
 
 @Serializable
 data object AuthA11yRoute : NavKey
@@ -99,7 +98,7 @@ fun AuthA11yPage() {
                     mainVm.popPage()
                 })
         }, title = {
-            Text(text = app.getString(R.string.s_f8b4c14ff9))
+            Text(text = li.songe.gkd.sdp.app.getString(R.string.s_f8b4c14ff9))
         })
     }) { contentPadding ->
         Column(
@@ -153,7 +152,7 @@ fun AuthA11yPage() {
                             modifier = Modifier
                                 .padding(horizontal = cardHorizontalPadding)
                                 .padding(start = 8.dp, top = 4.dp),
-                            text = app.getString(R.string.s_3075b35472),
+                            text = li.songe.gkd.sdp.app.getString(R.string.s_3075b35472),
                             style = MaterialTheme.typography.bodySmall,
                         )
                     },
@@ -169,7 +168,7 @@ fun AuthA11yPage() {
                                 onClick = throttle { openA11ySettings() },
                             ) {
                                 Text(
-                                    text = app.getString(R.string.s_34fd164246),
+                                    text = li.songe.gkd.sdp.app.getString(R.string.s_34fd164246),
                                     style = MaterialTheme.typography.bodyLarge,
                                 )
                             }
@@ -181,7 +180,7 @@ fun AuthA11yPage() {
                                         mainVm.navigateWebPage(ShortUrlSet.URL2)
                                     })
                                     .padding(horizontal = 4.dp),
-                                text = app.getString(R.string.s_2735ce6e46),
+                                text = li.songe.gkd.sdp.app.getString(R.string.s_2735ce6e46),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.primary,
                             )
@@ -212,7 +211,7 @@ fun AuthA11yPage() {
                             modifier = Modifier
                                 .padding(horizontal = cardHorizontalPadding)
                                 .padding(start = 8.dp, top = 4.dp),
-                            text = app.getString(R.string.s_5ae6bc88fe),
+                            text = li.songe.gkd.sdp.app.getString(R.string.s_5ae6bc88fe),
                             style = MaterialTheme.typography.bodySmall,
                         )
                     },
@@ -225,7 +224,7 @@ fun AuthA11yPage() {
                             ShizukuAuthButton()
                             TextButton(onClick = { vm.showCopyDlgFlow.value = true }) {
                                 Text(
-                                    text = app.getString(R.string.s_92cab38651),
+                                    text = li.songe.gkd.sdp.app.getString(R.string.s_92cab38651),
                                     style = MaterialTheme.typography.bodyLarge,
                                 )
                             }
@@ -237,11 +236,11 @@ fun AuthA11yPage() {
                         .padding(horizontal = cardHorizontalPadding),
                     onClick = throttle {
                         if (!writeSecureSettings) {
-                            toast(app.getString(R.string.s_45d0618f98, writeSecureSettingsState.name))
+                            toast(li.songe.gkd.sdp.app.getString(R.string.s_45d0618f98, writeSecureSettingsState.name))
                         }
                         mainVm.dialogFlow.updateDialogOptions(
-                            title = app.getString(R.string.s_ad2ea87ca3),
-                            text = app.getString(R.string.s_cd7a98be77, META.appName)
+                            title = li.songe.gkd.sdp.app.getString(R.string.s_ad2ea87ca3),
+                            text = li.songe.gkd.sdp.app.getString(R.string.s_cd7a98be77, META.appName)
                         )
                     }
                 ) {
@@ -293,7 +292,7 @@ fun AuthA11yPage() {
                             modifier = Modifier
                                 .padding(horizontal = cardHorizontalPadding)
                                 .padding(start = 8.dp, top = 8.dp),
-                            text = app.getString(R.string.s_787a6e40ac),
+                            text = li.songe.gkd.sdp.app.getString(R.string.s_787a6e40ac),
                             style = MaterialTheme.typography.bodySmall,
                         )
                     },
@@ -342,7 +341,7 @@ private fun ShizukuAuthButton(
         onClick = throttle(vm.viewModelScope.launchAsFn(Dispatchers.IO) {
             mainVm.guardShizukuContext()
             if (writeSecureSettingsState.value) {
-                toast(app.getString(R.string.s_027b905228))
+                toast(li.songe.gkd.sdp.app.getString(R.string.s_027b905228))
                 updateEnableAutomator(true)
                 fixRestartAutomatorService()
             }

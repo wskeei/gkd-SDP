@@ -30,7 +30,6 @@ import li.songe.gkd.sdp.ui.style.DimensionTokens
 import kotlin.math.roundToInt
 import androidx.compose.ui.res.stringResource
 import li.songe.gkd.sdp.R
-import li.songe.gkd.sdp.app
 
 /** One time bucket shown in a chart. */
 data class ChartBucket(
@@ -184,7 +183,7 @@ fun AppDataChart(
                         modifier = Modifier.weight(1f),
                     )
                     Text(
-                        text = app.getString(R.string.s_896022e814, row.valueText, row.unit),
+                        text = li.songe.gkd.sdp.app.getString(R.string.s_896022e814, row.valueText, row.unit),
                         style = MaterialTheme.typography.bodyMedium,
                     )
                     Spacer(modifier = Modifier.width(DimensionTokens.SpacingBase))

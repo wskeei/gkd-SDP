@@ -19,7 +19,6 @@ import li.songe.gkd.sdp.util.UsageGuardPolicy
 import li.songe.gkd.sdp.util.UsageGuardUiStatePolicy
 import li.songe.gkd.sdp.util.toast
 import li.songe.gkd.sdp.R
-import li.songe.gkd.sdp.app
 
 class UsageGuardVm : BaseViewModel() {
     val appProfilesFlow = DbSet.usageGuardAppProfileDao.queryAll().stateInit(emptyList())
@@ -72,13 +71,13 @@ class UsageGuardVm : BaseViewModel() {
 
     fun updateMinReasonLength(minLength: Int) {
         storeFlow.update { it.copy(usageGuardMinReasonLength = minLength.coerceAtLeast(1)) }
-        toast(app.getString(R.string.s_c487de4445))
+        toast(li.songe.gkd.sdp.app.getString(R.string.s_c487de4445))
     }
 
     fun updateDurationOptions(raw: List<Int>) {
         val normalized = UsageGuardUiStatePolicy.normalizeDurationOptions(raw)
         storeFlow.update { it.copy(usageGuardDurationOptionsMinutes = normalized) }
-        toast(app.getString(R.string.s_9de6b27eca))
+        toast(li.songe.gkd.sdp.app.getString(R.string.s_9de6b27eca))
     }
 
     fun saveSelectedTargets(appIds: List<String>) = viewModelScope.launch(Dispatchers.IO) {
@@ -98,7 +97,7 @@ class UsageGuardVm : BaseViewModel() {
                 )
             },
         )
-        toast(app.getString(R.string.s_e1f202e22a))
+        toast(li.songe.gkd.sdp.app.getString(R.string.s_e1f202e22a))
     }
 
     fun saveWhitelist(appIds: List<String>) = viewModelScope.launch(Dispatchers.IO) {
@@ -118,7 +117,7 @@ class UsageGuardVm : BaseViewModel() {
                 )
             },
         )
-        toast(app.getString(R.string.s_288d57a99d))
+        toast(li.songe.gkd.sdp.app.getString(R.string.s_288d57a99d))
     }
 
     fun saveAppGrantMode(appId: String, grantMode: Int) = viewModelScope.launch(Dispatchers.IO) {
@@ -133,7 +132,7 @@ class UsageGuardVm : BaseViewModel() {
             )
         )
         DbSet.usageGuardAppProfileDao.deleteUnusedProfiles(storeFlow.value.usageGuardDefaultGrantMode)
-        toast(app.getString(R.string.s_27e042df94))
+        toast(li.songe.gkd.sdp.app.getString(R.string.s_27e042df94))
     }
 
     fun moveSelectedAppToGrantMode(appId: String, grantMode: Int) {

@@ -75,7 +75,6 @@ import li.songe.gkd.sdp.util.switchItem
 import li.songe.gkd.sdp.util.throttle
 import li.songe.gkd.sdp.util.toJson5String
 import li.songe.gkd.sdp.R
-import li.songe.gkd.sdp.app
 
 @Serializable
 data class AppConfigRoute(
@@ -219,7 +218,7 @@ fun AppConfigPage(route: AppConfigRoute) {
                             if (isSelectedMode) {
                                 DropdownMenuItem(
                                     text = {
-                                        Text(text = app.getString(R.string.s_3e44b2a933))
+                                        Text(text = li.songe.gkd.sdp.app.getString(R.string.s_3e44b2a933))
                                     },
                                     onClick = {
                                         expanded = false
@@ -228,7 +227,7 @@ fun AppConfigPage(route: AppConfigRoute) {
                                 )
                                 DropdownMenuItem(
                                     text = {
-                                        Text(text = app.getString(R.string.s_ae05880411))
+                                        Text(text = li.songe.gkd.sdp.app.getString(R.string.s_ae05880411))
                                     },
                                     onClick = {
                                         expanded = false
@@ -236,7 +235,7 @@ fun AppConfigPage(route: AppConfigRoute) {
                                     }
                                 )
                             } else {
-                                MenuGroupCard(inTop = true, title = app.getString(R.string.s_dc35af8d69)) {
+                                MenuGroupCard(inTop = true, title = li.songe.gkd.sdp.app.getString(R.string.s_dc35af8d69)) {
                                     val handleItem: (RuleSortOption) -> Unit = throttle { v ->
                                         storeFlow.update { s -> s.copy(appRuleSort = v.value) }
                                     }
@@ -250,9 +249,9 @@ fun AppConfigPage(route: AppConfigRoute) {
                                         )
                                     }
                                 }
-                                MenuGroupCard(title = app.getString(R.string.s_dcce9a144a)) {
+                                MenuGroupCard(title = li.songe.gkd.sdp.app.getString(R.string.s_dcce9a144a)) {
                                     MenuItemCheckbox(
-                                        text = app.getString(R.string.s_8bb38ef00c),
+                                        text = li.songe.gkd.sdp.app.getString(R.string.s_8bb38ef00c),
                                         stateFlow = vm.showDisabledRuleFlow,
                                     )
                                 }
@@ -275,7 +274,7 @@ fun AppConfigPage(route: AppConfigRoute) {
                     )
                 },
                 imageVector = PerfIcon.Add,
-                contentDescription = app.getString(R.string.s_d2fc32282a)
+                contentDescription = li.songe.gkd.sdp.app.getString(R.string.s_d2fc32282a)
             )
         },
     ) { contentPadding ->
@@ -380,7 +379,7 @@ fun AppConfigPage(route: AppConfigRoute) {
             item(ListPlaceholder.KEY, ListPlaceholder.TYPE) {
                 Spacer(modifier = Modifier.height(EmptyHeight))
                 if (groupSize == 0 && !firstLoading) {
-                    EmptyText(text = if (vm.showDisabledRuleFlow.collectAsStateWithLifecycle().value) app.getString(R.string.s_b246458f20) else app.getString(R.string.s_53e5dc587c))
+                    EmptyText(text = if (vm.showDisabledRuleFlow.collectAsStateWithLifecycle().value) li.songe.gkd.sdp.app.getString(R.string.s_b246458f20) else li.songe.gkd.sdp.app.getString(R.string.s_53e5dc587c))
                 }
             }
         }

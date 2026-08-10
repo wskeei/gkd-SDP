@@ -32,7 +32,6 @@ import li.songe.gkd.sdp.util.SelfControlInsightWindowPolicy
 import li.songe.gkd.sdp.util.UsageGuardPolicy
 import androidx.compose.ui.res.stringResource
 import li.songe.gkd.sdp.R
-import li.songe.gkd.sdp.app
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -129,7 +128,7 @@ internal fun UsageRequestTags(
         enabled = !isSubmitting,
         onClick = { showAddTagEditor.value = !showAddTagEditor.value },
     ) {
-        Text(if (showAddTagEditor.value) app.getString(R.string.s_8f68cd6535) else app.getString(R.string.s_12460118b0))
+        Text(if (showAddTagEditor.value) li.songe.gkd.sdp.app.getString(R.string.s_8f68cd6535) else li.songe.gkd.sdp.app.getString(R.string.s_12460118b0))
     }
     if (showAddTagEditor.value) {
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -192,8 +191,8 @@ internal fun UsageRequestReasonAndDuration(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
-                Text(app.getString(R.string.s_58d3737769, minReasonLength))
-                Text(app.getString(R.string.s_cf989beabc, reasonText.value.trim().length))
+                Text(li.songe.gkd.sdp.app.getString(R.string.s_58d3737769, minReasonLength))
+                Text(li.songe.gkd.sdp.app.getString(R.string.s_cf989beabc, reasonText.value.trim().length))
             }
         },
         isError = reasonError.value != null,
@@ -223,7 +222,7 @@ internal fun UsageRequestReasonAndDuration(
                     customMinutesText.value = ""
                     showCustomDuration.value = false
                 },
-                label = { Text(app.getString(R.string.s_5f4ec4b0ec, minutes)) },
+                label = { Text(li.songe.gkd.sdp.app.getString(R.string.s_5f4ec4b0ec, minutes)) },
             )
         }
     }
@@ -232,7 +231,7 @@ internal fun UsageRequestReasonAndDuration(
         enabled = !isSubmitting,
         onClick = { showCustomDuration.value = !showCustomDuration.value },
     ) {
-        Text(if (showCustomDuration.value) app.getString(R.string.s_bda66bc5a5) else app.getString(R.string.s_ea6dccc0a6))
+        Text(if (showCustomDuration.value) li.songe.gkd.sdp.app.getString(R.string.s_bda66bc5a5) else li.songe.gkd.sdp.app.getString(R.string.s_ea6dccc0a6))
     }
     if (showCustomDuration.value) {
         OutlinedTextField(
@@ -322,6 +321,6 @@ internal fun UsageRequestActions(
         onClick = onCancel,
         modifier = Modifier.fillMaxWidth(),
     ) {
-        Text(app.getString(R.string.s_4d0b4688c7))
+        Text(li.songe.gkd.sdp.app.getString(R.string.s_4d0b4688c7))
     }
 }

@@ -31,7 +31,6 @@ import li.songe.gkd.sdp.data.WechatContact
 import li.songe.gkd.sdp.service.A11yService
 import androidx.compose.ui.res.stringResource
 import li.songe.gkd.sdp.R
-import li.songe.gkd.sdp.app
 
 @Composable
 fun WechatContactPicker(
@@ -77,7 +76,7 @@ fun WechatContactPicker(
         TextField(
             value = searchQuery,
             onValueChange = { searchQuery = it },
-            placeholder = { Text(app.getString(R.string.s_6600f231be)) },
+            placeholder = { Text(li.songe.gkd.sdp.app.getString(R.string.s_6600f231be)) },
             modifier = Modifier.fillMaxWidth()
         )
 
@@ -119,7 +118,7 @@ fun WechatContactPicker(
                                 )
                             }
                             Text(
-                                text = app.getString(R.string.s_16f957e647, contact.wechatId),
+                                text = li.songe.gkd.sdp.app.getString(R.string.s_16f957e647, contact.wechatId),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )

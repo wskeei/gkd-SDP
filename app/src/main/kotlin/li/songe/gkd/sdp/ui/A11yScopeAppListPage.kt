@@ -62,7 +62,6 @@ import li.songe.gkd.sdp.util.launchAsFn
 import li.songe.gkd.sdp.util.switchItem
 import li.songe.gkd.sdp.util.throttle
 import li.songe.gkd.sdp.util.toast
-import li.songe.gkd.sdp.app
 
 @Serializable
 data object A11YScopeAppListRoute : NavKey
@@ -82,8 +81,8 @@ fun A11yScopeAppListPage() {
         context.justHideSoftInput()
         if (vm.textChanged) {
             mainVm.dialogFlow.waitResult(
-                title = app.getString(R.string.s_ab3656a956),
-                text = app.getString(R.string.s_aebc195621),
+                title = li.songe.gkd.sdp.app.getString(R.string.s_ab3656a956),
+                text = li.songe.gkd.sdp.app.getString(R.string.s_aebc195621),
             )
         }
         editable = false
@@ -101,8 +100,8 @@ fun A11yScopeAppListPage() {
                                 if (vm.textChanged) {
                                     context.justHideSoftInput()
                                     mainVm.dialogFlow.waitResult(
-                                        title = app.getString(R.string.s_ab3656a956),
-                                        text = app.getString(R.string.s_aebc195621),
+                                        title = li.songe.gkd.sdp.app.getString(R.string.s_ab3656a956),
+                                        text = li.songe.gkd.sdp.app.getString(R.string.s_aebc195621),
                                     )
                                 }
                                 editable = !editable
@@ -140,7 +139,7 @@ fun A11yScopeAppListPage() {
                             )
                         Text(
                             modifier = titleModifier,
-                            text = app.getString(R.string.s_3721fe11a2),
+                            text = li.songe.gkd.sdp.app.getString(R.string.s_3721fe11a2),
                         )
                     }
                 },
@@ -155,9 +154,9 @@ fun A11yScopeAppListPage() {
                                     if (vm.textChanged) {
                                         a11yScopeAppListFlow.value =
                                             AppListString.decode(vm.textFlow.value)
-                                        toast(app.getString(R.string.s_e2cff77372))
+                                        toast(li.songe.gkd.sdp.app.getString(R.string.s_e2cff77372))
                                     } else {
-                                        toast(app.getString(R.string.s_fff8cc4d94))
+                                        toast(li.songe.gkd.sdp.app.getString(R.string.s_fff8cc4d94))
                                     }
                                     context.justHideSoftInput()
                                     editable = false
@@ -193,7 +192,7 @@ fun A11yScopeAppListPage() {
                                         expanded = expanded,
                                         onDismissRequest = { expanded = false }
                                     ) {
-                                        MenuGroupCard(inTop = true, title = app.getString(R.string.s_dc35af8d69)) {
+                                        MenuGroupCard(inTop = true, title = li.songe.gkd.sdp.app.getString(R.string.s_dc35af8d69)) {
                                             var sortType by vm.sortTypeFlow.asMutableState()
                                             AppSortOption.objects.forEach { option ->
                                                 MenuItemRadioButton(
@@ -203,7 +202,7 @@ fun A11yScopeAppListPage() {
                                                 )
                                             }
                                         }
-                                        MenuGroupCard(inTop = true, title = app.getString(R.string.s_dcce9a144a)) {
+                                        MenuGroupCard(inTop = true, title = li.songe.gkd.sdp.app.getString(R.string.s_dcce9a144a)) {
                                             var appGroupType by vm.appGroupTypeFlow.asMutableState()
                                             AppGroupOption.normalObjects.forEach { option ->
                                                 val newValue = option.invert(appGroupType)
@@ -225,12 +224,12 @@ fun A11yScopeAppListPage() {
         floatingActionButton = {
             AnimationFloatingActionButton(
                 visible = !editable && scrollBehavior.isFullVisible,
-                onClickLabel = app.getString(R.string.s_d803a05c20),
+                onClickLabel = li.songe.gkd.sdp.app.getString(R.string.s_d803a05c20),
                 onClick = {
                     editable = !editable
                 },
                 imageVector = PerfIcon.Edit,
-                contentDescription = app.getString(R.string.s_a0b1fca23b)
+                contentDescription = li.songe.gkd.sdp.app.getString(R.string.s_a0b1fca23b)
             )
         },
     ) { contentPadding ->
@@ -263,7 +262,7 @@ fun A11yScopeAppListPage() {
                 item(ListPlaceholder.KEY, ListPlaceholder.TYPE) {
                     Spacer(modifier = Modifier.height(EmptyHeight))
                     if (appInfos.isEmpty() && searchStr.isNotEmpty()) {
-                        EmptyText(text = app.getString(R.string.s_8f8274c754))
+                        EmptyText(text = li.songe.gkd.sdp.app.getString(R.string.s_8f8274c754))
                         Spacer(modifier = Modifier.height(EmptyHeight / 2))
                     }
                 }

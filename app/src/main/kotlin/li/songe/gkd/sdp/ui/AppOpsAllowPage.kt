@@ -54,7 +54,6 @@ import li.songe.gkd.sdp.util.saveFileToDownloads
 import li.songe.gkd.sdp.util.toast
 import androidx.compose.ui.res.stringResource
 import li.songe.gkd.sdp.R
-import li.songe.gkd.sdp.app
 
 @Serializable
 data object AppOpsAllowRoute : NavKey
@@ -72,7 +71,7 @@ fun AppOpsAllowPage() {
                 mainVm.popPage()
             })
         }, title = {
-            Text(text = app.getString(R.string.s_ffa17c3049))
+            Text(text = li.songe.gkd.sdp.app.getString(R.string.s_ffa17c3049))
         })
     }) { contentPadding ->
         Column(
@@ -104,15 +103,15 @@ fun AppOpsAllowPage() {
                         buttons = listOf(
                             "Shizuku 授权" to vm.viewModelScope.launchAsFn(Dispatchers.IO) {
                                 mainVm.guardShizukuContext()
-                                toast(app.getString(R.string.s_027b905228))
+                                toast(li.songe.gkd.sdp.app.getString(R.string.s_027b905228))
                             },
                             "命令授权" to {
                                 vm.showCopyDlgFlow.value = true
                             },
                             "卸载重装" to {
                                 mainVm.dialogFlow.updateDialogOptions(
-                                    title = app.getString(R.string.s_a50703b6a2),
-                                    text = app.getString(R.string.s_150e6661aa),
+                                    title = li.songe.gkd.sdp.app.getString(R.string.s_a50703b6a2),
+                                    text = li.songe.gkd.sdp.app.getString(R.string.s_150e6661aa),
                                     dismissText = "导出应用",
                                     dismissAction = {
                                         mainVm.viewModelScope.launchTry(Dispatchers.IO) {

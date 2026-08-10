@@ -60,7 +60,6 @@ import li.songe.gkd.sdp.runtime.installAppDependencies
 import org.lsposed.hiddenapibypass.HiddenApiBypass
 import kotlin.system.exitProcess
 import li.songe.gkd.sdp.R
-import li.songe.gkd.sdp.app
 
 
 val appScope by lazy { MainScope() }
@@ -236,7 +235,7 @@ class App : Application() {
             LogUtils.d("UncaughtExceptionHandler", t, e)
             val mtime = System.currentTimeMillis()
             val errorCode = DiagnosticLogger.errorCode(e)
-            toast(app.getString(R.string.s_672352d845, errorCode))
+            toast(li.songe.gkd.sdp.app.getString(R.string.s_672352d845, errorCode))
             DiagnosticLogger.record(
                 DiagnosticEvent(
                     eventCode = DiagnosticEventCode.CRASH_CAPTURED,
