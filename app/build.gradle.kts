@@ -368,6 +368,8 @@ dependencies {
     implementation(libs.compose.activity)
     implementation(libs.compose.material3)
     implementation(libs.compose.adaptive)
+    screenshotTestImplementation(libs.compose.tooling)
+    screenshotTestImplementation(libs.screenshot.validation.api)
     debugImplementation(libs.compose.ui.test.manifest)
 
     implementation(libs.androidx.navigation3.ui)
