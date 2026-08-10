@@ -93,7 +93,7 @@ object DigitalSelfDisciplineReviewPresentation {
         }
         val points = when {
             rows.isEmpty() -> emptyList()
-            summary.range == DigitalSelfDisciplineReviewPolicy.Range.Today && rows.size <= 24 ->
+            rows.size <= summary.range.maxChartPoints ->
                 rows.map { (item, value) ->
                     TrendPoint(
                         label = formatTime(item.occurredAt, zoneId),
@@ -102,9 +102,7 @@ object DigitalSelfDisciplineReviewPresentation {
                         occurredAt = item.occurredAt,
                     )
                 }
-            summary.range == DigitalSelfDisciplineReviewPolicy.Range.Today ->
-                bucketByHour(rows, summary, zoneId)
-            else -> bucketByDate(rows, zoneId)
+            else -> bucketByRange(rows, summary, zoneId)
         }
         val average = metricValue(summary, safeMetric)
         val previous = when (safeMetric) {
@@ -240,38 +238,29 @@ object DigitalSelfDisciplineReviewPresentation {
     fun showInterceptFilters(reviewType: DigitalSelfDisciplineReviewPolicy.ReviewType): Boolean =
         reviewType == DigitalSelfDisciplineReviewPolicy.ReviewType.InterceptAttempt
 
-    private fun bucketByHour(
+    private fun bucketByRange(
         rows: List<Pair<DigitalSelfDisciplineReviewPolicy.RecentIntervalItem, Double>>,
         summary: DigitalSelfDisciplineReviewPolicy.ReviewSummary,
         zoneId: ZoneId,
     ): List<TrendPoint> {
-        val start = summary.dailyBuckets.firstOrNull()?.date?.atStartOfDay(zoneId)?.toInstant()?.toEpochMilli()
+        val start = summary.dailyBuckets.firstOrNull()?.bucketStartAt
             ?: rows.first().first.occurredAt
-        return rows.groupBy { ((it.first.occurredAt - start).coerceAtLeast(0L) / 3_600_000L) }
+        val bucketMs = summary.range.bucketMs
+        val maxBucketIndex = (summary.range.maxChartPoints - 1).coerceAtLeast(0)
+        return rows.groupBy {
+            ((it.first.occurredAt - start).coerceAtLeast(0L) / bucketMs)
+                .coerceAtMost(maxBucketIndex.toLong())
+        }
             .toSortedMap()
             .map { (bucket, bucketRows) ->
-                val at = start + bucket * 3_600_000L
+                val at = start + bucket * bucketMs
                 TrendPoint(
-                    label = formatTime(at, zoneId),
+                    label = formatBucketTime(at, bucketMs, zoneId),
                     value = bucketRows.map { it.second }.average(),
                     sampleCount = bucketRows.size,
                     occurredAt = at,
                 )
             }
-    }
-
-    private fun bucketByDate(
-        rows: List<Pair<DigitalSelfDisciplineReviewPolicy.RecentIntervalItem, Double>>,
-        zoneId: ZoneId,
-    ): List<TrendPoint> = rows.groupBy {
-        Instant.ofEpochMilli(it.first.occurredAt).atZone(zoneId).toLocalDate()
-    }.toSortedMap().map { (date, dateRows) ->
-        TrendPoint(
-            label = date.format(DateTimeFormatter.ofPattern("MM-dd", Locale.ROOT)),
-            value = dateRows.map { it.second }.average(),
-            sampleCount = dateRows.size,
-            occurredAt = date.atStartOfDay(zoneId).toInstant().toEpochMilli(),
-        )
     }
 
     private fun rankedBars(items: List<DigitalSelfDisciplineReviewPolicy.RankedShare>): List<RankedBar> {
@@ -349,6 +338,22 @@ object DigitalSelfDisciplineReviewPresentation {
     private fun formatTime(timestamp: Long, zoneId: ZoneId): String =
         DateTimeFormatter.ofPattern("MM-dd HH:mm", Locale.ROOT)
             .format(Instant.ofEpochMilli(timestamp).atZone(zoneId))
+
+    private fun formatBucketTime(
+        timestamp: Long,
+        bucketMs: Long,
+        zoneId: ZoneId,
+    ): String {
+        val pattern = if (bucketMs >= 24L * 60L * 60L * 1_000L) {
+            "MM-dd"
+        } else if (bucketMs >= 60L * 60L * 1_000L) {
+            "MM-dd HH:mm"
+        } else {
+            "HH:mm"
+        }
+        return DateTimeFormatter.ofPattern(pattern, Locale.ROOT)
+            .format(Instant.ofEpochMilli(timestamp).atZone(zoneId))
+    }
 
     private fun eventKindLabel(kind: Int?): String = when (kind) {
         1 -> "应用拦截"

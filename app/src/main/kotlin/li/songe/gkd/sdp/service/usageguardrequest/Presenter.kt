@@ -3,31 +3,36 @@
 package li.songe.gkd.sdp.service
 
 import li.songe.gkd.sdp.data.SelfControlIntervalRepository
+import li.songe.gkd.sdp.usage.UsageRequestPresenter
+import li.songe.gkd.sdp.usage.UsageRequestUiState
 import li.songe.gkd.sdp.util.SelfControlElapsedPolicy
 
 internal fun usageRequestElapsedState(
     state: UsageRequestDatasetState,
     nowEpochMs: Long,
-): SelfControlElapsedPolicy.ElapsedState = when (state) {
-    UsageRequestDatasetState.Loading -> SelfControlElapsedPolicy.ElapsedState.Loading
-    UsageRequestDatasetState.Unavailable -> SelfControlElapsedPolicy.ElapsedState.Unavailable
-    is UsageRequestDatasetState.Ready -> when (state.data.anchorStatus) {
-        SelfControlIntervalRepository.UsageGapAnchorStatus.NoPreviousRequest ->
-            SelfControlElapsedPolicy.ElapsedState.NoHistory
-
-        SelfControlIntervalRepository.UsageGapAnchorStatus.Available -> {
-            val anchorAt = state.data.previousLastUsageEndedAt
-            if (anchorAt == null || anchorAt > nowEpochMs) {
-                SelfControlElapsedPolicy.ElapsedState.Unavailable
-            } else {
-                SelfControlElapsedPolicy.ElapsedState.Running(
-                    anchorAtEpochMs = anchorAt,
-                    firstOccurrence = false,
-                )
-            }
-        }
-
-        SelfControlIntervalRepository.UsageGapAnchorStatus.MissingActualEnd ->
+): SelfControlElapsedPolicy.ElapsedState {
+    if (state is UsageRequestDatasetState.Loading) {
+        return SelfControlElapsedPolicy.ElapsedState.Loading
+    }
+    if (state is UsageRequestDatasetState.Unavailable) {
+        return SelfControlElapsedPolicy.ElapsedState.Unavailable
+    }
+    val data = (state as? UsageRequestDatasetState.Ready)?.data
+    return when (
+        UsageRequestPresenter.present(
+            appId = "",
+            appName = "",
+            data = data,
+            nowEpochMs = nowEpochMs,
+        ).status
+    ) {
+        UsageRequestUiState.Status.FIRST -> SelfControlElapsedPolicy.ElapsedState.NoHistory
+        UsageRequestUiState.Status.AVAILABLE -> SelfControlElapsedPolicy.ElapsedState.Running(
+            anchorAtEpochMs = data?.previousLastUsageEndedAt ?: return SelfControlElapsedPolicy.ElapsedState.Unavailable,
+            firstOccurrence = false,
+        )
+        UsageRequestUiState.Status.MISSING_ACTUAL_END ->
             SelfControlElapsedPolicy.ElapsedState.MissingActualEnd
+        UsageRequestUiState.Status.UNAVAILABLE -> SelfControlElapsedPolicy.ElapsedState.Unavailable
     }
 }

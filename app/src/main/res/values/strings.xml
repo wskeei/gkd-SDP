@@ -981,4 +981,12 @@ HTTP 内容可能在传输中被读取或修改；授权仅适用于此 scheme�
     <string name="s_ffcf0a1eb0" formatted="false">文件不存在</string>
     <string name="s_fff8cc4d94" formatted="false">未修改</string>
     <string name="snapshot_button" formatted="false">快照按钮</string>
+    <string name="subscription_rules_tab" formatted="false">订阅规则</string>
+    <string name="settings_search" formatted="false">搜索设置</string>
+    <string name="privacy_data_title" formatted="false">隐私与数据</string>
+    <string name="privacy_data_intro" formatted="false">数据仅保存在本机。可查看保留范围、删除历史记录、生成加密备份或白名单支持包。</string>
+    <string name="privacy_settings_subtitle" formatted="false">查看保留范围、删除与加密备份</string>
+    <string name="privacy_delete_title" formatted="false">删除数据</string>
+    <string name="privacy_delete" formatted="false">删除</string>
+    <string name="privacy_delete_failed" formatted="false">删除失败，请重试</string>
 </resources>

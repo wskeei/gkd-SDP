@@ -28,6 +28,7 @@ import li.songe.gkd.sdp.permission.AuthReason
 import li.songe.gkd.sdp.permission.shizukuGrantedState
 import li.songe.gkd.sdp.remote.WebOriginPolicy
 import li.songe.gkd.sdp.service.A11yService
+import li.songe.gkd.sdp.service.AccessibilityGuardController
 import li.songe.gkd.sdp.shizuku.shizukuContextFlow
 import li.songe.gkd.sdp.shizuku.uiAutomationFlow
 import li.songe.gkd.sdp.shizuku.updateBinderMutex
@@ -48,6 +49,7 @@ import li.songe.gkd.sdp.ui.component.InputSubsLinkOption
 import li.songe.gkd.sdp.ui.component.RuleGroupState
 import li.songe.gkd.sdp.ui.component.UploadOptions
 import li.songe.gkd.sdp.ui.home.BottomNavItem
+import li.songe.gkd.sdp.ui.home.HomeDestination
 import li.songe.gkd.sdp.ui.home.HomeRoute
 import li.songe.gkd.sdp.navigation.AppDestination
 import li.songe.gkd.sdp.navigation.AppNavigationRequests
@@ -219,6 +221,16 @@ class MainViewModel(
 
     val resetPageScrollEvent = MutableSharedFlow<BottomNavItem>()
     private var lastClickTabTime = 0L
+    fun handleClickDestination(destination: HomeDestination) {
+        val t = System.currentTimeMillis()
+        val currentTab = (backStack.firstOrNull() as? HomeRoute)?.tabKey
+        if (destination.key == currentTab && t - lastClickTabTime < 500) {
+            viewModelScope.launch { resetPageScrollEvent.emit(BottomNavItem.Control) }
+        }
+        navigator.navigateHome(destination.key)
+        lastClickTabTime = t
+    }
+
     fun handleClickTab(navItem: BottomNavItem) {
         val t = System.currentTimeMillis()
         val currentTab = (backStack.firstOrNull() as? HomeRoute)?.tabKey
@@ -330,6 +342,21 @@ class MainViewModel(
 
     val automatorModeFlow = storeFlow.mapNew {
         AutomatorModeOption.objects.findOption(it.automatorMode)
+    }
+
+    fun toggleAccessibilityGuard(activity: MainActivity) {
+        val enabled = storeFlow.value.accessibilityGuardEnabled
+        runMainPost {
+            viewModelScope.launchTry {
+                if (enabled) {
+                    // The one-way protection keeps the guard on while locked;
+                    // the controller re-checks eligibility before committing.
+                    AccessibilityGuardController.disable()
+                } else {
+                    AccessibilityGuardController.enable(activity)
+                }
+            }
+        }
     }
 
     fun updateAutomatorMode(option: AutomatorModeOption) {

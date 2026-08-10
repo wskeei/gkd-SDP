@@ -12,40 +12,45 @@ import java.time.ZoneId
 
 class DigitalSelfDisciplineReviewPolicyTest {
     private val shanghai = ZoneId.of("Asia/Shanghai")
+    private val testNow = LocalDate.of(2026, 8, 4)
+        .atStartOfDay(shanghai)
+        .plusHours(12)
+        .toInstant()
+        .toEpochMilli()
 
     @Test
-    fun rangeBoundsUseNaturalDaysAndPreviousPeriod() {
+    fun rangeBoundsUseRollingDurationAndPreviousPeriod() {
         val bounds = DigitalSelfDisciplineReviewPolicy.rangeBounds(
-            DigitalSelfDisciplineReviewPolicy.Range.SevenDays,
-            LocalDate.of(2026, 8, 4),
+            DigitalSelfDisciplineReviewPolicy.Range.LAST_7_DAYS,
+            testNow,
             shanghai,
         )
 
-        assertEquals(LocalDate.of(2026, 7, 29), bounds.startDate)
-        assertEquals(LocalDate.of(2026, 8, 5), bounds.endDateExclusive)
-        assertEquals(LocalDate.of(2026, 7, 22), bounds.previousStartDate)
-        assertEquals(LocalDate.of(2026, 7, 29), bounds.previousEndDateExclusive)
+        assertEquals(testNow - 7L * 24L * 60L * 60L * 1_000L, bounds.startAt)
+        assertEquals(testNow, bounds.endAt)
+        assertEquals(testNow - 14L * 24L * 60L * 60L * 1_000L, bounds.previousStartAt)
+        assertEquals(testNow - 7L * 24L * 60L * 60L * 1_000L, bounds.previousEndAt)
         assertTrue(bounds.startAt < bounds.endAt)
     }
 
     @Test
-    fun dstBoundaryStillUsesZoneStartOfDay() {
+    fun rangeBoundsKeepRollingWindowsAcrossDst() {
         val zone = ZoneId.of("America/New_York")
+        val now = LocalDate.of(2026, 3, 8).atStartOfDay(zone).plusHours(12).toInstant().toEpochMilli()
         val bounds = DigitalSelfDisciplineReviewPolicy.rangeBounds(
-            DigitalSelfDisciplineReviewPolicy.Range.Today,
-            LocalDate.of(2026, 3, 8),
+            DigitalSelfDisciplineReviewPolicy.Range.LAST_24_HOURS,
+            now,
             zone,
         )
-        val next = LocalDate.of(2026, 3, 9).atStartOfDay(zone).toInstant().toEpochMilli()
-        assertEquals(next, bounds.endAt)
-        assertEquals(23L * 60L * 60L * 1_000L, bounds.endAt - bounds.startAt)
+        assertEquals(now, bounds.endAt)
+        assertEquals(24L * 60L * 60L * 1_000L, bounds.endAt - bounds.startAt)
     }
 
     @Test
     fun usageSummarySeparatesCoverageAndCalculatesAverageRatio() {
         val bounds = DigitalSelfDisciplineReviewPolicy.rangeBounds(
-            DigitalSelfDisciplineReviewPolicy.Range.Today,
-            LocalDate.of(2026, 8, 4),
+            DigitalSelfDisciplineReviewPolicy.Range.LAST_24_HOURS,
+            testNow,
             shanghai,
         )
         val rows = (0 until 8).map { index ->
@@ -86,8 +91,8 @@ class DigitalSelfDisciplineReviewPolicyTest {
     @Test
     fun usageDurationTotalsUseLongAndDoNotOverflow() {
         val bounds = DigitalSelfDisciplineReviewPolicy.rangeBounds(
-            DigitalSelfDisciplineReviewPolicy.Range.Today,
-            LocalDate.of(2026, 8, 4),
+            DigitalSelfDisciplineReviewPolicy.Range.LAST_24_HOURS,
+            testNow,
             shanghai,
         )
         val rows = listOf(
@@ -108,8 +113,8 @@ class DigitalSelfDisciplineReviewPolicyTest {
     @Test
     fun interceptFilterKeepsRatioEmptyAndMissingDatesMissing() {
         val bounds = DigitalSelfDisciplineReviewPolicy.rangeBounds(
-            DigitalSelfDisciplineReviewPolicy.Range.SevenDays,
-            LocalDate.of(2026, 8, 4),
+            DigitalSelfDisciplineReviewPolicy.Range.LAST_7_DAYS,
+            testNow,
             shanghai,
         )
         val events = listOf(
@@ -138,8 +143,8 @@ class DigitalSelfDisciplineReviewPolicyTest {
     @Test
     fun nonPositiveDurationIsExcludedFromRatioButNotIntervalCoverage() {
         val bounds = DigitalSelfDisciplineReviewPolicy.rangeBounds(
-            DigitalSelfDisciplineReviewPolicy.Range.Today,
-            LocalDate.of(2026, 8, 4),
+            DigitalSelfDisciplineReviewPolicy.Range.LAST_24_HOURS,
+            testNow,
             shanghai,
         )
         val rows = listOf(
@@ -166,8 +171,8 @@ class DigitalSelfDisciplineReviewPolicyTest {
     @Test
     fun rankingsMergeLabelsByStableKeyAndChooseDeterministicLabel() {
         val bounds = DigitalSelfDisciplineReviewPolicy.rangeBounds(
-            DigitalSelfDisciplineReviewPolicy.Range.Today,
-            LocalDate.of(2026, 8, 4),
+            DigitalSelfDisciplineReviewPolicy.Range.LAST_24_HOURS,
+            testNow,
             shanghai,
         )
         val rows = listOf(

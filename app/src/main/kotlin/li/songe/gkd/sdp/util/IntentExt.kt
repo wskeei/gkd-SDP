@@ -102,6 +102,30 @@ fun openA11ySettings() {
     }
 }
 
+fun openOverlaySettings() {
+    val intent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION).apply {
+        data = "package:${app.packageName}".toUri()
+        flags = Intent.FLAG_ACTIVITY_NEW_TASK
+    }
+    app.tryStartActivity(intent)
+}
+
+fun openNotificationSettings() {
+    val intent = Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
+        putExtra(Settings.EXTRA_APP_PACKAGE, app.packageName)
+        flags = Intent.FLAG_ACTIVITY_NEW_TASK
+    }
+    app.tryStartActivity(intent)
+}
+
+fun openBatterySettings() {
+    val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
+        data = "package:${app.packageName}".toUri()
+        flags = Intent.FLAG_ACTIVITY_NEW_TASK
+    }
+    app.tryStartActivity(intent)
+}
+
 fun openAppDetailsSettings() {
     val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
         data = "package:${app.packageName}".toUri()

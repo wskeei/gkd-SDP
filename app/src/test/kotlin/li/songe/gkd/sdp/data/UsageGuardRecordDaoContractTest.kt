@@ -16,6 +16,16 @@ class UsageGuardRecordDaoContractTest {
         assertNotNull(UsageGuardRecord.UsageGuardRecordDao::queryRecentRecords)
         assertNotNull(UsageGuardRecord.UsageGuardRecordDao::getPreviousRecord)
         assertNotNull(UsageGuardRecord.UsageGuardRecordDao::getLatestInsightRow)
+        assertNotNull(UsageGuardRecord.UsageGuardRecordDao::queryInsightRowsByAppAndRequestedAtRange)
+    }
+
+    @Test
+    fun insightRangeIsHalfOpenAndHasNoApplicationLimit() {
+        val sql = UsageGuardRecord.UsageGuardRecordDao.INSIGHT_RANGE_QUERY_SQL
+            .replace(Regex("\\s+"), " ")
+        assertTrue(sql.contains("requested_at >= :startAt"))
+        assertTrue(sql.contains("requested_at < :endAt"))
+        assertFalse(sql.contains("LIMIT"))
     }
 
     @Test

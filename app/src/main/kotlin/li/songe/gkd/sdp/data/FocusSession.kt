@@ -124,5 +124,11 @@ data class FocusSession(
 
         @Query("DELETE FROM focus_session WHERE id = 1")
         suspend fun clear()
+
+        @Query("SELECT COUNT(*) FROM focus_session")
+        suspend fun count(): Long
+
+        @Query("DELETE FROM focus_session")
+        suspend fun deleteAll(): Int
     }
 }

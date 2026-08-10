@@ -376,8 +376,8 @@ internal fun previewSummary(
 ): DigitalSelfDisciplineReviewPolicy.ReviewSummary {
     val zone = ZoneId.of("Asia/Shanghai")
     val bounds = DigitalSelfDisciplineReviewPolicy.rangeBounds(
-        DigitalSelfDisciplineReviewPolicy.Range.Today,
-        LocalDate.of(2026, 8, 4),
+        DigitalSelfDisciplineReviewPolicy.Range.LAST_24_HOURS,
+        LocalDate.of(2026, 8, 4).atStartOfDay(zone).plusHours(12).toInstant().toEpochMilli(),
         zone,
     )
     val rows = if (type == DigitalSelfDisciplineReviewPolicy.ReviewType.UsageRequest && hasData) {

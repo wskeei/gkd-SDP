@@ -1,5 +1,7 @@
 package li.songe.gkd.sdp.util
 
+import li.songe.gkd.sdp.usage.UsageRequestValidationPolicy
+
 object UsageGuardPolicy {
     const val SCOPE_SELECTED_ONLY = 0
     const val SCOPE_GLOBAL_EXCEPT_WHITELIST = 1
@@ -40,24 +42,17 @@ object UsageGuardPolicy {
         minReasonLength: Int,
         requestedDurationMinutes: Int,
     ): RequestValidationResult {
-        if (selectedTags.isEmpty()) {
-            return RequestValidationResult(
-                accepted = false,
-                tagsError = "至少选择一个标签",
-            )
-        }
-        if (reason.trim().length < minReasonLength) {
-            return RequestValidationResult(
-                accepted = false,
-                reasonError = "理由长度不足",
-            )
-        }
-        if (requestedDurationMinutes <= 0) {
-            return RequestValidationResult(
-                accepted = false,
-                durationError = "时长必须大于 0",
-            )
-        }
-        return RequestValidationResult(accepted = true)
+        val validation = UsageRequestValidationPolicy.validate(
+            selectedTags = selectedTags,
+            reason = reason,
+            minReasonLength = minReasonLength,
+            requestedDurationMinutes = requestedDurationMinutes,
+        )
+        return RequestValidationResult(
+            accepted = validation.accepted,
+            reasonError = validation.reasonError,
+            durationError = validation.durationError,
+            tagsError = validation.tagsError,
+        )
     }
 }

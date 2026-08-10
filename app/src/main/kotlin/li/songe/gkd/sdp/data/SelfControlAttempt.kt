@@ -121,6 +121,12 @@ data class SelfControlAttempt(
         @Query("DELETE FROM self_control_attempt WHERE last_occurred_at < :cutoffAt")
         suspend fun deleteAttemptsBefore(cutoffAt: Long): Int
 
+        @Query("DELETE FROM self_control_attempt_event")
+        suspend fun deleteAllEvents(): Int
+
+        @Query("DELETE FROM self_control_attempt")
+        suspend fun deleteAllAttempts(): Int
+
         @Query("SELECT COUNT(*) FROM self_control_attempt")
         suspend fun countAttempts(): Int
 

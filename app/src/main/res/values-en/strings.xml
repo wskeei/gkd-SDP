@@ -979,4 +979,12 @@ Note: you can also do this in Subscription → Rule category</string>
     <string name="s_ffcf0a1eb0" formatted="false">File does not exist</string>
     <string name="s_fff8cc4d94" formatted="false">Unchanged</string>
     <string name="snapshot_button" formatted="false">Snapshot button</string>
+    <string name="subscription_rules_tab">Subscription rules</string>
+    <string name="settings_search">Search settings</string>
+    <string name="privacy_data_title">Privacy &amp; data</string>
+    <string name="privacy_data_intro">Data stays on this device. Review retention, delete history, export an encrypted backup, or generate a whitelisted support bundle.</string>
+    <string name="privacy_settings_subtitle">Review retention, delete history, and manage encrypted backups</string>
+    <string name="privacy_delete_title">Delete data</string>
+    <string name="privacy_delete">Delete</string>
+    <string name="privacy_delete_failed">Deletion failed. Try again.</string>
 </resources>

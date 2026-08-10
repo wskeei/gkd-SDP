@@ -64,6 +64,7 @@ import li.songe.gkd.sdp.ui.ActivityLogRoute
 import li.songe.gkd.sdp.ui.AdvancedPageRoute
 import li.songe.gkd.sdp.ui.AppConfigRoute
 import li.songe.gkd.sdp.ui.AuthA11yRoute
+import li.songe.gkd.sdp.ui.capability.CapabilityCenterRoute
 import li.songe.gkd.sdp.ui.UsageGuardReviewRoute
 import li.songe.gkd.sdp.ui.WebViewRoute
 import li.songe.gkd.sdp.ui.component.GroupNameText
@@ -120,7 +121,7 @@ fun useControlPage(): ScaffoldExt {
                     onClickLabel = "前往工作模式页面",
                     contentDescription = "工作模式",
                     onClick = throttle {
-                        mainVm.navigatePage(AuthA11yRoute)
+                        mainVm.navigatePage(CapabilityCenterRoute)
                     },
                 )
             })
@@ -189,7 +190,7 @@ fun useControlPage(): ScaffoldExt {
                     onCheckedChange = { newEnabled ->
                         when (HomeA11yServiceTogglePolicy.action(newEnabled, writeSecureSettings)) {
                             HomeA11yServiceTogglePolicy.Action.OPEN_AUTHORIZATION -> {
-                                mainVm.navigatePage(AuthA11yRoute)
+                                mainVm.navigatePage(CapabilityCenterRoute)
                             }
 
                             HomeA11yServiceTogglePolicy.Action.START_OR_REPAIR -> {

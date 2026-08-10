@@ -55,6 +55,12 @@ data class AppVisitLog(
         """
         )
         suspend fun deleteKeepLatest(): Int
+
+        @Query("SELECT COUNT(*) FROM app_visit_log")
+        suspend fun count(): Long
+
+        @Query("DELETE FROM app_visit_log")
+        suspend fun deleteAll(): Int
     }
 }
 

@@ -100,6 +100,8 @@ import li.songe.gkd.sdp.ui.AppInstallMonitorPage
 import li.songe.gkd.sdp.ui.AppInstallMonitorRoute
 import li.songe.gkd.sdp.ui.AppOpsAllowPage
 import li.songe.gkd.sdp.ui.AppOpsAllowRoute
+import li.songe.gkd.sdp.ui.capability.CapabilityCenterRoute
+import li.songe.gkd.sdp.ui.capability.CapabilityCenterScreen
 import li.songe.gkd.sdp.ui.AuthA11yPage
 import li.songe.gkd.sdp.ui.AuthA11yRoute
 import li.songe.gkd.sdp.ui.BlockA11yAppListPage
@@ -138,6 +140,8 @@ import li.songe.gkd.sdp.ui.UsageGuardPage
 import li.songe.gkd.sdp.ui.UsageGuardRoute
 import li.songe.gkd.sdp.ui.UsageGuardReviewPage
 import li.songe.gkd.sdp.ui.UsageGuardReviewRoute
+import li.songe.gkd.sdp.ui.privacy.PrivacyDataScreen
+import li.songe.gkd.sdp.ui.privacy.PrivacyDataRoute
 import li.songe.gkd.sdp.ui.WebViewPage
 import li.songe.gkd.sdp.ui.WebViewRoute
 import li.songe.gkd.sdp.ui.component.BuildDialog
@@ -304,9 +308,11 @@ class MainActivity : ComponentActivity() {
                         entryProvider = entryProvider {
                             entry<HomeRoute> { HomePage(it) }
                             entry<AuthA11yRoute> { AuthA11yPage() }
+                            entry<CapabilityCenterRoute> { CapabilityCenterScreen(mainVm) }
                             entry<AboutRoute> { AboutPage() }
                             entry<BlockA11yAppListRoute> { BlockA11yAppListPage() }
                             entry<AdvancedPageRoute> { AdvancedPage() }
+                            entry<PrivacyDataRoute> { PrivacyDataScreen() }
                             entry<SnapshotPageRoute> { SnapshotPage() }
                             entry<AppOpsAllowRoute> { AppOpsAllowPage() }
                             entry<A11YScopeAppListRoute> { A11yScopeAppListPage() }

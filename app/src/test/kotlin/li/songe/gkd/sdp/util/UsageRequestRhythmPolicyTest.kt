@@ -77,6 +77,8 @@ class UsageRequestRhythmPolicyTest {
         assertNull(UsageRequestRhythmPolicy.formatRatio(null))
         assertTrue(UsageRequestRhythmPolicy.formatRatio(1.234)!!.contains("1.23"))
         assertEquals("10.0", UsageRequestRhythmPolicy.formatRatio(10.0))
+        assertEquals("100", UsageRequestRhythmPolicy.formatRatio(100.0))
+        assertEquals("120", UsageRequestRhythmPolicy.formatRatio(120.0))
         assertEquals("0.0", UsageRequestRhythmPolicy.formatRatio(0.0))
         assertEquals("<0.01", UsageRequestRhythmPolicy.formatRatio(0.001))
     }

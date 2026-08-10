@@ -299,6 +299,7 @@ dependencies {
 
     implementation(libs.compose.activity)
     implementation(libs.compose.material3)
+    implementation(libs.compose.adaptive)
 
     implementation(libs.androidx.navigation3.ui)
     implementation(libs.androidx.navigation3.runtime)
