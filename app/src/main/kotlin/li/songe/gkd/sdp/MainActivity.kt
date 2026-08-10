@@ -140,6 +140,8 @@ import li.songe.gkd.sdp.ui.UsageGuardPage
 import li.songe.gkd.sdp.ui.UsageGuardRoute
 import li.songe.gkd.sdp.ui.UsageGuardReviewPage
 import li.songe.gkd.sdp.ui.UsageGuardReviewRoute
+import li.songe.gkd.sdp.ui.privacy.PrivacyDataScreen
+import li.songe.gkd.sdp.ui.privacy.PrivacyDataRoute
 import li.songe.gkd.sdp.ui.WebViewPage
 import li.songe.gkd.sdp.ui.WebViewRoute
 import li.songe.gkd.sdp.ui.component.BuildDialog
@@ -310,6 +312,7 @@ class MainActivity : ComponentActivity() {
                             entry<AboutRoute> { AboutPage() }
                             entry<BlockA11yAppListRoute> { BlockA11yAppListPage() }
                             entry<AdvancedPageRoute> { AdvancedPage() }
+                            entry<PrivacyDataRoute> { PrivacyDataScreen() }
                             entry<SnapshotPageRoute> { SnapshotPage() }
                             entry<AppOpsAllowRoute> { AppOpsAllowPage() }
                             entry<A11YScopeAppListRoute> { A11yScopeAppListPage() }

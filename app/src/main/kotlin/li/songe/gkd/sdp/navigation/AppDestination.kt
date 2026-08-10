@@ -9,6 +9,7 @@ import li.songe.gkd.sdp.ui.UsageGuardReviewRoute
 import li.songe.gkd.sdp.ui.UsageGuardRoute
 import li.songe.gkd.sdp.ui.home.HomeDestination
 import li.songe.gkd.sdp.ui.home.HomeRoute
+import li.songe.gkd.sdp.ui.privacy.PrivacyDataRoute
 import kotlinx.serialization.Serializable
 
 /** Stable, user-facing destinations used by notifications, widgets and deep links. */
@@ -41,7 +42,7 @@ fun AppDestination.toNavKey(): NavKey = when (this) {
 
     AppDestination.SELF_CONTROL -> HomeRoute(HomeDestination.SELF_CONTROL.key)
     AppDestination.SETTINGS_CAPABILITIES -> AppOpsAllowRoute
-    AppDestination.SETTINGS_PRIVACY_DATA -> AdvancedPageRoute
+    AppDestination.SETTINGS_PRIVACY_DATA -> PrivacyDataRoute
     AppDestination.SNAPSHOTS -> SnapshotPageRoute
     AppDestination.USAGE_GUARD -> UsageGuardRoute
     AppDestination.USAGE_REVIEW -> UsageGuardReviewRoute

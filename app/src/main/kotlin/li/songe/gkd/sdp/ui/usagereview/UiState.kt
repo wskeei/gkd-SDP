@@ -20,6 +20,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import li.songe.gkd.sdp.data.SelfControlIntervalRepository
+import li.songe.gkd.sdp.runtime.appDependencies
 import li.songe.gkd.sdp.ui.component.DigitalSelfDisciplineReviewPresentation
 import li.songe.gkd.sdp.ui.share.BaseViewModel
 import li.songe.gkd.sdp.util.DigitalSelfDisciplineReviewPolicy
@@ -35,7 +36,7 @@ sealed interface DigitalSelfDisciplineReviewUiState {
 
 class UsageGuardReviewVm : BaseViewModel() {
     private val repository by lazy { SelfControlIntervalRepository.fromDb() }
-    private val rangeFlow = MutableStateFlow(DigitalSelfDisciplineReviewPolicy.Range.Today)
+    private val rangeFlow = MutableStateFlow(DigitalSelfDisciplineReviewPolicy.Range.LAST_24_HOURS)
     private val reviewTypeFlow = MutableStateFlow(DigitalSelfDisciplineReviewPolicy.ReviewType.UsageRequest)
     private val interceptFilterFlow = MutableStateFlow(DigitalSelfDisciplineReviewPolicy.InterceptKindFilter.All)
     private val metricFlow = MutableStateFlow(DigitalSelfDisciplineReviewPolicy.ReviewMetric.USAGE_RATIO)
@@ -64,13 +65,17 @@ class UsageGuardReviewVm : BaseViewModel() {
         interceptFilterFlow,
         metricFlow,
         todayFlow,
-    ) { range, reviewType, interceptFilter, metric, today ->
-        ReviewSelection(range, reviewType, interceptFilter, metric, today.date, today.zoneId)
+    ) { range, reviewType, interceptFilter, metric, clock ->
+        ReviewSelection(range, reviewType, interceptFilter, metric, clock.nowEpochMs, clock.zoneId)
     }.flatMapLatest { selection ->
-        val bounds = DigitalSelfDisciplineReviewPolicy.rangeBounds(selection.range, selection.today, selection.zoneId)
+        val bounds = DigitalSelfDisciplineReviewPolicy.rangeBounds(
+            selection.range,
+            selection.nowEpochMs,
+            selection.zoneId,
+        )
         val previousBounds = DigitalSelfDisciplineReviewPolicy.rangeBounds(
             selection.range,
-            selection.today.minusDays(selection.range.days),
+            selection.nowEpochMs - selection.range.durationMs,
             selection.zoneId,
         )
         combine(
@@ -129,11 +134,14 @@ class UsageGuardReviewVm : BaseViewModel() {
         val reviewType: DigitalSelfDisciplineReviewPolicy.ReviewType,
         val interceptFilter: DigitalSelfDisciplineReviewPolicy.InterceptKindFilter,
         val metric: DigitalSelfDisciplineReviewPolicy.ReviewMetric,
-        val today: LocalDate,
+        val nowEpochMs: Long,
         val zoneId: ZoneId,
     )
 
-    private data class ReviewClock(val date: LocalDate, val zoneId: ZoneId)
+    private data class ReviewClock(val nowEpochMs: Long, val zoneId: ZoneId)
 
-    private fun reviewClock() = ReviewClock(LocalDate.now(), ZoneId.systemDefault())
+    private fun reviewClock() = ReviewClock(
+        nowEpochMs = appDependencies.clock.nowEpochMillis(),
+        zoneId = ZoneId.systemDefault(),
+    )
 }

@@ -14,6 +14,27 @@ All notable GKD-SDP changes are documented here. The format follows
 - Keep UI and overlay host boundaries small and enforce the directory contract in CI;
   no user data format or runtime policy is changed by this internal refactor.
 
+### Added
+
+- Add the fixed Overview / Self-control / Rules / Settings information
+  architecture with adaptive bottom navigation and navigation rail.
+- Add a runtime capability center with one next action per state.
+- Add searchable settings and a privacy & data page with local retention
+  summaries and history deletion.
+- Align review ranges to rolling 24-hour, 7-day, and 30-day windows with the
+  matching 1-hour, 6-hour, and 1-day buckets.
+
+### Changed
+
+- Make usage-request validation, duration presentation, and interval queries
+  explicit pure-Kotlin contracts; interval insight queries are half-open and
+  no longer load through a capped recent-record list.
+
+### Security
+
+- Privacy summaries and deletion actions do not display request reasons, URLs,
+  selectors, node text, contacts, or other sensitive payload fields.
+
 ## [2.1.1] - 2026-08-09
 
 ### Fixed

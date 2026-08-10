@@ -43,31 +43,9 @@ class SelfControlIntervalRepository(
             appId: String,
             startAt: Long,
             endAt: Long,
-        ): List<UsageRequestInsightRow> = queryRecentRecords(appId, 10_000)
-            .filter { it.requestedAt in startAt..endAt }
-            .sortedWith(compareBy<UsageGuardRecord> { it.requestedAt }.thenBy { it.id })
-            .map {
-                UsageRequestInsightRow(
-                    id = it.id,
-                    requestedAt = it.requestedAt,
-                    requestedDurationMinutes = it.requestedDurationMinutes,
-                    lastUsageEndedAt = it.lastUsageEndedAt,
-                    requestGapMs = it.requestGapMs,
-                )
-            }
+        ): List<UsageRequestInsightRow>
 
-        suspend fun getLatestInsightRow(appId: String): UsageRequestInsightRow? =
-            queryRecentRecords(appId, 10_000)
-                .maxWithOrNull(compareBy<UsageGuardRecord> { it.requestedAt }.thenBy { it.id })
-                ?.let {
-                    UsageRequestInsightRow(
-                        id = it.id,
-                        requestedAt = it.requestedAt,
-                        requestedDurationMinutes = it.requestedDurationMinutes,
-                        lastUsageEndedAt = it.lastUsageEndedAt,
-                        requestGapMs = it.requestGapMs,
-                    )
-                }
+        suspend fun getLatestInsightRow(appId: String): UsageRequestInsightRow?
     }
 
     interface AttemptEventSource {

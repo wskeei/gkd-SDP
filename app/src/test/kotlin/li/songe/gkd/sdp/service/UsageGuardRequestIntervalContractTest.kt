@@ -4,6 +4,7 @@ import li.songe.gkd.sdp.data.SelfControlIntervalRepository
 import li.songe.gkd.sdp.data.SelfControlAttempt
 import li.songe.gkd.sdp.data.SelfControlAttemptEvent
 import li.songe.gkd.sdp.data.UsageGuardRecord
+import li.songe.gkd.sdp.data.UsageRequestInsightRow
 import li.songe.gkd.sdp.util.SelfControlElapsedPolicy
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
@@ -33,11 +34,45 @@ class UsageGuardRequestIntervalContractTest {
                     records.filter { it.appId == appId }.sortedByDescending { it.requestedAt }.take(limit)
 
                 override fun queryByRequestedAtRange(startAt: Long, endAt: Long): Flow<List<UsageGuardRecord>> = emptyFlow()
+
+                override suspend fun queryInsightRows(
+                    appId: String,
+                    startAt: Long,
+                    endAt: Long,
+                ): List<UsageRequestInsightRow> =
+                    records
+                        .filter { it.appId == appId && it.requestedAt >= startAt && it.requestedAt < endAt }
+                        .sortedWith(compareBy<UsageGuardRecord> { it.requestedAt }.thenBy { it.id })
+                        .map {
+                            UsageRequestInsightRow(
+                                id = it.id,
+                                requestedAt = it.requestedAt,
+                                requestedDurationMinutes = it.requestedDurationMinutes,
+                                lastUsageEndedAt = it.lastUsageEndedAt,
+                                requestGapMs = it.requestGapMs,
+                            )
+                        }
+
+                override suspend fun getLatestInsightRow(
+                    appId: String,
+                ): UsageRequestInsightRow? =
+                    records
+                        .filter { it.appId == appId }
+                        .maxWithOrNull(compareBy<UsageGuardRecord> { it.requestedAt }.thenBy { it.id })
+                        ?.let {
+                            UsageRequestInsightRow(
+                                id = it.id,
+                                requestedAt = it.requestedAt,
+                                requestedDurationMinutes = it.requestedDurationMinutes,
+                                lastUsageEndedAt = it.lastUsageEndedAt,
+                                requestGapMs = it.requestGapMs,
+                            )
+                        }
             },
             attemptEvents = unusedAttemptSource(),
         )
 
-        val overlay = repository.loadUsageRequestOverlayData("target", 7_000L)
+        val overlay = repository.loadUsageRequestOverlayData("target", 7_001L)
 
         assertEquals(7_000L, overlay.latestRequestedAt)
         assertEquals(

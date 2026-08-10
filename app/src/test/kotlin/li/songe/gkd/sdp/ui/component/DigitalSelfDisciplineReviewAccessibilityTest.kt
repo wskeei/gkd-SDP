@@ -12,9 +12,14 @@ class DigitalSelfDisciplineReviewAccessibilityTest {
     @Test
     fun semanticSummaryAndTextRowsDescribeEveryTrendPointWithoutSensitiveContent() {
         val zone = ZoneId.of("Asia/Shanghai")
+        val testNow = LocalDate.of(2026, 8, 4)
+            .atStartOfDay(zone)
+            .plusHours(12)
+            .toInstant()
+            .toEpochMilli()
         val bounds = DigitalSelfDisciplineReviewPolicy.rangeBounds(
-            DigitalSelfDisciplineReviewPolicy.Range.Today,
-            LocalDate.of(2026, 8, 4),
+            DigitalSelfDisciplineReviewPolicy.Range.LAST_24_HOURS,
+            testNow,
             zone,
         )
         val rows = (0 until 3).map { index ->

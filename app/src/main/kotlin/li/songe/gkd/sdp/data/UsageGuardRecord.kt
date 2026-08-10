@@ -65,6 +65,15 @@ data class UsageGuardRecord(
                 WHERE requested_at >= :startAt AND requested_at < :endAt
                 ORDER BY requested_at ASC, id ASC
             """
+
+            const val INSIGHT_RANGE_QUERY_SQL = """
+                SELECT id, requested_at, requested_duration_minutes, last_usage_ended_at, request_gap_ms
+                FROM usage_guard_record
+                WHERE app_id = :appId
+                  AND requested_at >= :startAt
+                  AND requested_at < :endAt
+                ORDER BY requested_at ASC, id ASC
+            """
         }
 
         @Insert(onConflict = OnConflictStrategy.REPLACE)
@@ -111,16 +120,7 @@ data class UsageGuardRecord(
             id: Long,
         ): UsageGuardRecord?
 
-        @Query(
-            """
-            SELECT id, requested_at, requested_duration_minutes, last_usage_ended_at, request_gap_ms
-            FROM usage_guard_record
-            WHERE app_id = :appId
-              AND requested_at >= :startAt
-              AND requested_at <= :endAt
-            ORDER BY requested_at ASC, id ASC
-            """
-        )
+        @Query(INSIGHT_RANGE_QUERY_SQL)
         suspend fun queryInsightRowsByAppAndRequestedAtRange(
             appId: String,
             startAt: Long,
@@ -146,6 +146,15 @@ data class UsageGuardRecord(
 
         @Query("SELECT * FROM usage_guard_record ORDER BY id DESC LIMIT :limit")
         fun queryLatest(limit: Int = 100): Flow<List<UsageGuardRecord>>
+
+        @Query("SELECT COUNT(*) FROM usage_guard_record")
+        suspend fun count(): Long
+
+        @Query("SELECT COUNT(*) FROM usage_guard_record WHERE ended_at = 0")
+        suspend fun countActive(): Long
+
+        @Query("DELETE FROM usage_guard_record")
+        suspend fun deleteAll(): Int
 
         @Query(
             """

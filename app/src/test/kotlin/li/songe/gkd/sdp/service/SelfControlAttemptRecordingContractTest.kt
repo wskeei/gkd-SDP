@@ -50,5 +50,15 @@ class SelfControlAttemptRecordingContractTest {
     private fun unusedUsageSource() = object : SelfControlIntervalRepository.UsageRecordSource {
         override suspend fun queryRecentRecords(appId: String, limit: Int) = emptyList<li.songe.gkd.sdp.data.UsageGuardRecord>()
         override fun queryByRequestedAtRange(startAt: Long, endAt: Long): Flow<List<li.songe.gkd.sdp.data.UsageGuardRecord>> = emptyFlow()
+
+        override suspend fun queryInsightRows(
+            appId: String,
+            startAt: Long,
+            endAt: Long,
+        ): List<li.songe.gkd.sdp.data.UsageRequestInsightRow> = emptyList()
+
+        override suspend fun getLatestInsightRow(
+            appId: String,
+        ): li.songe.gkd.sdp.data.UsageRequestInsightRow? = null
     }
 }

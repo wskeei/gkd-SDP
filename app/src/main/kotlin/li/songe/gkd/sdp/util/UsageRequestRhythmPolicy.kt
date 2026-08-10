@@ -86,11 +86,18 @@ object UsageRequestRhythmPolicy {
     fun formatRatio(value: Double?): String? {
         if (value == null || !value.isFinite() || value < 0.0) return null
         if (value > 0.0 && value < 0.01) return "<0.01"
-        val scale = if (value >= 10.0) 1 else 2
-        val formatted = BigDecimal.valueOf(value)
+        val scale = when {
+            value >= 100.0 -> 0
+            value >= 10.0 -> 1
+            else -> 2
+        }
+        var formatted = BigDecimal.valueOf(value)
             .setScale(scale, RoundingMode.HALF_UP)
             .stripTrailingZeros()
             .toPlainString()
-        return if (!formatted.contains('.')) "$formatted.0" else formatted
+        if (value < 100.0 && !formatted.contains('.')) {
+            formatted += ".0"
+        }
+        return formatted
     }
 }

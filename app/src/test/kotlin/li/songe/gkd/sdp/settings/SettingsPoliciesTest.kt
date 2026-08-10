@@ -85,4 +85,13 @@ class SettingsSearchPolicyTest {
     fun noMatchReturnsEmpty() {
         assertTrue(SettingsSearchPolicy.search(entries, "不存在词").isEmpty())
     }
+
+    @Test
+    fun indexCoversEverySettingsGroupInDisplayOrder() {
+        assertEquals(
+            SettingsGroup.entries.toList(),
+            SettingsIndex.entries.map { it.group },
+        )
+        assertEquals(SettingsIndex.entries.size, SettingsIndex.entries.map { it.title }.distinct().size)
+    }
 }

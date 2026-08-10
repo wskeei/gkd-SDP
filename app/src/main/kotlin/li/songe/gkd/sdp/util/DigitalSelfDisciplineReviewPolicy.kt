@@ -12,10 +12,18 @@ import java.time.ZoneId
 
 /** Pure aggregation rules for the Digital Self-Discipline review page. */
 object DigitalSelfDisciplineReviewPolicy {
-    enum class Range(val label: String, val days: Long) {
-        Today("今日", 1L),
-        SevenDays("近 7 天", 7L),
-        ThirtyDays("近 30 天", 30L),
+    private const val MINUTE_MS = 60_000L
+    private const val HOUR_MS = 60L * MINUTE_MS
+
+    enum class Range(
+        val label: String,
+        val durationMs: Long,
+        val bucketMs: Long,
+        val maxChartPoints: Int,
+    ) {
+        LAST_24_HOURS("近 24 小时", 24L * HOUR_MS, HOUR_MS, 24),
+        LAST_7_DAYS("近 7 天", 7L * 24L * HOUR_MS, 6L * HOUR_MS, 28),
+        LAST_30_DAYS("近 30 天", 30L * 24L * HOUR_MS, 24L * HOUR_MS, 30),
     }
 
     enum class ReviewType(val label: String) {
@@ -47,6 +55,8 @@ object DigitalSelfDisciplineReviewPolicy {
         val previousEndDateExclusive: LocalDate,
         val previousStartAt: Long,
         val previousEndAt: Long,
+        val bucketMs: Long,
+        val maxChartPoints: Int,
     ) {
         fun contains(timestamp: Long): Boolean = timestamp >= startAt && timestamp < endAt
     }
@@ -85,6 +95,7 @@ object DigitalSelfDisciplineReviewPolicy {
 
     data class DailyIntervalBucket(
         val date: LocalDate,
+        val bucketStartAt: Long,
         val eventCount: Int,
         val validIntervalCount: Int,
         val validRatioCount: Int,
@@ -157,36 +168,29 @@ object DigitalSelfDisciplineReviewPolicy {
 
     fun rangeBounds(
         range: Range,
-        today: LocalDate = LocalDate.now(),
+        nowEpochMs: Long,
         zoneId: ZoneId = ZoneId.systemDefault(),
     ): RangeBounds {
-        val startDate = today.minusDays(range.days - 1L)
-        val endDateExclusive = today.plusDays(1L)
-        val previousStartDate = startDate.minusDays(range.days)
-        val previousEndDateExclusive = startDate
+        val safeNow = nowEpochMs.coerceAtLeast(0L)
+        val startAt = (safeNow - range.durationMs).coerceAtLeast(0L)
+        val previousStartAt = (startAt - range.durationMs).coerceAtLeast(0L)
+        fun dateAt(epochMs: Long): LocalDate =
+            Instant.ofEpochMilli(epochMs).atZone(zoneId).toLocalDate()
         return RangeBounds(
             range = range,
             zoneId = zoneId,
-            startDate = startDate,
-            endDateExclusive = endDateExclusive,
-            previousStartDate = previousStartDate,
-            previousEndDateExclusive = previousEndDateExclusive,
-            startAt = startDate.atStartOfDay(zoneId).toInstant().toEpochMilli(),
-            endAt = endDateExclusive.atStartOfDay(zoneId).toInstant().toEpochMilli(),
-            previousStartAt = previousStartDate.atStartOfDay(zoneId).toInstant().toEpochMilli(),
-            previousEndAt = previousEndDateExclusive.atStartOfDay(zoneId).toInstant().toEpochMilli(),
+            startDate = dateAt(startAt),
+            endDateExclusive = dateAt(safeNow),
+            startAt = startAt,
+            endAt = safeNow,
+            previousStartDate = dateAt(previousStartAt),
+            previousEndDateExclusive = dateAt(startAt),
+            previousStartAt = previousStartAt,
+            previousEndAt = startAt,
+            bucketMs = range.bucketMs,
+            maxChartPoints = range.maxChartPoints,
         )
     }
-
-    fun rangeBounds(
-        range: Range,
-        nowEpochMs: Long,
-        zoneId: ZoneId = ZoneId.systemDefault(),
-    ): RangeBounds = rangeBounds(
-        range = range,
-        today = Instant.ofEpochMilli(nowEpochMs).atZone(zoneId).toLocalDate(),
-        zoneId = zoneId,
-    )
 
     fun rangeBounds(
         range: Range,
@@ -260,10 +264,15 @@ object DigitalSelfDisciplineReviewPolicy {
             excludedIntervalCount = eventCount - intervals.size,
             excludedRatioCount = eventCount - ratioValues.size,
         )
-        val dailyBuckets = dailyBuckets(samples, eventCountRows = when (reviewType) {
-            ReviewType.UsageRequest -> currentRows.map { it.requestedAt }
-            ReviewType.InterceptAttempt -> currentEvents.map { it.occurredAt }
-        }, zoneId = zoneId)
+        val dailyBuckets = dailyBuckets(
+            samples = samples,
+            eventCountRows = when (reviewType) {
+                ReviewType.UsageRequest -> currentRows.map { it.requestedAt }
+                ReviewType.InterceptAttempt -> currentEvents.map { it.occurredAt }
+            },
+            zoneId = zoneId,
+            bounds = bounds,
+        )
         val recentIntervals = samples.asReversed().take(10).map { sample ->
             sample.toRecentItem()
         }
@@ -441,19 +450,25 @@ object DigitalSelfDisciplineReviewPolicy {
         samples: List<MetricSample>,
         eventCountRows: List<Long>,
         zoneId: ZoneId,
+        bounds: RangeBounds,
     ): List<DailyIntervalBucket> {
-        val dates = eventCountRows.groupingBy { Instant.ofEpochMilli(it).atZone(zoneId).toLocalDate() }
-            .eachCount()
-        val samplesByDate = samples.groupBy { Instant.ofEpochMilli(it.occurredAt).atZone(zoneId).toLocalDate() }
-        return dates.keys.sorted().map { date ->
-            val daySamples = samplesByDate[date].orEmpty()
-            val intervals = daySamples.mapNotNull { it.intervalMs }
+        val bucketIndex = { timestamp: Long ->
+            ((timestamp - bounds.startAt).coerceAtLeast(0L) / bounds.bucketMs)
+                .coerceAtMost((bounds.maxChartPoints - 1).coerceAtLeast(0).toLong())
+        }
+        val counts = eventCountRows.groupingBy(bucketIndex).eachCount()
+        val samplesByBucket = samples.groupBy { bucketIndex(it.occurredAt) }
+        return counts.keys.sorted().map { index ->
+            val bucketStartAt = bounds.startAt + index * bounds.bucketMs
+            val bucketSamples = samplesByBucket[index].orEmpty()
+            val intervals = bucketSamples.mapNotNull { it.intervalMs }
             val intervalStats = SelfControlIntervalPolicy.statsFor(intervals)
-            val ratios = daySamples.mapNotNull { it.ratio }
+            val ratios = bucketSamples.mapNotNull { it.ratio }
             val dayRatioStats = ratioStats(ratios)
             DailyIntervalBucket(
-                date = date,
-                eventCount = dates[date] ?: 0,
+                date = Instant.ofEpochMilli(bucketStartAt).atZone(zoneId).toLocalDate(),
+                bucketStartAt = bucketStartAt,
+                eventCount = counts[index] ?: 0,
                 validIntervalCount = intervals.size,
                 validRatioCount = ratios.size,
                 averageMs = intervalStats.averageMs,

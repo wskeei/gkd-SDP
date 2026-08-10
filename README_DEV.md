@@ -95,6 +95,15 @@ Compose pages use the directory contract under `ui/<feature>/`: `Route.kt`,
 `scripts/verify-ui-file-boundaries.py` keeps host files below 500 lines and
 guards against oversized Composable entry points.
 
+The top-level shell is `AdaptiveHomeScaffold`: compact windows use a bottom
+`NavigationBar`, medium/expanded windows use a left `NavigationRail`, and
+switching width keeps the current destination and back stack. The four fixed
+top-level destinations are Overview, Self-control, Rules, and Settings.
+`CapabilityCenterScreen` resolves the runtime capability graph and renders the
+single next action. `PrivacyDataScreen` uses `DataInventoryRepository` and the
+shared `ContentState` contract to show local retention summaries and history
+deletion without exposing sensitive payload fields.
+
 ### 2. Accessibility and activity tracking
 
 [`app/src/main/kotlin/li/songe/gkd/sdp/service/A11yService.kt`](app/src/main/kotlin/li/songe/gkd/sdp/service/A11yService.kt) is the main accessibility service base class.
@@ -201,10 +210,12 @@ selected request duration. Overlays load one 30-day raw dataset and switch 24-ho
 historical statistics.
 
 The review repository reads a minimal `UsageReviewRow` projection and keeps every row in
-the selected window, including rows whose frozen `requestGapMs` is null. Null or negative
-gaps count toward total records but never enter interval averages, ratio calculations, or
-chart values. A window with at most 24/28/30 valid samples is rendered point-for-point;
-only larger windows use the existing 1-hour/6-hour/1-day buckets. Each aggregated point
+the selected half-open rolling window, including rows whose frozen `requestGapMs` is null.
+Null or negative gaps count toward total records but never enter interval averages, ratio
+calculations, or chart values. The three fixed review ranges are 24 hours, 7 days, and 30
+days; each range uses its own bucket size and a previous equal-length window for comparison.
+A window with at most 24/28/30 valid samples is rendered point-for-point; only larger
+windows use the existing 1-hour/6-hour/1-day buckets. Each aggregated point
 keeps its `sourceIds`, so a current event is marked by ID rather than by a timestamp bucket.
 Ratio arithmetic remains millisecond-based while visible formulas choose a common
 seconds/minutes/hours unit. The review page derives current and previous periods through one

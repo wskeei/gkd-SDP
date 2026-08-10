@@ -86,6 +86,9 @@ data class AppInstallLog(
 
         @Query("DELETE FROM app_install_log")
         suspend fun deleteAll()
+
+        @Query("SELECT COUNT(*) FROM app_install_log")
+        suspend fun count(): Long
     }
 }
 

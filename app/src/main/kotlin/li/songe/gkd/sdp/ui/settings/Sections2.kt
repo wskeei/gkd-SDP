@@ -32,6 +32,9 @@ import li.songe.gkd.sdp.ui.share.asMutableState
 import li.songe.gkd.sdp.ui.style.EmptyHeight
 import li.songe.gkd.sdp.ui.style.titleItemPadding
 import li.songe.gkd.sdp.util.*
+import li.songe.gkd.sdp.settings.SettingsIndex
+import li.songe.gkd.sdp.settings.SettingsSearchPolicy
+import li.songe.gkd.sdp.settings.label
 import androidx.compose.ui.res.stringResource
 
 @Composable
@@ -46,6 +49,7 @@ internal fun SettingsContent(
 ): ScaffoldExt {
     val scrollKey = rememberSaveable { mutableIntStateOf(0) }
     val (scrollBehavior, scrollState) = useScrollBehaviorState(scrollKey)
+    var searchQuery by rememberSaveable { mutableStateOf("") }
     LaunchedEffect(Unit) {
         mainVm.resetPageScrollEvent.collect {
             if (it == BottomNavItem.Settings) scrollKey.intValue++
@@ -68,6 +72,31 @@ internal fun SettingsContent(
         },
     ) { contentPadding ->
         Column(modifier = Modifier.verticalScroll(scrollState).padding(contentPadding)) {
+            OutlinedTextField(
+                value = searchQuery,
+                onValueChange = { searchQuery = it },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                label = { Text(stringResource(R.string.settings_search)) },
+                leadingIcon = {
+                    PerfIcon(
+                        imageVector = PerfIcon.Search,
+                        contentDescription = null,
+                    )
+                },
+                singleLine = true,
+            )
+            if (searchQuery.isNotBlank()) {
+                SettingsSearchPolicy.search(SettingsIndex.entries, searchQuery).forEach { entry ->
+                    SettingItem(
+                        title = entry.title,
+                        subtitle = entry.group.label(),
+                        onClick = { searchQuery = "" },
+                    )
+                }
+                return@Column
+            }
             SettingsGeneralSection(
                 context = context,
                 mainVm = mainVm,
@@ -242,7 +271,11 @@ private fun SettingsOtherSection(store: SettingsStore, mainVm: MainViewModel, vm
         subtitle = if (activeLockCount > 0) stringResource(R.string.s_ed7465c7b9, (activeLockCount).toString()) else stringResource(R.string.s_74b0d1f601),
         onClick = { mainVm.navigatePage(FocusLockRoute) },
     )
-    SettingItem(title = stringResource(R.string.s_dd07e641ca), onClick = { mainVm.navigatePage(AdvancedPageRoute) })
+    SettingItem(
+        title = li.songe.gkd.sdp.app.getString(R.string.privacy_data_title),
+        subtitle = stringResource(R.string.privacy_settings_subtitle),
+        onClick = { mainVm.navigatePage(li.songe.gkd.sdp.ui.privacy.PrivacyDataRoute) },
+    )
     SettingItem(title = stringResource(R.string.s_8233960bfd), onClick = { vm.showBackupDlgFlow.value = true })
     SettingItem(title = stringResource(R.string.s_bed172efc9), onClick = { mainVm.navigatePage(AboutRoute) })
 }
