@@ -456,11 +456,10 @@ private fun ServerStatusCard() {
     val mainVm = LocalMainViewModel.current
     val vm = viewModel<HomeVm>()
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .semantics {
-                onClick(label = "不执行操作", action = null)
-            }, shape = RoundedCornerShape(20.dp), colors = surfaceCardColors, onClick = {}) {
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        colors = surfaceCardColors,
+    ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
