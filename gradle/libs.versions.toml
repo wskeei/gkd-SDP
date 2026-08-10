@@ -18,6 +18,7 @@ vico = "2.0.0-alpha.28"
 lint = "32.3.0"
 adaptive = "1.2.0"
 kover = "0.9.9"
+screenshot = "0.0.1-alpha15"
 
 [libraries]
 vico-compose = { module = "com.patrykandpatrick.vico:compose", version.ref = "vico" }
@@ -105,3 +106,4 @@ remap = { id = "li.songe.remap", version.ref = "remap" }
 loc = { id = "li.songe.loc", version.ref = "loc" }
 littlerobots-version = "nl.littlerobots.version-catalog-update:1.1.0"
 kotlinx-kover = { id = "org.jetbrains.kotlinx.kover", version.ref = "kover" }
+compose-screenshot = { id = "com.android.compose.screenshot", version.ref = "screenshot" }

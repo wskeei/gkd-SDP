@@ -114,12 +114,14 @@ plugins {
     alias(libs.plugins.remap)
     alias(libs.plugins.loc)
     alias(libs.plugins.kotlinx.kover)
+    alias(libs.plugins.compose.screenshot)
 }
 
 android {
     namespace = rootProject.ext["android.namespace"].toString()
     compileSdk = rootProject.ext["android.compileSdk"] as Int
     buildToolsVersion = rootProject.ext["android.buildToolsVersion"].toString()
+    experimentalProperties["android.experimental.enableScreenshotTest"] = true
 
     defaultConfig {
         minSdk = rootProject.ext["android.minSdk"] as Int
