@@ -253,15 +253,14 @@ android {
             filters {
                 includes {
                     classes(
-                        "li.songe.gkd.sdp.*Policy*",
-                        "li.songe.gkd.sdp.*Repository*",
-                        "li.songe.gkd.sdp.runtime.*",
-                        "li.songe.gkd.sdp.backup.*",
-                        "li.songe.gkd.sdp.remote.*",
                         "li.songe.gkd.sdp.capability.*",
                         "li.songe.gkd.sdp.settings.*",
-                        "li.songe.gkd.sdp.privacy.*",
                         "li.songe.gkd.sdp.usage.*",
+                        "li.songe.gkd.sdp.runtime.*",
+                        "li.songe.gkd.sdp.util.*Policy*",
+                        "li.songe.gkd.sdp.remote.*Policy*",
+                        "li.songe.gkd.sdp.store.*Policy*",
+                        "li.songe.gkd.sdp.privacy.DataDeletionCoordinator*",
                     )
                 }
                 excludes {
