@@ -164,13 +164,13 @@ private fun BackupWorkflowStageContent(
             )
             SettingsPasswordField(
                 value = workflow.password,
-                label = stringResource(R.string.s_54ed97d204),
+                label = "备份密码",
                 onValueChange = { workflowState.value = workflow.copy(password = it, errorText = null) },
             )
             if (workflow.stage == BackupWorkflowStage.EXPORT_PASSWORD) {
                 SettingsPasswordField(
                     value = workflow.repeatedPassword,
-                    label = stringResource(R.string.s_f27a153008),
+                    label = "再次输入密码",
                     onValueChange = { workflowState.value = workflow.copy(repeatedPassword = it, errorText = null) },
                 )
                 if (workflow.repeatedPassword.isNotEmpty() && workflow.password != workflow.repeatedPassword) {
@@ -229,7 +229,7 @@ private fun launchBackupWorkflowAction(
                         filename = "gkd-sdp-backup-v2-${System.currentTimeMillis()}.gkdbak",
                     )
                     if (targetUri == null) {
-                        workflowState.value = BackupWorkflowState(stage = BackupWorkflowStage.EXPORT_PASSWORD, selectedCategoryIds = selectedCategoryIds, errorText = li.songe.gkd.sdp.app.getString(R.string.s_6349c9a19f))
+                        workflowState.value = BackupWorkflowState(stage = BackupWorkflowStage.EXPORT_PASSWORD, selectedCategoryIds = selectedCategoryIds, errorText = "未选择保存位置，请重新输入密码后导出")
                         return@launch
                     }
                     when (val result = withContext(Dispatchers.IO) { BackupUtils.exportBackUpData(selectedCategoryIds, password) }) {
@@ -241,7 +241,7 @@ private fun launchBackupWorkflowAction(
                                 workflowState.value = null
                                 toast(li.songe.gkd.sdp.app.getString(R.string.s_fad8721370))
                             } else {
-                                workflowState.value = BackupWorkflowState(stage = BackupWorkflowStage.EXPORT_PASSWORD, selectedCategoryIds = selectedCategoryIds, errorText = li.songe.gkd.sdp.app.getString(R.string.s_13df62ffcf))
+                                workflowState.value = BackupWorkflowState(stage = BackupWorkflowStage.EXPORT_PASSWORD, selectedCategoryIds = selectedCategoryIds, errorText = "写入目标文件失败，请重新输入密码并选择保存位置")
                             }
                         }
                         is BackupResult.Failure -> {
@@ -287,7 +287,7 @@ private fun launchBackupWorkflowAction(
                 }
                 val refreshedImport = (refreshed as BackupResult.Success).value
                 if (refreshedImport.previewStateHash != preparedImport.previewStateHash || refreshedImport.conflicts != preparedImport.conflicts) {
-                    workflowState.value = BackupWorkflowState(stage = BackupWorkflowStage.IMPORT_PREVIEW, sourceUri = sourceUri, preparedImport = refreshedImport, errorText = li.songe.gkd.sdp.app.getString(R.string.s_53c71581fe))
+                    workflowState.value = BackupWorkflowState(stage = BackupWorkflowStage.IMPORT_PREVIEW, sourceUri = sourceUri, preparedImport = refreshedImport, errorText = "当前数据已变化，冲突预览已刷新，请再次确认导入")
                     return@launch
                 }
                 when (val result = withContext(Dispatchers.IO) { BackupUtils.applyImport(refreshedImport, confirmed = true) }) {

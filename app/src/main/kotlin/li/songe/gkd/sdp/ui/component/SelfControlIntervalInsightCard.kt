@@ -349,13 +349,13 @@ fun SelfControlIntervalInsightCard(
                     selected = presentation.selectedMetric == SelfControlInsightWindowPolicy.Metric.INTERVAL,
                     onClick = { onMetricSelected(SelfControlInsightWindowPolicy.Metric.INTERVAL) },
                     label = { Text(stringResource(R.string.s_940c88657e)) },
-                    modifier = Modifier.semantics { contentDescription = li.songe.gkd.sdp.app.getString(R.string.s_22211c599e) },
+                    modifier = Modifier.semantics { contentDescription = "统计间隔" },
                 )
                 FilterChip(
                     selected = presentation.selectedMetric == SelfControlInsightWindowPolicy.Metric.USAGE_RATIO,
                     onClick = { onMetricSelected(SelfControlInsightWindowPolicy.Metric.USAGE_RATIO) },
                     label = { Text(stringResource(R.string.s_4cec547cf2)) },
-                    modifier = Modifier.semantics { contentDescription = li.songe.gkd.sdp.app.getString(R.string.s_1a5493d304) },
+                    modifier = Modifier.semantics { contentDescription = "统计间用比" },
                 )
             }
         }

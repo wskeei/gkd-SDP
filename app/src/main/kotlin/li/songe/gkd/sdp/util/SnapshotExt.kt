@@ -403,7 +403,7 @@ object SnapshotExt {
             }
             toast(tip, forced = true)
             val desc = snapshot.appInfo?.name ?: snapshot.appId
-            snapshotNotif.copy(text = li.songe.gkd.sdp.app.getString(R.string.s_658f2cd3e3, desc)).notifySelf()
+            snapshotNotif.copy(text = "快照「$desc」已保存至记录").notifySelf()
             return snapshot
         } finally {
             captureLoading.value = false

@@ -83,7 +83,7 @@ fun SubsCategoryPage(@Suppress("unused") route: SubsCategoryRoute) {
         }, title = {
             TowLineText(
                 title = subs.name,
-                subtitle = li.songe.gkd.sdp.app.getString(R.string.s_53c76c1349),
+                subtitle = "规则类别",
                 modifier = Modifier.noRippleClickable(onClick = { scrollKey.intValue++ })
             )
         }, actions = {

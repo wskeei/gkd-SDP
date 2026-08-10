@@ -164,7 +164,7 @@ fun SubsGlobalGroupExcludePage(route: SubsGlobalGroupExcludeRoute) {
                     } else {
                         TowLineText(
                             title = group.name,
-                            subtitle = li.songe.gkd.sdp.app.getString(R.string.s_427bec7575),
+                            subtitle = "编辑禁用",
                             modifier = Modifier.noRippleClickable { vm.resetKey.intValue++ }
                         )
                     }
@@ -228,7 +228,7 @@ fun SubsGlobalGroupExcludePage(route: SubsGlobalGroupExcludeRoute) {
                                         expanded = expanded,
                                         onDismissRequest = { expanded = false }
                                     ) {
-                                        MenuGroupCard(inTop = true, title = li.songe.gkd.sdp.app.getString(R.string.s_dc35af8d69)) {
+                                        MenuGroupCard(inTop = true, title = "排序") {
                                             var sortType by vm.sortTypeFlow.asMutableState()
                                             AppSortOption.objects.forEach { option ->
                                                 MenuItemRadioButton(
@@ -238,7 +238,7 @@ fun SubsGlobalGroupExcludePage(route: SubsGlobalGroupExcludeRoute) {
                                                 )
                                             }
                                         }
-                                        MenuGroupCard(title = li.songe.gkd.sdp.app.getString(R.string.s_97d8a6c05b)) {
+                                        MenuGroupCard(title = "分组") {
                                             var appGroupType by vm.appGroupTypeFlow.asMutableState()
                                             AppGroupOption.normalObjects.forEach { option ->
                                                 val newValue = option.invert(appGroupType)
@@ -250,13 +250,13 @@ fun SubsGlobalGroupExcludePage(route: SubsGlobalGroupExcludeRoute) {
                                                 )
                                             }
                                         }
-                                        MenuGroupCard(title = li.songe.gkd.sdp.app.getString(R.string.s_dcce9a144a)) {
+                                        MenuGroupCard(title = "筛选") {
                                             MenuItemCheckbox(
-                                                text = li.songe.gkd.sdp.app.getString(R.string.s_f10b25a414),
+                                                text = "内置禁用",
                                                 stateFlow = vm.showInnerDisabledAppFlow,
                                             )
                                             MenuItemCheckbox(
-                                                text = li.songe.gkd.sdp.app.getString(R.string.s_8f74cd015b),
+                                                text = "白名单",
                                                 stateFlow = vm.showBlockAppFlow,
                                             )
                                         }
@@ -274,7 +274,7 @@ fun SubsGlobalGroupExcludePage(route: SubsGlobalGroupExcludeRoute) {
                     editable = !editable
                 },
                 imageVector = PerfIcon.Edit,
-                contentDescription = li.songe.gkd.sdp.app.getString(R.string.s_7063fdc01d)
+                contentDescription = "编辑禁用名单"
             )
         }
     ) { contentPadding ->

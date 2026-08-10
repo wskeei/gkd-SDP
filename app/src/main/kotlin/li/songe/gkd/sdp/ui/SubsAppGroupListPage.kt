@@ -260,7 +260,7 @@ fun SubsAppGroupListPage(route: SubsAppGroupListRoute) {
                         )
                     )
                 },
-                contentDescription = li.songe.gkd.sdp.app.getString(R.string.s_d2fc32282a),
+                contentDescription = "添加规则",
                 imageVector = PerfIcon.Add,
             )
         }

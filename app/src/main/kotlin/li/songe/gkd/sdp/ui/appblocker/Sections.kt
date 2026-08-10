@@ -103,8 +103,8 @@ fun AppBlockerPageSections() {
     // 全局锁定 Sheet
     if (showGlobalLockSheet) {
         LockSheet(
-            title = if (globalLock?.isCurrentlyLocked == true) stringResource(R.string.s_a04aff06d0) else stringResource(R.string.s_0261a6c710),
-            description = stringResource(R.string.s_109aa38d7b),
+            title = if (globalLock?.isCurrentlyLocked == true) "延长全局锁定" else "全局锁定",
+            description = "锁定后无法删除或修改任何应用/组/规则，但可以新增。",
             currentLockEndTime = globalLock?.lockEndTime,
             vm = vm,
             onDismiss = { showGlobalLockSheet = false },
@@ -118,8 +118,8 @@ fun AppBlockerPageSections() {
     // 应用组锁定 Sheet
     if (showGroupLockSheet && lockTargetGroup != null) {
         LockSheet(
-            title = if (lockTargetGroup!!.isCurrentlyLocked) stringResource(R.string.s_eae5fd957e) else stringResource(R.string.s_e13f066999),
-            description = stringResource(R.string.s_77e7c35757),
+            title = if (lockTargetGroup!!.isCurrentlyLocked) "延长锁定" else "锁定应用组",
+            description = "锁定后无法关闭、删除或修改此应用组。",
             currentLockEndTime = if (lockTargetGroup!!.isCurrentlyLocked) lockTargetGroup!!.lockEndTime else null,
             vm = vm,
             onDismiss = {
@@ -137,8 +137,8 @@ fun AppBlockerPageSections() {
     // 规则锁定 Sheet
     if (showRuleLockSheet && lockTargetRule != null) {
         LockSheet(
-            title = if (lockTargetRule!!.isCurrentlyLocked) stringResource(R.string.s_eae5fd957e) else stringResource(R.string.s_2201b864c9),
-            description = stringResource(R.string.s_dd98d5a5d3),
+            title = if (lockTargetRule!!.isCurrentlyLocked) "延长锁定" else "锁定规则",
+            description = "锁定后无法关闭、删除或修改此规则。",
             currentLockEndTime = if (lockTargetRule!!.isCurrentlyLocked) lockTargetRule!!.lockEndTime else null,
             vm = vm,
             onDismiss = {
@@ -228,7 +228,7 @@ private fun AppBlockerPageList(
         }
         item(key = "groups_header") {
             AppBlockerSectionHeader(
-                title = li.songe.gkd.sdp.app.getString(R.string.s_b5f6acf594, allGroups.size),
+                title = "应用组 (${allGroups.size})",
                 onAdd = {
                     vm.resetGroupForm()
                     vm.showGroupEditor = true
@@ -270,7 +270,7 @@ private fun AppBlockerPageList(
         }
         item(key = "app_rules_header") {
             AppBlockerSectionHeader(
-                title = li.songe.gkd.sdp.app.getString(R.string.s_74c7776c98),
+                title = "单独应用",
                 onAdd = {
                     vm.resetRuleForm()
                     vm.ruleTargetType = BlockTimeRule.TARGET_TYPE_APP

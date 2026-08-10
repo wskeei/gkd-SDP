@@ -192,7 +192,7 @@ fun A11yScopeAppListPage() {
                                         expanded = expanded,
                                         onDismissRequest = { expanded = false }
                                     ) {
-                                        MenuGroupCard(inTop = true, title = li.songe.gkd.sdp.app.getString(R.string.s_dc35af8d69)) {
+                                        MenuGroupCard(inTop = true, title = "排序") {
                                             var sortType by vm.sortTypeFlow.asMutableState()
                                             AppSortOption.objects.forEach { option ->
                                                 MenuItemRadioButton(
@@ -202,7 +202,7 @@ fun A11yScopeAppListPage() {
                                                 )
                                             }
                                         }
-                                        MenuGroupCard(inTop = true, title = li.songe.gkd.sdp.app.getString(R.string.s_dcce9a144a)) {
+                                        MenuGroupCard(inTop = true, title = "筛选") {
                                             var appGroupType by vm.appGroupTypeFlow.asMutableState()
                                             AppGroupOption.normalObjects.forEach { option ->
                                                 val newValue = option.invert(appGroupType)
@@ -224,12 +224,12 @@ fun A11yScopeAppListPage() {
         floatingActionButton = {
             AnimationFloatingActionButton(
                 visible = !editable && scrollBehavior.isFullVisible,
-                onClickLabel = li.songe.gkd.sdp.app.getString(R.string.s_d803a05c20),
+                onClickLabel = "进入文本编辑模式",
                 onClick = {
                     editable = !editable
                 },
                 imageVector = PerfIcon.Edit,
-                contentDescription = li.songe.gkd.sdp.app.getString(R.string.s_a0b1fca23b)
+                contentDescription = "编辑文本"
             )
         },
     ) { contentPadding ->

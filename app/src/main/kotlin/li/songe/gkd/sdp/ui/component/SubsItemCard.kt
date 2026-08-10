@@ -99,8 +99,8 @@ fun SubsItemCard(
                 } else {
                     if (subsItem.enable) "已启用" else "已禁用"
                 }
-                this.onClick(label = li.songe.gkd.sdp.app.getString(R.string.s_923ad9f855), action = null)
-                this.onLongClick(label = li.songe.gkd.sdp.app.getString(R.string.s_d451243963), action = null)
+                this.onClick(label = "查看订阅详情", action = null)
+                this.onLongClick(label = "进入多选模式", action = null)
             },
         shape = MaterialTheme.shapes.small,
         interactionSource = interactionSource,

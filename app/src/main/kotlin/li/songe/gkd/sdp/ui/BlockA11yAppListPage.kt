@@ -175,8 +175,8 @@ fun BlockA11yAppListPage() {
                             Row {
                                 PerfIconButton(
                                     imageVector = if (store.blockA11yAppListFollowMatch) PerfIcon.Lock else LockOpenRight,
-                                    contentDescription = if (store.blockA11yAppListFollowMatch) li.songe.gkd.sdp.app.getString(R.string.s_6cbc419758) else li.songe.gkd.sdp.app.getString(R.string.s_469f2dcd8a),
-                                    onClickLabel = li.songe.gkd.sdp.app.getString(R.string.s_a144b06fd1),
+                                    contentDescription = if (store.blockA11yAppListFollowMatch) "已设置为跟随应用白名单" else "已设置为独立无障碍白名单",
+                                    onClickLabel = "切换模式",
                                     onClick = throttle {
                                         showSearchBar = false
                                         storeFlow.update { it.copy(blockA11yAppListFollowMatch = !it.blockA11yAppListFollowMatch) }
@@ -215,7 +215,7 @@ fun BlockA11yAppListPage() {
                                         expanded = expanded,
                                         onDismissRequest = { expanded = false }
                                     ) {
-                                        MenuGroupCard(inTop = true, title = li.songe.gkd.sdp.app.getString(R.string.s_dc35af8d69)) {
+                                        MenuGroupCard(inTop = true, title = "排序") {
                                             var sortType by vm.sortTypeFlow.asMutableState()
                                             AppSortOption.objects.forEach { option ->
                                                 MenuItemRadioButton(
@@ -225,7 +225,7 @@ fun BlockA11yAppListPage() {
                                                 )
                                             }
                                         }
-                                        MenuGroupCard(inTop = true, title = li.songe.gkd.sdp.app.getString(R.string.s_dcce9a144a)) {
+                                        MenuGroupCard(inTop = true, title = "筛选") {
                                             var appGroupType by vm.appGroupTypeFlow.asMutableState()
                                             AppGroupOption.normalObjects.forEach { option ->
                                                 val newValue = option.invert(appGroupType)
@@ -247,12 +247,12 @@ fun BlockA11yAppListPage() {
         floatingActionButton = {
             AnimationFloatingActionButton(
                 visible = !editable && scrollBehavior.isFullVisible && !store.blockA11yAppListFollowMatch,
-                onClickLabel = li.songe.gkd.sdp.app.getString(R.string.s_668b6cf3f0),
+                onClickLabel = "进入白名单文本编辑模式",
                 onClick = {
                     editable = !editable
                 },
                 imageVector = PerfIcon.Edit,
-                contentDescription = li.songe.gkd.sdp.app.getString(R.string.s_f6628af38b)
+                contentDescription = "编辑白名单文本"
             )
         },
     ) { contentPadding ->

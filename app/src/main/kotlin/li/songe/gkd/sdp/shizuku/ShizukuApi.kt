@@ -43,7 +43,7 @@ inline fun <T> safeInvokeShizuku(
     null
 } catch (e: IllegalStateException) {
     // https://github.com/RikkaApps/Shizuku-API/blob/a27f6e4151ba7b39965ca47edb2bf0aeed7102e5/api/src/main/java/rikka/shizuku/Shizuku.java#L430
-    if (e.message == li.songe.gkd.sdp.app.getString(R.string.s_160af675fd)) {
+    if (e.message == "binder haven't been received") {
         null
     } else {
         throw e

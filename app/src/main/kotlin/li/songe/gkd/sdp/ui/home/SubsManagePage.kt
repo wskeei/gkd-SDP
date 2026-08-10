@@ -165,7 +165,7 @@ fun useSubsManagePage(): ScaffoldExt {
                 if (isSelectedMode) {
                     PerfIconButton(
                         imageVector = PerfIcon.Close,
-                        contentDescription = li.songe.gkd.sdp.app.getString(R.string.s_f02e943954),
+                        contentDescription = "取消选择",
                         onClick = { isSelectedMode = false },
                     )
                 }
@@ -199,7 +199,7 @@ fun useSubsManagePage(): ScaffoldExt {
                                 }
                                 PerfIconButton(
                                     imageVector = PerfIcon.Delete,
-                                    contentDescription = li.songe.gkd.sdp.app.getString(R.string.s_7c50210d69),
+                                    contentDescription = "删除选中订阅",
                                     onClick = vm.viewModelScope.launchAsFn {
                                         mainVm.dialogFlow.waitResult(
                                             title = li.songe.gkd.sdp.app.getString(R.string.s_fe7b16b5c0),
@@ -223,8 +223,8 @@ fun useSubsManagePage(): ScaffoldExt {
                             ) {
                                 PerfIconButton(
                                     imageVector = PerfIcon.Eco,
-                                    contentDescription = li.songe.gkd.sdp.app.getString(R.string.s_dee6fc9517),
-                                    onClickLabel = li.songe.gkd.sdp.app.getString(R.string.s_00c3630ef4),
+                                    contentDescription = "缓慢查询规则列表",
+                                    onClickLabel = "查看列表",
                                     onClick = throttle {
                                         mainVm.navigatePage(SlowGroupRoute)
                                     })
@@ -242,14 +242,14 @@ fun useSubsManagePage(): ScaffoldExt {
                                         LocalContentColor.current
                                     }
                                 ),
-                                contentDescription = li.songe.gkd.sdp.app.getString(R.string.s_06b0c3e743) + if (enableMatch) li.songe.gkd.sdp.app.getString(R.string.s_25d2843150) else li.songe.gkd.sdp.app.getString(R.string.s_0fe5a98e9f),
-                                onClickLabel = li.songe.gkd.sdp.app.getString(R.string.s_d7ee5b2dac),
+                                contentDescription = "规则匹配" + if (enableMatch) "已启用" else "已禁用",
+                                onClickLabel = "切换开关",
                                 onClick = throttle { switchStoreEnableMatch() },
                             )
                             PerfIconButton(
                                 id = R.drawable.ic_page_info,
-                                contentDescription = li.songe.gkd.sdp.app.getString(R.string.s_65f3531c34),
-                                onClickLabel = li.songe.gkd.sdp.app.getString(R.string.s_c184e4944d),
+                                contentDescription = "订阅设置",
+                                onClickLabel = "打开设置弹窗",
                                 onClick = {
                                     showSettingsDlg = true
                                 })
@@ -258,7 +258,7 @@ fun useSubsManagePage(): ScaffoldExt {
                 }
                 PerfIconButton(
                     imageVector = PerfIcon.MoreVert,
-                    contentDescription = li.songe.gkd.sdp.app.getString(R.string.s_77836d3a99),
+                    contentDescription = "更多操作",
                     onClick = {
                         if (updateSubsMutex.mutex.isLocked) {
                             toast(li.songe.gkd.sdp.app.getString(R.string.s_db8d309a8e))
@@ -335,8 +335,8 @@ fun useSubsManagePage(): ScaffoldExt {
         },
         floatingActionButton = {
             AnimationFloatingActionButton(
-                contentDescription = li.songe.gkd.sdp.app.getString(R.string.s_6debaa8885),
-                onClickLabel = li.songe.gkd.sdp.app.getString(R.string.s_907c36fc94),
+                contentDescription = "添加订阅",
+                onClickLabel = "打开添加订阅弹窗",
                 visible = !isSelectedMode,
                 onClick = {
                     if (updateSubsMutex.mutex.isLocked) {

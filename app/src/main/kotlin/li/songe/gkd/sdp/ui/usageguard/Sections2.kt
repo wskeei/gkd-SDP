@@ -301,8 +301,8 @@ private fun UsageGuardAppsSection(state: UsageGuardSettingsRenderState) {
             }
             Spacer(modifier = Modifier.height(12.dp))
             SelectedAppModeBoard(
-                title = li.songe.gkd.sdp.app.getString(R.string.s_cce3d12ecc),
-                subtitle = li.songe.gkd.sdp.app.getString(R.string.s_a12b6a9ddd),
+                title = "严格模式",
+                subtitle = "离开应用后重新申请",
                 appIds = groupedApps.strictAppIds,
                 appInfoMap = appInfoMap,
                 onBoardBoundsChanged = { strictBoardBounds.value = it },
@@ -326,8 +326,8 @@ private fun UsageGuardAppsSection(state: UsageGuardSettingsRenderState) {
             )
             Spacer(modifier = Modifier.height(16.dp))
             SelectedAppModeBoard(
-                title = li.songe.gkd.sdp.app.getString(R.string.s_e8a4554eb3),
-                subtitle = li.songe.gkd.sdp.app.getString(R.string.s_c288fd13e0),
+                title = "普通模式",
+                subtitle = "到时前可继续返回",
                 appIds = groupedApps.resumableAppIds,
                 appInfoMap = appInfoMap,
                 onBoardBoundsChanged = { resumableBoardBounds.value = it },

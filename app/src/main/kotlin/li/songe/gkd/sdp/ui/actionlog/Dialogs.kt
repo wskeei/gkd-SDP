@@ -103,7 +103,7 @@ internal fun ActionLogDialog(
             shape = RoundedCornerShape(16.dp),
         ) {
             ItemText(
-                text = li.songe.gkd.sdp.app.getString(R.string.s_451bb58ff2),
+                text = "查看规则组",
                 onClick = {
                     onDismissRequest()
                     if (actionLog.groupType == SubsConfig.AppGroupType) {
@@ -209,7 +209,7 @@ private fun ActionLogDialogActions(
         }
         if (appChecked != null) {
             ItemText(
-                text = if (appChecked) stringResource(R.string.s_cda4925583) else stringResource(R.string.s_d898e0730a),
+                text = if (appChecked) "在此应用禁用" else "移除在此应用的禁用",
                 onClick = vm.viewModelScope.launchAsFn {
                     val effectiveConfig = subsConfig ?: SubsConfig(
                         type = SubsConfig.GlobalGroupType,
@@ -235,7 +235,7 @@ private fun ActionLogDialogActions(
     if (actionLog.activityId != null) {
         val disabled = oldExclude.activityIds.contains(actionLog.appId to actionLog.activityId)
         ItemText(
-            text = if (disabled) stringResource(R.string.s_c9be3b4423) else stringResource(R.string.s_d66870c055),
+            text = if (disabled) "移除在此页面的禁用" else "在此页面禁用",
             onClick = vm.viewModelScope.launchAsFn {
                 val effectiveConfig = if (actionLog.groupType == SubsConfig.AppGroupType) {
                     subsConfig ?: SubsConfig(

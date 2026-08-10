@@ -28,7 +28,6 @@ import li.songe.gkd.sdp.util.toast
 import li.songe.gkd.sdp.util.updateAllAppInfo
 import li.songe.gkd.sdp.util.updateAppMutex
 import rikka.shizuku.Shizuku
-import li.songe.gkd.sdp.R
 
 class PermissionState(
     val name: String,
@@ -108,7 +107,7 @@ val foregroundServiceSpecialUseState by lazy {
             }
         },
         reason = AuthReason(
-            text = { li.songe.gkd.sdp.app.getString(R.string.s_8d4148193c) },
+            text = { "当前操作权限「特殊用途的前台服务」已被限制, 请先解除限制" },
             confirm = {
                 AppNavigationRequests.request(AppDestination.SETTINGS_CAPABILITIES)
             },
@@ -201,7 +200,7 @@ val notificationState by lazy {
         },
         request = { asyncRequestPermission(it, permission) },
         reason = AuthReason(
-            text = { li.songe.gkd.sdp.app.getString(R.string.s_73424c2092) },
+            text = { "当前操作需要「通知权限」\n请先前往权限页面授权" },
             confirm = {
                 XXPermissions.startPermissionActivity(app, permission)
             }
@@ -226,7 +225,7 @@ val canQueryPkgState by lazy {
             asyncRequestPermission(it, permission)
         },
         reason = AuthReason(
-            text = { li.songe.gkd.sdp.app.getString(R.string.s_3d81f289fc) },
+            text = { "当前操作需要「读取应用列表权限」\n请先前往权限页面授权" },
             confirm = {
                 XXPermissions.startPermissionActivity(app, permission)
             }
@@ -243,7 +242,7 @@ val canDrawOverlaysState by lazy {
         },
         reason = AuthReason(
             text = {
-                li.songe.gkd.sdp.app.getString(R.string.s_01cb84d347)
+                "当前操作需要「悬浮窗权限」\n请先前往权限页面授权"
             },
             confirm = {
                 XXPermissions.startPermissionActivity(
@@ -273,7 +272,7 @@ val canWriteExternalStorage by lazy {
             }
         },
         reason = AuthReason(
-            text = { li.songe.gkd.sdp.app.getString(R.string.s_7e9ca9ca7e) },
+            text = { "当前操作需要「写入外部存储权限」\n请先前往权限页面授权" },
             confirm = {
                 XXPermissions.startPermissionActivity(
                     app,
@@ -295,7 +294,7 @@ val ignoreBatteryOptimizationsState by lazy {
             asyncRequestPermission(it, permission)
         },
         reason = AuthReason(
-            text = { li.songe.gkd.sdp.app.getString(R.string.s_1572c59617) },
+            text = { "当前操作需要「忽略电池优化权限」\n请先前往权限页面授权" },
             confirm = {
                 XXPermissions.startPermissionActivity(
                     app,

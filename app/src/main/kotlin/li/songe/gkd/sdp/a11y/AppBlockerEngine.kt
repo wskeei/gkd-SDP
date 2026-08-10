@@ -18,7 +18,6 @@ import li.songe.gkd.sdp.util.LogUtils
 import li.songe.gkd.sdp.util.SelfControlElapsedPolicy
 import java.util.concurrent.ConcurrentHashMap
 import java.time.LocalDateTime
-import li.songe.gkd.sdp.R
 
 object AppBlockerEngine {
     private const val TAG = "AppBlockerEngine"
@@ -181,7 +180,7 @@ object AppBlockerEngine {
             if (owner != null && !sdpRuntimeFeatureCoordinator.isCurrent(owner)) return
             val result = showBlockerOverlay(
                 packageName = packageName,
-                message = message ?: li.songe.gkd.sdp.app.getString(R.string.s_b3d972565c),
+                message = message ?: "这真的重要吗？",
                 rule = blockingRule,
                 owner = owner,
             )

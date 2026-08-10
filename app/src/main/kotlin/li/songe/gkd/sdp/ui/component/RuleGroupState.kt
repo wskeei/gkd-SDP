@@ -344,8 +344,8 @@ class RuleGroupState(
                 onClickDelete = mainVm.viewModelScope.launchAsFn {
                     dismissGroupShow()
                     val r = mainVm.dialogFlow.getResult(
-                        title = li.songe.gkd.sdp.app.getString(R.string.s_2d646aa66b),
-                        text = li.songe.gkd.sdp.app.getString(R.string.s_e14c6a817a, showGroup.name),
+                        title = "删除规则组",
+                        text = "确定删除 ${showGroup.name} ?",
                         error = true,
                     )
                     if (!r) {
@@ -412,7 +412,7 @@ class RuleGroupState(
                             title = {
                                 TowLineText(
                                     title = excludeGroup.name,
-                                    subtitle = li.songe.gkd.sdp.app.getString(R.string.s_427bec7575),
+                                    subtitle = "编辑禁用",
                                 )
                             },
                             actions = {

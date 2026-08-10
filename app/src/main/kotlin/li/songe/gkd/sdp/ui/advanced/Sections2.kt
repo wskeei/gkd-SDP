@@ -118,16 +118,16 @@ private fun AdvancedShizukuSection(
         PerfIcon(
             modifier = Modifier
                 .clip(MaterialTheme.shapes.extraSmall)
-                .clickable(onClickLabel = stringResource(R.string.s_3b8328c91c), onClick = throttle { showShizukuState.value = true })
+                .clickable(onClickLabel = "打开 Shizuku 状态弹窗", onClick = throttle { showShizukuState.value = true })
                 .iconTextSize(textStyle = MaterialTheme.typography.titleSmall),
             imageVector = PerfIcon.Api,
             tint = MaterialTheme.colorScheme.primary,
-            contentDescription = stringResource(R.string.s_74c1843061),
+            contentDescription = "Shizuku 状态",
         )
     }
     val shizukuGranted by shizukuGrantedState.stateFlow.collectAsStateWithLifecycle()
     AnimatedVisibility(store.enableShizuku && !shizukuGranted) {
-        AuthCard(title = stringResource(R.string.s_86bddceb9d), subtitle = stringResource(R.string.s_a7bd6fc9bb), onAuthClick = mainVm::requestShizuku)
+        AuthCard(title = "未授权", subtitle = "点击授权以优化体验", onAuthClick = mainVm::requestShizuku)
     }
     TextSwitch(
         title = stringResource(R.string.s_6b0ad26edf),

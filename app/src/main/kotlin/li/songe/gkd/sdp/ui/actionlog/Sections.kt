@@ -130,11 +130,11 @@ fun ActionLogPageSections(route: ActionLogRoute) {
                         imageVector = PerfIcon.Delete,
                         onClick = throttle(fn = mainVm.viewModelScope.launchAsFn {
                             val text = if (subsId != null) {
-                                li.songe.gkd.sdp.app.getString(R.string.s_1e540d190c)
+                                "确定删除当前订阅所有触发记录?"
                             } else if (appId != null) {
-                                li.songe.gkd.sdp.app.getString(R.string.s_c3a7a48256)
+                                "确定删除当前应用所有触发记录?"
                             } else {
-                                li.songe.gkd.sdp.app.getString(R.string.s_cffd230efd)
+                                "确定删除所有触发记录?"
                             }
                             mainVm.dialogFlow.waitResult(
                                 title = li.songe.gkd.sdp.app.getString(R.string.s_8f22c9908e),

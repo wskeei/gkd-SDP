@@ -151,8 +151,8 @@ private fun SettingsToastDialog(
                 Text(stringResource(R.string.s_5bf7ff408f))
                 PerfIconButton(
                     imageVector = PerfIcon.HelpOutline,
-                    contentDescription = stringResource(R.string.s_d88d6e6c25),
-                    onClickLabel = stringResource(R.string.s_f93b6e228e),
+                    contentDescription = "文案规则",
+                    onClickLabel = "打开文案规则弹窗",
                     onClick = throttle {
                         showToastInputDlg.value = false
                         val confirmAction = { mainVm.dialogFlow.value = null; showToastInputDlg.value = true }
@@ -209,8 +209,8 @@ private fun SettingsNotificationDialog(
                 Text(stringResource(R.string.s_ce7c7d71a7))
                 PerfIconButton(
                     imageVector = PerfIcon.HelpOutline,
-                    contentDescription = stringResource(R.string.s_d88d6e6c25),
-                    onClickLabel = stringResource(R.string.s_f93b6e228e),
+                    contentDescription = "文案规则",
+                    onClickLabel = "打开文案规则弹窗",
                     onClick = throttle {
                         showNotifTextInputDlg.value = false
                         val confirmAction = { mainVm.dialogFlow.value = null; showNotifTextInputDlg.value = true }
@@ -279,7 +279,7 @@ internal fun BlockA11yDialog(onDismissRequest: () -> Unit) = FullscreenDialog(on
                 navigationIcon = {
                     PerfIconButton(
                         imageVector = PerfIcon.Close,
-                        onClickLabel = li.songe.gkd.sdp.app.getString(R.string.s_81f18d4d48),
+                        onClickLabel = "关闭弹窗",
                         onClick = onDismissRequest,
                     )
                 },
@@ -319,9 +319,9 @@ internal fun BlockA11yDialog(onDismissRequest: () -> Unit) = FullscreenDialog(on
                 Column(
                     verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
-                    RequiredTextItem(text = li.songe.gkd.sdp.app.getString(R.string.s_cbdc0c0a7a))
-                    RequiredTextItem(text = li.songe.gkd.sdp.app.getString(R.string.s_ace5fab374))
-                    RequiredTextItem(text = li.songe.gkd.sdp.app.getString(R.string.s_610a7f9c61))
+                    RequiredTextItem(text = "切换服务会造成短暂触摸卡顿，请自行测试后再编辑白名单")
+                    RequiredTextItem(text = "使用其它无障碍应用可能导致优化无效，可在服务关闭后自行确认")
+                    RequiredTextItem(text = "必须确保服务关闭后的持续后台运行，否则会被系统暂停或结束运行导致重启失败")
                 }
                 Spacer(modifier = Modifier.height(16.dp))
                 Text(text = li.songe.gkd.sdp.app.getString(R.string.s_b412fa069d), style = MaterialTheme.typography.titleMedium)
@@ -329,7 +329,7 @@ internal fun BlockA11yDialog(onDismissRequest: () -> Unit) = FullscreenDialog(on
                     verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
                     RequiredTextItem(
-                        text = li.songe.gkd.sdp.app.getString(R.string.s_0f0c48af67),
+                        text = "Shizuku 授权",
                         enabled = !shizukuContext.ok,
                         imageVector = if (shizukuContext.ok) PerfIcon.Check else PerfIcon.ArrowForward,
                         onClick = mainVm.viewModelScope.launchAsFn(Dispatchers.IO) {
@@ -337,7 +337,7 @@ internal fun BlockA11yDialog(onDismissRequest: () -> Unit) = FullscreenDialog(on
                         },
                     )
                     RequiredTextItem(
-                        text = li.songe.gkd.sdp.app.getString(R.string.s_6325cb01af),
+                        text = "开启「常驻通知」",
                         enabled = !statusRunning,
                         imageVector = if (statusRunning) PerfIcon.Check else PerfIcon.ArrowForward,
                         onClick = mainVm.viewModelScope.launchAsFn {
@@ -345,28 +345,28 @@ internal fun BlockA11yDialog(onDismissRequest: () -> Unit) = FullscreenDialog(on
                         },
                     )
                     RequiredTextItem(
-                        text = li.songe.gkd.sdp.app.getString(R.string.s_37cf171b6d),
+                        text = "省电策略设置为无限制",
                         enabled = !ignoreBatteryOptimizations,
                         imageVector = if (ignoreBatteryOptimizations) PerfIcon.Check else PerfIcon.ArrowForward,
-                        onClickLabel = li.songe.gkd.sdp.app.getString(R.string.s_b2c141c8e1),
+                        onClickLabel = "打开忽略电池优化设置页面",
                         onClick = mainVm.viewModelScope.launchAsFn {
                             requiredPermission(context, ignoreBatteryOptimizationsState)
                         },
                     )
                     RequiredTextItem(
-                        text = li.songe.gkd.sdp.app.getString(R.string.s_a31eb38058),
+                        text = "(可选) 允许自启动",
                         enabled = true,
                         imageVector = PerfIcon.OpenInNew,
-                        onClickLabel = li.songe.gkd.sdp.app.getString(R.string.s_3714fd1374),
+                        onClickLabel = "打开应用详情页面",
                         onClick = {
                             openAppDetailsSettings()
                         },
                     )
                     RequiredTextItem(
-                        text = li.songe.gkd.sdp.app.getString(R.string.s_5e5ac93cc0),
+                        text = "(可选) 在「最近任务」锁定",
                         enabled = true,
                         imageVector = PerfIcon.OpenInNew,
-                        onClickLabel = li.songe.gkd.sdp.app.getString(R.string.s_3714fd1374),
+                        onClickLabel = "打开应用详情页面",
                         onClick = {
                             val m = shizukuContextFlow.value.inputManager
                             if (m != null) {

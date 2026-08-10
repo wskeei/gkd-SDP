@@ -9,7 +9,6 @@ import java.math.RoundingMode
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
-import li.songe.gkd.sdp.R
 
 /** Pure aggregation rules for the Digital Self-Discipline review page. */
 object DigitalSelfDisciplineReviewPolicy {
@@ -372,7 +371,7 @@ object DigitalSelfDisciplineReviewPolicy {
             deltaAverageMs = null,
             currentIntervalAverageMs = metrics.intervalAverageMs,
             currentRatioAverage = metrics.ratioAverage,
-            message = li.songe.gkd.sdp.app.getString(R.string.s_cd13b6f64a),
+            message = "上一周期暂无有效样本",
         )
     }
 

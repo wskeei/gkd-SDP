@@ -111,7 +111,7 @@ fun SubsAppListPage(route: SubsAppListRoute) {
                 } else {
                     TowLineText(
                         title = useSubs(subsItemId)?.name ?: subsItemId.toString(),
-                        subtitle = li.songe.gkd.sdp.app.getString(R.string.s_da6a6dc1af),
+                        subtitle = "应用规则",
                         modifier = Modifier.noRippleClickable {
                             vm.resetKey.intValue++
                         }
@@ -143,7 +143,7 @@ fun SubsAppListPage(route: SubsAppListRoute) {
                     modifier = Modifier.wrapContentSize(Alignment.TopStart)
                 ) {
                     DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-                        MenuGroupCard(inTop = true, title = li.songe.gkd.sdp.app.getString(R.string.s_dc35af8d69)) {
+                        MenuGroupCard(inTop = true, title = "排序") {
                             var sortType by vm.sortTypeFlow.asMutableState()
                             AppSortOption.objects.forEach { option ->
                                 MenuItemRadioButton(
@@ -153,7 +153,7 @@ fun SubsAppListPage(route: SubsAppListRoute) {
                                 )
                             }
                         }
-                        MenuGroupCard(title = li.songe.gkd.sdp.app.getString(R.string.s_97d8a6c05b)) {
+                        MenuGroupCard(title = "分组") {
                             var appGroupType by vm.appGroupTypeFlow.asMutableState()
                             AppGroupOption.allObjects.forEach { option ->
                                 val newValue = option.invert(appGroupType)
@@ -165,9 +165,9 @@ fun SubsAppListPage(route: SubsAppListRoute) {
                                 )
                             }
                         }
-                        MenuGroupCard(title = li.songe.gkd.sdp.app.getString(R.string.s_dcce9a144a)) {
+                        MenuGroupCard(title = "筛选") {
                             MenuItemCheckbox(
-                                text = li.songe.gkd.sdp.app.getString(R.string.s_8f74cd015b),
+                                text = "白名单",
                                 stateFlow = vm.showBlockAppFlow,
                             )
                         }

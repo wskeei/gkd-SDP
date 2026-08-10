@@ -13,7 +13,6 @@ import androidx.navigation3.runtime.NavKey
 import kotlinx.serialization.Serializable
 import li.songe.gkd.sdp.ui.component.PerfIcon
 import li.songe.gkd.sdp.ui.share.LocalMainViewModel
-import li.songe.gkd.sdp.R
 
 sealed class BottomNavItem(
     val key: Int,
@@ -22,25 +21,25 @@ sealed class BottomNavItem(
 ) {
     object Control : BottomNavItem(
         key = 0,
-        label = li.songe.gkd.sdp.app.getString(R.string.s_ff93ad0e4e),
+        label = "首页",
         icon = PerfIcon.Home,
     )
 
     object SubsManage : BottomNavItem(
         key = 1,
-        label = li.songe.gkd.sdp.app.getString(R.string.s_5319af762d),
+        label = "订阅",
         icon = PerfIcon.FormatListBulleted,
     )
 
     object AppList : BottomNavItem(
         key = 2,
-        label = li.songe.gkd.sdp.app.getString(R.string.s_4562024dde),
+        label = "应用",
         icon = PerfIcon.Apps,
     )
 
     object Settings : BottomNavItem(
         key = 3,
-        label = li.songe.gkd.sdp.app.getString(R.string.s_7debf9cb03),
+        label = "设置",
         icon = PerfIcon.Settings,
     )
 

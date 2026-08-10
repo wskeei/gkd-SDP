@@ -49,7 +49,7 @@ fun InnerDisableSwitch(
                         indication = null,
                         role = Role.Switch,
                         onClick = throttle(onClick),
-                        onClickLabel = li.songe.gkd.sdp.app.getString(R.string.s_5e844385f4),
+                        onClickLabel = "打开规则禁用说明",
                     )
                 }
             }

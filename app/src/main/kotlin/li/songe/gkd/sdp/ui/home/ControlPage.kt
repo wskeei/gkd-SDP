@@ -118,8 +118,8 @@ fun useControlPage(): ScaffoldExt {
             }, actions = {
                 PerfIconButton(
                     imageVector = PerfIcon.RocketLaunch,
-                    onClickLabel = li.songe.gkd.sdp.app.getString(R.string.s_bb296f3841),
-                    contentDescription = li.songe.gkd.sdp.app.getString(R.string.s_f8b4c14ff9),
+                    onClickLabel = "前往工作模式页面",
+                    contentDescription = "工作模式",
                     onClick = throttle {
                         mainVm.navigatePage(AuthA11yRoute)
                     },
@@ -144,7 +144,7 @@ fun useControlPage(): ScaffoldExt {
                     modifier = Modifier
                         .fillMaxWidth()
                         .semantics(mergeDescendants = true) {
-                            this.onClick(label = li.songe.gkd.sdp.app.getString(R.string.s_25e98173d1), action = null)
+                            this.onClick(label = "前往解除限制页面", action = null)
                         },
                     shape = MaterialTheme.shapes.large,
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer),
@@ -172,19 +172,19 @@ fun useControlPage(): ScaffoldExt {
             if (store.useA11y || actualA11yScopeAppList.contains(topAppIdFlow.collectAsStateWithLifecycle().value)) {
                 PageSwitchItemCard(
                     imageVector = PerfIcon.Memory,
-                    title = stringResource(R.string.s_d42da9e2ac),
+                    title = "服务状态",
                     subtitle = if (a11yRunning) {
-                        stringResource(R.string.s_f106cde067)
+                        "无障碍正在运行"
                     } else if (mainVm.a11yServiceEnabledFlow.collectAsStateWithLifecycle().value) {
-                        stringResource(R.string.s_653c78b0b0)
+                        "无障碍发生故障"
                     } else if (writeSecureSettings) {
                         if (store.enableAutomator && a11yPartDisabledFlow.collectAsStateWithLifecycle().value) {
-                            stringResource(R.string.s_6b683e741b)
+                            "无障碍局部关闭"
                         } else {
-                            stringResource(R.string.s_a6fa6ad6cb)
+                            "无障碍已关闭"
                         }
                     } else {
-                        stringResource(R.string.s_9d1239c185)
+                        "无障碍未授权"
                     },
                     checked = a11yRunning,
                     onCheckedChange = { newEnabled ->
@@ -206,16 +206,16 @@ fun useControlPage(): ScaffoldExt {
             } else {
                 PageSwitchItemCard(
                     imageVector = PerfIcon.Memory,
-                    title = stringResource(R.string.s_d42da9e2ac),
+                    title = "服务状态",
                     subtitle = if (uiAutomationFlow.collectAsStateWithLifecycle().value != null) {
-                        stringResource(R.string.s_88ad0447cf)
+                        "自动化正在运行"
                     } else if (!shizukuContextFlow.collectAsStateWithLifecycle().value.ok) {
-                        stringResource(R.string.s_5ad8b271e9)
+                        "自动化未授权"
                     } else {
                         if (store.enableAutomator && a11yPartDisabledFlow.collectAsStateWithLifecycle().value) {
-                            stringResource(R.string.s_544facd553)
+                            "自动化局部关闭"
                         } else {
-                            stringResource(R.string.s_a8ece9678b)
+                            "自动化已关闭"
                         }
                     },
                     checked = uiAutomationFlow.collectAsStateWithLifecycle().value != null,
@@ -230,8 +230,8 @@ fun useControlPage(): ScaffoldExt {
 
             PageSwitchItemCard(
                 imageVector = PerfIcon.Notifications,
-                title = stringResource(R.string.s_ccecf0f93b),
-                subtitle = stringResource(R.string.s_8ffb15fe7b),
+                title = "常驻通知",
+                subtitle = "显示运行状态及统计数据",
                 checked = manageRunning && store.enableStatusService,
                 onCheckedChange = vm.viewModelScope.launchAsFn<Boolean> {
                     if (it) {
@@ -251,7 +251,7 @@ fun useControlPage(): ScaffoldExt {
             if (HttpService.isRunning.collectAsStateWithLifecycle().value) {
                 val remoteSession by HttpService.remoteSessionStateFlow.collectAsStateWithLifecycle()
                 PageItemCard(
-                    title = stringResource(R.string.s_b6ea16530e),
+                    title = "本地 Inspector",
                     subtitle = if (remoteSession.mode == RemoteListenMode.LOCAL_ONLY) {
                         "仅本机监听｜${if (remoteSession.paired) "已配对" else "等待配对"}｜" +
                             "授权 ${remoteSession.enabledScopes.size}/${RemoteScope.entries.size}"
@@ -263,7 +263,7 @@ fun useControlPage(): ScaffoldExt {
                             "授权 ${remoteSession.enabledScopes.size}/${RemoteScope.entries.size}"
                     },
                     imageVector = PerfIcon.Api,
-                    onClickLabel = stringResource(R.string.s_acf7e083eb),
+                    onClickLabel = "打开本地 Inspector 设置",
                     onClick = { mainVm.navigatePage(AdvancedPageRoute) },
                 )
             }
@@ -272,44 +272,44 @@ fun useControlPage(): ScaffoldExt {
             val digitalSelfDisciplineToday by vm.digitalSelfDisciplineTodaySummaryFlow.collectAsStateWithLifecycle()
             val usageGuardWidgetSummary = UsageGuardReviewPolicy.widgetSummary(usageGuardSummary)
             PageItemCard(
-                title = stringResource(R.string.s_c7380c3c20),
-                subtitle = stringResource(R.string.s_0cde7c26f2, DigitalSelfDisciplineReviewPresentation.homeSummary(
+                title = "数字自律复盘",
+                subtitle = "${DigitalSelfDisciplineReviewPresentation.homeSummary(
                     digitalSelfDisciplineToday.requestCount,
                     digitalSelfDisciplineToday.interceptCount,
-                )) +
+                )}｜" +
                     usageGuardWidgetSummary.hint,
                 imageVector = PerfIcon.Equalizer,
-                onClickLabel = stringResource(R.string.s_d971a601ba),
+                onClickLabel = "打开数字自律复盘页面",
                 onClick = {
                     mainVm.navigatePage(UsageGuardReviewRoute)
                 },
             )
 
             PageItemCard(
-                title = stringResource(R.string.s_50532745b5),
-                subtitle = stringResource(R.string.s_48ec1b5fd3),
+                title = "触发记录",
+                subtitle = "规则误触可定位关闭",
                 imageVector = PerfIcon.History,
-                onClickLabel = stringResource(R.string.s_dcdd69a9d7),
+                onClickLabel = "打开触发记录页面",
                 onClick = {
                     mainVm.navigatePage(ActionLogRoute())
                 })
 
             if (ActivityService.isRunning.collectAsStateWithLifecycle().value) {
                 PageItemCard(
-                    title = stringResource(R.string.s_48ff47e21f),
-                    subtitle = stringResource(R.string.s_8f63dbc430),
+                    title = "界面日志",
+                    subtitle = "记录打开的应用及界面",
                     imageVector = PerfIcon.Layers,
-                    onClickLabel = stringResource(R.string.s_01a10cb43a),
+                    onClickLabel = "打开界面日志页面",
                     onClick = {
                         mainVm.navigatePage(ActivityLogRoute)
                     })
             }
 
             PageItemCard(
-                title = stringResource(R.string.s_eaa2069ca8),
-                subtitle = stringResource(R.string.s_a9d3ec7ec4),
+                title = "了解 GKD",
+                subtitle = "查阅规则文档和常见问题",
                 imageVector = PerfIcon.HelpOutline,
-                onClickLabel = stringResource(R.string.s_11b5b7a56c),
+                onClickLabel = "打开 GKD 文档页面",
                 onClick = {
                     mainVm.navigatePage(WebViewRoute(initUrl = HOME_PAGE_URL))
                 })
@@ -395,7 +395,7 @@ private fun PageSwitchItemCard(
         modifier = Modifier
             .fillMaxWidth()
             .semantics(mergeDescendants = true) {
-                this.onClick(label = li.songe.gkd.sdp.app.getString(R.string.s_282a6986b9, title), action = null)
+                this.onClick(label = "切换$title", action = null)
             },
         shape = MaterialTheme.shapes.large,
         colors = surfaceCardColors,
@@ -518,7 +518,7 @@ private fun ServerStatusCard() {
                     modifier = Modifier
                         .padding(horizontal = 4.dp)
                         .clip(MaterialTheme.shapes.extraSmall)
-                        .clickable(onClickLabel = stringResource(R.string.s_3e9db10c1c), onClick = throttle {
+                        .clickable(onClickLabel = "前往应用的规则汇总页面", onClick = throttle {
                             latestRecordFlow.value?.let {
                                 mainVm.navigatePage(
                                     AppConfigRoute(

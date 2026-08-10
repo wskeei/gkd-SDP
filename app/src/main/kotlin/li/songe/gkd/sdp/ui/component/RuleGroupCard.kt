@@ -50,7 +50,6 @@ import li.songe.gkd.sdp.util.launchAsFn
 import li.songe.gkd.sdp.util.throttle
 import li.songe.gkd.sdp.util.toast
 import java.util.Objects
-import androidx.compose.ui.res.stringResource
 import li.songe.gkd.sdp.R
 
 
@@ -182,7 +181,7 @@ fun RuleGroupCard(
             .combinedClickable(
                 onClick = onClick,
                 onLongClick = onLongClick,
-                onClickLabel = stringResource(R.string.s_bf6269f760),
+                onClickLabel = "打开规则详情弹窗",
                 onLongClickLabel = "进入多选模式"
             ),
         shape = MaterialTheme.shapes.extraSmall,
@@ -283,7 +282,7 @@ fun RuleGroupCard(
             if (hasExcludeActivity) {
                 PerfIcon(
                     imageVector = PerfIcon.Block,
-                    contentDescription = li.songe.gkd.sdp.app.getString(R.string.s_d8e83cfbba),
+                    contentDescription = "此规则已排除部分页面",
                     tint = if (isSelectedMode) {
                         LocalContentColor.current.copy(alpha = 0.5f)
                     } else {
@@ -331,7 +330,7 @@ fun BatchActionButtonGroup(vm: ViewModel, selectedDataSet: Set<ShowGroupState>) 
     val mainVm = LocalMainViewModel.current
     PerfIconButton(
         imageVector = PerfIcon.ToggleOff,
-        contentDescription = stringResource(R.string.s_4f453fb431),
+        contentDescription = "批量关闭规则",
         onClick = throttle(vm.viewModelScope.launchAsFn(Dispatchers.Default) {
             mainVm.dialogFlow.waitResult(
                 title = li.songe.gkd.sdp.app.getString(R.string.s_93564a7ced),
@@ -347,7 +346,7 @@ fun BatchActionButtonGroup(vm: ViewModel, selectedDataSet: Set<ShowGroupState>) 
     )
     PerfIconButton(
         imageVector = PerfIcon.ToggleOn,
-        contentDescription = stringResource(R.string.s_627b07784f),
+        contentDescription = "批量打开规则",
         onClick = throttle(vm.viewModelScope.launchAsFn(Dispatchers.Default) {
             mainVm.dialogFlow.waitResult(
                 title = li.songe.gkd.sdp.app.getString(R.string.s_93564a7ced),
@@ -363,7 +362,7 @@ fun BatchActionButtonGroup(vm: ViewModel, selectedDataSet: Set<ShowGroupState>) 
     )
     PerfIconButton(
         imageVector = ResetSettings,
-        contentDescription = stringResource(R.string.s_35f7c52ddd),
+        contentDescription = "批量重置规则开关",
         onClick = throttle(vm.viewModelScope.launchAsFn(Dispatchers.Default) {
             mainVm.dialogFlow.waitResult(
                 title = li.songe.gkd.sdp.app.getString(R.string.s_93564a7ced),

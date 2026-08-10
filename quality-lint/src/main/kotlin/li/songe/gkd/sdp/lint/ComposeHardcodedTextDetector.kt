@@ -52,7 +52,7 @@ class ComposeHardcodedTextDetector : Detector(), SourceCodeScanner {
     ): Boolean {
         val argName = (argument as? UNamedExpression)?.name
         return when {
-            argName != null -> argName in TEXT_ARGUMENT_NAMES
+            argName != null -> argName in TEXT_ARGUMENT_NAMES && methodName in UI_CALLS
             methodName == "Text" || methodName == "Button" || methodName == "OutlinedButton" ||
                 methodName == "TextButton" || methodName == "FilledTonalButton" ||
                 methodName == "Snackbar" || methodName == "toast" ||
@@ -88,6 +88,22 @@ class ComposeHardcodedTextDetector : Detector(), SourceCodeScanner {
             "setContentTitle",
             "setContentText",
             "AlertDialog",
+        )
+
+        private val UI_CALLS = setOf(
+            "Text", "Button", "OutlinedButton", "TextButton", "FilledTonalButton",
+            "Icon", "Snackbar", "TextSwitch", "SettingItem", "PerfCustomIconButton",
+            "TextMenu", "updateDialogOptions", "waitResult", "AppFormField",
+            "InlineMessage", "AppConfirmationDialog", "AppMetricCard", "AppActionBar",
+            "AppDataChart", "ContentStateBox", "EmptyText", "AppBlockerEmptyText",
+            "UrlLockSheet", "TimeRuleEditorSheet", "BrowserListSheet",
+            "BrowserEditSheet", "ManualAuthDialog", "ShareLogDlg", "TextDialog",
+            "ScaffoldDialog", "FullscreenDialog", "AppPickerDialog", "CopyTextCard",
+            "AuthDialog", "AppIcon", "InterceptionSourceCard", "SelfControlElapsedCard",
+            "UsageRequestRhythmPresentation", "PreferenceBlock", "SectionCard",
+            "CompactInfoRow", "SettingRow", "UrlInGroupRow", "TimeRuleRow",
+            "AppGroupCard", "AppGroupCardHeader", "HistoryRow", "DatePickerDialog",
+            "PerfTopAppBar", "ClosableTitle", "InputSubsLinkOption",
         )
 
         private val TEXT_ARGUMENT_NAMES = setOf(

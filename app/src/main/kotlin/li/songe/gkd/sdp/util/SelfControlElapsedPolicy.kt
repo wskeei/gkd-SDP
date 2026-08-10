@@ -4,7 +4,6 @@ import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
-import li.songe.gkd.sdp.R
 
 object SelfControlElapsedPolicy {
     enum class Context {
@@ -58,30 +57,30 @@ object SelfControlElapsedPolicy {
     fun copyFor(context: Context): Copy {
         return when (context) {
             Context.USAGE_REQUEST -> Copy(
-                title = li.songe.gkd.sdp.app.getString(R.string.s_05dc33f232),
+                title = "距离上次结束使用",
                 previousTimeLabel = "上次结束使用",
                 firstTimeLabel = "本次申请",
                 noHistoryText = "此前没有成功的使用申请",
                 firstSupportingText = "完成一次使用并离开后开始统计；取消申请不会重置这段时间。",
-                supportingText = li.songe.gkd.sdp.app.getString(R.string.s_2c2d2c052f),
+                supportingText = "这段时间从上次实际结束使用开始计算；取消申请不会重置。",
             )
 
             Context.APP_OPEN_ATTEMPT -> Copy(
-                title = li.songe.gkd.sdp.app.getString(R.string.s_df643eccb1),
+                title = "距离上次尝试打开",
                 previousTimeLabel = "上次尝试",
                 firstTimeLabel = "本次尝试",
                 noHistoryText = "首次记录到这个应用的拦截",
                 firstSupportingText = "从本次尝试开始累计下一段间隔。",
-                supportingText = li.songe.gkd.sdp.app.getString(R.string.s_9cedae8b91),
+                supportingText = "退出后，下一段间隔会从本次尝试继续累计。",
             )
 
             Context.RULE_TRIGGER -> Copy(
-                title = li.songe.gkd.sdp.app.getString(R.string.s_7229e6e59a),
+                title = "距离上次触发拦截",
                 previousTimeLabel = "上次触发",
                 firstTimeLabel = "本次触发",
                 noHistoryText = "首次记录到这条拦截规则",
                 firstSupportingText = "从本次触发开始累计下一段间隔。",
-                supportingText = li.songe.gkd.sdp.app.getString(R.string.s_57aa860b2b),
+                supportingText = "退出后，下一段间隔会从本次触发继续累计。",
             )
         }
     }

@@ -235,7 +235,7 @@ fun AppConfigPage(route: AppConfigRoute) {
                                     }
                                 )
                             } else {
-                                MenuGroupCard(inTop = true, title = li.songe.gkd.sdp.app.getString(R.string.s_dc35af8d69)) {
+                                MenuGroupCard(inTop = true, title = "排序") {
                                     val handleItem: (RuleSortOption) -> Unit = throttle { v ->
                                         storeFlow.update { s -> s.copy(appRuleSort = v.value) }
                                     }
@@ -249,9 +249,9 @@ fun AppConfigPage(route: AppConfigRoute) {
                                         )
                                     }
                                 }
-                                MenuGroupCard(title = li.songe.gkd.sdp.app.getString(R.string.s_dcce9a144a)) {
+                                MenuGroupCard(title = "筛选") {
                                     MenuItemCheckbox(
-                                        text = li.songe.gkd.sdp.app.getString(R.string.s_8bb38ef00c),
+                                        text = "未启用",
                                         stateFlow = vm.showDisabledRuleFlow,
                                     )
                                 }
@@ -274,7 +274,7 @@ fun AppConfigPage(route: AppConfigRoute) {
                     )
                 },
                 imageVector = PerfIcon.Add,
-                contentDescription = li.songe.gkd.sdp.app.getString(R.string.s_d2fc32282a)
+                contentDescription = "添加规则"
             )
         },
     ) { contentPadding ->

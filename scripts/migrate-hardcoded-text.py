@@ -28,6 +28,24 @@ POSITIONAL_CALLS = {
     "Snackbar", "toast",
 }
 TOAST_INDEX_ONE = {"Toast"}
+# Calls whose named text arguments are user-visible (whitelisted so pure
+# policies and data classes keep their literals).
+UI_NAMED_ARG_CALLS = {
+    "Text", "Button", "OutlinedButton", "TextButton", "FilledTonalButton",
+    "Icon", "Snackbar", "TextSwitch", "SettingItem", "PerfCustomIconButton",
+    "TextMenu", "updateDialogOptions", "waitResult", "AppFormField",
+    "InlineMessage", "AppConfirmationDialog", "AppMetricCard", "AppActionBar",
+    "AppDataChart", "ContentStateBox", "EmptyText", "AppBlockerEmptyText",
+    "UrlLockSheet", "TimeRuleEditorSheet", "BrowserListSheet",
+    "BrowserEditSheet", "ManualAuthDialog", "ShareLogDlg", "TextDialog",
+    "ScaffoldDialog", "FullscreenDialog", "AppPickerDialog", "CopyTextCard",
+    "AuthDialog", "AppIcon", "InterceptionSourceCard", "SelfControlElapsedCard",
+    "UsageRequestRhythmPresentation", "PreferenceBlock", "SectionCard",
+    "CompactInfoRow", "SettingRow", "UrlInGroupRow", "TimeRuleRow",
+    "AppGroupCard", "AppGroupCardHeader", "HistoryRow", "DatePickerDialog",
+    "PerfTopAppBar", "ClosableTitle", "InputSubsLinkOption",
+}
+
 NAMED_ARG_NAMES = {
     "text", "title", "subtitle", "message", "contentDescription",
     "onClickLabel", "label", "placeholder", "supportingText", "errorText",
@@ -170,7 +188,7 @@ def enclosing_call(masked: str, lit: Literal) -> tuple[str, str | None, int] | N
     named_matches = list(NAMED_ASSIGN.finditer(between))
     if named_matches:
         arg_name = named_matches[-1].group(1)
-        if arg_name in NAMED_ARG_NAMES:
+        if arg_name in NAMED_ARG_NAMES and name in UI_NAMED_ARG_CALLS:
             return name, arg_name, -1
         return None
     idx = 0
@@ -248,6 +266,9 @@ def owning_named_argument(masked: str, text: str, lit: Literal) -> str | None:
         if not re.match(r"^\s*(if|when)\b", segment):
             continue
         if not segment_balanced(segment):
+            continue
+        owner_call = enclosing_call_of(masked, match.start())
+        if not owner_call or owner_call.group(1) not in UI_NAMED_ARG_CALLS:
             continue
         return name
     return None

@@ -186,7 +186,7 @@ fun useAppListPage(): ScaffoldExt {
                     CompositionLocalProvider(LocalContentColor provides MaterialTheme.colorScheme.error) {
                         PerfIconButton(
                             imageVector = PerfIcon.WarningAmber,
-                            contentDescription = canQueryPkgState.name + li.songe.gkd.sdp.app.getString(R.string.s_5caf279339),
+                            contentDescription = canQueryPkgState.name + "异常",
                             onClick = throttle {
                                 mainVm.dialogFlow.updateDialogOptions(
                                     title = li.songe.gkd.sdp.app.getString(R.string.s_a15a6fbc16),
@@ -198,8 +198,8 @@ fun useAppListPage(): ScaffoldExt {
                 }
                 PerfIconButton(
                     imageVector = PerfIcon.Block,
-                    contentDescription = li.songe.gkd.sdp.app.getString(R.string.s_9d777a0892),
-                    onClickLabel = if (editWhiteListMode) li.songe.gkd.sdp.app.getString(R.string.s_bbbcc7565b) else li.songe.gkd.sdp.app.getString(R.string.s_f5f9da83dc),
+                    contentDescription = "切换白名单编辑模式",
+                    onClickLabel = if (editWhiteListMode) "退出编辑" else "进入编辑",
                     colors = IconButtonDefaults.iconButtonColors(
                         contentColor = if (editWhiteListMode) {
                             CheckboxDefaults.colors().checkedBoxColor
@@ -225,12 +225,12 @@ fun useAppListPage(): ScaffoldExt {
                     },
                     id = R.drawable.ic_anim_search_close,
                     atEnd = showSearchBar,
-                    contentDescription = if (showSearchBar) li.songe.gkd.sdp.app.getString(R.string.s_e40a06c88b) else li.songe.gkd.sdp.app.getString(R.string.s_c1d113df7d),
+                    contentDescription = if (showSearchBar) "关闭搜索" else "搜索应用列表",
                 )
                 var expanded by remember { mutableStateOf(false) }
                 PerfIconButton(
                     imageVector = PerfIcon.Sort,
-                    contentDescription = li.songe.gkd.sdp.app.getString(R.string.s_e2b9cf1714),
+                    contentDescription = "排序筛选",
                     onClick = {
                         expanded = true
                     }
@@ -243,7 +243,7 @@ fun useAppListPage(): ScaffoldExt {
                         expanded = expanded,
                         onDismissRequest = { expanded = false }
                     ) {
-                        MenuGroupCard(inTop = true, title = li.songe.gkd.sdp.app.getString(R.string.s_dc35af8d69)) {
+                        MenuGroupCard(inTop = true, title = "排序") {
                             var sortType by vm.sortTypeFlow.asMutableState()
                             AppSortOption.objects.forEach { option ->
                                 MenuItemRadioButton(
@@ -253,7 +253,7 @@ fun useAppListPage(): ScaffoldExt {
                                 )
                             }
                         }
-                        MenuGroupCard(title = li.songe.gkd.sdp.app.getString(R.string.s_97d8a6c05b)) {
+                        MenuGroupCard(title = "分组") {
                             var appGroupType by vm.appGroupTypeFlow.asMutableState()
                             AppGroupOption.normalObjects.forEach { option ->
                                 val newValue = option.invert(appGroupType)
@@ -265,9 +265,9 @@ fun useAppListPage(): ScaffoldExt {
                                 )
                             }
                         }
-                        MenuGroupCard(title = li.songe.gkd.sdp.app.getString(R.string.s_dcce9a144a)) {
+                        MenuGroupCard(title = "筛选") {
                             MenuItemCheckbox(
-                                text = li.songe.gkd.sdp.app.getString(R.string.s_8f74cd015b),
+                                text = "白名单",
                                 stateFlow = vm.showBlockAppFlow,
                             )
                         }
@@ -278,7 +278,7 @@ fun useAppListPage(): ScaffoldExt {
         floatingActionButton = {
             AnimationFloatingActionButton(
                 visible = editWhiteListMode,
-                contentDescription = li.songe.gkd.sdp.app.getString(R.string.s_6b4f72a6e0),
+                contentDescription = "编辑白名单",
                 onClick = {
                     mainVm.navigatePage(EditBlockAppListRoute)
                 },
@@ -369,7 +369,7 @@ private fun AppItemCard(
                 contentDescription = if (editWhiteListMode) {
                     appInfo.name
                 } else {
-                    li.songe.gkd.sdp.app.getString(R.string.s_d916a8b463, appInfo.name, desc ?: appInfo.id)
+                    "应用：${appInfo.name}，${desc ?: appInfo.id}"
                 }
                 if (inWhiteList) {
                     stateDescription = "已加入白名单"
@@ -377,7 +377,7 @@ private fun AppItemCard(
                     stateDescription = "未加入白名单"
                 }
                 onClick(
-                    label = if (editWhiteListMode) if (inWhiteList) li.songe.gkd.sdp.app.getString(R.string.s_056f9022c6) else li.songe.gkd.sdp.app.getString(R.string.s_10181905a0) else li.songe.gkd.sdp.app.getString(R.string.s_7f04c8536d),
+                    label = if (editWhiteListMode) if (inWhiteList) "从白名单中移除" else "加入白名单" else "进入规则汇总页面",
                     action = null
                 )
             }

@@ -129,7 +129,7 @@ fun SubsGlobalGroupListPage(route: SubsGlobalGroupListRoute) {
                     TowLineText(
                         modifier = titleModifier,
                         title = subs.name,
-                        subtitle = li.songe.gkd.sdp.app.getString(R.string.s_9effd4ccc9)
+                        subtitle = "全局规则"
                     )
                 }
             }, actions = {
@@ -236,7 +236,7 @@ fun SubsGlobalGroupListPage(route: SubsGlobalGroupListRoute) {
                         )
                     },
                     imageVector = PerfIcon.Add,
-                    contentDescription = li.songe.gkd.sdp.app.getString(R.string.s_d2fc32282a)
+                    contentDescription = "添加规则"
                 )
             }
         },

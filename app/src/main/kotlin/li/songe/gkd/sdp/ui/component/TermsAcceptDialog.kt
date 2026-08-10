@@ -66,7 +66,7 @@ fun TermsAcceptDialog() {
                     },
                 )
             },
-            li.songe.gkd.sdp.app.getString(R.string.s_6152aa364d) to @Composable {
+            "关于无障碍" to @Composable {
                 Text(
                     modifier = modifier,
                     text = li.songe.gkd.sdp.app.getString(R.string.s_37c53d9dc0),

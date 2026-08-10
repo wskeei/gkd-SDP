@@ -3,7 +3,6 @@ package li.songe.gkd.sdp.util
 import li.songe.gkd.sdp.data.UsageGuardRecord
 import java.time.Instant
 import java.time.ZoneId
-import li.songe.gkd.sdp.R
 
 object UsageGuardReviewPolicy {
     data class RankedItem(
@@ -60,7 +59,7 @@ object UsageGuardReviewPolicy {
     fun widgetSummary(summary: Summary, periodLabel: String = "今日"): WidgetSummary {
         if (summary.requestCount == 0) {
             return WidgetSummary(
-                title = li.songe.gkd.sdp.app.getString(R.string.s_ab5d86dedf, periodLabel),
+                title = "${periodLabel}申请 0 次",
                 metric = "保持安静",
                 hint = if (periodLabel == "今日") {
                     "还没有新的使用申请。"
@@ -71,7 +70,7 @@ object UsageGuardReviewPolicy {
         }
         val topAppText = summary.topApps.firstOrNull()?.let { " · 高频 ${it.label}" }.orEmpty()
         return WidgetSummary(
-            title = li.songe.gkd.sdp.app.getString(R.string.s_02ddce14b3, periodLabel, summary.requestCount),
+            title = "${periodLabel}申请 ${summary.requestCount} 次",
             metric = "累计使用 ${formatUsedDuration(summary.totalUsedSeconds)}$topAppText",
             hint = riskHint(summary.riskPeriod).replace("今天", periodLabel),
         )

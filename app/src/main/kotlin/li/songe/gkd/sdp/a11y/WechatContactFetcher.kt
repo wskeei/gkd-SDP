@@ -84,7 +84,7 @@ object WechatContactFetcher {
 
         service = accessibilityService
         isFetching = true
-        updateStatus(text = li.songe.gkd.sdp.app.getString(R.string.s_fdfd732b8c), count = 0, fetching = true)
+        updateStatus(text = "准备开始抓取...", count = 0, fetching = true)
         
         fetchedContacts.clear()
         fetchCount = 0
@@ -616,10 +616,10 @@ object WechatContactFetcher {
             if (text.isEmpty()) continue
             
             // 排除系统关键词
-            if (text == li.songe.gkd.sdp.app.getString(R.string.s_11d0241540) || text == li.songe.gkd.sdp.app.getString(R.string.s_9b0c6c7858) || text == li.songe.gkd.sdp.app.getString(R.string.s_30a9fec1a4) || text == li.songe.gkd.sdp.app.getString(R.string.s_bf45558407)) continue
+            if (text == "返回" || text == "更多" || text == "朋友资料" || text == "详细资料") continue
             if (text.startsWith("微信号")) continue
             if (text.startsWith("地区")) continue
-            if (text == li.songe.gkd.sdp.app.getString(R.string.s_78345bb06c) || text == li.songe.gkd.sdp.app.getString(R.string.s_5a88ff5da1)) continue
+            if (text == "发消息" || text == "音视频通话") continue
             
             // 排除长文本 (功能描述)
             if (text.length > 40) continue 
@@ -694,7 +694,7 @@ object WechatContactFetcher {
 
     fun stopFetch() {
         isFetching = false
-        updateStatus(text = li.songe.gkd.sdp.app.getString(R.string.s_a759881bbf), fetching = false)
+        updateStatus(text = "已停止抓取", fetching = false)
         FetchOverlayController.hide()
         collectJob?.cancel()
         collectJob = null
