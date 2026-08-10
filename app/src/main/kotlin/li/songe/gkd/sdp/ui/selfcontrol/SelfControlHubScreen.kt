@@ -20,16 +20,16 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import li.songe.gkd.sdp.R
-import li.songe.gkd.sdp.ui.appblocker.AppBlockerRoute
+import li.songe.gkd.sdp.ui.AppBlockerRoute
 import li.songe.gkd.sdp.ui.component.PerfIcon
-import li.songe.gkd.sdp.ui.focuslock.FocusLockRoute
-import li.songe.gkd.sdp.ui.focusmode.FocusModeRoute
+import li.songe.gkd.sdp.ui.FocusLockRoute
+import li.songe.gkd.sdp.ui.FocusModeRoute
 import li.songe.gkd.sdp.ui.share.LocalMainViewModel
 import li.songe.gkd.sdp.ui.style.DimensionTokens
 import li.songe.gkd.sdp.ui.style.surfaceCardColors
 import li.songe.gkd.sdp.ui.UrlBlockRoute
-import li.songe.gkd.sdp.ui.usageguard.UsageGuardRoute
-import li.songe.gkd.sdp.ui.usagereview.UsageGuardReviewRoute
+import li.songe.gkd.sdp.ui.UsageGuardRoute
+import li.songe.gkd.sdp.ui.UsageGuardReviewRoute
 
 private data class SelfControlEntry(
     val title: String,

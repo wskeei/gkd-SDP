@@ -1,8 +1,6 @@
 package li.songe.gkd.sdp.ui.home
 
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.navigation3.runtime.NavKey
-import kotlinx.serialization.Serializable
 import li.songe.gkd.sdp.ui.component.PerfIcon
 
 /**
@@ -29,8 +27,3 @@ enum class HomeDestination(
     }
 }
 
-@Serializable
-data class HomeRoute(
-    val tabKey: Int = HomeDestination.OVERVIEW.key,
-    val rulesTab: Int = 0,
-) : NavKey
