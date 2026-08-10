@@ -11,3 +11,9 @@ API 35. Both devices use AOSP system images and the `x86_64` ABI.
 Devices run with a single concurrent emulator, English system locale, and a
 clean app data before each test. The suite does not claim real Accessibility,
 Shizuku, `FLAG_SECURE`, or OEM behavior; those remain physical-device checks.
+
+Note: with AGP 9.3.0 the `androidx.baselineprofile` producer plugin and GMD
+API 26/35 setup currently fail before tests execute (missing `devices.xml` /
+property resolution). The device definitions are kept in the build for a
+compatible AGP/plugin upgrade, but they are not enabled as merge-blocking CI
+jobs in PR 5.
