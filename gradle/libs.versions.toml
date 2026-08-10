@@ -84,7 +84,6 @@ activityResultLauncher = "com.github.DylanCaiCoding:ActivityResultLauncher:1.1.2
 lint-api = { module = "com.android.tools.lint:lint-api", version.ref = "lint" }
 lint-tests = { module = "com.android.tools.lint:lint-tests", version.ref = "lint" }
 compose-adaptive = { module = "androidx.compose.material3.adaptive:adaptive", version.ref = "adaptive" }
-compose-adaptive-navigation = { module = "androidx.compose.material3.adaptive:adaptive-navigation-suite", version.ref = "adaptive" }
 
 [plugins]
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
