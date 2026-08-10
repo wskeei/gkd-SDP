@@ -58,10 +58,10 @@ class SelfControlIntervalPresentationTest {
 
     @Test
     fun textRowsAreBoundedByChartPointsAndMarkBucketAverages() {
-        val samples = (0 until 40).map { index ->
+        val samples = (0 until 27).map { index ->
             SelfControlInsightWindowPolicy.IntervalSample(
                 id = index.toLong(),
-                occurredAtEpochMs = now - index * 60L * 60L * 1_000L,
+                occurredAtEpochMs = now - index * 10L * 60L * 1_000L,
                 gapMs = 60_000L,
                 requestedDurationMinutes = null,
             )
@@ -71,7 +71,7 @@ class SelfControlIntervalPresentationTest {
         assertTrue(presentation.chartPoints.size <= 24)
         assertEquals(presentation.chartPoints.size, presentation.textRows.size)
         assertTrue(presentation.textRows.any { it.sampleCount > 1 })
-        assertTrue(presentation.semanticSummary.contains("有效样本 25 条"))
+        assertTrue(presentation.semanticSummary.contains("有效样本 26 条"))
         assertTrue(presentation.semanticSummary.contains("图形点"))
         assertTrue(presentation.supportingText.contains("按 1 小时聚合"))
     }
@@ -100,8 +100,8 @@ class SelfControlIntervalPresentationTest {
     @Test
     fun sameTimestampRowsOnlyMarkThePointContainingCurrentEvent() {
         val samples = listOf(
-            SelfControlInsightWindowPolicy.IntervalSample(77L, now, 120L * 60_000L, null),
-            SelfControlInsightWindowPolicy.IntervalSample(78L, now, 60L * 60_000L, null),
+            SelfControlInsightWindowPolicy.IntervalSample(77L, now - 1L, 120L * 60_000L, null),
+            SelfControlInsightWindowPolicy.IntervalSample(78L, now - 1L, 60L * 60_000L, null),
         )
         val presentation = SelfControlInsightPresentation.from(
             samples = samples,
@@ -127,9 +127,9 @@ class SelfControlIntervalPresentationTest {
         }
         val presentation = SelfControlInsightPresentation.from(samples, now)
 
-        assertTrue(presentation.semanticSummary.contains("总记录 6 条"))
-        assertTrue(presentation.semanticSummary.contains("有效样本 4 条"))
-        assertTrue(presentation.semanticSummary.contains("图形点 4 个"))
+        assertTrue(presentation.semanticSummary.contains("总记录 5 条"))
+        assertTrue(presentation.semanticSummary.contains("有效样本 3 条"))
+        assertTrue(presentation.semanticSummary.contains("图形点 3 个"))
         assertTrue(presentation.semanticSummary.contains("未纳入 2 条"))
     }
 }
