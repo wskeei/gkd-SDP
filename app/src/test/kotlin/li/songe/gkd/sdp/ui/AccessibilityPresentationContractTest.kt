@@ -58,7 +58,7 @@ class AccessibilityPresentationContractTest {
         ).readText()
         assertTrue(chart.contains("summaryText"))
         assertTrue(chart.contains("pointDetailText"))
-        assertTrue(chart.contains("查看数据"))
+        assertTrue(chart.contains("showTable"))
         assertTrue(policy.contains("AppDataTablePolicy"))
     }
 
