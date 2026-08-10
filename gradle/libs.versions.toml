@@ -17,6 +17,7 @@ loc = "0.6.2"
 vico = "2.0.0-alpha.28"
 lint = "32.3.0"
 adaptive = "1.2.0"
+kover = "0.9.9"
 
 [libraries]
 vico-compose = { module = "com.patrykandpatrick.vico:compose", version.ref = "vico" }
@@ -103,3 +104,4 @@ google-ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 remap = { id = "li.songe.remap", version.ref = "remap" }
 loc = { id = "li.songe.loc", version.ref = "loc" }
 littlerobots-version = "nl.littlerobots.version-catalog-update:1.1.0"
+kotlinx-kover = { id = "org.jetbrains.kotlinx.kover", version.ref = "kover" }

@@ -113,6 +113,7 @@ plugins {
     alias(libs.plugins.google.ksp)
     alias(libs.plugins.remap)
     alias(libs.plugins.loc)
+    alias(libs.plugins.kotlinx.kover)
 }
 
 android {
@@ -227,6 +228,72 @@ android {
         "**/custom.config.conf",
         "**/custom.config.yaml",
     )
+
+    testOptions {
+        managedDevices {
+            localDevices {
+                create("pixel2Api26") {
+                    device = "Pixel 2"
+                    apiLevel = 26
+                    systemImageSource = "aosp"
+                    testedAbi = "x86_64"
+                }
+                create("pixel6Api35") {
+                    device = "Pixel 6"
+                    apiLevel = 35
+                    systemImageSource = "aosp"
+                    testedAbi = "x86_64"
+                }
+            }
+        }
+    }
+
+    kover {
+        reports {
+            filters {
+                includes {
+                    classes(
+                        "li.songe.gkd.sdp.*Policy*",
+                        "li.songe.gkd.sdp.*Repository*",
+                        "li.songe.gkd.sdp.runtime.*",
+                        "li.songe.gkd.sdp.backup.*",
+                        "li.songe.gkd.sdp.remote.*",
+                        "li.songe.gkd.sdp.capability.*",
+                        "li.songe.gkd.sdp.settings.*",
+                        "li.songe.gkd.sdp.privacy.*",
+                        "li.songe.gkd.sdp.usage.*",
+                    )
+                }
+                excludes {
+                    classes(
+                        "androidx.compose.**",
+                        "li.songe.gkd.sdp.ui.**",
+                        "li.songe.gkd.sdp.service.**",
+                        "li.songe.gkd.sdp.receiver.**",
+                        "li.songe.gkd.sdp.widget.**",
+                        "li.songe.gkd.sdp.db.**",
+                        "li.songe.gkd.sdp.data.**",
+                    )
+                }
+            }
+            verify {
+                rule {
+                    minBound(
+                        80,
+                        kotlinx.kover.gradle.plugin.dsl.CoverageUnit.LINE,
+                        kotlinx.kover.gradle.plugin.dsl.AggregationType.COVERED_PERCENTAGE,
+                    )
+                }
+                rule {
+                    minBound(
+                        70,
+                        kotlinx.kover.gradle.plugin.dsl.CoverageUnit.BRANCH,
+                        kotlinx.kover.gradle.plugin.dsl.AggregationType.COVERED_PERCENTAGE,
+                    )
+                }
+            }
+        }
+    }
 }
 
 if (project.hasProperty("GKD_RENAME_APK_FLAG")) {
