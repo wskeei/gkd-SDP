@@ -9,9 +9,6 @@ import java.io.IOException
 import java.io.InputStream
 import java.io.InterruptedIOException
 import java.io.RandomAccessFile
-import java.nio.file.AtomicMoveNotSupportedException
-import java.nio.file.Files
-import java.nio.file.StandardCopyOption
 import java.util.zip.ZipEntry
 import java.util.zip.ZipFile
 import java.util.zip.ZipOutputStream
@@ -206,14 +203,16 @@ object ZipUtils {
             }
             checkInterrupted()
             destDir.parentFile?.mkdirs()
+            if (!destDir.mkdirs() && !destDir.isDirectory) {
+                throw IOException("archive_destination_unavailable")
+            }
             try {
-                Files.move(
-                    extractionRoot.toPath(),
-                    destDir.toPath(),
-                    StandardCopyOption.ATOMIC_MOVE,
-                )
-            } catch (_: AtomicMoveNotSupportedException) {
-                Files.move(extractionRoot.toPath(), destDir.toPath())
+                if (!extractionRoot.copyRecursively(destDir, overwrite = false)) {
+                    throw IOException("archive_copy_unavailable")
+                }
+            } catch (error: IOException) {
+                destDir.deleteRecursively()
+                throw error
             }
         } finally {
             tempRoot.deleteRecursively()

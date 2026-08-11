@@ -12,6 +12,40 @@ import sys
 ROOT = Path(__file__).resolve().parents[1]
 
 
+def find_benchmark_data(root: Path) -> list[Path]:
+    results: list[Path] = []
+    for base in (
+        root / "baselineprofile/build/outputs/managed_device_android_test_additional_output",
+        root / "app/build/outputs/managed_device_android_test_additional_output",
+    ):
+        if base.is_dir():
+            results.extend(base.rglob("*-benchmarkData.json"))
+    return results
+
+
+def check_benchmark_data(path: Path, failures: list[str]) -> None:
+    data = json.loads(path.read_text(encoding="utf-8"))
+    benchmarks = {item["name"]: item for item in data.get("benchmarks", [])}
+    cold = benchmarks.get("startupCold")
+    warm = benchmarks.get("startupWarm")
+    if cold is None or warm is None:
+        failures.append(f"missing startupCold/startupWarm benchmarks in {path}")
+        return
+    cold_timing = cold.get("metrics", {}).get("timeToInitialDisplayMs", {})
+    cold_runs = cold_timing.get("runs", [])
+    cold_median = cold_timing.get("median")
+    if cold_median is None or len(cold_runs) < 10:
+        failures.append(f"incomplete cold startup timing in {path}")
+    warm_timing = warm.get("metrics", {}).get("timeToInitialDisplayMs", {})
+    warm_runs = warm_timing.get("runs", [])
+    if warm_timing.get("median") is None or len(warm_runs) < 10:
+        failures.append(f"incomplete warm startup timing in {path}")
+    if cold.get("sampledMetrics", {}).get("frameOverrunMs", {}).get("P95") is None:
+        failures.append(f"missing cold frameOverrun P95 in {path}")
+    if warm.get("sampledMetrics", {}).get("frameOverrunMs", {}).get("P95") is None:
+        failures.append(f"missing warm frameOverrun P95 in {path}")
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--thresholds", required=True, type=Path)
@@ -33,6 +67,11 @@ def main(argv: list[str] | None = None) -> int:
     profile = Path(args.root) / "app/src/gkdRelease/generated/baselineProfiles/baseline-prof.txt"
     if not profile.is_file():
         failures.append("missing generated baseline profile")
+    benchmark_data = find_benchmark_data(Path(args.root))
+    if not benchmark_data:
+        failures.append("missing macrobenchmark benchmarkData.json")
+    for path in benchmark_data:
+        check_benchmark_data(path, failures)
     if failures:
         print("\n".join(failures), file=sys.stderr)
         return 1

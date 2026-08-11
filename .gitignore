@@ -34,6 +34,8 @@ GEMINI.md
 
 # Build artifacts
 /app/gkd/
+**/build/
+/app/src/gkdRelease/generated/baselineProfiles/startup-prof.txt
 __pycache__/
 *.py[cod]
 /更新

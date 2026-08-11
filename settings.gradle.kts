@@ -1,6 +1,7 @@
 rootProject.name = "gkd"
 include(
     ":app",
+    ":baselineprofile",
     ":hidden_api",
     ":selector",
     ":quality-lint",

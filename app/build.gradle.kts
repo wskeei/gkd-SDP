@@ -115,6 +115,7 @@ plugins {
     alias(libs.plugins.loc)
     alias(libs.plugins.kotlinx.kover)
     alias(libs.plugins.compose.screenshot)
+    alias(libs.plugins.baselineprofile)
 }
 
 android {
@@ -237,14 +238,16 @@ android {
                 create("pixel2Api26") {
                     device = "Pixel 2"
                     apiLevel = 26
-                    systemImageSource = "aosp"
+                    systemImageSource = "google"
                     testedAbi = "x86_64"
+                    require64Bit = true
                 }
                 create("pixel6Api35") {
                     device = "Pixel 6"
                     apiLevel = 35
-                    systemImageSource = "aosp"
+                    systemImageSource = "google"
                     testedAbi = "x86_64"
+                    require64Bit = true
                 }
             }
         }
@@ -417,6 +420,8 @@ dependencies {
     implementation(libs.reorderable)
 
     implementation(libs.androidx.splashscreen)
+    implementation(libs.androidx.profileinstaller)
+    baselineProfile(project(":baselineprofile"))
 
     implementation(libs.coil.compose)
     implementation(libs.coil.network)
