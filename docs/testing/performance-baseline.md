@@ -17,3 +17,9 @@ The `baselineprofile` module uses the current AndroidX Benchmark plugin
 Gradle Managed Device. The performance CI job generates the profile, runs cold
 and warm startup macrobenchmarks, builds the release APK, and runs
 `scripts/verify-performance-reports.py`.
+
+The CI macrobenchmark runs on a managed emulator, so the recorded startup and
+frame metrics are regression evidence for the automated pipeline, not
+physical-device performance claims. The threshold file is retained for real
+device runs; emulator runs require that the profile and complete benchmark
+metrics are produced without failing on emulator-specific timing.
