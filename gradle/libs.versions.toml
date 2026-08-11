@@ -19,6 +19,8 @@ lint = "32.3.0"
 adaptive = "1.2.0"
 kover = "0.9.9"
 screenshot = "0.0.1-alpha15"
+benchmark = "1.5.0-beta01"
+profileinstaller = "1.4.1"
 
 [libraries]
 vico-compose = { module = "com.patrykandpatrick.vico:compose", version.ref = "vico" }
@@ -61,6 +63,9 @@ androidx-annotation = "androidx.annotation:annotation:1.10.0"
 androidx-espresso = "androidx.test.espresso:espresso-core:3.7.0"
 androidx-test-rules = "androidx.test:rules:1.7.0"
 androidx-test-runner = "androidx.test:runner:1.7.0"
+androidx-uiautomator = "androidx.test.uiautomator:uiautomator:2.3.0"
+androidx-benchmark-macro = { module = "androidx.benchmark:benchmark-macro-junit4", version.ref = "benchmark" }
+androidx-profileinstaller = { module = "androidx.profileinstaller:profileinstaller", version.ref = "profileinstaller" }
 androidx-room-runtime = { module = "androidx.room:room-runtime", version.ref = "room" }
 androidx-room-compiler = { module = "androidx.room:room-compiler", version.ref = "room" }
 androidx-room-ktx = { module = "androidx.room:room-ktx", version.ref = "room" }
@@ -108,3 +113,5 @@ loc = { id = "li.songe.loc", version.ref = "loc" }
 littlerobots-version = "nl.littlerobots.version-catalog-update:1.1.0"
 kotlinx-kover = { id = "org.jetbrains.kotlinx.kover", version.ref = "kover" }
 compose-screenshot = { id = "com.android.compose.screenshot", version.ref = "screenshot" }
+android-test = { id = "com.android.test", version.ref = "agp" }
+baselineprofile = { id = "androidx.baselineprofile", version.ref = "benchmark" }
