@@ -4,6 +4,33 @@ All notable GKD-SDP changes are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.1] - 2026-08-11
+
+### Added
+
+- Enable API 26 and API 35 Gradle Managed Device gates in CI.
+- Add Baseline Profile generation for `gkdRelease` with cold and warm startup
+  macrobenchmarks and performance report verification.
+- Add a `baselineprofile` module and merge the generated Baseline Profile into
+  the release APK.
+- Add a main-protection ruleset sync helper with the full required check set.
+
+### Fixed
+
+- Extract validated archives reliably on Android API 26 by copying staged
+  files into the destination instead of relying on directory move semantics.
+
+### Changed
+
+- Use the current AndroidX Benchmark plugin with AGP 9.3 and KVM-enabled
+  emulators. Emulator performance metrics are recorded as automated pipeline
+  evidence, not as physical-device performance claims.
+
+### Testing
+
+- Run `managed-device-api26`, `managed-device-api35`, `performance`, coverage,
+  screenshot regression, and four-variant builds on every CI run.
+
 ## [2.2.0] - 2026-08-11
 
 ### Added
@@ -286,8 +313,9 @@ since that base rather than repeating upstream release notes.
   when the required service permission is disabled.
 - Added screenshot protection for the usage reason overlay.
 
+[2.2.1]: https://github.com/wskeei/gkd-SDP/compare/v2.2.0...v2.2.1
 [2.2.0]: https://github.com/wskeei/gkd-SDP/compare/v2.1.1...v2.2.0
-[Unreleased]: https://github.com/wskeei/gkd-SDP/compare/v2.2.0...HEAD
+[Unreleased]: https://github.com/wskeei/gkd-SDP/compare/v2.2.1...HEAD
 [2.1.1]: https://github.com/wskeei/gkd-SDP/compare/v2.1.0...v2.1.1
 [2.1.0]: https://github.com/wskeei/gkd-SDP/compare/v2.0.0-beta.6...v2.1.0
 [2.0.0-beta.6]: https://github.com/wskeei/gkd-SDP/compare/v2.0.0-beta.5...v2.0.0-beta.6
