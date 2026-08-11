@@ -240,12 +240,14 @@ android {
                     apiLevel = 26
                     systemImageSource = "google"
                     testedAbi = "x86_64"
+                    require64Bit = true
                 }
                 create("pixel6Api35") {
                     device = "Pixel 6"
                     apiLevel = 35
                     systemImageSource = "google"
                     testedAbi = "x86_64"
+                    require64Bit = true
                 }
             }
         }
