@@ -26,23 +26,24 @@ else
   RULESET_ID="$(printf '%s' "$RULESETS_JSON" | jq -r '.id')"
 fi
 
-TARGET_JSON="$(jq -n --argjson checks "$(printf '%s\n' "${REQUIRED_CHECKS[@]}" | jq -R . | jq -s .)" '{
+TARGET_JSON="$(jq -n --argjson checks "$(printf '%s\n' "${REQUIRED_CHECKS[@]}" | jq -R '{context: .}' | jq -s .)" '{
   name: "main-protection",
   enforcement: "active",
   conditions: {
     ref_name: { include: ["refs/heads/main"], exclude: [] }
   },
   rules: [
-    { type: "pull_request", parameters: { required_status_checks: $checks, strict_required_status_checks_policy: true } },
-    { type: "required_signatures" },
+    { type: "required_status_checks", parameters: { required_status_checks: $checks, strict_required_status_checks_policy: true } },
+    { type: "required_linear_history" },
     { type: "non_fast_forward" },
     { type: "deletion" }
   ]
 }')"
 
 if [ -n "$RULESET_ID" ]; then
-  CURRENT_NAMES="$(printf '%s' "$RULESETS_JSON" | jq -c '.rules[] | select(.type == "pull_request") | .parameters.required_status_checks')"
-  TARGET_NAMES="$(printf '%s' "$TARGET_JSON" | jq -c '.rules[] | select(.type == "pull_request") | .parameters.required_status_checks')"
+  RULESETS_JSON="$(gh api "repos/$REPO/rulesets/$RULESET_ID")"
+  CURRENT_NAMES="$(printf '%s' "$RULESETS_JSON" | jq -c '.rules[] | select(.type == "required_status_checks") | .parameters.required_status_checks')"
+  TARGET_NAMES="$(printf '%s' "$TARGET_JSON" | jq -c '.rules[] | select(.type == "required_status_checks") | .parameters.required_status_checks')"
   if [ "$CURRENT_NAMES" = "$TARGET_NAMES" ]; then
     echo "main-protection is already in sync"
     exit 0
