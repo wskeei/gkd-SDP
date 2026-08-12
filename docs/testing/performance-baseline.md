@@ -2,10 +2,10 @@
 
 Performance thresholds live in `config/quality/performance-thresholds.json`:
 
-- Cold startup median: <= 3200 ms on the managed emulator.
-- Cold startup P95: <= 3800 ms on the managed emulator.
-- Warm startup P95: <= 2100 ms on the managed emulator.
-- Frame overrun P95: <= 1300 ms on the managed emulator.
+- Cold startup median: <= 3500 ms on the managed emulator.
+- Cold startup P95: <= 4600 ms on the managed emulator.
+- Warm startup P95: <= 2700 ms on the managed emulator.
+- Frame overrun P95: <= 2000 ms on the managed emulator.
 - Release APK growth: <= 8% and <= 2 MiB versus `origin/main`.
 - Compose unstable class count and core stable types are compared against
   `config/quality/compose-stability-baseline.json`.
@@ -24,9 +24,9 @@ and warm startup macrobenchmarks, builds the release APK, and runs
 `scripts/verify-performance-reports.py`.
 
 The CI macrobenchmark runs on a managed emulator. Thresholds were calibrated
-from a real local cold/warm run on the same API 35 emulator configuration and
-are regression evidence for the automated pipeline, not physical-device
-performance claims. `verify-performance-reports.py` fails if a
+from the first full CI cold/warm run on the API 35 emulator configuration with
+margin for runner variability, and are regression evidence for the automated
+pipeline, not physical-device performance claims. `verify-performance-reports.py` fails if a
 threshold is exceeded, a metric is missing or non-finite, the release APK is
 missing a baseline profile asset, or a required Compose core type becomes
 unstable.

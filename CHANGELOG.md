@@ -43,7 +43,7 @@ All notable GKD-SDP changes are documented here. The format follows
 - Wire privacy subscription/rules reset, self-control config reset, and
   delete-all paths through the data repository while active sessions block
   configuration deletion.
-- Calibrate managed-emulator performance thresholds from the first real
+- Calibrate managed-emulator performance thresholds from the first CI
   cold/warm macrobenchmark run and compute startup P95 from run samples when
   the benchmark file omits the percentile key.
 
