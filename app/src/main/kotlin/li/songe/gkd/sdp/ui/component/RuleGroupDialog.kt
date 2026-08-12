@@ -82,7 +82,7 @@ fun RuleGroupDialog(
                         .background(MaterialTheme.colorScheme.secondaryContainer)
                         .verticalScroll(rememberScrollState())
                         .clearAndSetSemantics {
-                            contentDescription = "规则组内容"
+                            contentDescription = li.songe.gkd.sdp.app.getString(R.string.rule_group_content)
                         }
                 ) {
                     SelectionContainer {
@@ -174,7 +174,7 @@ fun RuleGroupDialog(
                 }
                 PerfIconButton(
                     imageVector = PerfIcon.Block,
-                    onClickLabel = "编辑规则排除名单",
+                    onClickLabel = stringResource(R.string.rule_edit_exclusion),
                     onClick = throttle(onClickEditExclude),
                 )
                 AnimatedVisibility(
@@ -182,7 +182,7 @@ fun RuleGroupDialog(
                 ) {
                     PerfIconButton(
                         imageVector = ResetSettings,
-                        onClickLabel = "重置开关状态至默认值",
+                        onClickLabel = stringResource(R.string.rule_reset_switch_state),
                         onClick = throttle(onClickResetSwitch ?: {}),
                     )
                 }

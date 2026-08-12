@@ -19,7 +19,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.pager.HorizontalPager
-import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
@@ -28,7 +28,6 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -48,19 +47,18 @@ import coil3.disk.DiskCache
 import coil3.fetch.Fetcher
 import coil3.gif.AnimatedImageDecoder
 import coil3.gif.GifDecoder
-import coil3.imageLoader
 import coil3.network.okhttp.OkHttpNetworkFetcherFactory
 import coil3.request.ImageRequest
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.serialization.Serializable
 import li.songe.gkd.sdp.MainActivity
-import li.songe.gkd.sdp.MainViewModel
 import li.songe.gkd.sdp.app
 import li.songe.gkd.sdp.ui.component.PerfIcon
 import li.songe.gkd.sdp.ui.component.PerfIconButton
 import li.songe.gkd.sdp.ui.component.PerfTopAppBar
-import li.songe.gkd.sdp.ui.share.LocalMainViewModel
+import li.songe.gkd.sdp.remote.ImagePreviewHttpsOnlyNetworkInterceptor
+import li.songe.gkd.sdp.remote.ImagePreviewNetworkPolicy
 import li.songe.gkd.sdp.util.AndroidTarget
 import li.songe.gkd.sdp.util.coilCacheDir
 import li.songe.gkd.sdp.util.throttle
@@ -91,6 +89,7 @@ internal val imageLoader by lazy {
                             .connectTimeout(30.seconds.toJavaDuration())
                             .readTimeout(30.seconds.toJavaDuration())
                             .writeTimeout(30.seconds.toJavaDuration())
+                            .addNetworkInterceptor(ImagePreviewHttpsOnlyNetworkInterceptor())
                             .build()
                     }
                 ))
@@ -100,23 +99,21 @@ internal val imageLoader by lazy {
 
 
 @Composable
-fun ImagePreviewPageSections(route: ImagePreviewRoute) {
-    val mainVm = LocalMainViewModel.current
+internal fun ImagePreviewPageSections(
+    route: ImagePreviewRoute,
+    uiState: ImagePreviewUiState,
+    pagerState: PagerState,
+    onBack: () -> Unit,
+    onOpenUrl: (String) -> Unit,
+    onToggleBars: () -> Unit,
+) {
     val context = LocalActivity.current as MainActivity
-    var showBars by remember { mutableStateOf(true) }
 
     // 路由同时兼容旧的 uri/uris 和新的 items，预览页内部统一按图片项处理。
-    val previewItems = remember(route) {
-        when {
-            route.items.isNotEmpty() -> route.items
-            route.uris.isNotEmpty() -> route.uris.map { ImagePreviewItem(it) }
-            route.uri != null -> listOf(ImagePreviewItem(uri = route.uri))
-            else -> emptyList()
-        }
-    }
+    val previewItems = uiState.items
     val previewUris = remember(previewItems) { previewItems.map { it.uri } }
     val singleItem = previewItems.singleOrNull()
-    val pagerState = rememberPagerState(pageCount = { previewItems.size.coerceAtLeast(1) })
+    val showBars = uiState.showBars
 
     val controller = remember {
         WindowCompat.getInsetsController(context.window, context.window.decorView)
@@ -146,7 +143,10 @@ fun ImagePreviewPageSections(route: ImagePreviewRoute) {
         if (previewUris.size <= 1) return@LaunchedEffect
         previewUris
             .drop(1)
-            .filter(URLUtil::isNetworkUrl)
+            .filter {
+                ImagePreviewNetworkPolicy.isNetworkUri(it) &&
+                    ImagePreviewNetworkPolicy.decideNetwork(it).isAllowed
+            }
             .chunked(2)
             .forEach { uriBatch ->
                 uriBatch.map { preloadUri ->
@@ -171,7 +171,7 @@ fun ImagePreviewPageSections(route: ImagePreviewRoute) {
             previewItems = previewItems,
             singleItem = singleItem,
             pagerState = pagerState,
-            onToggleBars = { showBars = !showBars },
+            onToggleBars = onToggleBars,
         )
         ImagePreviewBars(
             route = route,
@@ -179,7 +179,8 @@ fun ImagePreviewPageSections(route: ImagePreviewRoute) {
             singleItem = singleItem,
             pagerState = pagerState,
             showBars = showBars,
-            mainVm = mainVm,
+            onBack = onBack,
+            onOpenUrl = onOpenUrl,
         )
     }
 }
@@ -208,7 +209,8 @@ private fun ImagePreviewBars(
     singleItem: ImagePreviewItem?,
     pagerState: androidx.compose.foundation.pager.PagerState,
     showBars: Boolean,
-    mainVm: MainViewModel,
+    onBack: () -> Unit,
+    onOpenUrl: (String) -> Unit,
 ) {
     AnimatedVisibility(
         visible = showBars,
@@ -224,7 +226,7 @@ private fun ImagePreviewBars(
                 navigationIcon = {
                     PerfIconButton(
                         imageVector = PerfIcon.ArrowBack,
-                        onClick = { mainVm.popPage() },
+                        onClick = onBack,
                         colors = IconButtonDefaults.iconButtonColors(contentColor = Color.White),
                     )
                 },
@@ -233,7 +235,7 @@ private fun ImagePreviewBars(
                     if (currentUri != null && URLUtil.isNetworkUrl(currentUri)) {
                         PerfIconButton(
                             imageVector = PerfIcon.OpenInNew,
-                            onClick = throttle(fn = { mainVm.openUrl(currentUri) }),
+                            onClick = throttle(fn = { onOpenUrl(currentUri) }),
                             colors = IconButtonDefaults.iconButtonColors(contentColor = Color.White),
                         )
                     }

@@ -28,6 +28,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.unit.dp
@@ -129,7 +130,7 @@ fun SubsCategoryGroupPage(route: SubsCategoryGroupRoute) {
                                 categoryKey = category.key
                             )).copy(enable = option.value)
                         )
-                        toast(option.label)
+                        toast(li.songe.gkd.sdp.app.getString(option.labelRes))
                     },
                 ),
             )
@@ -221,31 +222,31 @@ fun SubsCategoryGroupPage(route: SubsCategoryGroupRoute) {
                 modifier = Modifier.wrapContentSize(Alignment.TopStart)
             ) {
                 DropdownMenu(expanded = sortExpanded, onDismissRequest = { sortExpanded = false }) {
-                    MenuGroupCard(inTop = true, title = "排序") {
+                    MenuGroupCard(inTop = true, title = stringResource(R.string.app_list_sort_title)) {
                         var sortType by vm.sortTypeFlow.asMutableState()
                         AppSortOption.objects.forEach { option ->
                             MenuItemRadioButton(
-                                text = option.label,
+                                text = stringResource(option.labelRes),
                                 selected = sortType == option,
                                 onClick = { sortType = option },
                             )
                         }
                     }
-                    MenuGroupCard(title = "分组") {
+                    MenuGroupCard(title = stringResource(R.string.app_list_group_title)) {
                         var appGroupType by vm.appGroupTypeFlow.asMutableState()
                         AppGroupOption.allObjects.forEach { option ->
                             val newValue = option.invert(appGroupType)
                             MenuItemCheckbox(
                                 enabled = newValue != 0,
-                                text = option.label,
+                                text = stringResource(option.labelRes),
                                 checked = option.include(appGroupType),
                                 onClick = { appGroupType = newValue },
                             )
                         }
                     }
-                    MenuGroupCard(title = "筛选") {
+                    MenuGroupCard(title = stringResource(R.string.app_list_filter_title)) {
                         MenuItemCheckbox(
-                            text = "白名单",
+                            text = stringResource(R.string.subs_whitelist),
                             stateFlow = vm.showBlockAppFlow,
                         )
                     }

@@ -11,6 +11,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.graphics.Color
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.suspendCancellableCoroutine
+import li.songe.gkd.sdp.R
+import li.songe.gkd.sdp.app
 import li.songe.gkd.sdp.util.stopCoroutine
 import li.songe.gkd.sdp.util.throttle
 import kotlin.coroutines.resume
@@ -79,7 +81,7 @@ fun MutableStateFlow<AlertDialogOptions?>.updateDialogOptions(
     title: String,
     text: String? = null,
     textContent: (@Composable (() -> Unit))? = null,
-    confirmText: String = DEFAULT_IK_TEXT,
+    confirmText: String? = null,
     confirmAction: (() -> Unit)? = null,
     dismissText: String? = null,
     dismissAction: (() -> Unit)? = null,
@@ -89,7 +91,7 @@ fun MutableStateFlow<AlertDialogOptions?>.updateDialogOptions(
     value = buildDialogOptions(
         title = { Text(text = title) },
         text = textContent ?: { Text(text = text ?: error("miss text")) },
-        confirmText = confirmText,
+        confirmText = confirmText ?: app.getString(R.string.common_got_it),
         confirmAction = confirmAction ?: { value = null },
         dismissText = dismissText,
         dismissAction = dismissAction ?: { value = null },
@@ -98,17 +100,13 @@ fun MutableStateFlow<AlertDialogOptions?>.updateDialogOptions(
     )
 }
 
-private const val DEFAULT_IK_TEXT = "我知道了"
-private const val DEFAULT_CONFIRM_TEXT = "确定"
-private const val DEFAULT_DISMISS_TEXT = "取消"
-
 suspend fun MutableStateFlow<AlertDialogOptions?>.getResult(
     title: String,
     text: String? = null,
     textContent: (@Composable (() -> Unit))? = null,
     dismissRequest: Boolean = false,
-    confirmText: String = DEFAULT_CONFIRM_TEXT,
-    dismissText: String = DEFAULT_DISMISS_TEXT,
+    confirmText: String? = null,
+    dismissText: String? = null,
     error: Boolean = false,
 ): Boolean {
     return suspendCancellableCoroutine { s ->
@@ -123,14 +121,14 @@ suspend fun MutableStateFlow<AlertDialogOptions?>.getResult(
             text = text,
             textContent = textContent,
             onDismissRequest = if (dismissRequest) dismiss else ({}),
-            confirmText = confirmText,
+            confirmText = confirmText ?: app.getString(R.string.common_confirm),
             confirmAction = {
                 if (s.isActive) {
                     s.resume(true)
                 }
                 this.value = null
             },
-            dismissText = dismissText,
+            dismissText = dismissText ?: app.getString(R.string.common_cancel),
             dismissAction = dismiss,
             error = error,
         )
@@ -142,8 +140,8 @@ suspend fun MutableStateFlow<AlertDialogOptions?>.waitResult(
     text: String? = null,
     textContent: (@Composable (() -> Unit))? = null,
     dismissRequest: Boolean = false,
-    confirmText: String = DEFAULT_CONFIRM_TEXT,
-    dismissText: String = DEFAULT_DISMISS_TEXT,
+    confirmText: String? = null,
+    dismissText: String? = null,
     error: Boolean = false,
 ) {
     val r = getResult(

@@ -6,6 +6,7 @@ object UsageGuardUiStatePolicy {
     val defaultDurationOptions = listOf(10, 15, 30, 60)
 
     fun protectionStatusAutoReenableMessage(): String {
+        // i18n-ignore: legacy fallback or non-display heuristic data
         return "自动重开保护会恢复使用申请总开关，不会改动范围、默认授权模式或时长选项。"
     }
 

@@ -1,5 +1,6 @@
 package li.songe.gkd.sdp.util
 
+import li.songe.gkd.sdp.R
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -29,10 +30,8 @@ class AccessibilityGuardNotificationPolicyTest {
 
     @Test
     fun finalWarningUsesTheFullScreenReminderCopy() {
-        assertEquals(
-            "已关闭 36 分钟，将显示全屏提醒，请前往重新开启",
-            AccessibilityGuardNotificationPolicy.text(5),
-        )
+        assertEquals(R.string.a11y_guard_final_reminder, AccessibilityGuardNotificationPolicy.textRes(5))
+        assertEquals(listOf(36), AccessibilityGuardNotificationPolicy.textArgs(5))
     }
 
     @Test
@@ -45,7 +44,8 @@ class AccessibilityGuardNotificationPolicyTest {
 
         assertEquals(
             AccessibilityGuardNotificationPolicy.GuardStatusNotification(
-                text = "距离第 1 次提醒",
+                textRes = R.string.a11y_guard_next_reminder,
+                textArgs = listOf(1),
                 targetEpochMs = 1_000L + AccessibilityGuardPolicy.REMINDER_OFFSETS_MS[0],
                 nextReminderIndex = 0,
             ),
@@ -72,7 +72,7 @@ class AccessibilityGuardNotificationPolicyTest {
     fun finalEnforcementUsesStaticTextWithoutAChronometerTarget() {
         assertEquals(
             AccessibilityGuardNotificationPolicy.GuardStatusNotification(
-                text = "最后提醒已发送，请立即开启无障碍",
+                textRes = R.string.a11y_guard_last_sent,
                 targetEpochMs = null,
                 nextReminderIndex = null,
             ),

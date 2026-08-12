@@ -35,6 +35,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import li.songe.gkd.sdp.data.BlockTimeRule
 import androidx.compose.ui.res.stringResource
+import li.songe.gkd.sdp.ui.component.formatDurationLocalized
 import li.songe.gkd.sdp.R
 
 @Composable
@@ -57,12 +58,12 @@ internal fun AppBlockerTemplatePickerDialog(
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = template.name,
+                                text = stringResource(template.nameRes),
                                 style = MaterialTheme.typography.titleSmall,
                                 fontWeight = FontWeight.Bold
                             )
                             Text(
-                                text = template.description,
+                                text = stringResource(template.descriptionRes),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                             )
@@ -83,17 +84,18 @@ internal fun AppBlockerTemplatePickerDialog(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun LockSheet(
+    state: AppBlockerUiState,
+    callbacks: AppBlockerCallbacks,
     title: String,
     description: String,
     currentLockEndTime: Long?,
-    vm: AppBlockerVm,
     onDismiss: () -> Unit,
     onLock: () -> Unit
 ) {
     val durationOptions = listOf(
-        480 to "8小时",
-        1440 to "1天",
-        4320 to "3天"
+        480 to stringResource(R.string.duration_option_8h),
+        1440 to stringResource(R.string.duration_option_1d),
+        4320 to stringResource(R.string.duration_option_3d),
     )
 
     ModalBottomSheet(
@@ -114,8 +116,9 @@ internal fun LockSheet(
             if (currentLockEndTime != null && currentLockEndTime > System.currentTimeMillis()) {
                 val remaining = currentLockEndTime - System.currentTimeMillis()
                 val remainingMinutes = (remaining / 60000).coerceAtLeast(0)
+                val remainingText = formatDurationLocalized(remainingMinutes * 60_000L)
                 Text(
-                    text = li.songe.gkd.sdp.app.getString(R.string.s_1090ec0cd1, (if (remainingMinutes >= 60) "${remainingMinutes / 60}小时${remainingMinutes % 60}分钟" else "${remainingMinutes}分钟").toString()),
+                    text = li.songe.gkd.sdp.app.getString(R.string.s_1090ec0cd1, remainingText),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.padding(bottom = 16.dp)
@@ -140,7 +143,7 @@ internal fun LockSheet(
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 durationOptions.forEach { (minutes, label) ->
-                    val isSelected = !vm.isCustomLockDuration && vm.selectedLockDuration == minutes
+                    val isSelected = !state.isCustomLockDuration && state.selectedLockDuration == minutes
                     Text(
                         text = label,
                         style = MaterialTheme.typography.bodyMedium,
@@ -153,8 +156,8 @@ internal fun LockSheet(
                                 shape = CircleShape
                             )
                             .clickable {
-                                vm.isCustomLockDuration = false
-                                vm.selectedLockDuration = minutes
+                                callbacks.onCustomLockDurationChange(false)
+                                callbacks.onSelectedLockDurationChange(minutes)
                             }
                             .padding(horizontal = 16.dp, vertical = 8.dp)
                     )
@@ -165,33 +168,35 @@ internal fun LockSheet(
 
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.clickable { vm.isCustomLockDuration = !vm.isCustomLockDuration }
+                modifier = Modifier.clickable {
+                    callbacks.onCustomLockDurationChange(!state.isCustomLockDuration)
+                }
             ) {
                 Switch(
-                    checked = vm.isCustomLockDuration,
-                    onCheckedChange = { vm.isCustomLockDuration = it }
+                    checked = state.isCustomLockDuration,
+                    onCheckedChange = callbacks.onCustomLockDurationChange,
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(li.songe.gkd.sdp.app.getString(R.string.s_ea6dccc0a6), style = MaterialTheme.typography.bodyMedium)
             }
 
-            if (vm.isCustomLockDuration) {
+            if (state.isCustomLockDuration) {
                 Spacer(modifier = Modifier.height(12.dp))
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     OutlinedTextField(
-                        value = vm.customLockDaysText,
-                        onValueChange = { vm.customLockDaysText = it },
+                        value = state.customLockDaysText,
+                        onValueChange = callbacks.onCustomLockDaysTextChange,
                         label = { Text(li.songe.gkd.sdp.app.getString(R.string.s_c3304d1e49)) },
                         modifier = Modifier.weight(1f),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         singleLine = true
                     )
                     OutlinedTextField(
-                        value = vm.customLockHoursText,
-                        onValueChange = { vm.customLockHoursText = it },
+                        value = state.customLockHoursText,
+                        onValueChange = callbacks.onCustomLockHoursTextChange,
                         label = { Text(li.songe.gkd.sdp.app.getString(R.string.s_99f6904ff3)) },
                         modifier = Modifier.weight(1f),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),

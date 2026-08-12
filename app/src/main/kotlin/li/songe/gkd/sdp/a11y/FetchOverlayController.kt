@@ -12,6 +12,7 @@ import android.widget.Button
 import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.TextView
+import li.songe.gkd.sdp.R
 import li.songe.gkd.sdp.util.LogUtils
 
 object FetchOverlayController {
@@ -53,18 +54,18 @@ object FetchOverlayController {
         statusTextView = TextView(context).apply {
             setTextColor(Color.WHITE)
             textSize = 14f
-            text = "准备抓取..."
+            text = li.songe.gkd.sdp.app.getString(R.string.contact_fetch_ready)
         }
 
         countTextView = TextView(context).apply {
             setTextColor(Color.GREEN)
             textSize = 12f
-            text = "已获取: 0"
+            text = li.songe.gkd.sdp.app.getString(R.string.contact_fetch_getting_zero)
             setPadding(0, 8, 0, 8)
         }
 
         val stopButton = Button(context).apply {
-            text = "停止"
+            text = li.songe.gkd.sdp.app.getString(R.string.contact_fetch_stop)
             textSize = 12f
             setPadding(16, 0, 16, 0)
             setBackgroundColor(Color.RED)
@@ -109,9 +110,17 @@ object FetchOverlayController {
         // UI updates must happen on main thread
         overlayView?.post {
             statusTextView?.text = state.statusText
-            countTextView?.text = "已获取: ${state.fetchedCount} 人"
+            countTextView?.text = li.songe.gkd.sdp.app.getString(
+                R.string.contact_fetch_count,
+                state.fetchedCount,
+            )
             if (state.currentTarget != null) {
-                statusTextView?.append("\n正在处理: ${state.currentTarget}")
+                statusTextView?.append(
+                    "\n" + li.songe.gkd.sdp.app.getString(
+                        R.string.contact_fetch_processing,
+                        state.currentTarget,
+                    ),
+                )
             }
         }
     }

@@ -106,7 +106,7 @@ class InputSubsLinkOption {
                         Text(text = if (initValue.isNotEmpty()) stringResource(R.string.s_1508e32d35) else stringResource(R.string.s_6debaa8885))
                         PerfIconButton(
                             imageVector = PerfIcon.HelpOutline,
-                            contentDescription = "订阅帮助",
+                            contentDescription = stringResource(R.string.subs_help),
                             onClick = throttle {
                                 cancel()
                                 mainVm.navigatePage(WebViewRoute(initUrl = ShortUrlSet.URL5))

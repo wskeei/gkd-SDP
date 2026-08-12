@@ -152,7 +152,7 @@ fun useSubsManagePage(): ScaffoldExt {
     val (scrollBehavior, lazyListState) = usePinnedScrollBehaviorState(scrollKey)
     LaunchedEffect(null) {
         mainVm.resetPageScrollEvent.collect {
-            if (it == BottomNavItem.SubsManage) {
+            if (it == HomeDestination.RULES) {
                 scrollKey.intValue++
             }
         }
@@ -165,7 +165,7 @@ fun useSubsManagePage(): ScaffoldExt {
                 if (isSelectedMode) {
                     PerfIconButton(
                         imageVector = PerfIcon.Close,
-                        contentDescription = "取消选择",
+                        contentDescription = stringResource(R.string.subs_cancel_selection),
                         onClick = { isSelectedMode = false },
                     )
                 }
@@ -176,7 +176,7 @@ fun useSubsManagePage(): ScaffoldExt {
                     )
                 } else {
                     Text(
-                        text = BottomNavItem.SubsManage.label,
+                        text = stringResource(BottomNavItem.SubsManage.labelRes),
                     )
                 }
             }, actions = {
@@ -199,7 +199,7 @@ fun useSubsManagePage(): ScaffoldExt {
                                 }
                                 PerfIconButton(
                                     imageVector = PerfIcon.Delete,
-                                    contentDescription = "删除选中订阅",
+                                    contentDescription = stringResource(R.string.subs_delete_selected),
                                     onClick = vm.viewModelScope.launchAsFn {
                                         mainVm.dialogFlow.waitResult(
                                             title = li.songe.gkd.sdp.app.getString(R.string.s_fe7b16b5c0),
@@ -223,8 +223,8 @@ fun useSubsManagePage(): ScaffoldExt {
                             ) {
                                 PerfIconButton(
                                     imageVector = PerfIcon.Eco,
-                                    contentDescription = "缓慢查询规则列表",
-                                    onClickLabel = "查看列表",
+                                    contentDescription = stringResource(R.string.subs_slow_rules),
+                                    onClickLabel = stringResource(R.string.subs_view_slow_rules),
                                     onClick = throttle {
                                         mainVm.navigatePage(SlowGroupRoute)
                                     })
@@ -242,14 +242,18 @@ fun useSubsManagePage(): ScaffoldExt {
                                         LocalContentColor.current
                                     }
                                 ),
-                                contentDescription = "规则匹配" + if (enableMatch) "已启用" else "已禁用",
-                                onClickLabel = "切换开关",
+                                contentDescription = if (enableMatch) {
+                                    stringResource(R.string.subs_rule_match_enabled)
+                                } else {
+                                    stringResource(R.string.subs_rule_match_disabled)
+                                },
+                                onClickLabel = stringResource(R.string.subs_toggle_match),
                                 onClick = throttle { switchStoreEnableMatch() },
                             )
                             PerfIconButton(
                                 id = R.drawable.ic_page_info,
-                                contentDescription = "订阅设置",
-                                onClickLabel = "打开设置弹窗",
+                                contentDescription = stringResource(R.string.subs_settings),
+                                onClickLabel = stringResource(R.string.subs_open_settings),
                                 onClick = {
                                     showSettingsDlg = true
                                 })
@@ -258,7 +262,7 @@ fun useSubsManagePage(): ScaffoldExt {
                 }
                 PerfIconButton(
                     imageVector = PerfIcon.MoreVert,
-                    contentDescription = "更多操作",
+                    contentDescription = stringResource(R.string.subs_more_actions),
                     onClick = {
                         if (updateSubsMutex.mutex.isLocked) {
                             toast(li.songe.gkd.sdp.app.getString(R.string.s_db8d309a8e))
@@ -335,8 +339,8 @@ fun useSubsManagePage(): ScaffoldExt {
         },
         floatingActionButton = {
             AnimationFloatingActionButton(
-                contentDescription = "添加订阅",
-                onClickLabel = "打开添加订阅弹窗",
+                contentDescription = stringResource(R.string.subs_add_subscription),
+                onClickLabel = stringResource(R.string.subs_open_add_subscription),
                 visible = !isSelectedMode,
                 onClick = {
                     if (updateSubsMutex.mutex.isLocked) {
@@ -440,7 +444,7 @@ fun useSubsManagePage(): ScaffoldExt {
                                                 )
                                             }
                                         },
-                                        confirmText = "仍然启用",
+                                        confirmText = li.songe.gkd.sdp.app.getString(R.string.enable_anyway),
                                         error = true
                                     )
                                 }

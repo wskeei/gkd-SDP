@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import li.songe.gkd.sdp.app
 import li.songe.gkd.sdp.appScope
+import li.songe.gkd.sdp.R
 import li.songe.gkd.sdp.runtime.appDependencies
 import li.songe.gkd.sdp.data.FocusRule
 import li.songe.gkd.sdp.data.FocusSession
@@ -100,7 +101,7 @@ object FocusModeEngine {
     // 褰撳墠鐢熸晥鐨勬嫤鎴秷鎭?
     val currentMessageFlow = combine(activeSessionFlow, enabledRulesFlow) { session, rules ->
         getEffectiveMessage(session, rules)
-    }.stateIn(appScope, SharingStarted.Eagerly, "涓撴敞褰撲笅")
+    }.stateIn(appScope, SharingStarted.Eagerly, li.songe.gkd.sdp.app.getString(R.string.common_default_focus_message))
 
     init {
         // 鐩戝惉瑙勫垯鍜屼細璇濆彉鍖?
@@ -172,7 +173,8 @@ object FocusModeEngine {
             return session.interceptMessage
         }
         val activeRule = rules.firstOrNull { it.isActiveNow() }
-        return activeRule?.interceptMessage ?: "涓撴敞褰撲笅"
+        return activeRule?.interceptMessage
+            ?: li.songe.gkd.sdp.app.getString(R.string.common_default_focus_message)
     }
 
     /**
@@ -269,7 +271,7 @@ object FocusModeEngine {
     suspend fun startManualSession(
         durationMinutes: Int,
         whitelistApps: List<String>,
-        interceptMessage: String = "涓撴敞褰撲笅",
+        interceptMessage: String = li.songe.gkd.sdp.app.getString(R.string.common_default_focus_message),
         isLocked: Boolean = false,
         lockDurationMinutes: Int = 0
     ) {

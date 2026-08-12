@@ -16,6 +16,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import li.songe.gkd.sdp.ui.style.itemPadding
 import li.songe.gkd.sdp.util.Option
 import li.songe.gkd.sdp.util.OptionIcon
@@ -52,7 +53,7 @@ fun <T> TextMenu(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = option.label,
+                text = stringResource(option.labelRes),
                 style = MaterialTheme.typography.bodyMedium,
             )
             PerfIcon(
@@ -73,9 +74,9 @@ fun <T> TextMenu(
                         }) else null,
                         text = {
                             val text = if (otherOption is OptionMenuLabel) {
-                                otherOption.menuLabel
+                                stringResource(otherOption.menuLabelRes)
                             } else {
-                                otherOption.label
+                                stringResource(otherOption.labelRes)
                             }
                             Text(text = text)
                         },

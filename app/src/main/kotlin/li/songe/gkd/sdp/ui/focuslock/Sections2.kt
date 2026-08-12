@@ -28,15 +28,12 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import li.songe.gkd.sdp.a11y.sdpRuntimeFeatureCoordinator
 import li.songe.gkd.sdp.data.ConstraintConfig
-import li.songe.gkd.sdp.permission.canDrawOverlaysState
 import li.songe.gkd.sdp.ui.component.PerfIcon
 import li.songe.gkd.sdp.ui.style.surfaceCardColors
 import li.songe.gkd.sdp.util.format
@@ -44,10 +41,11 @@ import androidx.compose.ui.res.stringResource
 import li.songe.gkd.sdp.R
 
 @Composable
-fun SelfControlRuntimeStatusCard() {
+fun SelfControlRuntimeStatusCard(
+    runtime: li.songe.gkd.sdp.a11y.SdpRuntimeFeatureCoordinator.RuntimeStatus,
+    overlayPermission: Boolean,
+) {
     val context = LocalContext.current
-    val runtime by sdpRuntimeFeatureCoordinator.statusFlow.collectAsStateWithLifecycle()
-    val overlayPermission by canDrawOverlaysState.stateFlow.collectAsStateWithLifecycle()
     val readiness = li.songe.gkd.sdp.util.SelfControlRuntimeReadiness.evaluate(
         mode = runtime.mode,
         connected = runtime.connected,
@@ -55,10 +53,14 @@ fun SelfControlRuntimeStatusCard() {
         overlayPermission = overlayPermission,
     )
     val issueText = when (readiness.issue) {
-        li.songe.gkd.sdp.util.SelfControlRuntimeReadiness.Issue.None -> "可拦截"
-        li.songe.gkd.sdp.util.SelfControlRuntimeReadiness.Issue.Switching -> "运行模式切换中"
-        li.songe.gkd.sdp.util.SelfControlRuntimeReadiness.Issue.RuntimeUnavailable -> "运行引擎未连接"
-        li.songe.gkd.sdp.util.SelfControlRuntimeReadiness.Issue.OverlayPermissionMissing -> "悬浮窗权限缺失"
+        li.songe.gkd.sdp.util.SelfControlRuntimeReadiness.Issue.None ->
+            stringResource(R.string.focus_runtime_issue_ready)
+        li.songe.gkd.sdp.util.SelfControlRuntimeReadiness.Issue.Switching ->
+            stringResource(R.string.focus_runtime_issue_switching)
+        li.songe.gkd.sdp.util.SelfControlRuntimeReadiness.Issue.RuntimeUnavailable ->
+            stringResource(R.string.focus_runtime_issue_unavailable)
+        li.songe.gkd.sdp.util.SelfControlRuntimeReadiness.Issue.OverlayPermissionMissing ->
+            stringResource(R.string.focus_runtime_issue_overlay_permission)
     }
     ElevatedCard(
         colors = surfaceCardColors,
@@ -74,15 +76,31 @@ fun SelfControlRuntimeStatusCard() {
             )
             Spacer(modifier = Modifier.height(6.dp))
             Text(
-                text = stringResource(R.string.s_18a07b6ed5, (readiness.modeLabel).toString(), (when {
-                    runtime.switching -> "切换中"
-                    runtime.connected -> "已连接"
-                    else -> "未连接"
-                }).toString()),
+                text = stringResource(
+                    R.string.s_18a07b6ed5,
+                    stringResource(readiness.modeLabelRes ?: R.string.focus_runtime_mode_unselected),
+                    stringResource(
+                        when {
+                            runtime.switching -> R.string.focus_runtime_switching
+                            runtime.connected -> R.string.focus_runtime_connected
+                            else -> R.string.focus_runtime_disconnected
+                        },
+                    ),
+                ),
                 style = MaterialTheme.typography.bodySmall,
             )
             Text(
-                text = stringResource(R.string.s_95e55216b8, (if (overlayPermission) "已授权" else "未授权").toString(), (issueText).toString()),
+                text = stringResource(
+                    R.string.s_95e55216b8,
+                    stringResource(
+                        if (overlayPermission) {
+                            R.string.focus_overlay_granted
+                        } else {
+                            R.string.focus_overlay_denied
+                        },
+                    ),
+                    issueText,
+                ),
                 style = MaterialTheme.typography.bodySmall,
                 color = if (readiness.ready) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
             )
@@ -193,7 +211,13 @@ fun SubscriptionCard(
                             )
                             if (appState.isLocked) {
                                 Text(
-                                    text = li.songe.gkd.sdp.app.getString(R.string.s_1ebce11b0b, (formatRemainingTime(appState.lockEndTime - System.currentTimeMillis())).toString()),
+                                    text = li.songe.gkd.sdp.app.getString(
+                                        R.string.s_1ebce11b0b,
+                                        formatRemainingTime(
+                                            appState.lockEndTime - System.currentTimeMillis(),
+                                            li.songe.gkd.sdp.app,
+                                        ),
+                                    ),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.primary
                                 )
@@ -281,7 +305,13 @@ private fun SubscriptionHeader(
             )
             if (subState.isLocked) {
                 Text(
-                    text = stringResource(R.string.s_72effd1c3d, (formatRemainingTime(subState.lockEndTime - System.currentTimeMillis())).toString()),
+                    text = stringResource(
+                        R.string.s_72effd1c3d,
+                        formatRemainingTime(
+                            subState.lockEndTime - System.currentTimeMillis(),
+                            LocalContext.current,
+                        ),
+                    ),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.primary,
                 )
@@ -339,6 +369,7 @@ private fun SubscriptionHeader(
 
 
 internal fun formatRemainingTime(millis: Long): String {
+    // i18n-ignore: legacy fallback or non-display heuristic data
     if (millis <= 0) return "已结束"
     val minutes = millis / 60000
     val hours = minutes / 60
@@ -347,11 +378,31 @@ internal fun formatRemainingTime(millis: Long): String {
     val remainingHours = hours % 24
 
     return if (days > 0) {
+        // i18n-ignore: legacy fallback or non-display heuristic data
         "${days}天${remainingHours}小时"
     } else if (hours > 0) {
+        // i18n-ignore: legacy fallback or non-display heuristic data
         "${hours}小时${remainingMinutes}分钟"
     } else {
+        // i18n-ignore: legacy fallback or non-display heuristic data
         "${minutes}分钟"
+    }
+}
+
+internal fun formatRemainingTime(millis: Long, context: android.content.Context): String {
+    if (millis <= 0) return context.getString(R.string.focus_lock_ended)
+    val minutes = millis / 60000
+    val hours = minutes / 60
+    val remainingMinutes = minutes % 60
+    val days = hours / 24
+    val remainingHours = hours % 24
+
+    return if (days > 0) {
+        context.getString(R.string.focus_lock_days_hours, days, remainingHours)
+    } else if (hours > 0) {
+        context.getString(R.string.focus_lock_hours_minutes, hours, remainingMinutes)
+    } else {
+        context.getString(R.string.focus_lock_minutes, minutes)
     }
 }
 

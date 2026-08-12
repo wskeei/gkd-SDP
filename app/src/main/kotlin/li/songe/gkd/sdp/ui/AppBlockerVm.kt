@@ -54,7 +54,9 @@ class AppBlockerVm : BaseViewModel() {
     var ruleStartTime by mutableStateOf("22:00")
     var ruleEndTime by mutableStateOf("08:00")
     var ruleDaysOfWeek by mutableStateOf(listOf(1, 2, 3, 4, 5, 6, 7))
-    var ruleInterceptMessage by mutableStateOf("这真的重要吗？")
+    var ruleInterceptMessage by mutableStateOf(
+        li.songe.gkd.sdp.app.getString(R.string.common_default_intercept_message),
+    )
     var ruleIsAllowMode by mutableStateOf(false)  // 是否为允许模式（反选）
 
     // 锁定时长选择
@@ -168,7 +170,7 @@ class AppBlockerVm : BaseViewModel() {
         ruleStartTime = "22:00"
         ruleEndTime = "08:00"
         ruleDaysOfWeek = listOf(1, 2, 3, 4, 5, 6, 7)
-        ruleInterceptMessage = "这真的重要吗？"
+        ruleInterceptMessage = li.songe.gkd.sdp.app.getString(R.string.common_default_intercept_message)
         ruleIsAllowMode = false
         showRuleEditor = false
     }
@@ -252,7 +254,9 @@ class AppBlockerVm : BaseViewModel() {
             isLocked = editingRule?.isLocked ?: false,
             lockEndTime = editingRule?.lockEndTime ?: 0,
             createdAt = editingRule?.createdAt ?: System.currentTimeMillis(),
-            interceptMessage = ruleInterceptMessage.ifBlank { "这真的重要吗？" },
+            interceptMessage = ruleInterceptMessage.ifBlank {
+                li.songe.gkd.sdp.app.getString(R.string.common_default_intercept_message)
+            },
             isAllowMode = ruleIsAllowMode
         )
 
@@ -413,7 +417,7 @@ class AppBlockerVm : BaseViewModel() {
         }
 
         private fun quotaBlockedToast(limit: Int): String {
-            return "今日关闭次数已用完（$limit 次），将于明日 00:00 重置"
+            return li.songe.gkd.sdp.app.getString(R.string.s_ba1f755996, limit.toString())
         }
     }
 }

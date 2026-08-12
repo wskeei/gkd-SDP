@@ -113,7 +113,8 @@ class InterceptOverlayService : LifecycleService(), SavedStateRegistryOwner {
 
         val subsId = intent?.getLongExtra(EXTRA_SUBS_ID, -1) ?: -1
         val groupKey = intent?.getIntExtra(EXTRA_GROUP_KEY, -1) ?: -1
-        val message = intent?.getStringExtra(EXTRA_MESSAGE) ?: "这真的重要吗？"
+        val message = intent?.getStringExtra(EXTRA_MESSAGE)
+            ?: getString(R.string.common_default_intercept_message)
         val cooldown = intent?.getIntExtra(EXTRA_COOLDOWN, 5) ?: 5
         val eventKey = intent?.getStringExtra(EXTRA_EVENT_KEY).orEmpty()
         val eventKind = intent?.getIntExtra(EXTRA_EVENT_KIND, 0) ?: 0

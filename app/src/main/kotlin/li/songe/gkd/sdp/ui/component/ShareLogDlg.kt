@@ -84,7 +84,10 @@ fun ShareLogDlg(showShareLogDlgFlow: MutableStateFlow<Boolean>) {
                                     visible = false
                                     mainVm.viewModelScope.launchTry(Dispatchers.IO) {
                                         val supportBundle = buildLogFile()
-                                        context.shareFile(supportBundle, "分享支持包")
+                                        context.shareFile(
+                                            supportBundle,
+                                            context.getString(R.string.share_support_package),
+                                        )
                                     }
                                 })
                                 .then(modifier),

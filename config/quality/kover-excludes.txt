@@ -1,7 +1,8 @@
 androidx.compose.**
-li.songe.gkd.sdp.ui.**
-li.songe.gkd.sdp.service.**
-li.songe.gkd.sdp.receiver.**
-li.songe.gkd.sdp.widget.**
-li.songe.gkd.sdp.db.**
-li.songe.gkd.sdp.data.**
+li.songe.gkd.sdp.BuildConfig*
+li.songe.gkd.sdp.*.*Preview*
+li.songe.gkd.sdp.*.*Kt
+li.songe.gkd.sdp.*.*ComposablePreview*
+li.songe.gkd.sdp.ui.icon.*
+li.songe.gkd.sdp.ui.resource.*
+li.songe.gkd.sdp.privacy.DatabaseDataInventorySource

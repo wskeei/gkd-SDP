@@ -4,6 +4,49 @@ All notable GKD-SDP changes are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- Enforce HTTPS-only transport for image preview requests, including HTTPS to
+  HTTP redirects, and stop showing throwable messages in the image error state.
+- Route capability links from notifications, permission repair, semantic deep
+  links and legacy `gkd://page/3` to the runtime capability center.
+- Scope the accessibility guard capability to gkd + Accessibility mode;
+  Automation and play builds no longer advertise a guard action.
+- Restore adaptive home content on medium/expanded widths and make a repeat tap
+  on the current destination reset that destination without navigating again.
+- Make settings search results actionable: results now navigate or scroll,
+  highlight for 1.5 seconds, and persist recent items.
+- Render the settings tab through the real settings surface instead of
+  constructing an unused scaffold descriptor, and make the privacy backup
+  chooser open outside MainActivity-only hosts.
+- Migrate usage review, usage request, and trend chart text to Compose
+  resources so screenshot previews and UI tests use stable localized strings.
+
+### Changed
+
+- Make performance verification fail closed on startup/frame thresholds, APK
+  size and profile assets, release baseline profiles, and Compose stability.
+- Activate the custom hardcoded-copy Lint registry and add Chinese/English
+  string key and format-argument consistency verification.
+- Read Kover include/exclude scope from the version-controlled files and fail
+  on included classes with 0% line coverage.
+- Make the test-quality and UI-boundary scripts reject placeholder UI flows,
+  source-string contracts, empty tests, numeric section suffixes, and identity
+  Presenters.
+- Replace the privacy data, runtime capability, settings search, and
+  self-control hub screenshot baselines with production `*Content` surfaces
+  using deterministic fixtures.
+- Extend screenshot coverage with real usage request and review dashboard
+  surfaces, including dark and large-font variants.
+- Wire privacy subscription/rules reset, self-control config reset, and
+  delete-all paths through the data repository while active sessions block
+  configuration deletion.
+- Calibrate managed-emulator performance thresholds from the first CI
+  cold/warm macrobenchmark run and compute startup P95 from run samples when
+  the benchmark file omits the percentile key.
+
 ## [2.2.1] - 2026-08-11
 
 ### Added

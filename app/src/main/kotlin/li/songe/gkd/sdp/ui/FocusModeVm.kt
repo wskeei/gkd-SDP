@@ -42,7 +42,9 @@ class FocusModeVm : BaseViewModel() {
     var ruleDurationHours by mutableIntStateOf(0)
     var ruleDurationMinutes by mutableIntStateOf(30)
     var ruleWhitelistApps by mutableStateOf(ensureSelfWhitelisted(emptyList()))
-    var ruleInterceptMessage by mutableStateOf("专注当下")
+    var ruleInterceptMessage by mutableStateOf(
+        li.songe.gkd.sdp.app.getString(R.string.common_default_focus_message),
+    )
     var ruleIsLocked by mutableStateOf(false)
     var ruleLockDurationMinutes by mutableIntStateOf(30)
 
@@ -56,7 +58,9 @@ class FocusModeVm : BaseViewModel() {
         get() = manualHours * 60 + manualMinutes
 
     var manualWhitelistApps by mutableStateOf(ensureSelfWhitelisted(emptyList()))
-    var manualMessage by mutableStateOf("专注当下")
+    var manualMessage by mutableStateOf(
+        li.songe.gkd.sdp.app.getString(R.string.common_default_focus_message),
+    )
     var manualIsLocked by mutableStateOf(false)
     var manualLockDurationMinutes by mutableIntStateOf(30)
 
@@ -80,7 +84,7 @@ class FocusModeVm : BaseViewModel() {
         ruleDurationHours = 0
         ruleDurationMinutes = 30
         ruleWhitelistApps = ensureSelfWhitelisted(emptyList())
-        ruleInterceptMessage = "专注当下"
+        ruleInterceptMessage = li.songe.gkd.sdp.app.getString(R.string.common_default_focus_message)
         ruleIsLocked = false
         ruleLockDurationMinutes = 30
         showRuleEditor = false
@@ -124,7 +128,9 @@ class FocusModeVm : BaseViewModel() {
             daysOfWeek = ruleDaysOfWeek.joinToString(","),
             enabled = editingRule?.enabled ?: true,
             whitelistApps = json.encodeToString(ruleWhitelistApps),
-            interceptMessage = ruleInterceptMessage.ifBlank { "专注当下" },
+            interceptMessage = ruleInterceptMessage.ifBlank {
+                li.songe.gkd.sdp.app.getString(R.string.common_default_focus_message)
+            },
             isLocked = editingRule?.isLocked ?: false,
             lockEndTime = editingRule?.lockEndTime ?: 0,
             lockDurationMinutes = ruleLockDurationMinutes,
@@ -163,7 +169,9 @@ class FocusModeVm : BaseViewModel() {
         FocusModeEngine.startManualSession(
             durationMinutes = totalDurationMinutes,
             whitelistApps = manualWhitelistApps,
-            interceptMessage = manualMessage.ifBlank { "专注当下" },
+            interceptMessage = manualMessage.ifBlank {
+                li.songe.gkd.sdp.app.getString(R.string.common_default_focus_message)
+            },
             isLocked = manualIsLocked,
             lockDurationMinutes = if (manualIsLocked) manualLockDurationMinutes else 0
         )

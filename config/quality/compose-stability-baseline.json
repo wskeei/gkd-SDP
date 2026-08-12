@@ -1,9 +1,14 @@
 {
-  "unstableClassCount": 0,
+  "unstableClassCount": 399,
   "coreStableTypes": [
     "UsageRequestUiState",
-    "SelfControlInsightChartPoint",
+    "SelfControlInsightWindowPolicy.ChartPoint",
     "SettingsEntry",
-    "CapabilityNode"
+    "CapabilityNode",
+    "AppBackupRepository",
+    "CleartextOriginPolicy",
+    "CleartextOriginInterceptor",
+    "SelfControlEntryUi",
+    "FixedWindowInsets"
   ]
 }

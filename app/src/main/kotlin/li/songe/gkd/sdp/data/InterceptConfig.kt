@@ -19,7 +19,7 @@ data class InterceptConfig(
     @ColumnInfo(name = "group_key") val groupKey: Int,
     @ColumnInfo(name = "enabled") val enabled: Boolean,
     @ColumnInfo(name = "cooldown_seconds") val cooldownSeconds: Int = 5,
-    @ColumnInfo(name = "message") val message: String = "这真的重要吗？",
+    @ColumnInfo(name = "message") val message: String = "",
 ) {
     @Dao
     interface InterceptConfigDao {
@@ -37,5 +37,8 @@ data class InterceptConfig(
 
         @Query("DELETE FROM intercept_config WHERE subs_id = :subsId AND app_id = :appId AND group_key = :groupKey")
         suspend fun delete(subsId: Long, appId: String, groupKey: Int)
+
+        @Query("DELETE FROM intercept_config")
+        suspend fun deleteAll(): Int
     }
 }

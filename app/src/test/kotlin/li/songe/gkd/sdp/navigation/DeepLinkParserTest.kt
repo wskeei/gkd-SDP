@@ -2,7 +2,7 @@ package li.songe.gkd.sdp.navigation
 
 import org.junit.Assert.assertEquals
 import org.junit.Test
-import li.songe.gkd.sdp.ui.AppOpsAllowRoute
+import li.songe.gkd.sdp.ui.capability.CapabilityCenterRoute
 
 class DeepLinkParserTest {
     @Test
@@ -73,7 +73,17 @@ class DeepLinkParserTest {
     }
 
     @Test
-    fun capabilitiesDestinationOpensTheAppOpsCenter() {
-        assertEquals(AppOpsAllowRoute, AppDestination.SETTINGS_CAPABILITIES.toNavKey())
+    fun capabilitiesDestinationOpensTheCapabilityCenter() {
+        assertEquals(CapabilityCenterRoute, AppDestination.SETTINGS_CAPABILITIES.toNavKey())
+        assertEquals(
+            CapabilityCenterRoute,
+            (DeepLinkParser.parse("gkd://settings/capabilities") as DeepLinkParseResult.Destination)
+                .value.toNavKey(),
+        )
+        assertEquals(
+            CapabilityCenterRoute,
+            (DeepLinkParser.parse("gkd://page/3") as DeepLinkParseResult.Destination)
+                .value.toNavKey(),
+        )
     }
 }

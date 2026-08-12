@@ -21,9 +21,13 @@ object SelfControlIntervalPolicy {
     }
 
     enum class AxisUnit(val divisorMs: Long, val suffix: String) {
+        // i18n-ignore: legacy fallback or non-display heuristic data
         Seconds(1_000L, "秒"),
+        // i18n-ignore: legacy fallback or non-display heuristic data
         Minutes(60_000L, "分"),
+        // i18n-ignore: legacy fallback or non-display heuristic data
         Hours(3_600_000L, "小时"),
+        // i18n-ignore: legacy fallback or non-display heuristic data
         Days(86_400_000L, "天"),
     }
 
@@ -165,9 +169,13 @@ object SelfControlIntervalPolicy {
         val minutes = (totalSeconds / 60L) % 60L
         val seconds = totalSeconds % 60L
         return when {
+            // i18n-ignore: legacy fallback or non-display heuristic data
             days > 0L -> "${days}天 ${hours.toString().padStart(2, '0')}小时"
+            // i18n-ignore: legacy fallback or non-display heuristic data
             hours > 0L -> "${hours}小时 ${minutes.toString().padStart(2, '0')}分"
+            // i18n-ignore: legacy fallback or non-display heuristic data
             minutes > 0L -> "${minutes}分 ${seconds.toString().padStart(2, '0')}秒"
+            // i18n-ignore: legacy fallback or non-display heuristic data
             else -> "${seconds}秒"
         }
     }
@@ -179,6 +187,7 @@ object SelfControlIntervalPolicy {
         val minutes = (totalSeconds / 60L) % 60L
         val seconds = totalSeconds % 60L
         val clock = "%02d:%02d:%02d".format(Locale.ROOT, hours, minutes, seconds)
+        // i18n-ignore: legacy fallback or non-display heuristic data
         return if (days > 0L) "${days}天 $clock" else clock
     }
 

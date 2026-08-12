@@ -1,35 +1,26 @@
 package li.songe.gkd.sdp.ui
 
+import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import li.songe.gkd.sdp.capability.CapabilityInput
-import li.songe.gkd.sdp.capability.CapabilityResolver
-import li.songe.gkd.sdp.capability.CapabilityStatus
-import li.songe.gkd.sdp.capability.RuntimeModeChoice
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNull
+import li.songe.gkd.sdp.R
+import li.songe.gkd.sdp.SdpUiTestHostActivity
+import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 class CapabilityFlowTest {
-    @Test
-    fun readyAccessibilityFlowHasNoNextStep() {
-        val graph = CapabilityResolver.resolve(
-            CapabilityInput(
-                chosenMode = RuntimeModeChoice.ACCESSIBILITY,
-                a11yReady = true,
-                shizukuReady = false,
-                overlayReady = true,
-                notificationReady = true,
-                batteryExempted = true,
-                a11yGuardEnabled = true,
-                appListReady = true,
-                selfControlLocked = false,
-                isGkdFlavor = true,
-            ),
-        )
+    @get:Rule
+    val composeRule = createAndroidComposeRule<SdpUiTestHostActivity>()
 
-        assertNull(graph.nextStep)
-        assertEquals(CapabilityStatus.ACTIVE, graph.nodes.first { it.id.name == "RUNTIME_MODE" }.status)
+    @Test
+    fun capabilityCenterOpensFromHomeAction() {
+        composeRule.onNodeWithContentDescription(
+            composeRule.activity.getString(R.string.overview_work_mode_content_description),
+        ).performClick()
+        composeRule.onNodeWithTag("capability_center_total").assertExists()
     }
 }

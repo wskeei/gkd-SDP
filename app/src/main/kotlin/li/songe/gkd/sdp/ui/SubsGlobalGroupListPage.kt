@@ -26,6 +26,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewModelScope
@@ -129,7 +130,7 @@ fun SubsGlobalGroupListPage(route: SubsGlobalGroupListRoute) {
                     TowLineText(
                         modifier = titleModifier,
                         title = subs.name,
-                        subtitle = "全局规则"
+                        subtitle = stringResource(R.string.subs_global_rules)
                     )
                 }
             }, actions = {
@@ -236,7 +237,7 @@ fun SubsGlobalGroupListPage(route: SubsGlobalGroupListRoute) {
                         )
                     },
                     imageVector = PerfIcon.Add,
-                    contentDescription = "添加规则"
+                    contentDescription = li.songe.gkd.sdp.app.getString(R.string.rule_add_rule)
                 )
             }
         },

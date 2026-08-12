@@ -34,11 +34,11 @@ OVERLAY_MODULES = {"usageguardrequest", "usageguardcountdown"}
 PAGE_FILES = {
     "Route.kt",
     "Screen.kt",
-    "UiState.kt",
-    "Presenter.kt",
     "Sections.kt",
     "Dialogs.kt",
     "Editor.kt",
+    "UiState.kt",
+    "Presenter.kt",
 }
 OVERLAY_FILES = {
     "ServiceHost.kt",
@@ -49,6 +49,25 @@ OVERLAY_FILES = {
 }
 MAX_LINES = 500
 MAX_COMPOSABLE_LINES = 180
+NUMERIC_SUFFIX_ALLOWLIST = {
+    "app/src/main/kotlin/li/songe/gkd/sdp/ui/actionlog/Sections2.kt",
+    "app/src/main/kotlin/li/songe/gkd/sdp/ui/advanced/Sections2.kt",
+    "app/src/main/kotlin/li/songe/gkd/sdp/ui/appblocker/Editor2.kt",
+    "app/src/main/kotlin/li/songe/gkd/sdp/ui/appblocker/Sections2.kt",
+    "app/src/main/kotlin/li/songe/gkd/sdp/ui/appblocker/Sections3.kt",
+    "app/src/main/kotlin/li/songe/gkd/sdp/ui/focuslock/Sections2.kt",
+    "app/src/main/kotlin/li/songe/gkd/sdp/ui/focuslock/Sections3.kt",
+    "app/src/main/kotlin/li/songe/gkd/sdp/ui/focusmode/Sections2.kt",
+    "app/src/main/kotlin/li/songe/gkd/sdp/ui/imagepreview/Sections2.kt",
+    "app/src/main/kotlin/li/songe/gkd/sdp/ui/settings/Sections2.kt",
+    "app/src/main/kotlin/li/songe/gkd/sdp/ui/urlblocker/Editor2.kt",
+    "app/src/main/kotlin/li/songe/gkd/sdp/ui/urlblocker/Sections2.kt",
+    "app/src/main/kotlin/li/songe/gkd/sdp/ui/usageguard/Sections2.kt",
+    "app/src/main/kotlin/li/songe/gkd/sdp/ui/usageguard/Sections3.kt",
+}
+OVERSIZED_PAGE_ALLOWLIST = {
+    "app/src/main/kotlin/li/songe/gkd/sdp/ui/home/ControlPage.kt",
+}
 
 
 def display_path(path: Path) -> str:
@@ -196,9 +215,39 @@ def verify_module(directory: Path, expected: set[str], label: str) -> list[str]:
             errors.append(f"{display_path(path)} has {count} lines (max {MAX_LINES})")
         if path.name == "ServiceHostLegacy.kt":
             errors.append(f"legacy overlay host is not allowed: {display_path(path)}")
+        if re.search(r"(?:Sections|Editor)[0-9]+\.kt$", path.name) and display_path(path) not in NUMERIC_SUFFIX_ALLOWLIST:
+            errors.append(f"numeric section/editor suffix is not a feature boundary: {display_path(path)}")
         text = path.read_text(encoding="utf-8")
         if re.search(r"\bobject\s+\w*Boundary\s*\{\s*\}", _code_only(text), re.DOTALL):
             errors.append(f"empty boundary placeholder is not allowed: {display_path(path)}")
+        if path.name == "Presenter.kt" and re.search(
+            r"fun\s+present\s*\([^)]*String[^)]*\)\s*:\s*String\s*=\s*[a-zA-Z_][A-Za-z0-9_]*\s*",
+            _code_only(text),
+            re.DOTALL,
+        ):
+            errors.append(f"identity String presenter is not allowed: {display_path(path)}")
+        if path.name == "Presenter.kt" and not re.search(r"\b\w+UiState\b", text):
+            errors.append(f"Presenter must reference its module UiState: {display_path(path)}")
+        if path.name == "UiState.kt" and re.search(r"@Composable\b", text):
+            errors.append(f"UiState file must not contain Compose UI: {display_path(path)}")
+        if path.name == "UiState.kt" and re.search(
+            r"\bMainViewModel\b|\bMutableState<|\bMutableStateFlow\b|\bviewModel<|\bContext\b",
+            _code_only(text),
+        ):
+            errors.append(f"UiState must not hold ViewModel/mutable render context: {display_path(path)}")
+        if path.name == "UiState.kt" and not re.search(
+            r"sealed\s+(interface|class)\s+\w+Action",
+            text,
+        ):
+            errors.append(f"UiState must declare a sealed UiAction: {display_path(path)}")
+        if re.match(r"(?:Sections|Dialogs|Editor)\d*\.kt$", path.name) and re.search(
+            r"\bviewModel<|\bLocalMainViewModel\.current",
+            text,
+        ):
+            errors.append(
+                f"{display_path(path)} must render only state and callbacks, "
+                f"not ViewModels",
+            )
         for start, end in composable_spans(path):
             if end - start + 1 > MAX_COMPOSABLE_LINES:
                 errors.append(
@@ -216,13 +265,14 @@ def main() -> int:
         errors.extend(verify_module(SERVICE_ROOT / module, OVERLAY_FILES, f"overlay/{module}"))
 
     # No oversized page/overlay host may remain at the old flat locations.
-    flat_hosts = [
-        *UI_ROOT.glob("*Page.kt"),
-        UI_ROOT / "home/SettingsPage.kt",
-        *SERVICE_ROOT.glob("*OverlayService.kt"),
-    ]
-    for path in flat_hosts:
-        if path.is_file() and line_count(path) > MAX_LINES:
+    page_hosts = list(UI_ROOT.rglob("*Page.kt"))
+    overlay_hosts = list(SERVICE_ROOT.rglob("*Overlay*.kt"))
+    for path in page_hosts + overlay_hosts:
+        if (
+            path.is_file()
+            and line_count(path) > MAX_LINES
+            and display_path(path) not in OVERSIZED_PAGE_ALLOWLIST
+        ):
             errors.append(f"{display_path(path)} has {line_count(path)} lines (max {MAX_LINES})")
 
     if errors:

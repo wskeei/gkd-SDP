@@ -33,4 +33,41 @@ class RemoteRateLimiterTest {
             limiter.validateResponseBytes(RemoteRateLimiter.MAX_RESPONSE_BYTES + 1).error,
         )
     }
+
+    @Test
+    fun `exact resource limits and zero bytes are allowed`() {
+        val limiter = RemoteRateLimiter()
+        assertTrue(limiter.validateRequestBytes(0L).allowed)
+        assertTrue(limiter.validateRequestBytes(RemoteRateLimiter.MAX_REQUEST_BYTES).allowed)
+        assertTrue(limiter.validateResponseBytes(0L).allowed)
+        assertTrue(limiter.validateResponseBytes(RemoteRateLimiter.MAX_RESPONSE_BYTES).allowed)
+    }
+
+    @Test
+    fun `clear removes only the requested session`() {
+        val limiter = RemoteRateLimiter()
+        limiter.check("a", RemoteRequestKind.DEFAULT, 0)
+        repeat(60) { limiter.check("b", RemoteRequestKind.DEFAULT, it.toLong()) }
+
+        limiter.clear("a")
+
+        assertTrue(limiter.check("a", RemoteRequestKind.DEFAULT, 1).allowed)
+        assertEquals(
+            RemoteLimitError.RATE_LIMITED,
+            limiter.check("b", RemoteRequestKind.DEFAULT, 1).error,
+        )
+    }
+
+    @Test
+    fun `rolling prune releases total and specialized queues`() {
+        val limiter = RemoteRateLimiter()
+        repeat(6) { limiter.check("session", RemoteRequestKind.CAPTURE, it.toLong()) }
+        assertEquals(60, limiter.check("session", RemoteRequestKind.CAPTURE, 10).retryAfterSeconds)
+        assertTrue(limiter.check("session", RemoteRequestKind.CAPTURE, 60_001).allowed)
+
+        limiter.clear()
+        repeat(60) { limiter.check("session", RemoteRequestKind.DEFAULT, 61_000L + it) }
+        assertEquals(60, limiter.check("session", RemoteRequestKind.DEFAULT, 61_060).retryAfterSeconds)
+        assertTrue(limiter.check("session", RemoteRequestKind.DEFAULT, 121_060L).allowed)
+    }
 }

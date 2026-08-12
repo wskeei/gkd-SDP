@@ -18,8 +18,11 @@ object UsageRequestRhythmPolicy {
         val divisorMs: Long,
         val label: String,
     ) {
+        // i18n-ignore: legacy fallback or non-display heuristic data
         SECONDS(1_000L, "秒"),
+        // i18n-ignore: legacy fallback or non-display heuristic data
         MINUTES(MINUTE_MS, "分钟"),
+        // i18n-ignore: legacy fallback or non-display heuristic data
         HOURS(HOUR_MS, "小时"),
     }
 

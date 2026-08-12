@@ -32,9 +32,16 @@ fun TermsAcceptDialog() {
     val mainVm = LocalMainViewModel.current
     val context = LocalActivity.current as MainActivity
     val modifier = Modifier.fillMaxWidth()
+    val usageTitle = stringResource(R.string.terms_usage_title)
+    val a11yTitle = stringResource(R.string.terms_a11y_title)
+    val usageIntro = stringResource(R.string.terms_usage_intro)
+    val userAgreement = stringResource(R.string.terms_user_agreement)
+    val termsAnd = stringResource(R.string.terms_and)
+    val privacyPolicy = stringResource(R.string.terms_privacy_policy)
+    val usageSuffix = stringResource(R.string.terms_usage_suffix)
     val stepDataList = remember {
         arrayOf(
-            "使用声明" to @Composable {
+            usageTitle to @Composable {
                 val linkStyles = TextLinkStyles(
                     style = SpanStyle(
                         fontWeight = FontWeight.Bold,
@@ -44,29 +51,29 @@ fun TermsAcceptDialog() {
                 Text(
                     modifier = modifier,
                     text = buildAnnotatedString {
-                        append("感谢使用 GKD！您需要阅读并同意「")
+                        append(usageIntro)
                         withLink(
                             LinkAnnotation.Url(
                                 ShortUrlSet.URL12,
                                 linkStyles
                             )
                         ) {
-                            append("用户协议")
+                            append(userAgreement)
                         }
-                        append("」和「")
+                        append(termsAnd)
                         withLink(
                             LinkAnnotation.Url(
                                 ShortUrlSet.URL11,
                                 linkStyles
                             )
                         ) {
-                            append("隐私政策")
+                            append(privacyPolicy)
                         }
-                        append("」才能继续使用, 请仔细阅读相关内容")
+                        append(usageSuffix)
                     },
                 )
             },
-            "关于无障碍" to @Composable {
+            a11yTitle to @Composable {
                 Text(
                     modifier = modifier,
                     text = li.songe.gkd.sdp.app.getString(R.string.s_37c53d9dc0),

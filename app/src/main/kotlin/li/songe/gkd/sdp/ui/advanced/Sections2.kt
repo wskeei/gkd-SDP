@@ -2,9 +2,6 @@
 
 package li.songe.gkd.sdp.ui
 
-import android.app.Activity
-import android.content.Context
-import android.media.projection.MediaProjectionManager
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -18,16 +15,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewModelScope
-import com.dylanc.activityresult.launcher.launchForResult
-import kotlinx.coroutines.flow.update
-import li.songe.gkd.sdp.MainActivity
-import li.songe.gkd.sdp.MainViewModel
 import li.songe.gkd.sdp.R
-import li.songe.gkd.sdp.permission.canDrawOverlaysState
-import li.songe.gkd.sdp.permission.foregroundServiceSpecialUseState
-import li.songe.gkd.sdp.permission.notificationState
-import li.songe.gkd.sdp.permission.requiredPermission
 import li.songe.gkd.sdp.permission.shizukuGrantedState
 import li.songe.gkd.sdp.remote.CleartextOriginAuthorizations
 import li.songe.gkd.sdp.remote.RemoteListenMode
@@ -40,7 +28,6 @@ import li.songe.gkd.sdp.service.HttpService
 import li.songe.gkd.sdp.service.ScreenshotService
 import li.songe.gkd.sdp.shizuku.updateBinderMutex
 import li.songe.gkd.sdp.store.SettingsStore
-import li.songe.gkd.sdp.store.storeFlow
 import li.songe.gkd.sdp.ui.component.AuthCard
 import li.songe.gkd.sdp.ui.component.PerfCustomIconButton
 import li.songe.gkd.sdp.ui.component.PerfIcon
@@ -55,31 +42,54 @@ import li.songe.gkd.sdp.ui.style.titleItemPadding
 import li.songe.gkd.sdp.util.AndroidTarget
 import li.songe.gkd.sdp.util.ShortUrlSet
 import li.songe.gkd.sdp.util.copyText
-import li.songe.gkd.sdp.util.launchAsFn
 import li.songe.gkd.sdp.util.throttle
 import li.songe.gkd.sdp.util.toast
 import androidx.compose.ui.res.stringResource
 
-internal fun remoteScopeLabel(scope: RemoteScope): String = when (scope) {
-    RemoteScope.SERVER_INFO -> "服务信息"
-    RemoteScope.SNAPSHOT_LIST -> "快照列表"
-    RemoteScope.VIEW_SNAPSHOT -> "查看快照/截图"
-    RemoteScope.CAPTURE_SNAPSHOT -> "捕获快照"
-    RemoteScope.DELETE_SNAPSHOT -> "删除快照"
-    RemoteScope.UPDATE_SUBSCRIPTION -> "更新内存订阅"
-    RemoteScope.EXEC_SELECTOR -> "执行选择器"
+internal data class AdvancedPageCallbacks(
+    val onBack: () -> Unit,
+    val onOpenShizukuState: () -> Unit,
+    val onDismissShizukuDialog: () -> Unit,
+    val onRequestShizuku: () -> Unit,
+    val onToggleShizuku: (Boolean) -> Unit,
+    val onOpenWeb: (String) -> Unit,
+    val onToggleHttpServer: (Boolean) -> Unit,
+    val onToggleHttpSetting: () -> Unit,
+    val onOpenEditPortDialog: () -> Unit,
+    val onDismissEditPortDialog: () -> Unit,
+    val onApplyPort: (Int) -> Unit,
+    val onUpdateSettings: (SettingsStore) -> Unit,
+    val onRevokeCleartextOrigin: (String) -> Unit,
+    val onNavigateSnapshotPage: () -> Unit,
+    val onOpenCaptureScreenshotDialog: () -> Unit,
+    val onDismissCaptureScreenshotDialog: () -> Unit,
+    val onApplyCaptureScreenshot: (String, String) -> Unit,
+    val onOpenCaptureHelp: () -> Unit,
+    val onOpenCookieDialog: () -> Unit,
+    val onToggleCaptureScreenshot: (Boolean) -> Unit,
+    val onToggleScreenshotService: (Boolean) -> Unit,
+    val onToggleButtonService: (Boolean) -> Unit,
+    val onToggleActivityService: (Boolean) -> Unit,
+    val onToggleEventService: (Boolean) -> Unit,
+    val onNavigateActivityLog: () -> Unit,
+    val onNavigateA11yEventLog: () -> Unit,
+)
+
+@androidx.annotation.StringRes
+internal fun remoteScopeLabelRes(scope: RemoteScope): Int = when (scope) {
+    RemoteScope.SERVER_INFO -> R.string.advanced_remote_scope_server_info
+    RemoteScope.SNAPSHOT_LIST -> R.string.advanced_remote_scope_snapshot_list
+    RemoteScope.VIEW_SNAPSHOT -> R.string.advanced_remote_scope_view_snapshot
+    RemoteScope.CAPTURE_SNAPSHOT -> R.string.advanced_remote_scope_capture_snapshot
+    RemoteScope.DELETE_SNAPSHOT -> R.string.advanced_remote_scope_delete_snapshot
+    RemoteScope.UPDATE_SUBSCRIPTION -> R.string.advanced_remote_scope_update_subscription
+    RemoteScope.EXEC_SELECTOR -> R.string.advanced_remote_scope_exec_selector
 }
 
 @Composable
 internal fun AdvancedPageContent(
-    context: MainActivity,
-    mainVm: MainViewModel,
-    vm: AdvancedVm,
-    store: SettingsStore,
-    showEditPortDlg: MutableState<Boolean>,
-    showShizukuState: MutableState<Boolean>,
-    showCaptureScreenshotDlg: MutableState<Boolean>,
-    showHttpSettingDlg: MutableState<Boolean>,
+    uiState: AdvancedUiState,
+    callbacks: AdvancedPageCallbacks,
 ) {
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
     Scaffold(
@@ -87,7 +97,7 @@ internal fun AdvancedPageContent(
         topBar = {
             PerfTopAppBar(
                 scrollBehavior = scrollBehavior,
-                navigationIcon = { PerfIconButton(imageVector = PerfIcon.ArrowBack, onClick = mainVm::popPage) },
+                navigationIcon = { PerfIconButton(imageVector = PerfIcon.ArrowBack, onClick = callbacks.onBack) },
                 title = { Text(li.songe.gkd.sdp.app.getString(R.string.s_dd07e641ca)) },
             )
         },
@@ -95,10 +105,10 @@ internal fun AdvancedPageContent(
         Column(
             modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(contentPadding),
         ) {
-            AdvancedShizukuSection(mainVm, store, showShizukuState)
-            AdvancedHttpSection(context, vm, store, showEditPortDlg, showHttpSettingDlg)
-            AdvancedSnapshotSection(context, mainVm, vm, store, showCaptureScreenshotDlg)
-            AdvancedLogSection(context, mainVm, vm)
+            AdvancedShizukuSection(uiState, callbacks)
+            AdvancedHttpSection(uiState, callbacks)
+            AdvancedSnapshotSection(uiState, callbacks)
+            AdvancedLogSection(callbacks)
             Spacer(modifier = Modifier.height(EmptyHeight))
         }
     }
@@ -106,9 +116,8 @@ internal fun AdvancedPageContent(
 
 @Composable
 private fun AdvancedShizukuSection(
-    mainVm: MainViewModel,
-    store: SettingsStore,
-    showShizukuState: MutableState<Boolean>,
+    uiState: AdvancedUiState,
+    callbacks: AdvancedPageCallbacks,
 ) {
     Row(
         modifier = Modifier.fillMaxWidth().titleItemPadding(showTop = false),
@@ -118,41 +127,42 @@ private fun AdvancedShizukuSection(
         PerfIcon(
             modifier = Modifier
                 .clip(MaterialTheme.shapes.extraSmall)
-                .clickable(onClickLabel = "打开 Shizuku 状态弹窗", onClick = throttle { showShizukuState.value = true })
+                .clickable(onClickLabel = stringResource(R.string.advanced_open_shizuku_state), onClick = throttle { callbacks.onOpenShizukuState() })
                 .iconTextSize(textStyle = MaterialTheme.typography.titleSmall),
             imageVector = PerfIcon.Api,
             tint = MaterialTheme.colorScheme.primary,
-            contentDescription = "Shizuku 状态",
+            contentDescription = stringResource(R.string.advanced_shizuku_state),
         )
     }
     val shizukuGranted by shizukuGrantedState.stateFlow.collectAsStateWithLifecycle()
-    AnimatedVisibility(store.enableShizuku && !shizukuGranted) {
-        AuthCard(title = "未授权", subtitle = "点击授权以优化体验", onAuthClick = mainVm::requestShizuku)
+    AnimatedVisibility(uiState.store.enableShizuku && !shizukuGranted) {
+        AuthCard(
+            title = stringResource(R.string.advanced_unauthorized),
+            subtitle = stringResource(R.string.advanced_authorize_hint),
+            onAuthClick = callbacks.onRequestShizuku,
+        )
     }
     TextSwitch(
         title = stringResource(R.string.s_6b0ad26edf),
         subtitle = stringResource(R.string.s_a3e561c7c6),
-        suffix = "了解更多",
+        suffix = li.songe.gkd.sdp.app.getString(R.string.learn_more),
         suffixUnderline = true,
-        onSuffixClick = { mainVm.navigateWebPage(ShortUrlSet.URL14) },
-        checked = store.enableShizuku,
+        onSuffixClick = { callbacks.onOpenWeb(ShortUrlSet.URL14) },
+        checked = uiState.store.enableShizuku,
         suffixIcon = {
             if (updateBinderMutex.state.collectAsStateWithLifecycle().value) {
                 CircularProgressIndicator(modifier = Modifier.size(20.dp))
             }
         },
-        onCheckedChange = mainVm::switchEnableShizuku,
+        onCheckedChange = callbacks.onToggleShizuku,
         onClick = null,
     )
 }
 
 @Composable
 private fun AdvancedHttpSection(
-    context: MainActivity,
-    vm: AdvancedVm,
-    store: SettingsStore,
-    showEditPortDlg: MutableState<Boolean>,
-    showHttpSettingDlg: MutableState<Boolean>,
+    uiState: AdvancedUiState,
+    callbacks: AdvancedPageCallbacks,
 ) {
     val server by HttpService.httpServerFlow.collectAsStateWithLifecycle()
     val httpServerRunning = server != null
@@ -167,28 +177,20 @@ private fun AdvancedHttpSection(
                 size = 32.dp,
                 iconSize = 20.dp,
                 onClickLabel = li.songe.gkd.sdp.app.getString(R.string.s_66b10cf5e5),
-                onClick = { showHttpSettingDlg.value = !showHttpSettingDlg.value },
+                onClick = callbacks.onToggleHttpSetting,
                 id = R.drawable.ic_page_info,
                 contentDescription = li.songe.gkd.sdp.app.getString(R.string.s_c5f42f5a0f),
-                tint = if (showHttpSettingDlg.value) MaterialTheme.colorScheme.primary else LocalContentColor.current,
+                tint = if (uiState.showHttpSettingDlg) MaterialTheme.colorScheme.primary else LocalContentColor.current,
             )
         },
         checked = httpServerRunning,
-        onCheckedChange = throttle(fn = vm.viewModelScope.launchAsFn<Boolean> {
-            if (it) {
-                requiredPermission(context, foregroundServiceSpecialUseState)
-                requiredPermission(context, notificationState)
-                HttpService.start()
-            } else {
-                HttpService.stop()
-            }
-        }),
+        onCheckedChange = callbacks.onToggleHttpServer,
     )
     AnimatedVisibility(httpServerRunning) {
-        AdvancedHttpRunningContent(store, localNetworkIps, remoteSession)
+        AdvancedHttpRunningContent(uiState.store, localNetworkIps, remoteSession)
     }
-    AnimatedVisibility(showHttpSettingDlg.value) {
-        AdvancedHttpSettingsContent(store, showEditPortDlg, showHttpSettingDlg)
+    AnimatedVisibility(uiState.showHttpSettingDlg) {
+        AdvancedHttpSettingsContent(uiState.store, callbacks)
     }
 }
 
@@ -202,12 +204,12 @@ private fun AdvancedHttpRunningContent(
         Column(modifier = Modifier.itemPadding()) {
             Text(
                 text = if (remoteSession.mode == RemoteListenMode.LOCAL_ONLY) {
-                    "监听范围：仅本机"
+                    stringResource(R.string.advanced_listen_local)
                 } else {
                     val remainingMinutes = remoteSession.accessExpiresAtMillis
                         ?.let { ((it - System.currentTimeMillis()).coerceAtLeast(0) + 59_999) / 60_000 }
                         ?: 0
-                    "监听范围：局域网｜剩余 $remainingMinutes 分钟"
+                    stringResource(R.string.advanced_listen_lan, remainingMinutes)
                 },
             )
             remoteSession.pairingCode?.let { Text(li.songe.gkd.sdp.app.getString(R.string.s_cc0dd8de47, (it).toString())) }
@@ -246,7 +248,7 @@ private fun AdvancedHttpRunningContent(
             Text(li.songe.gkd.sdp.app.getString(R.string.s_00e778c519), style = MaterialTheme.typography.titleSmall)
             RemoteScope.entries.forEach { scope ->
                 TextSwitch(
-                    title = remoteScopeLabel(scope),
+                    title = stringResource(remoteScopeLabelRes(scope)),
                     subtitle = if (scope in setOf(RemoteScope.SERVER_INFO, RemoteScope.SNAPSHOT_LIST)) li.songe.gkd.sdp.app.getString(R.string.s_0748ac7579) else li.songe.gkd.sdp.app.getString(R.string.s_da3b95b64a),
                     checked = scope in remoteSession.enabledScopes,
                     onCheckedChange = { HttpService.setRemoteScope(scope, it) },
@@ -259,8 +261,7 @@ private fun AdvancedHttpRunningContent(
 @Composable
 private fun AdvancedHttpSettingsContent(
     store: SettingsStore,
-    showEditPortDlg: MutableState<Boolean>,
-    showHttpSettingDlg: MutableState<Boolean>,
+    callbacks: AdvancedPageCallbacks,
 ) {
     Column {
         SettingItem(
@@ -268,13 +269,13 @@ private fun AdvancedHttpSettingsContent(
             subtitle = store.httpServerPort.toString(),
             imageVector = PerfIcon.Edit,
             onClickLabel = stringResource(R.string.s_07a62b1e96),
-            onClick = { showHttpSettingDlg.value = false; showEditPortDlg.value = true },
+            onClick = callbacks.onOpenEditPortDialog,
         )
         TextSwitch(
             title = stringResource(R.string.s_6b582fbb9d),
             subtitle = stringResource(R.string.s_97424615a7),
             checked = store.autoClearMemorySubs,
-            onCheckedChange = { storeFlow.update { it.copy(autoClearMemorySubs = !it.autoClearMemorySubs) } },
+            onCheckedChange = { callbacks.onUpdateSettings(store.copy(autoClearMemorySubs = it)) },
         )
         val cleartextOrigins by CleartextOriginAuthorizations.originsFlow.collectAsStateWithLifecycle()
         if (cleartextOrigins.isNotEmpty()) {
@@ -285,7 +286,7 @@ private fun AdvancedHttpSettingsContent(
                     subtitle = li.songe.gkd.sdp.app.getString(R.string.s_7cce6f6775),
                     imageVector = PerfIcon.Delete,
                     onClickLabel = li.songe.gkd.sdp.app.getString(R.string.s_8bba24fe03),
-                    onClick = { CleartextOriginAuthorizations.revoke(origin) },
+                    onClick = { callbacks.onRevokeCleartextOrigin(origin) },
                 )
             }
         }
@@ -294,20 +295,18 @@ private fun AdvancedHttpSettingsContent(
 
 @Composable
 private fun AdvancedSnapshotSection(
-    context: MainActivity,
-    mainVm: MainViewModel,
-    vm: AdvancedVm,
-    store: SettingsStore,
-    showCaptureScreenshotDlg: MutableState<Boolean>,
+    uiState: AdvancedUiState,
+    callbacks: AdvancedPageCallbacks,
 ) {
+    val store = uiState.store
     Text(stringResource(R.string.s_83caf1badc), modifier = Modifier.titleItemPadding(), style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary)
-    SettingItem(title = stringResource(R.string.s_26c9e586fc), subtitle = stringResource(R.string.s_8eddb6bd87), onClick = { mainVm.navigatePage(SnapshotPageRoute) })
-    AdvancedSnapshotServiceControls(context, vm)
+    SettingItem(title = stringResource(R.string.s_26c9e586fc), subtitle = stringResource(R.string.s_8eddb6bd87), onClick = callbacks.onNavigateSnapshotPage)
+    AdvancedSnapshotServiceControls(callbacks)
     TextSwitch(
         title = stringResource(R.string.s_97f98cd922),
         subtitle = stringResource(R.string.s_7790dc931f),
         checked = store.captureVolumeChange,
-        onCheckedChange = { storeFlow.value = store.copy(captureVolumeChange = it) },
+        onCheckedChange = { callbacks.onUpdateSettings(store.copy(captureVolumeChange = it)) },
     )
     TextSwitch(
         title = stringResource(R.string.s_ee5db675e1),
@@ -318,113 +317,70 @@ private fun AdvancedSnapshotSection(
                 size = 32.dp,
                 iconSize = 20.dp,
                 onClickLabel = li.songe.gkd.sdp.app.getString(R.string.s_c41137ca16),
-                onClick = throttle { showCaptureScreenshotDlg.value = true },
+                onClick = throttle { callbacks.onOpenCaptureScreenshotDialog() },
                 id = R.drawable.ic_page_info,
                 contentDescription = li.songe.gkd.sdp.app.getString(R.string.s_bd7b6c1ed1),
             )
         },
-        onCheckedChange = {
-            storeFlow.value = store.copy(captureScreenshot = it)
-            if (it && store.screenshotTargetAppId.isEmpty() || store.screenshotEventSelector.isEmpty()) {
-                toast(li.songe.gkd.sdp.app.getString(R.string.s_c456ae2487))
-            }
-        },
+        onCheckedChange = callbacks.onToggleCaptureScreenshot,
     )
     TextSwitch(
         title = stringResource(R.string.s_c7dddf757a),
         subtitle = stringResource(R.string.s_37fbc765c6),
         checked = store.hideSnapshotStatusBar,
-        onCheckedChange = { storeFlow.value = store.copy(hideSnapshotStatusBar = it) },
+        onCheckedChange = { callbacks.onUpdateSettings(store.copy(hideSnapshotStatusBar = it)) },
     )
     TextSwitch(
         title = stringResource(R.string.s_108a9199f2),
         subtitle = stringResource(R.string.s_24feb0f040),
         checked = store.showSaveSnapshotToast,
-        onCheckedChange = { storeFlow.value = store.copy(showSaveSnapshotToast = it) },
+        onCheckedChange = { callbacks.onUpdateSettings(store.copy(showSaveSnapshotToast = it)) },
     )
     SettingItem(
         title = stringResource(R.string.s_ac245bfc80),
         subtitle = stringResource(R.string.s_58a79cef99),
-        suffix = "获取教程",
+        suffix = li.songe.gkd.sdp.app.getString(R.string.get_tutorial),
         suffixUnderline = true,
-        onSuffixClick = { mainVm.navigateWebPage(ShortUrlSet.URL1) },
+        onSuffixClick = { callbacks.onOpenWeb(ShortUrlSet.URL1) },
         imageVector = PerfIcon.Edit,
-        onClick = { mainVm.showEditCookieDlgFlow.value = true },
+        onClick = callbacks.onOpenCookieDialog,
     )
 }
 
 @Composable
-private fun AdvancedSnapshotServiceControls(context: MainActivity, vm: AdvancedVm) {
+private fun AdvancedSnapshotServiceControls(callbacks: AdvancedPageCallbacks) {
     if (!AndroidTarget.R) {
         val screenshotRunning by ScreenshotService.isRunning.collectAsStateWithLifecycle()
         TextSwitch(
             title = stringResource(R.string.s_df95c4025b),
             subtitle = stringResource(R.string.s_0933e86c0e),
             checked = screenshotRunning,
-            onCheckedChange = vm.viewModelScope.launchAsFn<Boolean> {
-                if (it) {
-                    requiredPermission(context, notificationState)
-                    val mediaProjectionManager = context.getSystemService(Context.MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
-                    val activityResult = context.launcher.launchForResult(mediaProjectionManager.createScreenCaptureIntent())
-                    if (activityResult.resultCode == Activity.RESULT_OK && activityResult.data != null) {
-                        ScreenshotService.start(intent = activityResult.data!!)
-                    }
-                } else {
-                    ScreenshotService.stop()
-                }
-            },
+            onCheckedChange = callbacks.onToggleScreenshotService,
         )
     }
     TextSwitch(
         title = stringResource(R.string.s_addb3c2ba2),
         subtitle = stringResource(R.string.s_ef5f9af603),
         checked = ButtonService.isRunning.collectAsStateWithLifecycle().value,
-        onCheckedChange = vm.viewModelScope.launchAsFn<Boolean> {
-            if (it) {
-                requiredPermission(context, foregroundServiceSpecialUseState)
-                requiredPermission(context, notificationState)
-                requiredPermission(context, canDrawOverlaysState)
-                ButtonService.start()
-            } else {
-                ButtonService.stop()
-            }
-        },
+        onCheckedChange = callbacks.onToggleButtonService,
     )
 }
 
 @Composable
-private fun AdvancedLogSection(context: MainActivity, mainVm: MainViewModel, vm: AdvancedVm) {
+private fun AdvancedLogSection(callbacks: AdvancedPageCallbacks) {
     Text(stringResource(R.string.s_4de50894b8), modifier = Modifier.titleItemPadding(), style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary)
-    SettingItem(title = stringResource(R.string.s_48ff47e21f), subtitle = stringResource(R.string.s_3e5e447fd3), onClick = { mainVm.navigatePage(ActivityLogRoute) })
+    SettingItem(title = stringResource(R.string.s_48ff47e21f), subtitle = stringResource(R.string.s_3e5e447fd3), onClick = callbacks.onNavigateActivityLog)
     TextSwitch(
         title = stringResource(R.string.s_fcfcb10e4c),
         subtitle = stringResource(R.string.s_6c572506c2),
         checked = ActivityService.isRunning.collectAsStateWithLifecycle().value,
-        onCheckedChange = vm.viewModelScope.launchAsFn<Boolean> {
-            if (it) {
-                requiredPermission(context, foregroundServiceSpecialUseState)
-                requiredPermission(context, notificationState)
-                requiredPermission(context, canDrawOverlaysState)
-                ActivityService.start()
-            } else {
-                ActivityService.stop()
-            }
-        },
+        onCheckedChange = callbacks.onToggleActivityService,
     )
-    SettingItem(title = stringResource(R.string.s_12b64fb2df), subtitle = stringResource(R.string.s_69dc314d81), onClick = { mainVm.navigatePage(A11yEventLogRoute) })
+    SettingItem(title = stringResource(R.string.s_12b64fb2df), subtitle = stringResource(R.string.s_69dc314d81), onClick = callbacks.onNavigateA11yEventLog)
     TextSwitch(
         title = stringResource(R.string.s_25af58e687),
         subtitle = stringResource(R.string.s_8d864071da),
         checked = EventService.isRunning.collectAsStateWithLifecycle().value,
-        onCheckedChange = vm.viewModelScope.launchAsFn<Boolean> {
-            if (it) {
-                requiredPermission(context, foregroundServiceSpecialUseState)
-                requiredPermission(context, notificationState)
-                requiredPermission(context, canDrawOverlaysState)
-                EventService.start()
-            } else {
-                EventService.stop()
-            }
-        },
+        onCheckedChange = callbacks.onToggleEventService,
     )
 }

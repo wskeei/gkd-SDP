@@ -23,6 +23,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import li.songe.gkd.sdp.MainActivity
@@ -53,10 +54,9 @@ import li.songe.gkd.sdp.util.throttle
  */
 @Composable
 fun CapabilityCenterScreen(mainVm: MainViewModel) {
-    val activity = androidx.activity.compose.LocalActivity.current as MainActivity
+    val activity = androidx.activity.compose.LocalActivity.current as? MainActivity
     var refreshKey by remember { mutableIntStateOf(0) }
     val graph = resolveCapabilityGraph(mainVm, refreshKey)
-    val nextStep = graph.nextStep
 
     Scaffold(
         topBar = {
@@ -70,41 +70,57 @@ fun CapabilityCenterScreen(mainVm: MainViewModel) {
             )
         },
     ) { padding ->
-        Column(
+        CapabilityCenterContent(
+            graph = graph,
+            onAction = { node -> activity?.let { onCapabilityAction(mainVm, it, node) } },
+            onRefresh = { refreshKey++ },
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(padding)
-                .verticalScroll(rememberScrollState()),
-        ) {
-            TotalStatusHeader(
-                graph = graph,
-                onRefresh = { refreshKey++ },
-            )
-            nextStep?.let { node ->
-                NextStepCard(node = node, onAction = { onCapabilityAction(mainVm, activity, node) })
-            }
-            CapabilitySection(
-                title = "已就绪",
-                nodes = graph.nodes.filter { it.status == CapabilityStatus.READY || it.status == CapabilityStatus.ACTIVE },
-                onAction = { onCapabilityAction(mainVm, activity, it) },
-            )
-            CapabilitySection(
-                title = "受限但不阻断",
-                nodes = graph.nodes.filter { it.status == CapabilityStatus.LIMITED },
-                onAction = { onCapabilityAction(mainVm, activity, it) },
-            )
-            Text(
-                text = "为什么需要这些权限？",
-                style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.padding(DimensionTokens.SpacingBase),
-            )
-            Text(
-                text = "运行模式决定使用哪些系统能力：无障碍模式通过系统无障碍服务读取屏幕；自动化模式通过 Shizuku 直接调用系统接口。其余权限只用于展示申请、拦截提示、守护提醒与规则管理。",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(horizontal = DimensionTokens.SpacingBase),
-            )
+                .padding(padding),
+        )
+    }
+}
+
+@Composable
+internal fun CapabilityCenterContent(
+    graph: li.songe.gkd.sdp.capability.CapabilityGraph,
+    onAction: (CapabilityNode) -> Unit,
+    onRefresh: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier.verticalScroll(rememberScrollState()),
+    ) {
+        TotalStatusHeader(
+            graph = graph,
+            onRefresh = onRefresh,
+        )
+        graph.nextStep?.let { node ->
+            NextStepCard(node = node, onAction = { onAction(node) })
         }
+        CapabilitySection(
+            title = stringResource(R.string.capability_ready_title),
+            nodes = graph.nodes.filter {
+                it.status == CapabilityStatus.READY || it.status == CapabilityStatus.ACTIVE
+            },
+            onAction = onAction,
+        )
+        CapabilitySection(
+            title = stringResource(R.string.capability_limited_title),
+            nodes = graph.nodes.filter { it.status == CapabilityStatus.LIMITED },
+            onAction = onAction,
+        )
+        Text(
+            text = stringResource(R.string.capability_why_title),
+            style = MaterialTheme.typography.titleMedium,
+            modifier = Modifier.padding(DimensionTokens.SpacingBase),
+        )
+        Text(
+            text = stringResource(R.string.capability_mode_explanation),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(horizontal = DimensionTokens.SpacingBase),
+        )
     }
 }
 
@@ -121,18 +137,21 @@ private fun TotalStatusHeader(graph: li.songe.gkd.sdp.capability.CapabilityGraph
     ) {
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = "运行能力：$ready/${graph.nodes.size} 就绪",
+                text = stringResource(R.string.capability_ready_count, ready, graph.nodes.size),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
+                modifier = Modifier.testTag("capability_center_total"),
             )
             Text(
-                text = graph.nextStep?.let { "下一步：${it.summary}" } ?: "全部就绪，可以开始使用",
+                text = graph.nextStep?.let {
+                    stringResource(R.string.capability_next_summary, stringResource(it.summaryRes))
+                } ?: stringResource(R.string.capability_all_ready),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
         Button(onClick = throttle(onRefresh)) {
-            Text("重新检查")
+            Text(stringResource(R.string.capability_refresh))
         }
     }
     HorizontalDivider()
@@ -149,12 +168,12 @@ private fun NextStepCard(node: CapabilityNode, onAction: () -> Unit) {
     ) {
         Column(modifier = Modifier.padding(DimensionTokens.SpacingBase)) {
             Text(
-                text = "唯一下一步",
+                text = stringResource(R.string.capability_next_step),
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.primary,
             )
             Text(
-                text = node.summary,
+                text = stringResource(node.summaryRes),
                 style = MaterialTheme.typography.titleMedium,
                 modifier = Modifier.padding(top = DimensionTokens.SpacingSm),
             )
@@ -165,7 +184,7 @@ private fun NextStepCard(node: CapabilityNode, onAction: () -> Unit) {
                         .fillMaxWidth()
                         .padding(top = DimensionTokens.SpacingBase),
                 ) {
-                    Text(action.label)
+                    Text(stringResource(action.labelRes))
                 }
             }
         }
@@ -198,13 +217,13 @@ private fun CapabilitySection(
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = node.summary,
+                        text = stringResource(node.summaryRes),
                         style = MaterialTheme.typography.bodyLarge,
                     )
                 }
                 node.primaryAction?.let { action ->
                     Button(onClick = { onAction(node) }) {
-                        Text(action.label)
+                        Text(stringResource(action.labelRes))
                     }
                 }
             }

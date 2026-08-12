@@ -15,11 +15,11 @@ import li.songe.gkd.sdp.data.SelfControlIntervalRepository
 import li.songe.gkd.sdp.store.actionCountFlow
 import li.songe.gkd.sdp.store.blockMatchAppListFlow
 import li.songe.gkd.sdp.store.storeFlow
+import li.songe.gkd.sdp.R
 import li.songe.gkd.sdp.ui.share.BaseViewModel
 import li.songe.gkd.sdp.ui.share.asMutableStateFlow
 import li.songe.gkd.sdp.ui.share.useAppFilter
 import li.songe.gkd.sdp.util.AppSortOption
-import li.songe.gkd.sdp.util.EMPTY_RULE_TIP
 import li.songe.gkd.sdp.util.UsageGuardHistoryPolicy
 import li.songe.gkd.sdp.util.UsageGuardReviewPolicy
 import li.songe.gkd.sdp.util.findOption
@@ -38,8 +38,8 @@ class HomeVm : BaseViewModel() {
 
     val subsStatusFlow by lazy {
         combine(ruleSummaryFlow, actionCountFlow) { ruleSummary, count ->
-            getSubsStatus(ruleSummary, count)
-        }.stateInit(EMPTY_RULE_TIP)
+            getSubsStatus(ruleSummary, count, li.songe.gkd.sdp.app)
+        }.stateInit(li.songe.gkd.sdp.app.getString(R.string.subs_no_rules))
     }
 
     val usedSubsItemCountFlow = usedSubsEntriesFlow.mapNew { it.size }

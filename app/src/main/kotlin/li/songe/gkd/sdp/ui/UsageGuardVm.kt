@@ -46,7 +46,7 @@ class UsageGuardVm : BaseViewModel() {
     init {
         viewModelScope.launch(Dispatchers.IO) {
             if (DbSet.usageGuardTagDao.count() > 0) return@launch
-            presetTags.forEach { name ->
+            localizedPresetTags().forEach { name ->
                 DbSet.usageGuardTagDao.insert(
                     UsageGuardTag(name = name, isPreset = true),
                 )
@@ -216,7 +216,13 @@ class UsageGuardVm : BaseViewModel() {
     }
 
     companion object {
-        val presetTags = listOf("联系工作", "回复消息", "查资料", "支付", "其他")
+        fun localizedPresetTags(): List<String> = listOf(
+            li.songe.gkd.sdp.app.getString(R.string.usage_guard_preset_tag_work),
+            li.songe.gkd.sdp.app.getString(R.string.usage_guard_preset_tag_reply),
+            li.songe.gkd.sdp.app.getString(R.string.usage_guard_preset_tag_research),
+            li.songe.gkd.sdp.app.getString(R.string.usage_guard_preset_tag_payment),
+            li.songe.gkd.sdp.app.getString(R.string.usage_guard_preset_tag_other),
+        )
 
         fun shouldRetainProfile(profile: UsageGuardAppProfile, defaultGrantMode: Int): Boolean {
             return profile.selectedTarget ||

@@ -43,7 +43,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import li.songe.gkd.sdp.app
 import li.songe.gkd.sdp.ui.component.AppIcon
 import li.songe.gkd.sdp.ui.component.PerfIcon
@@ -54,13 +53,11 @@ import li.songe.gkd.sdp.R
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 internal fun QuickStartSheet(
-    vm: FocusModeVm,
-    onDismiss: () -> Unit,
-    onShowWhitelistPicker: () -> Unit,
-    onStart: () -> Unit
+    state: FocusModeUiState,
+    callbacks: FocusModeCallbacks,
 ) {
     ModalBottomSheet(
-        onDismissRequest = onDismiss,
+        onDismissRequest = callbacks.onDismissQuickStart,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     ) {
         Column(
@@ -89,10 +86,10 @@ internal fun QuickStartSheet(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 OutlinedTextField(
-                    value = vm.manualHours.toString(),
+                    value = state.manualHours.toString(),
                     onValueChange = {
                         val hours = it.toIntOrNull()?.coerceIn(0, 48) ?: 0
-                        vm.manualHours = hours
+                        callbacks.onManualHoursChange(hours)
                     },
                     label = { Text(stringResource(R.string.s_99f6904ff3)) },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
@@ -101,10 +98,10 @@ internal fun QuickStartSheet(
                 )
 
                 OutlinedTextField(
-                    value = vm.manualMinutes.toString(),
+                    value = state.manualMinutes.toString(),
                     onValueChange = {
                         val minutes = it.toIntOrNull()?.coerceIn(0, 59) ?: 0
-                        vm.manualMinutes = minutes
+                        callbacks.onManualMinutesChange(minutes)
                     },
                     label = { Text(stringResource(R.string.s_28bf227b9b)) },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
@@ -114,7 +111,7 @@ internal fun QuickStartSheet(
             }
 
             // 显示验证提示
-            if (vm.totalDurationMinutes < 5) {
+            if (state.manualTotalDurationMinutes < 5) {
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = stringResource(R.string.s_09c309db65),
@@ -127,8 +124,8 @@ internal fun QuickStartSheet(
 
             // 拦截消息
             OutlinedTextField(
-                value = vm.manualMessage,
-                onValueChange = { vm.manualMessage = it },
+                value = state.manualMessage,
+                onValueChange = callbacks.onManualMessageChange,
                 label = { Text(stringResource(R.string.s_f82dffbf08)) },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true
@@ -142,21 +139,21 @@ internal fun QuickStartSheet(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text(
-                    text = stringResource(R.string.s_d6447fb450, (vm.manualWhitelistApps.size).toString()),
+                    text = stringResource(R.string.s_d6447fb450, (state.manualWhitelistApps.size).toString()),
                     style = MaterialTheme.typography.bodyMedium,
                     modifier = Modifier.weight(1f)
                 )
-                TextButton(onClick = onShowWhitelistPicker) {
+                TextButton(onClick = callbacks.onOpenManualWhitelistPicker) {
                     Text(stringResource(R.string.s_70b208202c))
                 }
             }
 
-            if (vm.manualWhitelistApps.isNotEmpty()) {
+            if (state.manualWhitelistApps.isNotEmpty()) {
                 FlowRow(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    vm.manualWhitelistApps.forEach { packageName ->
+                    state.manualWhitelistApps.forEach { packageName ->
                         val appName = remember(packageName) {
                             try {
                                 val appInfo = app.packageManager.getApplicationInfo(packageName, 0)
@@ -167,7 +164,11 @@ internal fun QuickStartSheet(
                         }
                         FilterChip(
                             selected = true,
-                            onClick = { vm.removeFromManualWhitelist(packageName) },
+                            onClick = {
+                                callbacks.onManualWhitelistChange(
+                                    state.manualWhitelistApps - packageName,
+                                )
+                            },
                             label = { Text(appName) }
                         )
                     }
@@ -182,8 +183,8 @@ internal fun QuickStartSheet(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Checkbox(
-                    checked = vm.manualIsLocked,
-                    onCheckedChange = { vm.manualIsLocked = it }
+                    checked = state.manualIsLocked,
+                    onCheckedChange = callbacks.onManualIsLockedChange,
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(stringResource(R.string.s_9c66857925))
@@ -192,7 +193,7 @@ internal fun QuickStartSheet(
             Spacer(modifier = Modifier.height(24.dp))
 
             Button(
-                onClick = onStart,
+                onClick = callbacks.onStartManualSession,
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text(stringResource(R.string.s_a273727311))
@@ -207,28 +208,27 @@ internal fun QuickStartSheet(
 @Composable
 internal fun WhitelistPickerDialog(
     currentWhitelist: List<String>,
-    onDismiss: () -> Unit,
-    onConfirm: (List<String>) -> Unit
+    state: FocusModeUiState,
+    callbacks: FocusModeCallbacks,
 ) {
     var selectedApps by remember { mutableStateOf(currentWhitelist.toSet()) }
     val appInfoMap by appInfoMapFlow.collectAsStateWithLifecycle()
-    val vm = viewModel<FocusModeVm>()
 
     AlertDialog(
-        onDismissRequest = onDismiss,
+        onDismissRequest = callbacks.onDismissWhitelistPicker,
         title = { Text(stringResource(R.string.s_a63ec9e8f8)) },
         text = {
             Column(modifier = Modifier.fillMaxWidth()) {
                 // 搜索框
                 OutlinedTextField(
-                    value = vm.whitelistSearchQuery,
-                    onValueChange = { vm.whitelistSearchQuery = it },
+                    value = state.whitelistSearchQuery,
+                    onValueChange = callbacks.onWhitelistSearchQueryChange,
                     placeholder = { Text(li.songe.gkd.sdp.app.getString(R.string.s_897fdfef89)) },
                     leadingIcon = { Icon(PerfIcon.Search, null) },
                     trailingIcon = {
-                        if (vm.whitelistSearchQuery.isNotEmpty()) {
-                            IconButton(onClick = { vm.whitelistSearchQuery = "" }) {
-                                Icon(PerfIcon.Close, "清除")
+                        if (state.whitelistSearchQuery.isNotEmpty()) {
+                            IconButton(onClick = callbacks.onClearWhitelistSearchQuery) {
+                                Icon(PerfIcon.Close, li.songe.gkd.sdp.app.getString(R.string.s_7b15e5e8e7))
                             }
                         }
                     },
@@ -242,15 +242,19 @@ internal fun WhitelistPickerDialog(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clickable { vm.showSystemAppsInWhitelist = !vm.showSystemAppsInWhitelist }
+                        .clickable {
+                            callbacks.onShowSystemAppsInWhitelistChange(
+                                !state.showSystemAppsInWhitelist,
+                            )
+                        }
                         .padding(vertical = 8.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(stringResource(R.string.s_52c2b4e02d))
                     Switch(
-                        checked = vm.showSystemAppsInWhitelist,
-                        onCheckedChange = { vm.showSystemAppsInWhitelist = it }
+                        checked = state.showSystemAppsInWhitelist,
+                        onCheckedChange = callbacks.onShowSystemAppsInWhitelistChange,
                     )
                 }
 
@@ -260,14 +264,14 @@ internal fun WhitelistPickerDialog(
                 LazyColumn {
                     items(
                         appInfoMap.values
-                            .filterNot { !vm.showSystemAppsInWhitelist && it.isSystem }
+                            .filterNot { !state.showSystemAppsInWhitelist && it.isSystem }
                             .filter { appInfo ->
-                                if (vm.whitelistSearchQuery.isBlank()) {
+                                if (state.whitelistSearchQuery.isBlank()) {
                                     !appInfo.hidden
                                 } else {
                                     !appInfo.hidden && (
-                                        appInfo.name.contains(vm.whitelistSearchQuery, ignoreCase = true) ||
-                                        appInfo.id.contains(vm.whitelistSearchQuery, ignoreCase = true)
+                                        appInfo.name.contains(state.whitelistSearchQuery, ignoreCase = true) ||
+                                        appInfo.id.contains(state.whitelistSearchQuery, ignoreCase = true)
                                     )
                                 }
                             }
@@ -320,12 +324,12 @@ internal fun WhitelistPickerDialog(
             }
         },
         confirmButton = {
-            TextButton(onClick = { onConfirm(selectedApps.toList()) }) {
+            TextButton(onClick = { callbacks.onWhitelistConfirm(selectedApps.toList()) }) {
                 Text(stringResource(R.string.s_f526c89937))
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
+            TextButton(onClick = callbacks.onDismissWhitelistPicker) {
                 Text(stringResource(R.string.s_4d0b4688c7))
             }
         }

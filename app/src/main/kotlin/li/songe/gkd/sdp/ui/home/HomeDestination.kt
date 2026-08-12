@@ -3,6 +3,7 @@ package li.songe.gkd.sdp.ui.home
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.navigation3.runtime.NavKey
 import kotlinx.serialization.Serializable
+import li.songe.gkd.sdp.R
 import li.songe.gkd.sdp.ui.component.PerfIcon
 
 /**
@@ -13,13 +14,13 @@ import li.songe.gkd.sdp.ui.component.PerfIcon
  */
 enum class HomeDestination(
     val key: Int,
-    val label: String,
+    val labelRes: Int,
     val icon: ImageVector,
 ) {
-    OVERVIEW(0, "概览", PerfIcon.Home),
-    SELF_CONTROL(1, "自律", PerfIcon.Eco),
-    RULES(2, "规则", PerfIcon.FormatListBulleted),
-    SETTINGS(3, "设置", PerfIcon.Settings),
+    OVERVIEW(0, R.string.nav_overview, PerfIcon.Home),
+    SELF_CONTROL(1, R.string.nav_self_control, PerfIcon.Eco),
+    RULES(2, R.string.nav_rules, PerfIcon.FormatListBulleted),
+    SETTINGS(3, R.string.nav_settings, PerfIcon.Settings),
     ;
 
     companion object {

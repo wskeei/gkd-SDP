@@ -135,7 +135,7 @@ fun BlockA11yAppListPage() {
                             onValueChange = { newValue ->
                                 vm.searchStrFlow.value = newValue.trim()
                             },
-                            hint = "请输入应用名称/ID",
+                            hint = stringResource(R.string.app_list_search_hint),
                             modifier = if (firstShowSearchBar) Modifier else Modifier.autoFocus(),
                         )
                     } else {
@@ -175,8 +175,12 @@ fun BlockA11yAppListPage() {
                             Row {
                                 PerfIconButton(
                                     imageVector = if (store.blockA11yAppListFollowMatch) PerfIcon.Lock else LockOpenRight,
-                                    contentDescription = if (store.blockA11yAppListFollowMatch) "已设置为跟随应用白名单" else "已设置为独立无障碍白名单",
-                                    onClickLabel = "切换模式",
+                                    contentDescription = if (store.blockA11yAppListFollowMatch) {
+                                        stringResource(R.string.a11y_block_follow_app_whitelist)
+                                    } else {
+                                        stringResource(R.string.a11y_block_independent_whitelist)
+                                    },
+                                    onClickLabel = stringResource(R.string.a11y_block_toggle_mode),
                                     onClick = throttle {
                                         showSearchBar = false
                                         storeFlow.update { it.copy(blockA11yAppListFollowMatch = !it.blockA11yAppListFollowMatch) }
@@ -215,23 +219,23 @@ fun BlockA11yAppListPage() {
                                         expanded = expanded,
                                         onDismissRequest = { expanded = false }
                                     ) {
-                                        MenuGroupCard(inTop = true, title = "排序") {
+                                        MenuGroupCard(inTop = true, title = stringResource(R.string.app_list_sort_title)) {
                                             var sortType by vm.sortTypeFlow.asMutableState()
                                             AppSortOption.objects.forEach { option ->
                                                 MenuItemRadioButton(
-                                                    text = option.label,
+                                                    text = stringResource(option.labelRes),
                                                     selected = sortType == option,
                                                     onClick = { sortType = option },
                                                 )
                                             }
                                         }
-                                        MenuGroupCard(inTop = true, title = "筛选") {
+                                        MenuGroupCard(inTop = true, title = stringResource(R.string.app_list_filter_title)) {
                                             var appGroupType by vm.appGroupTypeFlow.asMutableState()
                                             AppGroupOption.normalObjects.forEach { option ->
                                                 val newValue = option.invert(appGroupType)
                                                 MenuItemCheckbox(
                                                     enabled = newValue != 0,
-                                                    text = option.label,
+                                                    text = stringResource(option.labelRes),
                                                     checked = option.include(appGroupType),
                                                     onClick = { appGroupType = newValue },
                                                 )
@@ -247,12 +251,12 @@ fun BlockA11yAppListPage() {
         floatingActionButton = {
             AnimationFloatingActionButton(
                 visible = !editable && scrollBehavior.isFullVisible && !store.blockA11yAppListFollowMatch,
-                onClickLabel = "进入白名单文本编辑模式",
+                onClickLabel = stringResource(R.string.a11y_block_edit_whitelist_text_mode),
                 onClick = {
                     editable = !editable
                 },
                 imageVector = PerfIcon.Edit,
-                contentDescription = "编辑白名单文本"
+                contentDescription = stringResource(R.string.a11y_block_edit_whitelist_text)
             )
         },
     ) { contentPadding ->
@@ -273,7 +277,7 @@ fun BlockA11yAppListPage() {
                 modifier = Modifier.scaffoldPadding(contentPadding),
                 textFlow = vm.textFlow,
                 immediateFocus = true,
-                placeholderText = "请输入应用ID列表\n示例:\ncom.android.systemui\ncom.android.settings",
+                placeholderText = stringResource(R.string.app_list_id_placeholder),
                 indicatorSize = vm.indicatorSizeFlow.collectAsStateWithLifecycle().value,
             )
         } else {

@@ -28,14 +28,23 @@ data class MonitoredApp(
     companion object {
         // 预置监控应用列表
         val DEFAULT_APPS = listOf(
+            // i18n-ignore: legacy fallback or non-display heuristic data
             MonitoredApp("com.ss.android.ugc.aweme", "抖音"),
+            // i18n-ignore: legacy fallback or non-display heuristic data
             MonitoredApp("tv.danmaku.bili", "哔哩哔哩"),
+            // i18n-ignore: legacy fallback or non-display heuristic data
             MonitoredApp("com.zhihu.android", "知乎"),
+            // i18n-ignore: legacy fallback or non-display heuristic data
             MonitoredApp("com.xingin.xhs", "小红书"),
+            // i18n-ignore: legacy fallback or non-display heuristic data
             MonitoredApp("com.smile.gifmaker", "快手"),
+            // i18n-ignore: legacy fallback or non-display heuristic data
             MonitoredApp("com.kuaishou.nebula", "快手极速版"),
+            // i18n-ignore: legacy fallback or non-display heuristic data
             MonitoredApp("com.ss.android.ugc.aweme.lite", "抖音极速版"),
+            // i18n-ignore: legacy fallback or non-display heuristic data
             MonitoredApp("com.duowan.kiwi", "虎牙直播"),
+            // i18n-ignore: legacy fallback or non-display heuristic data
             MonitoredApp("com.douyu.game", "斗鱼直播")
         )
     }

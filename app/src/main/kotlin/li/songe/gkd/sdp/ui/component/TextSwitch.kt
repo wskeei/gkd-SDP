@@ -18,6 +18,8 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
+import li.songe.gkd.sdp.R
 import li.songe.gkd.sdp.ui.style.itemPadding
 import li.songe.gkd.sdp.util.throttle
 
@@ -35,7 +37,7 @@ fun TextSwitch(
     enabled: Boolean = true,
     onCheckedChange: ((Boolean) -> Unit)? = null,
     onClick: (() -> Unit)? = { onCheckedChange?.invoke(!checked) },
-    onClickLabel: String? = "切换${title}状态",
+    onClickLabel: String? = null,
 ) {
     // The whole row is the semantic toggle so TalkBack sees one element;
     // the trailing Switch is visual only.
@@ -48,7 +50,10 @@ fun TextSwitch(
             onValueChange = onCheckedChange,
         )
     } else if (onClick != null) {
-        modifier.clickable(onClick = onClick, onClickLabel = onClickLabel)
+        modifier.clickable(
+            onClick = onClick,
+            onClickLabel = onClickLabel ?: stringResource(R.string.common_toggle_state, title),
+        )
     } else {
         modifier
     }

@@ -24,12 +24,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import li.songe.gkd.sdp.ui.style.DimensionTokens
 import kotlin.math.roundToInt
 import androidx.compose.ui.res.stringResource
 import li.songe.gkd.sdp.R
+import android.content.Context
 
 /** One time bucket shown in a chart. */
 data class ChartBucket(
@@ -58,7 +60,26 @@ object AppDataTablePolicy {
             label = bucket.label,
             valueText = if (bucket.hasValue) formatValue(bucket.value) else "—",
             unit = if (bucket.hasValue) unit else "",
+            // i18n-ignore: legacy fallback or non-display heuristic data
             status = if (bucket.hasValue) "样本 ${bucket.sampleCount}" else "无数据",
+        )
+    }
+
+    fun rows(
+        buckets: List<ChartBucket>,
+        unit: String,
+        formatValue: (Double) -> String,
+        context: Context,
+    ): List<ChartDataRow> = buckets.map { bucket ->
+        ChartDataRow(
+            label = bucket.label,
+            valueText = if (bucket.hasValue) formatValue(bucket.value) else "—",
+            unit = if (bucket.hasValue) unit else "",
+            status = if (bucket.hasValue) {
+                context.getString(R.string.chart_sample_count, bucket.sampleCount)
+            } else {
+                context.getString(R.string.chart_no_data)
+            },
         )
     }
 
@@ -81,7 +102,7 @@ fun AppDataChart(
     formatValue: (Double) -> String,
     modifier: Modifier = Modifier,
 ) {
-    val rows = AppDataTablePolicy.rows(buckets, unit, formatValue)
+    val rows = AppDataTablePolicy.rows(buckets, unit, formatValue, LocalContext.current)
     var selectedIndex by remember(buckets) { mutableStateOf(-1) }
     var showTable by remember { mutableStateOf(false) }
 

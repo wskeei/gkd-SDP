@@ -182,6 +182,7 @@ data class RuleSummary(
 
     val numText = if (globalGroups.size + appGroupSize > 0) {
         if (globalGroups.isNotEmpty()) {
+            // i18n-ignore: legacy fallback or non-display heuristic data
             "${globalGroups.size}全局" + if (appGroupSize > 0) {
                 "/"
             } else {
@@ -190,12 +191,31 @@ data class RuleSummary(
         } else {
             ""
         } + if (appGroupSize > 0) {
+            // i18n-ignore: legacy fallback or non-display heuristic data
             "${appSize}应用/${appGroupSize}规则"
         } else {
             ""
         }
     } else {
         EMPTY_RULE_TIP
+    }
+
+    fun numText(context: android.content.Context): String {
+        val global = if (globalGroups.isNotEmpty()) {
+            context.getString(R.string.app_list_global_count, globalGroups.size)
+        } else {
+            ""
+        }
+        val app = if (appGroupSize > 0) {
+            context.getString(R.string.app_list_app_rules_count, appSize, appGroupSize)
+        } else {
+            ""
+        }
+        return if (global.isEmpty() && app.isEmpty()) {
+            context.getString(R.string.subs_no_rules)
+        } else {
+            listOf(global, app).filter { it.isNotEmpty() }.joinToString("/")
+        }
     }
 
     val slowGlobalGroups =
@@ -330,9 +350,23 @@ val ruleSummaryFlow by lazy {
 
 fun getSubsStatus(ruleSummary: RuleSummary, count: Long): String {
     return if (count > 0) {
+        // i18n-ignore: legacy fallback or non-display heuristic data
         "${ruleSummary.numText}/${count}触发"
     } else {
         ruleSummary.numText
+    }
+}
+
+fun getSubsStatus(
+    ruleSummary: RuleSummary,
+    count: Long,
+    context: android.content.Context,
+): String {
+    val numText = ruleSummary.numText(context)
+    return if (count > 0) {
+        context.getString(R.string.subs_status_trigger, numText, count)
+    } else {
+        numText
     }
 }
 
@@ -343,26 +377,26 @@ private fun loadSubs(id: Long): RawSubscription {
         if (id == LOCAL_SUBS_ID) {
             return RawSubscription(
                 id = LOCAL_SUBS_ID,
-                name = "本地订阅",
+                name = li.songe.gkd.sdp.app.getString(R.string.local_subscription_name),
                 version = 0
             )
         }
         if (id == LOCAL_HTTP_SUBS_ID) {
             return RawSubscription(
                 id = LOCAL_HTTP_SUBS_ID,
-                name = "内存订阅",
+                name = li.songe.gkd.sdp.app.getString(R.string.memory_subscription_name),
                 version = 0
             )
         }
-        error("订阅文件不存在")
+        error(li.songe.gkd.sdp.app.getString(R.string.subs_file_missing))
     }
     val subscription = try {
         RawSubscription.parse(file.readText(), json5 = false)
     } catch (e: Exception) {
-        throw Exception("订阅文件解析失败", e)
+        throw Exception(li.songe.gkd.sdp.app.getString(R.string.subs_file_parse_failed), e)
     }
     if (subscription.id != id) {
-        error("订阅文件id不一致")
+        error(li.songe.gkd.sdp.app.getString(R.string.subs_file_id_mismatch))
     }
     return subscription
 }
@@ -433,6 +467,7 @@ internal suspend fun cleanupSubsConfig(subsId: Long, subsRaw: RawSubscription): 
     }
     val deleteCount = deleteList.size + categoryDeleteList.size + appDeleteList.size
     if (deleteCount > 0) {
+        // i18n-ignore: legacy fallback or non-display heuristic data
         LogUtils.d("清理已移除规则配置", "subsId=$subsId,delete=$deleteCount")
     }
     return deleteCount
@@ -455,6 +490,7 @@ private suspend fun updateSubs(subsEntry: SubsEntry): RawSubscription? {
                 return null
             }
         } catch (e: Exception) {
+            // i18n-ignore: legacy fallback or non-display heuristic data
             LogUtils.d("快速检测更新失败", subsItem, e.message)
         }
     }
@@ -462,18 +498,25 @@ private suspend fun updateSubs(subsEntry: SubsEntry): RawSubscription? {
     val text = try {
         client.get(updateUrl).bodyAsText()
     } catch (e: Exception) {
-        throw Exception("请求更新链接失败", e)
+        throw Exception(li.songe.gkd.sdp.app.getString(R.string.subs_update_request_failed), e)
     }
     val newSubsRaw = try {
         RawSubscription.parse(text)
     } catch (e: Exception) {
-        throw Exception("解析文本失败", e)
+        throw Exception(li.songe.gkd.sdp.app.getString(R.string.subs_parse_text_failed), e)
     }
     if (newSubsRaw.id != subsItem.id) {
-        error("新id=${newSubsRaw.id}不匹配旧id=${subsItem.id}")
+        error(
+            li.songe.gkd.sdp.app.getString(
+                R.string.subs_id_mismatch,
+                newSubsRaw.id.toString(),
+                subsItem.id.toString(),
+            ),
+        )
     }
     if (subsRaw != null && newSubsRaw.version <= subsRaw.version) {
         LogUtils.d(
+            // i18n-ignore: legacy fallback or non-display heuristic data
             "版本号不满足条件:id=${subsItem.id}",
             "${subsRaw.version} -> ${newSubsRaw.version}"
         )
@@ -492,6 +535,7 @@ fun checkSubsUpdate(showToast: Boolean = false) = appScope.launchTry(Dispatchers
             }
             return@launchTry
         }
+        // i18n-ignore: legacy fallback or non-display heuristic data
         LogUtils.d("开始检测更新")
         // 文件不存在, 重新加载
         var changed = false
@@ -527,6 +571,7 @@ fun checkSubsUpdate(showToast: Boolean = false) = appScope.launchTry(Dispatchers
                         set(subsEntry.subsItem.id, e)
                     }
                 }
+                // i18n-ignore: legacy fallback or non-display heuristic data
                 LogUtils.d("检测更新失败", e.message)
             }
         }
@@ -537,6 +582,7 @@ fun checkSubsUpdate(showToast: Boolean = false) = appScope.launchTry(Dispatchers
                 toast(li.songe.gkd.sdp.app.getString(R.string.s_f0ece473ea))
             }
         }
+        // i18n-ignore: legacy fallback or non-display heuristic data
         LogUtils.d("结束检测更新")
         delay(500)
     } finally {

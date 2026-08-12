@@ -54,7 +54,7 @@ suspend fun MainActivity.saveFileToDownloads(file: File) {
         }
         withContext(Dispatchers.IO) {
             val uri = contentResolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values)
-                ?: error("创建URI失败")
+                ?: error(app.getString(R.string.intent_create_uri_failed))
             contentResolver.openOutputStream(uri)?.use { outputStream ->
                 outputStream.write(file.readBytes())
                 outputStream.flush()

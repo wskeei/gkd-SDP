@@ -2,6 +2,7 @@ package li.songe.gkd.sdp.util
 
 import li.songe.gkd.sdp.data.DailyStat
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.time.LocalDateTime
 import java.time.ZoneId
@@ -79,5 +80,25 @@ class ActionLogStatsPolicyTest {
         assertEquals("2026-04-06", normalized.first().date)
         assertEquals(0, normalized[0].count)
         assertEquals(1, normalized.last().count)
+    }
+
+    @Test
+    fun windowStartAndRefreshRejectNonPositiveDaysAndStayPositive() {
+        val zoneId = ZoneId.systemDefault()
+        val now = LocalDateTime.of(2026, 4, 8, 15, 30)
+            .atZone(zoneId)
+            .toInstant()
+            .toEpochMilli()
+
+        assertThrows { ActionLogStatsPolicy.windowStartEpochMs(now, 0, zoneId) }
+        assertTrue(ActionLogStatsPolicy.nextWindowRefreshDelayMs(now, zoneId) > 0L)
+    }
+
+    private fun assertThrows(block: () -> Unit) {
+        try {
+            block()
+            throw AssertionError("expected failure")
+        } catch (_: IllegalArgumentException) {
+        }
     }
 }

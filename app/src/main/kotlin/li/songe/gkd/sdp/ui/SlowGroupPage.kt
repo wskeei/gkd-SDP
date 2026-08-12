@@ -62,9 +62,9 @@ fun SlowGroupPage() {
                         mainVm.dialogFlow.updateDialogOptions(
                             title = li.songe.gkd.sdp.app.getString(R.string.s_9b30ccd61d),
                             text = arrayOf(
-                                "任意单个规则同时满足以下 3 个条件即判定为缓慢查询",
-                                "1. 选择器右侧无法快速查询且不是主动查询, 或内部使用<<且无法快速查询\n2. preKeys 为空\n3. matchTime 为空或大于 10s",
-                                "缓慢查询可能导致触发缓慢或更多耗电, 一些可能优化的建议操作\n1. 降低选择器获取新节点次数\n2. 降低或限制规则查询时间或次数"
+                                li.songe.gkd.sdp.app.getString(R.string.slow_rule_intro),
+                                li.songe.gkd.sdp.app.getString(R.string.slow_rule_conditions),
+                                li.songe.gkd.sdp.app.getString(R.string.slow_rule_suggestions),
                             ).joinToString("\n\n"),
                         )
                     })
@@ -91,7 +91,10 @@ fun SlowGroupPage() {
                         })
                         .itemPadding(),
                     title = group.name,
-                    desc = "${rule.rawSubs.name}/全局规则"
+                    desc = li.songe.gkd.sdp.app.getString(
+                        R.string.slow_global_rule,
+                        rule.rawSubs.name,
+                    )
                 )
             }
             items(
@@ -111,7 +114,11 @@ fun SlowGroupPage() {
                         })
                         .itemPadding(),
                     title = group.name,
-                    desc = "${rule.rawSubs.name}/应用规则/${appInfoCache[rule.app.id]?.name ?: rule.app.name ?: rule.app.id}"
+                    desc = li.songe.gkd.sdp.app.getString(
+                        R.string.slow_app_rule,
+                        rule.rawSubs.name,
+                        appInfoCache[rule.app.id]?.name ?: rule.app.name ?: rule.app.id,
+                    )
                 )
             }
             item(ListPlaceholder.KEY, ListPlaceholder.TYPE) {

@@ -19,6 +19,8 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
+import li.songe.gkd.sdp.R
 import li.songe.gkd.sdp.util.throttle
 
 private const val elevationDurationMillis = 50
@@ -30,7 +32,7 @@ fun AnimationFloatingActionButton(
     imageVector: ImageVector,
     modifier: Modifier = Modifier,
     onClickLabel: String? = null,
-    contentDescription: String? = getIconDefaultDesc(imageVector),
+    contentDescription: String? = null,
 ) {
     val density = LocalDensity.current
     val maxTranslationX = remember(density.density) { density.run { 24.dp.toPx() } }
@@ -64,7 +66,9 @@ fun AnimationFloatingActionButton(
         }
     }
     if (innerVisible) {
-        TooltipIconButtonBox(contentDescription) {
+        val effectiveContentDescription =
+            contentDescription ?: getIconDefaultDescRes(imageVector)?.let { stringResource(it) }
+        TooltipIconButtonBox(effectiveContentDescription) {
             FloatingActionButton(
                 modifier = modifier
                     .graphicsLayer(
@@ -72,8 +76,8 @@ fun AnimationFloatingActionButton(
                         translationX = (1f - percent.value) * maxTranslationX
                     )
                     .semantics {
-                        if (contentDescription != null) {
-                            this.contentDescription = contentDescription
+                        if (effectiveContentDescription != null) {
+                            this.contentDescription = effectiveContentDescription
                         }
                         if (onClickLabel != null) {
                             this.onClick(label = onClickLabel, action = null)

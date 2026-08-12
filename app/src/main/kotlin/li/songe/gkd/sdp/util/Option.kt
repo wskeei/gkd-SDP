@@ -1,11 +1,14 @@
 package li.songe.gkd.sdp.util
 
+import androidx.annotation.StringRes
 import androidx.compose.ui.graphics.vector.ImageVector
+import li.songe.gkd.sdp.R
 import li.songe.gkd.sdp.ui.component.PerfIcon
 
 sealed interface Option<T> {
     val value: T
-    val label: String
+    @get:StringRes
+    val labelRes: Int
     val options: List<Option<T>>
 }
 
@@ -14,19 +17,20 @@ sealed interface OptionIcon {
 }
 
 sealed interface OptionMenuLabel {
-    val menuLabel: String
+    @get:StringRes
+    val menuLabelRes: Int
 }
 
 fun <V, T : Option<V>> Iterable<T>.findOption(value: V): T {
     return find { it.value == value } ?: first()
 }
 
-sealed class AppSortOption(override val value: Int, override val label: String) : Option<Int> {
+sealed class AppSortOption(override val value: Int, @StringRes override val labelRes: Int) : Option<Int> {
     override val options get() = objects
 
-    data object ByAppName : AppSortOption(0, "按应用名称")
-    data object ByActionTime : AppSortOption(2, "按最近触发")
-    data object ByUsedTime : AppSortOption(3, "按最近使用")
+    data object ByAppName : AppSortOption(0, R.string.option_sort_by_name)
+    data object ByActionTime : AppSortOption(2, R.string.option_sort_by_action_time)
+    data object ByUsedTime : AppSortOption(3, R.string.option_sort_by_used_time)
 
     companion object {
         val objects by lazy { listOf(ByAppName, ByUsedTime, ByActionTime) }
@@ -35,14 +39,14 @@ sealed class AppSortOption(override val value: Int, override val label: String) 
 
 sealed class UpdateTimeOption(
     override val value: Long,
-    override val label: String
+    @StringRes override val labelRes: Int
 ) : Option<Long> {
     override val options get() = objects
 
-    data object Pause : UpdateTimeOption(-1, "暂停")
-    data object Everyday : UpdateTimeOption(24 * 60 * 60_000, "每天")
-    data object Every3Days : UpdateTimeOption(24 * 60 * 60_000 * 3, "每3天")
-    data object Every7Days : UpdateTimeOption(24 * 60 * 60_000 * 7, "每7天")
+    data object Pause : UpdateTimeOption(-1, R.string.option_update_pause)
+    data object Everyday : UpdateTimeOption(24 * 60 * 60_000, R.string.option_update_daily)
+    data object Every3Days : UpdateTimeOption(24 * 60 * 60_000 * 3, R.string.option_update_3d)
+    data object Every7Days : UpdateTimeOption(24 * 60 * 60_000 * 7, R.string.option_update_7d)
 
     companion object {
         val objects by lazy { listOf(Pause, Everyday, Every3Days, Every7Days) }
@@ -51,15 +55,15 @@ sealed class UpdateTimeOption(
 
 sealed class DarkThemeOption(
     override val value: Boolean?,
-    override val label: String,
-    override val menuLabel: String,
+    @StringRes override val labelRes: Int,
+    @StringRes override val menuLabelRes: Int,
     override val icon: ImageVector
 ) : Option<Boolean?>, OptionIcon, OptionMenuLabel {
     override val options get() = objects
 
-    data object FollowSystem : DarkThemeOption(null, "自动", "自动", PerfIcon.AutoMode)
-    data object AlwaysEnable : DarkThemeOption(true, "启用", "深色", PerfIcon.DarkMode)
-    data object AlwaysDisable : DarkThemeOption(false, "关闭", "浅色", PerfIcon.LightMode)
+    data object FollowSystem : DarkThemeOption(null, R.string.option_theme_auto, R.string.option_theme_auto, PerfIcon.AutoMode)
+    data object AlwaysEnable : DarkThemeOption(true, R.string.option_theme_enabled, R.string.option_theme_menu_dark, PerfIcon.DarkMode)
+    data object AlwaysDisable : DarkThemeOption(false, R.string.option_theme_disabled, R.string.option_theme_menu_light, PerfIcon.LightMode)
 
     companion object {
         val objects by lazy { listOf(FollowSystem, AlwaysEnable, AlwaysDisable) }
@@ -68,14 +72,14 @@ sealed class DarkThemeOption(
 
 sealed class DisplayDensityOption(
     override val value: Float,
-    override val label: String,
+    @StringRes override val labelRes: Int,
 ) : Option<Float> {
     override val options get() = objects
 
-    data object Compact : DisplayDensityOption(0.9f, "紧凑")
-    data object Standard : DisplayDensityOption(1f, "标准")
-    data object Comfortable : DisplayDensityOption(1.15f, "舒适")
-    data object Large : DisplayDensityOption(1.3f, "放大")
+    data object Compact : DisplayDensityOption(0.9f, R.string.option_density_compact)
+    data object Standard : DisplayDensityOption(1f, R.string.option_density_standard)
+    data object Comfortable : DisplayDensityOption(1.15f, R.string.option_density_comfortable)
+    data object Large : DisplayDensityOption(1.3f, R.string.option_density_large)
 
     companion object {
         val objects by lazy { listOf(Compact, Standard, Comfortable, Large) }
@@ -84,12 +88,12 @@ sealed class DisplayDensityOption(
 
 sealed class LanguageOption(
     override val value: String,
-    override val label: String,
+    @StringRes override val labelRes: Int,
 ) : Option<String> {
     override val options get() = objects
 
-    data object FollowSystem : LanguageOption("", "跟随系统")
-    data object SimplifiedChinese : LanguageOption("zh-CN", "简体中文")
+    data object FollowSystem : LanguageOption("", R.string.option_language_follow_system)
+    data object SimplifiedChinese : LanguageOption("zh-CN", R.string.option_language_simplified_chinese)
 
     companion object {
         val objects by lazy { listOf(FollowSystem, SimplifiedChinese) }
@@ -98,25 +102,25 @@ sealed class LanguageOption(
 
 sealed class EnableGroupOption(
     override val value: Boolean?,
-    override val label: String
+    @StringRes override val labelRes: Int
 ) : Option<Boolean?> {
     override val options get() = objects
 
-    data object FollowSubs : EnableGroupOption(null, "跟随订阅")
-    data object AllEnable : EnableGroupOption(true, "全部启用")
-    data object AllDisable : EnableGroupOption(false, "全部关闭")
+    data object FollowSubs : EnableGroupOption(null, R.string.option_enable_follow_subscription)
+    data object AllEnable : EnableGroupOption(true, R.string.option_enable_all)
+    data object AllDisable : EnableGroupOption(false, R.string.option_disable_all)
 
     companion object {
         val objects by lazy { listOf(FollowSubs, AllEnable, AllDisable) }
     }
 }
 
-sealed class RuleSortOption(override val value: Int, override val label: String) : Option<Int> {
+sealed class RuleSortOption(override val value: Int, @StringRes override val labelRes: Int) : Option<Int> {
     override val options get() = objects
 
-    data object ByDefault : RuleSortOption(0, "按默认顺序")
-    data object ByActionTime : RuleSortOption(1, "按最近触发")
-    data object ByRuleName : RuleSortOption(2, "按规则名称")
+    data object ByDefault : RuleSortOption(0, R.string.option_rule_sort_default)
+    data object ByActionTime : RuleSortOption(1, R.string.option_rule_sort_action_time)
+    data object ByRuleName : RuleSortOption(2, R.string.option_rule_sort_name)
 
     companion object {
         val objects by lazy { listOf(ByDefault, ByActionTime, ByRuleName) }
@@ -125,18 +129,18 @@ sealed class RuleSortOption(override val value: Int, override val label: String)
 
 sealed class UpdateChannelOption(
     override val value: Int,
-    override val label: String,
+    @StringRes override val labelRes: Int,
 ) : Option<Int> {
     override val options get() = objects
 
     data object Stable : UpdateChannelOption(
         0,
-        "稳定版",
+        R.string.option_channel_stable,
     )
 
     data object Beta : UpdateChannelOption(
         1,
-        "测试版",
+        R.string.option_channel_beta,
     )
 
     companion object {
@@ -158,13 +162,13 @@ sealed interface BinaryOption : Option<Int> {
 
 sealed class AppGroupOption(
     override val value: Int,
-    override val label: String
+    @StringRes override val labelRes: Int
 ) : BinaryOption {
     override val options get() = allObjects
 
-    data object SystemGroup : AppGroupOption(1 shl 0, "系统应用")
-    data object UserGroup : AppGroupOption(1 shl 1, "用户应用")
-    data object UnInstalledGroup : AppGroupOption(1 shl 2, "未安装应用")
+    data object SystemGroup : AppGroupOption(1 shl 0, R.string.option_app_group_system)
+    data object UserGroup : AppGroupOption(1 shl 1, R.string.option_app_group_user)
+    data object UnInstalledGroup : AppGroupOption(1 shl 2, R.string.option_app_group_uninstalled)
 
     companion object {
         val normalObjects by lazy { listOf(SystemGroup, UserGroup) }
@@ -174,12 +178,12 @@ sealed class AppGroupOption(
 
 sealed class AutomatorModeOption(
     override val value: Int,
-    override val label: String,
+    @StringRes override val labelRes: Int,
 ) : Option<Int> {
     override val options get() = objects
 
-    data object A11yMode : AutomatorModeOption(1, "无障碍")
-    data object AutomationMode : AutomatorModeOption(2, "自动化")
+    data object A11yMode : AutomatorModeOption(1, R.string.option_automator_a11y)
+    data object AutomationMode : AutomatorModeOption(2, R.string.option_automator_automation)
 
     companion object {
         val objects by lazy { listOf(A11yMode, AutomationMode) }

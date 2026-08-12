@@ -101,7 +101,7 @@ class ActivityService : OverlayWindowService(
     init {
         useLogLifecycle()
         useAliveFlow(isRunning)
-        useAliveToast("记录服务")
+        useAliveToast(getString(R.string.s_14b8a7bf3c))
         StopServiceReceiver.autoRegister()
         onCreated { recordNotif.notifyService() }
         onCreated {

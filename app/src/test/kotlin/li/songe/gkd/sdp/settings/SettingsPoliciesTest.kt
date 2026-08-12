@@ -1,5 +1,6 @@
 package li.songe.gkd.sdp.settings
 
+import li.songe.gkd.sdp.R
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -33,20 +34,23 @@ class SettingsSearchPolicyTest {
     private val entries = listOf(
         SettingsEntry(
             group = SettingsGroup.RUNTIME_CAPABILITIES,
-            title = "运行能力",
+            titleRes = R.string.settings_capabilities_title,
+            searchTitle = "运行能力",
             titleEn = "Capabilities",
             keywords = listOf("权限", "无障碍", "Shizuku"),
             aliases = listOf("能力中心"),
         ),
         SettingsEntry(
             group = SettingsGroup.SELF_CONTROL,
-            title = "数字自律",
+            titleRes = R.string.settings_self_control_title,
+            searchTitle = "数字自律",
             titleEn = "Self-control",
             keywords = listOf("自律", "复盘"),
         ),
         SettingsEntry(
             group = SettingsGroup.PRIVACY_DATA,
-            title = "隐私与数据",
+            titleRes = R.string.settings_privacy_title,
+            searchTitle = "隐私与数据",
             titleEn = "Privacy & data",
             keywords = listOf("备份", "删除"),
             aliases = listOf("数据"),
@@ -92,6 +96,50 @@ class SettingsSearchPolicyTest {
             SettingsGroup.entries.toList(),
             SettingsIndex.entries.map { it.group },
         )
-        assertEquals(SettingsIndex.entries.size, SettingsIndex.entries.map { it.title }.distinct().size)
+        assertEquals(SettingsIndex.entries.size, SettingsIndex.entries.map { it.titleRes }.distinct().size)
+    }
+
+    @Test
+    fun recentOnlyReturnsKnownIdsAndIsCappedAtFive() {
+        val recent = SettingsSearchPolicy.recent(
+            entries = SettingsIndex.entries,
+            recentIds = listOf("privacy_data", "missing", "capabilities", "privacy_data"),
+        )
+        assertEquals(listOf("privacy_data", "capabilities"), recent.map { it.id })
+        assertEquals(
+            5,
+            SettingsSearchPolicy.recent(
+                entries = SettingsIndex.entries,
+                recentIds = SettingsIndex.entries.map { it.id } + listOf("privacy_data"),
+            ).size,
+        )
+    }
+
+    @Test
+    fun entriesHaveStableIdsAndTargets() {
+        assertEquals(
+            SettingsIndex.entries.size,
+            SettingsIndex.entries.map { it.id }.distinct().size,
+        )
+        assertTrue(SettingsIndex.entries.all { it.target is SettingsTarget.Route || it.target is SettingsTarget.InPage })
+    }
+
+    @Test
+    fun rememberRecentMovesSelectionToFrontAndCapsLimit() {
+        assertEquals(
+            listOf("privacy_data", "capabilities"),
+            SettingsSearchPolicy.rememberRecent(
+                recentIds = listOf("capabilities", "privacy_data"),
+                selectedId = "privacy_data",
+            ),
+        )
+        assertEquals(
+            emptyList<String>(),
+            SettingsSearchPolicy.recent(SettingsIndex.entries, listOf("privacy_data"), limit = 0),
+        )
+        assertEquals(
+            emptyList<String>(),
+            SettingsSearchPolicy.rememberRecent(listOf("privacy_data"), "privacy_data", limit = 0),
+        )
     }
 }

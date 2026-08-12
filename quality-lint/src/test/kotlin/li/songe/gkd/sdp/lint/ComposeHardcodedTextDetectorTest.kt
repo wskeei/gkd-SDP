@@ -23,8 +23,17 @@ class ComposeHardcodedTextDetectorTest : LintDetectorTest() {
         """.trimIndent(),
     )
 
+    private fun componentStub(): TestFile = kotlin(
+        """
+        package li.songe.gkd.sdp.ui.component
+        fun SettingItem(title: String, subtitle: String? = null)
+        fun InlineMessage(text: String)
+        fun PerfCustomIconButton(contentDescription: String? = null, onClick: () -> Unit = {})
+        """.trimIndent(),
+    )
+
     @Test
-    fun flagsTextLiteral() {
+    fun testFlagsTextLiteral() {
         lint().files(
             stub(),
             kotlin(
@@ -39,7 +48,7 @@ class ComposeHardcodedTextDetectorTest : LintDetectorTest() {
     }
 
     @Test
-    fun flagsContentDescriptionLiteral() {
+    fun testFlagsContentDescriptionLiteral() {
         lint().files(
             stub(),
             kotlin(
@@ -54,14 +63,19 @@ class ComposeHardcodedTextDetectorTest : LintDetectorTest() {
     }
 
     @Test
-    fun flagsInterpolatedTemplate() {
+    fun testFlagsCustomComponentTextArguments() {
         lint().files(
             stub(),
+            componentStub(),
             kotlin(
                 """
-                import androidx.compose.material3.Text
-                fun Count(count: Int) {
-                    Text("共 \$count 条")
+                import li.songe.gkd.sdp.ui.component.SettingItem
+                import li.songe.gkd.sdp.ui.component.InlineMessage
+                import li.songe.gkd.sdp.ui.component.PerfCustomIconButton
+                fun Settings() {
+                    SettingItem(title = "运行状态", subtitle = "显示当前服务")
+                    InlineMessage(text = "请先开启权限")
+                    PerfCustomIconButton(contentDescription = "前往设置")
                 }
                 """.trimIndent(),
             ),
@@ -69,7 +83,22 @@ class ComposeHardcodedTextDetectorTest : LintDetectorTest() {
     }
 
     @Test
-    fun flagsConcatenation() {
+    fun testFlagsInterpolatedTemplate() {
+        lint().files(
+            stub(),
+            kotlin(
+                """
+                import androidx.compose.material3.Text
+                fun Count(count: Int) {
+                    Text("共 ${'$'}count 条")
+                }
+                """.trimIndent(),
+            ),
+        ).run().expectContains("Hardcoded user-visible text")
+    }
+
+    @Test
+    fun testFlagsConcatenation() {
         lint().files(
             stub(),
             kotlin(
@@ -84,7 +113,7 @@ class ComposeHardcodedTextDetectorTest : LintDetectorTest() {
     }
 
     @Test
-    fun acceptsResourceCalls() {
+    fun testAcceptsResourceCalls() {
         lint().files(
             stub(),
             kotlin(
@@ -99,7 +128,7 @@ class ComposeHardcodedTextDetectorTest : LintDetectorTest() {
     }
 
     @Test
-    fun flagsNamedTextArgumentAndIgnoresLocalStrings() {
+    fun testFlagsNamedTextArgumentAndIgnoresLocalStrings() {
         lint().files(
             stub(),
             kotlin(
@@ -118,7 +147,7 @@ class ComposeHardcodedTextDetectorTest : LintDetectorTest() {
     }
 
     @Test
-    fun flagsToastAndNotificationText() {
+    fun testFlagsToastAndNotificationText() {
         lint().files(
             kotlin(
                 """
@@ -133,6 +162,45 @@ class ComposeHardcodedTextDetectorTest : LintDetectorTest() {
                 import android.app.Notification
                 fun build(b: Notification.Builder): Notification.Builder {
                     return b.setContentTitle("使用提醒").setContentText("还有 5 分钟")
+                }
+                """.trimIndent(),
+            ),
+        ).run().expectContains("Hardcoded user-visible text")
+    }
+
+    @Test
+    fun testFlagsDialogTitleAndMessage() {
+        lint().files(
+            stub(),
+            kotlin(
+                """
+                import androidx.compose.material3.AlertDialog
+                import androidx.compose.material3.Text
+                fun Confirm() {
+                    AlertDialog(
+                        onDismissRequest = {},
+                        title = { Text("删除确认") },
+                        text = { Text("此操作不可恢复") },
+                        confirmButton = {},
+                    )
+                }
+                """.trimIndent(),
+            ),
+        ).run().expectContains("Hardcoded user-visible text")
+    }
+
+    @Test
+    fun testFlagsCustomListAndSemanticsLabels() {
+        lint().files(
+            componentStub(),
+            kotlin(
+                """
+                package li.songe.gkd.sdp.ui
+                import li.songe.gkd.sdp.ui.component.SettingItem
+                fun RequiredTextItem(text: String)
+                fun ListItems() {
+                    RequiredTextItem(text = "切换服务会有短暂卡顿")
+                    SettingItem(title = "运行状态", onClickLabel = "进入运行状态")
                 }
                 """.trimIndent(),
             ),

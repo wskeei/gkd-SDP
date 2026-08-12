@@ -19,25 +19,30 @@ import kotlinx.coroutines.launch
 import li.songe.gkd.sdp.data.ActionLog
 import li.songe.gkd.sdp.data.DailyStat
 import li.songe.gkd.sdp.data.SubsConfig
+import li.songe.gkd.sdp.R
 import li.songe.gkd.sdp.db.DbSet
 import li.songe.gkd.sdp.util.ActionLogStatsPolicy
 import java.time.ZoneId
 import li.songe.gkd.sdp.util.subsMapFlow
 
 data class ActionLogPresentation(
-    val outcomeTitle: String,
-    val outcomeDescription: String,
+    val outcomeTitleRes: Int,
+    val outcomeDescriptionRes: Int,
     val subscriptionName: String?,
     val groupName: String?,
     val ruleName: String?,
 ) {
     companion object {
         fun from(actionLog: ActionLog): ActionLogPresentation = ActionLogPresentation(
-            outcomeTitle = if (actionLog.outcome == ActionLog.OUTCOME_INTERCEPTED) "已拦截" else "已执行",
-            outcomeDescription = if (actionLog.outcome == ActionLog.OUTCOME_INTERCEPTED) {
-                "动作未执行：命中拦截规则后展示了拦截界面"
+            outcomeTitleRes = if (actionLog.outcome == ActionLog.OUTCOME_INTERCEPTED) {
+                R.string.action_log_outcome_intercepted_title
             } else {
-                "动作已执行"
+                R.string.action_log_outcome_executed_title
+            },
+            outcomeDescriptionRes = if (actionLog.outcome == ActionLog.OUTCOME_INTERCEPTED) {
+                R.string.action_log_outcome_intercepted_description
+            } else {
+                R.string.action_log_outcome_executed_description
             },
             subscriptionName = actionLog.subsNameSnapshot,
             groupName = actionLog.groupNameSnapshot,

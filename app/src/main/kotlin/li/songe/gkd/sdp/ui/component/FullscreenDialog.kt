@@ -13,6 +13,8 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.window.DialogWindowProvider
 import androidx.core.view.WindowInsetsControllerCompat
+import li.songe.gkd.sdp.R
+import li.songe.gkd.sdp.app
 import li.songe.gkd.sdp.ui.share.LocalDarkTheme
 
 @Composable
@@ -25,7 +27,7 @@ fun FullscreenDialog(
         dismissOnClickOutside = false,
         usePlatformDefaultWidth = false,
         decorFitsSystemWindows = false,
-        windowTitle = "全局弹窗",
+        windowTitle = app.getString(R.string.fullscreen_dialog_title),
     )
 ) {
     val activity = LocalActivity.current!!

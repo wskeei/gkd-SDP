@@ -73,6 +73,7 @@ class UploadOptions(
 
     private fun stopTask() {
         if (statusFlow.value is LoadStatus.Loading && job != null) {
+            // i18n-ignore: legacy fallback or non-display heuristic data
             job?.cancel("上传已取消")
             job = null
         }

@@ -11,9 +11,8 @@ import li.songe.gkd.sdp.R
 
 @Composable
 internal fun UsageGuardStatusSection(state: UsageGuardSettingsRenderState) {
-    val settings = state.settings
-    val vm = state.vm
-    val durationOptions = state.durationOptions
+    val settings = state.state.settings
+    val durationOptions = state.state.durationOptions
     SectionCard(
         title = stringResource(R.string.s_e88c1f786e),
         subtitle = stringResource(R.string.s_21e2314ce6),
@@ -28,7 +27,9 @@ internal fun UsageGuardStatusSection(state: UsageGuardSettingsRenderState) {
             trailing = {
                 Switch(
                     checked = settings.usageGuardEnabled,
-                    onCheckedChange = vm::updateEnabled,
+                    onCheckedChange = {
+                        state.onDispatch(UsageGuardAction.UpdateEnabled(it))
+                    },
                 )
             },
         )
@@ -36,25 +37,27 @@ internal fun UsageGuardStatusSection(state: UsageGuardSettingsRenderState) {
         CompactInfoRow(
             label = li.songe.gkd.sdp.app.getString(R.string.s_96b029d1e1),
             value = if (settings.usageGuardScopeMode == UsageGuardPolicy.SCOPE_SELECTED_ONLY) {
-                "仅选中应用"
+                stringResource(R.string.focus_lock_scope_selected)
             } else {
-                "全局生效（白名单跳过）"
+                stringResource(R.string.usage_guard_scope_global_whitelist)
             },
         )
         CompactInfoRow(
             label = li.songe.gkd.sdp.app.getString(R.string.s_ae2399c597),
             value = if (settings.usageGuardDefaultGrantMode == UsageGuardPolicy.GRANT_MODE_STRICT) {
-                "严格模式"
+                stringResource(R.string.usage_guard_strict_mode_title)
             } else {
-                "普通模式"
+                stringResource(R.string.usage_guard_normal_mode_title)
             },
         )
         CompactInfoRow(
             label = li.songe.gkd.sdp.app.getString(R.string.s_30a60b1367),
-            value = durationOptions.joinToString(" / ", transform = ::usageGuardDurationLabel),
+            value = durationOptions.joinToString(" / ") {
+                usageGuardDurationLabel(it, li.songe.gkd.sdp.app)
+            },
         )
         Text(
-            text = UsageGuardUiStatePolicy.protectionStatusAutoReenableMessage(),
+            text = stringResource(R.string.usage_guard_auto_reenable_message),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.primary,
         )

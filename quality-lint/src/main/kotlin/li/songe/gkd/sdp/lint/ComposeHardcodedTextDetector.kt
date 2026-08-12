@@ -10,6 +10,7 @@ import com.android.tools.lint.detector.api.Scope
 import com.android.tools.lint.detector.api.SourceCodeScanner
 import com.android.tools.lint.detector.api.Severity
 import org.jetbrains.uast.UCallExpression
+import org.jetbrains.uast.UElement
 import org.jetbrains.uast.UExpression
 import org.jetbrains.uast.ULiteralExpression
 import org.jetbrains.uast.UNamedExpression
@@ -24,13 +25,14 @@ import org.jetbrains.uast.UNamedExpression
  */
 class ComposeHardcodedTextDetector : Detector(), SourceCodeScanner {
 
-    override fun getApplicableMethodNames(): List<String> = SCANNED_METHODS
+    override fun getApplicableUastTypes(): List<Class<out UElement>> =
+        listOf(UCallExpression::class.java)
 
     override fun createUastHandler(context: JavaContext): UElementHandler {
         return object : UElementHandler() {
             override fun visitCallExpression(node: UCallExpression) {
                 val methodName = node.methodName ?: return
-                if (methodName !in SCANNED_METHODS) return
+                if (methodName !in SCANNED_METHODS && methodName !in UI_CALLS) return
                 node.valueArguments.forEachIndexed { index, argument ->
                     if (!isUserTextArgument(methodName, argument, index)) return@forEachIndexed
                     if (argument.isHardcodedText()) {
@@ -53,6 +55,7 @@ class ComposeHardcodedTextDetector : Detector(), SourceCodeScanner {
         val argName = (argument as? UNamedExpression)?.name
         return when {
             argName != null -> argName in TEXT_ARGUMENT_NAMES && methodName in UI_CALLS
+            methodName in UI_CALLS -> true
             methodName == "Text" || methodName == "Button" || methodName == "OutlinedButton" ||
                 methodName == "TextButton" || methodName == "FilledTonalButton" ||
                 methodName == "Snackbar" || methodName == "toast" ||
@@ -66,7 +69,7 @@ class ComposeHardcodedTextDetector : Detector(), SourceCodeScanner {
     private fun UExpression.isHardcodedText(): Boolean = when (this) {
         is UNamedExpression -> expression.isHardcodedText()
         is ULiteralExpression -> value is String || value is Char
-        else -> asSourceString().startsWith("\"")
+        else -> asSourceString().trimStart('(').trimStart().startsWith("\"")
     }
 
     companion object {
@@ -104,6 +107,12 @@ class ComposeHardcodedTextDetector : Detector(), SourceCodeScanner {
             "CompactInfoRow", "SettingRow", "UrlInGroupRow", "TimeRuleRow",
             "AppGroupCard", "AppGroupCardHeader", "HistoryRow", "DatePickerDialog",
             "PerfTopAppBar", "ClosableTitle", "InputSubsLinkOption",
+            "RequiredTextItem", "AuthCard", "RuleItem", "onClick", "onLongClick",
+            "PerfSwitch", "SubsItemCard", "SubsSheet", "RuleGroupCard", "RuleGroupState",
+            "AnimatedIcon", "TermsAcceptDialog", "UploadOptions", "ShareLogDlg",
+            "ReviewSectionCard", "ReviewRankedBarList", "RecentRowsCard", "OverviewCard",
+            "MetricBlock", "TrendHeadline", "UsageGuardReviewFilters",
+            "SelfControlWindowChart", "UsageGuardRequestContent", "UsageDurationRatioFeedback",
         )
 
         private val TEXT_ARGUMENT_NAMES = setOf(
@@ -113,10 +122,23 @@ class ComposeHardcodedTextDetector : Detector(), SourceCodeScanner {
             "message",
             "contentDescription",
             "onClickLabel",
+            "onLongClickLabel",
             "label",
             "placeholder",
             "supportingText",
             "errorText",
+            "stateDescription",
+            "windowTitle",
+            "titleText",
+            "emptyText",
+            "confirmText",
+            "dismissText",
+            "suffix",
+            "hint",
+            "status",
+            "currentLabel",
+            "bucketLabel",
+            "aggregationLabel",
         )
 
         @JvmField

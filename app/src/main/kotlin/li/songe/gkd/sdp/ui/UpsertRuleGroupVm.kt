@@ -50,10 +50,11 @@ class UpsertRuleGroupVm(val route: UpsertRuleGroupRoute) : ViewModel() {
     var addAppId: String? = null
 
     suspend fun saveRule() {
-        val subs = subsMapFlow.value[route.subsId] ?: error("订阅不存在")
+        val subs = subsMapFlow.value[route.subsId]
+            ?: error(li.songe.gkd.sdp.app.getString(R.string.upsert_subscription_missing))
         val text = textFlow.value
         if (text.isBlank()) {
-            error("规则不能为空")
+            error(li.songe.gkd.sdp.app.getString(R.string.upsert_rule_empty))
         }
         if (text == initText) {
             toast(li.songe.gkd.sdp.app.getString(R.string.s_340b2031bf))
@@ -61,12 +62,17 @@ class UpsertRuleGroupVm(val route: UpsertRuleGroupRoute) : ViewModel() {
         }
         var jsonObject = runCatching { Json5.parseToJson5Element(text) }.run {
             if (isFailure) {
-                error("非法格式\n${exceptionOrNull()?.message}")
+                error(
+                    li.songe.gkd.sdp.app.getString(
+                        R.string.upsert_invalid_format,
+                        exceptionOrNull()?.message.orEmpty(),
+                    ),
+                )
             }
             getOrThrow()
         }
         if (jsonObject !is JsonObject) {
-            error("规则应为对象格式")
+            error(li.songe.gkd.sdp.app.getString(R.string.upsert_rule_object_expected))
         }
         // 自动填充 key
         if (jsonObject["name"] != null && jsonObject["key"] == null) {
@@ -92,13 +98,14 @@ class UpsertRuleGroupVm(val route: UpsertRuleGroupRoute) : ViewModel() {
             var newGroup = try {
                 if (appId != null) {
                     if (jsonObject["groups"] is JsonArray) {
-                        val id = jsonObject["id"] ?: error("缺少id")
+                        val id = jsonObject["id"]
+                            ?: error(li.songe.gkd.sdp.app.getString(R.string.upsert_missing_id))
                         if (!(id is JsonPrimitive && id.isString && id.content == appId)) {
-                            error("id与当前应用不一致")
+                            error(li.songe.gkd.sdp.app.getString(R.string.upsert_id_mismatch))
                         }
                         RawSubscription.parseApp(jsonObject).let { newApp ->
                             if (newApp.groups.isEmpty()) {
-                                error("至少输入一个规则")
+                                error(li.songe.gkd.sdp.app.getString(R.string.upsert_at_least_one_rule))
                             }
                             newApp.groups.first()
                         }
@@ -110,7 +117,7 @@ class UpsertRuleGroupVm(val route: UpsertRuleGroupRoute) : ViewModel() {
                 }
             } catch (e: Exception) {
                 LogUtils.d(e)
-                error("非法规则\n${e.message}")
+                error(li.songe.gkd.sdp.app.getString(R.string.upsert_invalid_rule, e.message.orEmpty()))
             }
             newGroup.errorDesc?.let(::error)
             if (newGroup.key != groupKey) {
@@ -126,7 +133,8 @@ class UpsertRuleGroupVm(val route: UpsertRuleGroupRoute) : ViewModel() {
             }
             val newSubs = if (appId != null) {
                 newGroup as RawSubscription.RawAppGroup
-                val app = subs.apps.find { a -> a.id == appId } ?: error("应用不存在")
+                val app = subs.apps.find { a -> a.id == appId }
+                    ?: error(li.songe.gkd.sdp.app.getString(R.string.upsert_app_missing))
                 subs.copy(apps = subs.apps.toMutableList().apply {
                     set(
                         indexOfFirst { a -> a.id == appId },
@@ -150,12 +158,12 @@ class UpsertRuleGroupVm(val route: UpsertRuleGroupRoute) : ViewModel() {
                 var newApp = try {
                     RawSubscription.parseApp(jsonObject).apply {
                         if (groups.isEmpty()) {
-                            error("至少输入一个规则")
+                            error(li.songe.gkd.sdp.app.getString(R.string.upsert_at_least_one_rule))
                         }
                     }
                 } catch (e: Exception) {
                     LogUtils.d(e)
-                    error("非法规则\n${e.message}")
+                    error(li.songe.gkd.sdp.app.getString(R.string.upsert_invalid_rule, e.message.orEmpty()))
                 }
                 val oldApp = subs.apps.find { it.id == newApp.id }
                 if (oldApp != null) {
@@ -191,13 +199,14 @@ class UpsertRuleGroupVm(val route: UpsertRuleGroupRoute) : ViewModel() {
                 // add specified app group
                 var newGroups = try {
                     if (jsonObject["groups"] is JsonArray) {
-                        val id = jsonObject["id"] ?: error("缺少id")
+                        val id = jsonObject["id"]
+                            ?: error(li.songe.gkd.sdp.app.getString(R.string.upsert_missing_id))
                         if (!(id is JsonPrimitive && id.isString && id.content == appId)) {
-                            error("id与当前应用不一致")
+                            error(li.songe.gkd.sdp.app.getString(R.string.upsert_id_mismatch))
                         }
                         RawSubscription.parseApp(jsonObject).apply {
                             if (groups.isEmpty()) {
-                                error("至少输入一个规则")
+                                error(li.songe.gkd.sdp.app.getString(R.string.upsert_at_least_one_rule))
                             }
                         }.groups
                     } else {
@@ -205,7 +214,7 @@ class UpsertRuleGroupVm(val route: UpsertRuleGroupRoute) : ViewModel() {
                     } ?: listOf(RawSubscription.parseAppGroup(jsonObject))
                 } catch (e: Exception) {
                     LogUtils.d(e)
-                    error("非法规则\n${e.message}")
+                    error(li.songe.gkd.sdp.app.getString(R.string.upsert_invalid_rule, e.message.orEmpty()))
                 }
                 val oldApp = subs.getApp(appId)
                 newGroups.forEach { g ->
@@ -242,7 +251,7 @@ class UpsertRuleGroupVm(val route: UpsertRuleGroupRoute) : ViewModel() {
                     RawSubscription.parseGlobalGroup(jsonObject)
                 } catch (e: Exception) {
                     LogUtils.d(e)
-                    error("非法规则\n${e.message}")
+                    error(li.songe.gkd.sdp.app.getString(R.string.upsert_invalid_rule, e.message.orEmpty()))
                 }
                 checkGroupKeyName(subs.globalGroups, newGroup)
                 if (subs.globalGroups.any { it.key == newGroup.key }) {
@@ -272,6 +281,11 @@ private fun checkGroupKeyName(
     newGroup: RawSubscription.RawGroupProps
 ) {
     if (groups.any { it.name == newGroup.name }) {
-        error("已存在同名「${newGroup.name}」规则")
+        error(
+            li.songe.gkd.sdp.app.getString(
+                R.string.upsert_duplicate_rule_name,
+                newGroup.name,
+            ),
+        )
     }
 }

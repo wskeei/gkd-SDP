@@ -102,6 +102,57 @@ class DisplayPreferenceBackupTest {
         )
     }
 
+    @Test
+    fun sanitizeLanguageTagRejectsBlankLongMalformedAndUnd() {
+        assertEquals("", DisplayPreferenceBackupPolicy.sanitizeLanguageTag(""))
+        assertEquals(
+            "",
+            DisplayPreferenceBackupPolicy.sanitizeLanguageTag("a".repeat(36)),
+        )
+        assertEquals(
+            "",
+            DisplayPreferenceBackupPolicy.sanitizeLanguageTag("not a locale !!!"),
+        )
+        assertEquals(
+            "",
+            DisplayPreferenceBackupPolicy.sanitizeLanguageTag("und"),
+        )
+        assertEquals(
+            "zh-CN",
+            DisplayPreferenceBackupPolicy.sanitizeLanguageTag("zh-cn"),
+        )
+    }
+
+    @Test
+    fun restoreIgnoresUnsupportedSchemasAndInvalidDensity() {
+        val current = settings(
+            enableDarkTheme = true,
+            displayDensityScale = 1.05f,
+        ).copy(languageTag = "zh-CN")
+
+        val restored = DisplayPreferenceBackupPolicy.restore(
+            current = current,
+            theme = AppThemeBackup(schema = 2, enableDarkTheme = false, enableDynamicColor = true),
+            density = DisplayDensityBackup(schema = 2, scale = 1.5f),
+            language = LanguageBackup(schema = 2, languageTag = "en-US"),
+        )
+
+        assertEquals(true, restored.enableDarkTheme)
+        assertEquals(1.05f, restored.displayDensityScale)
+        assertEquals("zh-CN", restored.languageTag)
+    }
+
+    @Test
+    fun snapshotAndUiPolicyNormalizeUnsafeDensity() {
+        val current = settings(displayDensityScale = Float.NaN).copy(languageTag = "")
+        val snapshot = DisplayPreferenceBackupPolicy.snapshot(current)
+        val uiState = DisplayPreferenceUiPolicy.resolve(current, "en-US")
+
+        assertEquals(1f, snapshot.density.scale)
+        assertEquals(1f, uiState.densityScale)
+        assertEquals("en-US", uiState.languageTag)
+    }
+
     private fun settings(
         enableAutomator: Boolean = false,
         enableShizuku: Boolean = false,

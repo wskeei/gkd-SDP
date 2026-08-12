@@ -29,7 +29,7 @@ enum class LegacyDeepLinkTarget {
     SETTINGS,
     ADVANCED,
     SNAPSHOT,
-    APP_OPS,
+    CAPABILITY_CENTER,
     SELF_CONTROL,
     WECHAT_SCANNER,
 }
@@ -130,7 +130,7 @@ object WebOriginPolicy {
                 path == "/0" && uri.rawQuery == null -> LegacyDeepLinkTarget.OVERVIEW
                 path == "/1" && uri.rawQuery == null -> LegacyDeepLinkTarget.ADVANCED
                 path == "/2" && uri.rawQuery == null -> LegacyDeepLinkTarget.SNAPSHOT
-                path == "/3" && uri.rawQuery == null -> LegacyDeepLinkTarget.APP_OPS
+                path == "/3" && uri.rawQuery == null -> LegacyDeepLinkTarget.CAPABILITY_CENTER
                 path == "/4" && uri.rawQuery == null -> LegacyDeepLinkTarget.SELF_CONTROL
                 else -> null
             }

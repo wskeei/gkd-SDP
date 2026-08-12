@@ -25,6 +25,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.onClick
@@ -89,18 +91,29 @@ fun SubsItemCard(
         },
         tween()
     )
+    val selectedStateDescription = if (isSelectedMode) {
+        stringResource(
+            if (isSelected) R.string.subs_item_selected else R.string.subs_item_not_selected,
+        )
+    } else {
+        stringResource(
+            if (subsItem.enable) R.string.subs_item_enabled else R.string.subs_item_disabled,
+        )
+    }
     Card(
         onClick = onClick,
         modifier = modifier
             .padding(16.dp, 4.dp)
             .semantics {
-                stateDescription = if (isSelectedMode) {
-                    if (isSelected) "已选中" else "未选中"
-                } else {
-                    if (subsItem.enable) "已启用" else "已禁用"
-                }
-                this.onClick(label = "查看订阅详情", action = null)
-                this.onLongClick(label = "进入多选模式", action = null)
+                stateDescription = selectedStateDescription
+                this.onClick(
+                    label = li.songe.gkd.sdp.app.getString(R.string.subs_view_detail_label),
+                    action = null,
+                )
+                this.onLongClick(
+                    label = li.songe.gkd.sdp.app.getString(R.string.subs_enter_multi_select_label),
+                    action = null,
+                )
             },
         shape = MaterialTheme.shapes.small,
         interactionSource = interactionSource,
@@ -128,7 +141,7 @@ fun SubsItemCard(
                         style = MaterialTheme.typography.bodyLarge,
                     )
                     Text(
-                        text = subscription.numText,
+                        text = subscription.numText(LocalContext.current),
                         style = MaterialTheme.typography.bodyMedium,
                         color = if (subscription.groupsSize == 0) {
                             LocalContentColor.current.copy(alpha = 0.5f)
@@ -164,7 +177,7 @@ fun SubsItemCard(
                                 color = MaterialTheme.colorScheme.secondary,
                             )
                         }
-                        val timeStr = formatTimeAgo(subsItem.mtime)
+                        val timeStr = formatTimeAgo(subsItem.mtime, LocalContext.current)
                         Text(
                             modifier = Modifier.semantics {
                                 contentDescription = li.songe.gkd.sdp.app.getString(R.string.s_203d809fb1, (timeStr).toString())
@@ -228,12 +241,6 @@ fun SubsItemCard(
         }
     }
 }
-
-
-
-
-
-
 
 
 

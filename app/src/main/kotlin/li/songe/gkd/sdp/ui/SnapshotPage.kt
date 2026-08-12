@@ -191,7 +191,10 @@ fun SnapshotPage() {
                                 snapshotVal.appId,
                                 snapshotVal.activityId
                             )
-                            context.shareFile(zipFile, "分享快照文件")
+                            context.shareFile(
+                                zipFile,
+                                context.getString(R.string.share_snapshot_file),
+                            )
                         }))
                         .then(modifier)
                 )

@@ -123,7 +123,7 @@ fun AuthA11yPage() {
                     )
                     Text(
                         modifier = Modifier.padding(start = 12.dp),
-                        text = AutomatorModeOption.A11yMode.label,
+                        text = stringResource(AutomatorModeOption.A11yMode.labelRes),
                         style = MaterialTheme.typography.titleMedium,
                     )
                 }
@@ -140,8 +140,8 @@ fun AuthA11yPage() {
                         .padding(start = 8.dp, top = 4.dp),
                     style = MaterialTheme.typography.bodyMedium,
                     list = listOf(
-                        "授予「无障碍权限」",
-                        "无障碍关闭后需重新授权"
+                        stringResource(R.string.auth_grant_accessibility),
+                        stringResource(R.string.auth_a11y_reauthorize),
                     ),
                 )
                 AnimatedBooleanContent(
@@ -199,8 +199,8 @@ fun AuthA11yPage() {
                         .padding(start = 8.dp, top = 4.dp),
                     style = MaterialTheme.typography.bodyMedium,
                     list = listOf(
-                        "授予「写入安全设置权限」",
-                        "应用可自行控制开关无障碍",
+                        stringResource(R.string.auth_grant_write_secure),
+                        stringResource(R.string.auth_can_control_a11y),
                     ),
                 )
                 AnimatedBooleanContent(
@@ -268,7 +268,7 @@ fun AuthA11yPage() {
                     )
                     Text(
                         modifier = Modifier.padding(start = 12.dp),
-                        text = AutomatorModeOption.AutomationMode.label,
+                        text = stringResource(AutomatorModeOption.AutomationMode.labelRes),
                         style = MaterialTheme.typography.titleMedium,
                     )
                 }
@@ -278,10 +278,10 @@ fun AuthA11yPage() {
                         .padding(start = 8.dp),
                     style = MaterialTheme.typography.bodyMedium,
                     list = listOf(
-                        "自动化驱动的无障碍",
-                        "不会导致界面显示异常",
-                        "不会被其它应用检测为无障碍",
-                        "部分应用仍需切换至无障碍模式",
+                        stringResource(R.string.auth_automation_a11y),
+                        stringResource(R.string.auth_automation_no_ui_issue),
+                        stringResource(R.string.auth_automation_not_detected),
+                        stringResource(R.string.auth_some_apps_need_a11y),
                     ),
                 )
                 AnimatedBooleanContent(
@@ -356,10 +356,12 @@ private fun ShizukuAuthButton(
 private val Int.appopsAllow get() = "appops set ${META.appId} ${AppOpsManagerHidden.opToName(this)} allow"
 private val String.pmGrant get() = "pm grant ${META.appId} $this"
 
-val gkdStartCommandTextFlow = MutableStateFlow("正在生成一次性授权命令…")
+val gkdStartCommandTextFlow = MutableStateFlow(
+    li.songe.gkd.sdp.app.getString(R.string.auth_generating_command),
+)
 
 suspend fun refreshGkdStartCommandText() {
-    gkdStartCommandTextFlow.value = "正在生成一次性授权命令…"
+    gkdStartCommandTextFlow.value = li.songe.gkd.sdp.app.getString(R.string.auth_generating_command)
     gkdStartCommandTextFlow.value = runCatching {
         withContext(Dispatchers.IO) {
             val exposeFile = ExposeService.refreshExternalCommandFile()
@@ -381,7 +383,7 @@ suspend fun refreshGkdStartCommandText() {
             ExposeService.restrictToOwner(file)
             "adb shell sh ${file.absolutePath}"
         }
-    }.getOrElse { "授权命令生成失败，请关闭后重试" }
+    }.getOrElse { li.songe.gkd.sdp.app.getString(R.string.auth_command_generation_failed) }
 }
 
 @Composable

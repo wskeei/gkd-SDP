@@ -75,7 +75,7 @@ class WebOriginPolicyTest {
             "gkd://page?tab=3" to LegacyDeepLinkTarget.SETTINGS,
             "gkd://page/1" to LegacyDeepLinkTarget.ADVANCED,
             "gkd://page/2" to LegacyDeepLinkTarget.SNAPSHOT,
-            "gkd://page/3" to LegacyDeepLinkTarget.APP_OPS,
+            "gkd://page/3" to LegacyDeepLinkTarget.CAPABILITY_CENTER,
             "gkd://page/4" to LegacyDeepLinkTarget.SELF_CONTROL,
             "gkd://invoke/1" to LegacyDeepLinkTarget.WECHAT_SCANNER,
         )

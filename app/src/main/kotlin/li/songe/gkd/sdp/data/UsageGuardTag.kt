@@ -18,6 +18,7 @@ data class UsageGuardTag(
     @ColumnInfo(name = "created_at") val createdAt: Long = System.currentTimeMillis(),
 ) {
     companion object {
+        // i18n-ignore: legacy fallback or non-display heuristic data
         const val OTHER_TAG_NAME = "其他"
         const val QUERY_ALL_SQL = "SELECT * FROM usage_guard_tag " +
             "ORDER BY CASE WHEN TRIM(name) = '" + OTHER_TAG_NAME + "' THEN 1 ELSE 0 END ASC, " +
@@ -34,6 +35,9 @@ data class UsageGuardTag(
 
         @Query("DELETE FROM usage_guard_tag WHERE id = :id AND is_preset = 0")
         suspend fun deleteCustomTag(id: Long): Int
+
+        @Query("DELETE FROM usage_guard_tag WHERE is_preset = 0")
+        suspend fun deleteCustomTags(): Int
 
         @Query("SELECT COUNT(*) FROM usage_guard_tag")
         suspend fun count(): Int

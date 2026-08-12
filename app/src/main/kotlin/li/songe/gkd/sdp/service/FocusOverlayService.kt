@@ -73,7 +73,8 @@ class FocusOverlayService : LifecycleService(), SavedStateRegistryOwner {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         super.onStartCommand(intent, flags, startId)
-        val message = intent?.getStringExtra("message") ?: "专注当下"
+        val message = intent?.getStringExtra("message")
+            ?: getString(R.string.common_default_focus_message)
         val whitelistJson = intent?.getStringExtra("whitelist") ?: "[]"
         val blockedApp = intent?.getStringExtra("blockedApp") ?: ""
         val isLocked = intent?.getBooleanExtra("isLocked", false) ?: false
@@ -131,10 +132,18 @@ class FocusOverlayService : LifecycleService(), SavedStateRegistryOwner {
                                         stopSelf()
                                     }, 300)
                                 } else {
-                                    Toast.makeText(this@FocusOverlayService, "无法启动该应用", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(
+                                        this@FocusOverlayService,
+                                        getString(R.string.focus_overlay_cannot_launch_app),
+                                        Toast.LENGTH_SHORT,
+                                    ).show()
                                 }
                             } catch (e: Exception) {
-                                Toast.makeText(this@FocusOverlayService, "启动失败：${e.message}", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(
+                                    this@FocusOverlayService,
+                                    getString(R.string.focus_overlay_launch_failed, e.message.orEmpty()),
+                                    Toast.LENGTH_SHORT,
+                                ).show()
                             }
                         }
                     )
@@ -249,7 +258,11 @@ private fun MainInterceptContent(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        FocusTimeFormatter.formatRemainingText(endTime = endTime, now = now)?.let { remaining ->
+        FocusTimeFormatter.formatRemainingText(
+            endTime = endTime,
+            now = now,
+            context = li.songe.gkd.sdp.app,
+        )?.let { remaining ->
             Text(
                 text = remaining,
                 style = MaterialTheme.typography.bodyMedium,

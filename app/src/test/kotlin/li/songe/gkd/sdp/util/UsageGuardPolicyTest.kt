@@ -75,4 +75,36 @@ class UsageGuardPolicyTest {
 
         assertTrue(valid.accepted)
     }
+
+    @Test
+    fun disabledUnknownScopeAndUnselectedTargetsAreNotProtected() {
+        val profile = UsageGuardPolicy.AppProfileSnapshot(
+            appId = "app",
+            selectedTarget = false,
+            globalWhitelist = false,
+            grantMode = UsageGuardPolicy.GRANT_MODE_STRICT,
+        )
+
+        assertFalse(
+            UsageGuardPolicy.shouldProtectApp(
+                enabled = false,
+                scopeMode = UsageGuardPolicy.SCOPE_SELECTED_ONLY,
+                appProfile = profile,
+            ),
+        )
+        assertFalse(
+            UsageGuardPolicy.shouldProtectApp(
+                enabled = true,
+                scopeMode = UsageGuardPolicy.SCOPE_SELECTED_ONLY,
+                appProfile = profile,
+            ),
+        )
+        assertFalse(
+            UsageGuardPolicy.shouldProtectApp(
+                enabled = true,
+                scopeMode = 99,
+                appProfile = profile,
+            ),
+        )
+    }
 }

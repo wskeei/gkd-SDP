@@ -26,50 +26,36 @@ import kotlinx.coroutines.launch
 import li.songe.gkd.sdp.MainActivity
 import li.songe.gkd.sdp.service.AccessibilityGuardController
 import li.songe.gkd.sdp.store.SettingsStore
-import li.songe.gkd.sdp.ui.share.LocalMainViewModel
 import li.songe.gkd.sdp.util.AutoReenablePolicy
 import li.songe.gkd.sdp.util.format
 import li.songe.gkd.sdp.util.toast
 import androidx.compose.ui.res.stringResource
 import li.songe.gkd.sdp.R
 
-internal class FocusLockDialogState {
-    var showLockSheet by mutableStateOf(false)
-    var showPauseSheet by mutableStateOf(false)
-    var showPermissionDialog by mutableStateOf(false)
-    var showAccessibilityGuardDialog by mutableStateOf(false)
-    var showAccessibilityGuardDisableDialog by mutableStateOf(false)
-    var showAutoReenableDialog by mutableStateOf(false)
-    var currentLockTarget by mutableStateOf<LockTarget?>(null)
-    var currentPauseTarget by mutableStateOf<PauseTarget?>(null)
-}
-
-@Composable
-internal fun rememberFocusLockDialogState(): FocusLockDialogState =
-    remember { FocusLockDialogState() }
-
 @Composable
 internal fun FocusLockPageDialogs(
-    vm: FocusLockVm,
     settings: SettingsStore,
+    autoReenableUiState: AutoReenableUiState,
     state: FocusLockDialogState,
     lockSheetState: SheetState,
     pauseSheetState: SheetState,
+    onLockTarget: (LockTarget, LockDurationRequest) -> Unit,
+    onUpdateInterceptConfig: (PauseTarget, Boolean, Int, String) -> Unit,
+    onSaveAutoReenable: (Int?, Int?) -> Unit,
+    onNavigateAuthA11y: () -> Unit,
 ) {
     val context = LocalContext.current
     val activity = LocalActivity.current as MainActivity
-    val mainVm = LocalMainViewModel.current
     val scope = rememberCoroutineScope()
 
     if (state.showLockSheet) {
         state.currentLockTarget?.let { target ->
             FocusLockTargetSheet(
                 target = target,
-                vm = vm,
                 sheetState = lockSheetState,
                 onDismiss = { state.showLockSheet = false },
-                onConfirm = {
-                    vm.lockTarget(target.type, target.subsId, target.appId, target.groupKey)
+                onConfirm = { request ->
+                    onLockTarget(target, request)
                     scope.launch { lockSheetState.hide() }.invokeOnCompletion {
                         if (!lockSheetState.isVisible) state.showLockSheet = false
                     }
@@ -84,24 +70,7 @@ internal fun FocusLockPageDialogs(
                 sheetState = pauseSheetState,
                 onDismiss = { state.showPauseSheet = false },
                 onConfirm = { enabled, cooldown, message ->
-                    if (target.groupKey != null) {
-                        vm.updateInterceptConfig(
-                            target.subsId,
-                            target.appId,
-                            target.groupKey,
-                            enabled,
-                            cooldown,
-                            message,
-                        )
-                    } else {
-                        vm.batchUpdateInterceptConfig(
-                            target.subsId,
-                            target.appId,
-                            enabled,
-                            cooldown,
-                            message,
-                        )
-                    }
+                    onUpdateInterceptConfig(target, enabled, cooldown, message)
                     scope.launch { pauseSheetState.hide() }.invokeOnCompletion {
                         if (!pauseSheetState.isVisible) state.showPauseSheet = false
                     }
@@ -132,7 +101,7 @@ internal fun FocusLockPageDialogs(
                     when (AccessibilityGuardController.enable(activity)) {
                         AccessibilityGuardController.EnableResult.RequiresA11yMode -> {
                             toast(li.songe.gkd.sdp.app.getString(R.string.s_ce953b779c))
-                            mainVm.navigatePage(AuthA11yRoute)
+                            onNavigateAuthA11y()
                         }
                         AccessibilityGuardController.EnableResult.UnavailableChannel,
                         AccessibilityGuardController.EnableResult.Enabled,
@@ -163,9 +132,10 @@ internal fun FocusLockPageDialogs(
     }
     if (state.showAutoReenableDialog) {
         FocusLockAutoReenableDialog(
-            vm = vm,
             settings = settings,
+            autoReenableUiState = autoReenableUiState,
             onDismiss = { state.showAutoReenableDialog = false },
+            onSave = onSaveAutoReenable,
         )
     }
 }
@@ -173,16 +143,14 @@ internal fun FocusLockPageDialogs(
 @Composable
 private fun FocusLockTargetSheet(
     target: LockTarget,
-    vm: FocusLockVm,
     sheetState: SheetState,
     onDismiss: () -> Unit,
-    onConfirm: () -> Unit,
+    onConfirm: (LockDurationRequest) -> Unit,
 ) {
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
         LockDurationSheet(
             targetName = target.name,
             currentEndTime = target.currentEndTime,
-            vm = vm,
             onConfirm = onConfirm,
         )
     }
@@ -280,23 +248,16 @@ private fun FocusLockAccessibilityGuardDisableDialog(
 
 @Composable
 private fun FocusLockAutoReenableDialog(
-    vm: FocusLockVm,
     settings: SettingsStore,
+    autoReenableUiState: AutoReenableUiState,
     onDismiss: () -> Unit,
+    onSave: (Int?, Int?) -> Unit,
 ) {
     var inputText by remember { mutableStateOf(settings.autoReenableIntervalMinutes.toString()) }
     var dailyLimitText by remember { mutableStateOf(settings.autoReenableDailyDisableLimit.toString()) }
-    val uiState = FocusLockVm.evaluateAutoReenableUiState(
-        intervalMinutes = settings.autoReenableIntervalMinutes,
-        lastChangedAt = settings.autoReenableIntervalChangedAt,
-        scheduledNextEnforceAt = settings.autoReenableNextEnforceAt,
-        dailyDisableLimit = settings.autoReenableDailyDisableLimit,
-        dailyDisableUsed = settings.autoReenableDailyDisableUsed,
-        dailyDisableDayStartAt = settings.autoReenableDailyDisableDayStartAt,
-        now = System.currentTimeMillis(),
-    )
+    val uiState = autoReenableUiState
     val nextEditableText = if (uiState.canEditInterval) {
-        "可立即修改"
+        stringResource(R.string.focus_lock_editable_now)
     } else {
         uiState.nextEditableAt.format("MM-dd HH:mm")
     }
@@ -365,14 +326,10 @@ private fun FocusLockAutoReenableDialog(
             TextButton(
                 enabled = canSave,
                 onClick = {
-                    if (intervalChanged) {
-                        vm.updateAutoReenableInterval(parsed)
-                    }
-                    if (dailyLimitChanged) {
-                        vm.updateAutoReenableDailyDisableLimit(
-                            parsedDailyLimit,
-                        )
-                    }
+                    onSave(
+                        if (intervalChanged) parsed else null,
+                        if (dailyLimitChanged) parsedDailyLimit else null,
+                    )
                     onDismiss()
                 },
             ) {

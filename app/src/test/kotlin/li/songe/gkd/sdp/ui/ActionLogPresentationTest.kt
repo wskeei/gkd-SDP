@@ -1,8 +1,8 @@
 package li.songe.gkd.sdp.ui
 
+import li.songe.gkd.sdp.R
 import li.songe.gkd.sdp.data.ActionLog
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class ActionLogPresentationTest {
@@ -26,16 +26,16 @@ class ActionLogPresentationTest {
     fun interceptedOutcomeIsExplicitlyNotAnExecutedAction() {
         val presentation = ActionLogPresentation.from(log(ActionLog.OUTCOME_INTERCEPTED))
 
-        assertEquals("已拦截", presentation.outcomeTitle)
-        assertTrue(presentation.outcomeDescription.contains("动作未执行"))
+        assertEquals(R.string.action_log_outcome_intercepted_title, presentation.outcomeTitleRes)
+        assertEquals(R.string.action_log_outcome_intercepted_description, presentation.outcomeDescriptionRes)
     }
 
     @Test
     fun executedOutcomeRetainsExistingMeaning() {
         val presentation = ActionLogPresentation.from(log(ActionLog.OUTCOME_ACTION_EXECUTED))
 
-        assertEquals("已执行", presentation.outcomeTitle)
-        assertTrue(presentation.outcomeDescription.contains("动作已执行"))
+        assertEquals(R.string.action_log_outcome_executed_title, presentation.outcomeTitleRes)
+        assertEquals(R.string.action_log_outcome_executed_description, presentation.outcomeDescriptionRes)
     }
 
     @Test

@@ -57,7 +57,7 @@ class SdpRuntimeFeatureCoordinatorTest {
         val foreground = MutableStateFlow("com.example.reader")
         val seen = mutableListOf<String>()
         val coordinator = coordinator(foreground) {
-            onAppChanged = { appId, owner -> seen += "${owner.mode.label}:$appId" }
+            onAppChanged = { appId, owner -> seen += "${owner.mode.labelRes}:$appId" }
         }
 
         val a11y = coordinator.attach("a11y", AutomatorModeOption.A11yMode)
@@ -68,9 +68,9 @@ class SdpRuntimeFeatureCoordinatorTest {
         assertEquals(
             "seen=$seen",
             listOf(
-                "${AutomatorModeOption.A11yMode.label}:com.example.reader",
-                "${AutomatorModeOption.AutomationMode.label}:com.example.reader",
-                "${AutomatorModeOption.AutomationMode.label}:com.example.video",
+                "${AutomatorModeOption.A11yMode.labelRes}:com.example.reader",
+                "${AutomatorModeOption.AutomationMode.labelRes}:com.example.reader",
+                "${AutomatorModeOption.AutomationMode.labelRes}:com.example.video",
             ),
             seen,
         )
@@ -100,19 +100,19 @@ class SdpRuntimeFeatureCoordinatorTest {
         val foreground = MutableStateFlow("com.example.reader")
         val seen = mutableListOf<String>()
         val coordinator = coordinator(foreground) {
-            onAppChanged = { appId, owner -> seen += "${owner.mode.label}:$appId" }
+            onAppChanged = { appId, owner -> seen += "${owner.mode.labelRes}:$appId" }
         }
 
         val oldOwner = coordinator.attach("a11y", AutomatorModeOption.A11yMode)
         val newOwner = coordinator.attach("automation", AutomatorModeOption.AutomationMode)
         coordinator.detach(oldOwner)
         coordinator.onForegroundAppChanged("com.example.video")
-        awaitCondition { seen.contains("${AutomatorModeOption.AutomationMode.label}:com.example.video") }
+        awaitCondition { seen.contains("${AutomatorModeOption.AutomationMode.labelRes}:com.example.video") }
 
         assertTrue(coordinator.isCurrent(newOwner))
         assertEquals(
             "seen=$seen",
-            "${AutomatorModeOption.AutomationMode.label}:com.example.video",
+            "${AutomatorModeOption.AutomationMode.labelRes}:com.example.video",
             seen.last(),
         )
     }
@@ -122,7 +122,7 @@ class SdpRuntimeFeatureCoordinatorTest {
         val foreground = MutableStateFlow("com.example.reader")
         val seen = mutableListOf<String>()
         val coordinator = coordinator(foreground) {
-            onAppChanged = { appId, owner -> seen += "${owner.mode.label}:$appId" }
+            onAppChanged = { appId, owner -> seen += "${owner.mode.labelRes}:$appId" }
         }
 
         coordinator.attach("a11y", AutomatorModeOption.A11yMode)
@@ -132,7 +132,7 @@ class SdpRuntimeFeatureCoordinatorTest {
         assertEquals("seen=$seen", 2, seen.size)
         assertEquals(
             "seen=$seen",
-            "${AutomatorModeOption.AutomationMode.label}:com.example.reader",
+            "${AutomatorModeOption.AutomationMode.labelRes}:com.example.reader",
             seen.last(),
         )
     }

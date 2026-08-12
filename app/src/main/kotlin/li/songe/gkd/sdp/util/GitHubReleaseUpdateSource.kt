@@ -9,6 +9,8 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.Transient
 import kotlinx.serialization.json.Json
+import li.songe.gkd.sdp.R
+import li.songe.gkd.sdp.app
 import java.net.URI
 import java.net.URISyntaxException
 
@@ -63,7 +65,9 @@ object GitHubReleaseUpdateSource {
             header("Accept", "application/vnd.github+json")
             header("User-Agent", "GKD-SDP-Updater")
         }
-        require(response.status.value in 200..299) { apiErrorMessage(response.status.value) }
+        require(response.status.value in 200..299) {
+            localizedApiErrorMessage(response.status.value)
+        }
         val releases = parseReleasesJson(response.bodyAsText())
         for (release in eligibleReleases(releases, beta)) {
             val manifestAsset = findManifestAsset(release) ?: continue
@@ -144,9 +148,29 @@ object GitHubReleaseUpdateSource {
         version.versionCode > currentVersionCode
 
     fun apiErrorMessage(statusCode: Int): String = when (statusCode) {
+        // i18n-ignore: legacy fallback or non-display heuristic data
         403, 429 -> "GitHub 更新接口触发访问频率限制（HTTP $statusCode），请稍后重试或打开 $RELEASES_PAGE_URL"
+        // i18n-ignore: legacy fallback or non-display heuristic data
         404 -> "GitHub 更新接口不存在（HTTP 404），请打开 $RELEASES_PAGE_URL 检查版本"
+        // i18n-ignore: legacy fallback or non-display heuristic data
         else -> "GitHub Releases 请求失败（HTTP $statusCode），请稍后重试或打开 $RELEASES_PAGE_URL"
+    }
+
+    fun localizedApiErrorMessage(statusCode: Int): String = when (statusCode) {
+        403, 429 -> app.getString(
+            R.string.upgrade_github_rate_limit,
+            statusCode,
+            RELEASES_PAGE_URL,
+        )
+        404 -> app.getString(
+            R.string.upgrade_github_not_found,
+            RELEASES_PAGE_URL,
+        )
+        else -> app.getString(
+            R.string.upgrade_github_request_failed,
+            statusCode,
+            RELEASES_PAGE_URL,
+        )
     }
 
     fun validateDownloadUrl(url: String, releaseTag: String) {

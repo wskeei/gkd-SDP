@@ -22,8 +22,10 @@ import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
+import li.songe.gkd.sdp.R
 import li.songe.gkd.sdp.ui.component.TooltipIconButtonBox
 
 private fun Animatable<Float, AnimationVector1D>.calc(start: Float, end: Float): Float {
@@ -34,15 +36,19 @@ private fun Animatable<Float, AnimationVector1D>.calc(start: Float, end: Float):
 fun BackCloseIcon(
     backOrClose: Boolean,
     modifier: Modifier = Modifier,
-    contentDescription: String = if (backOrClose) "返回" else "关闭",
+    contentDescription: String? = null,
     tint: Color = LocalContentColor.current
 ) = TooltipIconButtonBox(
-    contentDescription = contentDescription,
+    contentDescription = contentDescription ?: stringResource(
+        if (backOrClose) R.string.perf_icon_back else R.string.perf_icon_close,
+    ),
 ) {
     InnerBackCloseIcon(
         backOrClose = backOrClose,
         modifier = modifier,
-        contentDescription = contentDescription,
+        contentDescription = contentDescription ?: stringResource(
+            if (backOrClose) R.string.perf_icon_back else R.string.perf_icon_close,
+        ),
         tint = tint,
     )
 }

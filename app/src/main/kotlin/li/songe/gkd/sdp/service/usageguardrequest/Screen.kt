@@ -71,6 +71,7 @@ import li.songe.gkd.sdp.ui.component.UsageDurationRatioFeedback
 import li.songe.gkd.sdp.ui.share.ServiceOverlayLifecycleOwner
 import li.songe.gkd.sdp.ui.style.AppTheme
 import li.songe.gkd.sdp.util.SelfControlElapsedPolicy
+import li.songe.gkd.sdp.usage.UsageRequestUiState
 import li.songe.gkd.sdp.util.SelfControlInsightWindowPolicy
 import li.songe.gkd.sdp.util.UsageGuardPolicy
 import li.songe.gkd.sdp.util.UsageGuardUiStatePolicy
@@ -94,6 +95,16 @@ private fun rememberImeAwareBringIntoViewModifier(): Modifier {
 @Composable
 internal fun UsageGuardRequestContent(
     appName: String,
+    requestUiState: UsageRequestUiState = UsageRequestUiState(
+        appId = "",
+        appName = "",
+        selectedTags = emptySet(),
+        reason = "",
+        requestedDurationMinutes = 10,
+        lastUsageEndedAt = null,
+        nowEpochMs = 0L,
+        status = UsageRequestUiState.Status.UNAVAILABLE,
+    ),
     tags: List<UsageGuardTag>,
     grantMode: Int,
     minReasonLength: Int,

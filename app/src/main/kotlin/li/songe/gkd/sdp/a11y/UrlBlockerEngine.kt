@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import li.songe.gkd.sdp.appScope
+import li.songe.gkd.sdp.R
 import li.songe.gkd.sdp.runtime.appDependencies
 import li.songe.gkd.sdp.data.BrowserConfig
 import li.songe.gkd.sdp.data.SelfControlAttempt
@@ -306,7 +307,9 @@ object UrlBlockerEngine {
             putExtra(InterceptOverlayService.EXTRA_SUBJECT_ID, rule.id.toString())
             putExtra(
                 InterceptOverlayService.EXTRA_SUBJECT_LABEL,
-                rule.name.ifBlank { "网址规则 #${rule.id}" },
+                rule.name.ifBlank {
+                    li.songe.gkd.sdp.app.getString(R.string.url_rule_fallback, rule.id)
+                },
             )
             putExtra(InterceptOverlayService.EXTRA_URL_RULE_ID, rule.id)
             putExtra(InterceptOverlayService.EXTRA_URL_RULE_NAME, rule.name)

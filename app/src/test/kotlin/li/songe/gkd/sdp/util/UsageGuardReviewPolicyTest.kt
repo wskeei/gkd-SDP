@@ -108,6 +108,95 @@ class UsageGuardReviewPolicyTest {
         assertEquals("主动终止", UsageGuardReviewPolicy.endReasonLabel(UsageGuardRecord.END_REASON_USER_TERMINATED))
     }
 
+    @Test
+    fun futureRecordsAreExcludedFromSummary() {
+        val summary = UsageGuardReviewPolicy.summarize(
+            records = listOf(recordAt(12, "chat.app", "微信", emptyList(), 5, 1)),
+            now = at(9),
+            zoneId = zoneId,
+        )
+
+        assertEquals(0, summary.requestCount)
+        assertEquals("平稳", summary.riskPeriod.label)
+    }
+
+    @Test
+    fun riskPeriodsAndWidgetHintsCoverAllDayParts() {
+        listOf(
+            9 to "上午申请偏多，先保护开局节奏。",
+            12 to "午间申请偏多，休息前先定边界。",
+            14 to "下午申请偏多，注意任务切换成本。",
+            18 to "晚间申请偏多，先安排离线缓冲。",
+            22 to "夜间申请偏多，睡前先收紧入口。",
+        ).forEach { (hour, hint) ->
+            val summary = UsageGuardReviewPolicy.summarize(
+                records = listOf(recordAt(hour, "app", "应用", emptyList(), 5, 1)),
+                now = at(hour),
+                zoneId = zoneId,
+            )
+            assertEquals(hint, UsageGuardReviewPolicy.widgetSummary(summary).hint)
+        }
+    }
+
+    @Test
+    fun endReasonLabelsCoverEveryStableState() {
+        assertEquals("进行中", UsageGuardReviewPolicy.endReasonLabel(UsageGuardRecord.END_REASON_ACTIVE))
+        assertEquals("已到时", UsageGuardReviewPolicy.endReasonLabel(UsageGuardRecord.END_REASON_EXPIRED))
+        assertEquals("离开结束", UsageGuardReviewPolicy.endReasonLabel(UsageGuardRecord.END_REASON_LEFT_APP))
+        assertEquals("被替换", UsageGuardReviewPolicy.endReasonLabel(UsageGuardRecord.END_REASON_REPLACED))
+        assertEquals("回桌面", UsageGuardReviewPolicy.endReasonLabel(UsageGuardRecord.END_REASON_HOME_BUTTON))
+        assertEquals("未知", UsageGuardReviewPolicy.endReasonLabel(999))
+    }
+
+    @Test
+    fun effectiveUsedSecondsUsesExpiryAndCurrentTimeWithoutOverflow() {
+        val requestedAt = at(9)
+        val active = UsageGuardRecord(
+            id = 1,
+            appId = "app",
+            appName = "应用",
+            tagNames = emptyList(),
+            reasonText = "synthetic",
+            requestedDurationMinutes = 10,
+            requestedAt = requestedAt,
+            grantedAt = requestedAt,
+            expiresAt = requestedAt + 10_000L,
+            endedAt = 0L,
+        )
+
+        assertEquals(10L, UsageGuardReviewPolicy.effectiveUsedSeconds(active, requestedAt + 20_000L))
+        assertEquals(
+            20L,
+            UsageGuardReviewPolicy.effectiveUsedSeconds(
+                active.copy(expiresAt = 0L),
+                requestedAt + 20_000L,
+            ),
+        )
+    }
+
+    @Test
+    fun formatUsedDurationHandlesSecondsMinutesAndHours() {
+        assertEquals("0 秒", UsageGuardReviewPolicy.formatUsedDuration(0))
+        assertEquals("59 秒", UsageGuardReviewPolicy.formatUsedDuration(59))
+        assertEquals("1 分钟", UsageGuardReviewPolicy.formatUsedDuration(60))
+        assertEquals("1 分 1 秒", UsageGuardReviewPolicy.formatUsedDuration(61))
+        assertEquals("60 分钟", UsageGuardReviewPolicy.formatUsedDuration(3_600))
+    }
+
+    @Test
+    fun blankAppNamesAreExcludedFromTopAppRanking() {
+        val summary = UsageGuardReviewPolicy.summarize(
+            records = listOf(
+                recordAt(9, "blank", "", emptyList(), 5, 1).copy(appId = "", appName = ""),
+                recordAt(10, "named", "应用", emptyList(), 5, 1),
+            ),
+            now = at(11),
+            zoneId = zoneId,
+        )
+
+        assertEquals(listOf("应用"), summary.topApps.map { it.label })
+    }
+
     private fun recordAt(
         hour: Int,
         appId: String,

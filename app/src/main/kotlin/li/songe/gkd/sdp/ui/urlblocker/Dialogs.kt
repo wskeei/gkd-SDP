@@ -32,7 +32,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -41,10 +40,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import li.songe.gkd.sdp.data.AppInfo
 import li.songe.gkd.sdp.data.BrowserConfig
 import li.songe.gkd.sdp.ui.component.AppPickerDialog
 import li.songe.gkd.sdp.ui.component.PerfIcon
-import li.songe.gkd.sdp.util.appInfoMapFlow
+import li.songe.gkd.sdp.ui.component.formatDurationLocalized
 import androidx.compose.ui.res.stringResource
 import li.songe.gkd.sdp.R
 
@@ -53,14 +53,17 @@ fun UrlLockSheet(
     title: String,
     description: String,
     currentLockEndTime: Long?,
-    vm: UrlBlockVm,
     onDismiss: () -> Unit,
-    onLock: () -> Unit
+    onLock: (UrlLockDraft) -> Unit
 ) {
+    var selectedLockDuration by remember { mutableStateOf(480) }
+    var isCustomLockDuration by remember { mutableStateOf(false) }
+    var customLockDaysText by remember { mutableStateOf("") }
+    var customLockHoursText by remember { mutableStateOf("") }
     val durationOptions = listOf(
-        480 to "8小时",
-        1440 to "1天",
-        4320 to "3天"
+        480 to stringResource(R.string.duration_option_8h),
+        1440 to stringResource(R.string.duration_option_1d),
+        4320 to stringResource(R.string.duration_option_3d),
     )
 
     ModalBottomSheet(
@@ -81,8 +84,9 @@ fun UrlLockSheet(
             if (currentLockEndTime != null && currentLockEndTime > System.currentTimeMillis()) {
                 val remaining = currentLockEndTime - System.currentTimeMillis()
                 val remainingMinutes = (remaining / 60000).coerceAtLeast(0)
+                val remainingText = formatDurationLocalized(remainingMinutes * 60_000L)
                 Text(
-                    text = li.songe.gkd.sdp.app.getString(R.string.s_1090ec0cd1, (if (remainingMinutes >= 60) "${remainingMinutes / 60}小时${remainingMinutes % 60}分钟" else "${remainingMinutes}分钟").toString()),
+                    text = li.songe.gkd.sdp.app.getString(R.string.s_1090ec0cd1, remainingText),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.padding(bottom = 16.dp)
@@ -107,7 +111,7 @@ fun UrlLockSheet(
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 durationOptions.forEach { (minutes, label) ->
-                    val isSelected = !vm.isCustomLockDuration && vm.selectedLockDuration == minutes
+                    val isSelected = !isCustomLockDuration && selectedLockDuration == minutes
                     Text(
                         text = label,
                         style = MaterialTheme.typography.bodyMedium,
@@ -120,8 +124,8 @@ fun UrlLockSheet(
                                 shape = CircleShape
                             )
                             .clickable {
-                                vm.isCustomLockDuration = false
-                                vm.selectedLockDuration = minutes
+                                isCustomLockDuration = false
+                                selectedLockDuration = minutes
                             }
                             .padding(horizontal = 16.dp, vertical = 8.dp)
                     )
@@ -132,33 +136,33 @@ fun UrlLockSheet(
 
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.clickable { vm.isCustomLockDuration = !vm.isCustomLockDuration }
+                modifier = Modifier.clickable { isCustomLockDuration = !isCustomLockDuration }
             ) {
                 Switch(
-                    checked = vm.isCustomLockDuration,
-                    onCheckedChange = { vm.isCustomLockDuration = it }
+                    checked = isCustomLockDuration,
+                    onCheckedChange = { isCustomLockDuration = it }
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(li.songe.gkd.sdp.app.getString(R.string.s_ea6dccc0a6), style = MaterialTheme.typography.bodyMedium)
             }
 
-            if (vm.isCustomLockDuration) {
+            if (isCustomLockDuration) {
                 Spacer(modifier = Modifier.height(12.dp))
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     OutlinedTextField(
-                        value = vm.customLockDaysText,
-                        onValueChange = { vm.customLockDaysText = it },
+                        value = customLockDaysText,
+                        onValueChange = { customLockDaysText = it },
                         label = { Text(li.songe.gkd.sdp.app.getString(R.string.s_c3304d1e49)) },
                         modifier = Modifier.weight(1f),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         singleLine = true
                     )
                     OutlinedTextField(
-                        value = vm.customLockHoursText,
-                        onValueChange = { vm.customLockHoursText = it },
+                        value = customLockHoursText,
+                        onValueChange = { customLockHoursText = it },
                         label = { Text(li.songe.gkd.sdp.app.getString(R.string.s_99f6904ff3)) },
                         modifier = Modifier.weight(1f),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
@@ -170,7 +174,16 @@ fun UrlLockSheet(
             Spacer(modifier = Modifier.height(24.dp))
 
             Button(
-                onClick = onLock,
+                onClick = {
+                    onLock(
+                        UrlLockDraft(
+                            durationMinutes = selectedLockDuration,
+                            isCustom = isCustomLockDuration,
+                            daysText = customLockDaysText,
+                            hoursText = customLockHoursText,
+                        )
+                    )
+                },
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text(li.songe.gkd.sdp.app.getString(R.string.s_648f1e98b5))
@@ -180,7 +193,6 @@ fun UrlLockSheet(
         }
     }
 }
-
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -199,7 +211,7 @@ fun BrowserListSheet(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(500.dp) // Fixed height or use logic to fill appropriately
+                .height(500.dp)
                 .padding(16.dp)
         ) {
             Row(
@@ -275,16 +287,24 @@ fun BrowserListSheet(
     }
 }
 
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BrowserEditSheet(
-    vm: UrlBlockVm,
+    editingBrowser: BrowserConfig?,
+    appInfoMap: Map<String, AppInfo>,
     onDismiss: () -> Unit,
-    onSave: () -> Unit
+    onSave: (BrowserDraft) -> Unit
 ) {
-    val isEditing = vm.editingBrowser != null
-    val isBuiltin = vm.editingBrowser?.isBuiltin == true
+    val isEditing = editingBrowser != null
+    val isBuiltin = editingBrowser?.isBuiltin == true
+    val formKey = editingBrowser?.packageName ?: "new"
+    var browserName by remember(formKey) { mutableStateOf(editingBrowser?.name.orEmpty()) }
+    var browserPackageName by remember(formKey) {
+        mutableStateOf(editingBrowser?.packageName.orEmpty())
+    }
+    var browserUrlBarId by remember(formKey) {
+        mutableStateOf(editingBrowser?.urlBarId.orEmpty())
+    }
     var showAppPicker by remember { mutableStateOf(false) }
 
     ModalBottomSheet(
@@ -303,8 +323,8 @@ fun BrowserEditSheet(
             )
 
             OutlinedTextField(
-                value = vm.browserName,
-                onValueChange = { vm.browserName = it },
+                value = browserName,
+                onValueChange = { browserName = it },
                 label = { Text(stringResource(R.string.s_5c07ed58a8)) },
                 placeholder = { Text(li.songe.gkd.sdp.app.getString(R.string.s_874487d6ea)) },
                 modifier = Modifier.fillMaxWidth(),
@@ -315,8 +335,8 @@ fun BrowserEditSheet(
 
             Row(verticalAlignment = Alignment.CenterVertically) {
                 OutlinedTextField(
-                    value = vm.browserPackageName,
-                    onValueChange = { if (!isBuiltin) vm.browserPackageName = it },
+                    value = browserPackageName,
+                    onValueChange = { if (!isBuiltin) browserPackageName = it },
                     label = { Text(stringResource(R.string.s_a495040b76)) },
                     placeholder = { Text(li.songe.gkd.sdp.app.getString(R.string.s_6d322b1bac)) },
                     modifier = Modifier.weight(1f),
@@ -334,8 +354,8 @@ fun BrowserEditSheet(
             Spacer(modifier = Modifier.height(12.dp))
 
             OutlinedTextField(
-                value = vm.browserUrlBarId,
-                onValueChange = { vm.browserUrlBarId = it },
+                value = browserUrlBarId,
+                onValueChange = { browserUrlBarId = it },
                 label = { Text(stringResource(R.string.s_fa0e1bf898)) },
                 placeholder = { Text(li.songe.gkd.sdp.app.getString(R.string.s_341bcd0a2b)) },
                 modifier = Modifier.fillMaxWidth(),
@@ -353,7 +373,15 @@ fun BrowserEditSheet(
             Spacer(modifier = Modifier.height(24.dp))
 
             Button(
-                onClick = onSave,
+                onClick = {
+                    onSave(
+                        BrowserDraft(
+                            name = browserName,
+                            packageName = browserPackageName,
+                            urlBarId = browserUrlBarId,
+                        )
+                    )
+                },
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text(if (isEditing) stringResource(R.string.s_60b4ae9082) else stringResource(R.string.s_c6e062fed0))
@@ -364,16 +392,15 @@ fun BrowserEditSheet(
     }
 
     if (showAppPicker) {
-        val appInfoMap by appInfoMapFlow.collectAsStateWithLifecycle()
         AppPickerDialog(
             currentApps = emptyList(),
             onDismiss = { showAppPicker = false },
             onConfirm = { selected ->
                 val pkg = selected.firstOrNull()
                 if (pkg != null) {
-                    vm.browserPackageName = pkg
-                    if (vm.browserName.isBlank()) {
-                        vm.browserName = appInfoMap[pkg]?.name ?: ""
+                    browserPackageName = pkg
+                    if (browserName.isBlank()) {
+                        browserName = appInfoMap[pkg]?.name ?: ""
                     }
                 }
                 showAppPicker = false

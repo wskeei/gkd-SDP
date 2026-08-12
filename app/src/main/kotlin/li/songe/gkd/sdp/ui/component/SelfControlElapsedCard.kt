@@ -44,7 +44,7 @@ fun SelfControlElapsedCard(
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
-                text = copy.title,
+                text = stringResource(copy.titleRes),
                 style = MaterialTheme.typography.titleMedium,
             )
             when (state) {
@@ -57,12 +57,12 @@ fun SelfControlElapsedCard(
 
                 SelfControlElapsedPolicy.ElapsedState.NoHistory -> {
                     Text(
-                        text = copy.noHistoryText,
+                        text = stringResource(copy.noHistoryTextRes),
                         style = MaterialTheme.typography.bodyLarge,
                         modifier = Modifier.padding(top = 8.dp),
                     )
                     Text(
-                        text = copy.firstSupportingText,
+                        text = stringResource(copy.firstSupportingTextRes),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(top = 4.dp),
@@ -147,23 +147,32 @@ private fun RunningElapsedContent(
     }
     val nowEpochMs = nowEpochMsOverride ?: tickerNowEpochMs
 
+    val (days, clock) = remember(state.anchorAtEpochMs, nowEpochMs) {
+        SelfControlElapsedPolicy.elapsedParts(state.anchorAtEpochMs, nowEpochMs)
+    }
     Text(
-        text = SelfControlElapsedPolicy.formatElapsed(
-            anchorAtEpochMs = state.anchorAtEpochMs,
-            nowEpochMs = nowEpochMs,
-        ),
+        text = if (days > 0L) {
+            stringResource(R.string.elapsed_days_clock, days, clock)
+        } else {
+            clock
+        },
         style = MaterialTheme.typography.headlineSmall,
         modifier = Modifier.padding(top = 4.dp),
     )
     Text(
-        text = stringResource(R.string.s_de27714146, (if (state.firstOccurrence) copy.firstTimeLabel else copy.previousTimeLabel).toString()) +
+        text = stringResource(
+            R.string.s_de27714146,
+            stringResource(if (state.firstOccurrence) copy.firstTimeLabelRes else copy.previousTimeLabelRes),
+        ) +
             SelfControlElapsedPolicy.formatAbsolute(state.anchorAtEpochMs),
         style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         modifier = Modifier.padding(top = 2.dp),
     )
     Text(
-        text = if (state.firstOccurrence) copy.firstSupportingText else copy.supportingText,
+        text = stringResource(
+            if (state.firstOccurrence) copy.firstSupportingTextRes else copy.supportingTextRes,
+        ),
         style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         modifier = Modifier.padding(top = 4.dp),

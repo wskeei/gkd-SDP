@@ -34,7 +34,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.ViewModel
 import li.songe.gkd.sdp.data.ActionLog
 import li.songe.gkd.sdp.data.RawSubscription
 import li.songe.gkd.sdp.data.SubsConfig
@@ -42,12 +41,9 @@ import li.songe.gkd.sdp.ui.component.AppNameText
 import li.songe.gkd.sdp.ui.component.FixedTimeText
 import li.songe.gkd.sdp.ui.component.GroupNameText
 import li.songe.gkd.sdp.ui.component.PerfIcon
-import li.songe.gkd.sdp.ui.share.LocalMainViewModel
 import li.songe.gkd.sdp.ui.style.iconTextSize
-import li.songe.gkd.sdp.util.subsItemsFlow
 import li.songe.gkd.sdp.util.subsMapFlow
 import li.songe.gkd.sdp.util.throttle
-import li.songe.gkd.sdp.util.toast
 import androidx.compose.ui.res.stringResource
 import li.songe.gkd.sdp.R
 import li.songe.gkd.sdp.ui.style.DimensionTokens
@@ -61,8 +57,9 @@ internal fun ActionLogCard(
     onClick: () -> Unit,
     subsId: Long?,
     appId: String?,
+    onOpenAppConfig: (ActionLog) -> Unit,
+    onOpenSubsSheet: (ActionLog) -> Unit,
 ) {
-    val mainVm = LocalMainViewModel.current
     val (actionLog, group, rule) = item
     val lastActionLog = lastItem?.first
     val isDiffApp = actionLog.appId != lastActionLog?.appId
@@ -83,13 +80,7 @@ internal fun ActionLogCard(
                 modifier = Modifier
                     .padding(start = DimensionTokens.SpacingBase / 4)
                     .clip(MaterialTheme.shapes.extraSmall)
-                    .clickable(onClick = throttle {
-                        mainVm.navigatePage(
-                            AppConfigRoute(
-                                appId = actionLog.appId,
-                            )
-                        )
-                    })
+                    .clickable(onClick = throttle { onOpenAppConfig(actionLog) })
                     .fillMaxWidth()
                     .padding(start = 5.dp),
                 horizontalArrangement = Arrangement.spacedBy(4.dp),
@@ -120,6 +111,7 @@ internal fun ActionLogCard(
             subsId = subsId,
             appId = appId,
             onClick = onClick,
+            onOpenSubsSheet = onOpenSubsSheet,
         )
     }
 }
@@ -134,8 +126,8 @@ private fun ActionLogCardBody(
     subsId: Long?,
     appId: String?,
     onClick: () -> Unit,
+    onOpenSubsSheet: (ActionLog) -> Unit,
 ) {
-    val mainVm = LocalMainViewModel.current
     Row(
         modifier = Modifier
             .padding(start = DimensionTokens.SpacingBase / 4)
@@ -164,7 +156,11 @@ private fun ActionLogCardBody(
                 )
                 val outcomePresentation = ActionLogPresentation.from(actionLog)
                 Text(
-                    text = stringResource(R.string.s_6027bb300c, (outcomePresentation.outcomeTitle).toString(), (outcomePresentation.outcomeDescription).toString()),
+                    text = stringResource(
+                        R.string.s_6027bb300c,
+                        stringResource(outcomePresentation.outcomeTitleRes),
+                        stringResource(outcomePresentation.outcomeDescriptionRes),
+                    ),
                     style = MaterialTheme.typography.labelMedium,
                     color = if (actionLog.outcome == ActionLog.OUTCOME_INTERCEPTED) {
                         MaterialTheme.colorScheme.error
@@ -190,13 +186,9 @@ private fun ActionLogCardBody(
                     }
                     if (subsId == null) {
                         Row(
-                            modifier = Modifier.clickable(onClick = throttle {
-                                if (subsItemsFlow.value.any { it.id == actionLog.subsId }) {
-                                    mainVm.sheetSubsIdFlow.value = actionLog.subsId
-                                } else {
-                                    toast(li.songe.gkd.sdp.app.getString(R.string.s_9e5cc3140b))
-                                }
-                            })
+                            modifier = Modifier.clickable(
+                                onClick = throttle { onOpenSubsSheet(actionLog) },
+                            )
                         ) {
                             Text(
                                 text = actionLog.subsNameSnapshot
@@ -229,7 +221,10 @@ private fun ActionLogCardBody(
                     ) {
                         val groupDesc = actionLog.groupNameSnapshot
                             ?: group?.name
-                            ?: "规则组 ${actionLog.groupKey}"
+                            ?: li.songe.gkd.sdp.app.getString(
+                                R.string.interception_source_rule_group_fallback,
+                                actionLog.groupKey,
+                            )
                         val textColor = LocalContentColor.current.let {
                             if (group == null && actionLog.groupNameSnapshot == null) it.copy(alpha = 0.5f) else it
                         }

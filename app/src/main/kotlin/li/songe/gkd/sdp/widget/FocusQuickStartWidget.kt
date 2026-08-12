@@ -62,7 +62,7 @@ class FocusQuickStartWidget : AppWidgetProvider() {
                     if (rule != null) {
                         val session = DbSet.focusSessionDao.getSessionNow() ?: li.songe.gkd.sdp.data.FocusSession(
                             whitelistApps = "[]",
-                            interceptMessage = "专注当下"
+                            interceptMessage = context.getString(R.string.common_default_focus_message)
                         )
                         val now = System.currentTimeMillis()
                         val endTime = now + rule.durationMinutes * 60 * 1000

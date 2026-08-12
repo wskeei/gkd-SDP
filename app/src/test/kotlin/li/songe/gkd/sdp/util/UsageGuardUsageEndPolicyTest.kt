@@ -1,5 +1,6 @@
 package li.songe.gkd.sdp.util
 
+import li.songe.gkd.sdp.data.UsageGuardRecord
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -86,5 +87,32 @@ class UsageGuardUsageEndPolicyTest {
                 requestedAt = 2_000L,
             ),
         )
+    }
+
+    @Test
+    fun negativeEndCandidatesNeverMoveStateBackwards() {
+        assertEquals(0L, UsageGuardUsageEndPolicy.monotonicEnd(existing = null, candidate = -1L))
+        assertEquals(100L, UsageGuardUsageEndPolicy.monotonicEnd(existing = 100L, candidate = -1L))
+        assertEquals(null, UsageGuardUsageEndPolicy.newRequestGapMs(false, null, 2_000L))
+        assertEquals(null, UsageGuardUsageEndPolicy.newRequestGapMs(false, -1L, 2_000L))
+        assertEquals(null, UsageGuardUsageEndPolicy.newRequestGapMs(false, 3_000L, 2_000L))
+    }
+
+    @Test
+    fun shouldMarkUsageEndedOnlyForOpenRecords() {
+        val open = UsageGuardRecord(
+            id = 1,
+            appId = "app",
+            appName = "应用",
+            tagNames = emptyList(),
+            reasonText = "synthetic",
+            requestedDurationMinutes = 5,
+            requestedAt = 1_000L,
+            grantedAt = 1_000L,
+            expiresAt = 2_000L,
+        )
+
+        assertTrue(UsageGuardUsageEndPolicy.shouldMarkUsageEnded(open))
+        assertFalse(UsageGuardUsageEndPolicy.shouldMarkUsageEnded(open.copy(endedAt = 1_500L)))
     }
 }

@@ -3,10 +3,10 @@ package li.songe.gkd.sdp.navigation
 import androidx.navigation3.runtime.NavKey
 import li.songe.gkd.sdp.ui.ActionLogRoute
 import li.songe.gkd.sdp.ui.AdvancedPageRoute
-import li.songe.gkd.sdp.ui.AppOpsAllowRoute
 import li.songe.gkd.sdp.ui.SnapshotPageRoute
 import li.songe.gkd.sdp.ui.UsageGuardReviewRoute
 import li.songe.gkd.sdp.ui.UsageGuardRoute
+import li.songe.gkd.sdp.ui.capability.CapabilityCenterRoute
 import li.songe.gkd.sdp.ui.home.HomeDestination
 import li.songe.gkd.sdp.ui.home.HomeRoute
 import li.songe.gkd.sdp.ui.privacy.PrivacyDataRoute
@@ -41,7 +41,7 @@ fun AppDestination.toNavKey(): NavKey = when (this) {
     AppDestination.SETTINGS -> HomeRoute(HomeDestination.SETTINGS.key)
 
     AppDestination.SELF_CONTROL -> HomeRoute(HomeDestination.SELF_CONTROL.key)
-    AppDestination.SETTINGS_CAPABILITIES -> AppOpsAllowRoute
+    AppDestination.SETTINGS_CAPABILITIES -> CapabilityCenterRoute
     AppDestination.SETTINGS_PRIVACY_DATA -> PrivacyDataRoute
     AppDestination.SNAPSHOTS -> SnapshotPageRoute
     AppDestination.USAGE_GUARD -> UsageGuardRoute

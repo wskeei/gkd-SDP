@@ -30,6 +30,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
@@ -43,20 +44,19 @@ import li.songe.gkd.sdp.R
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 internal fun GroupEditorSheet(
-    vm: AppBlockerVm,
+    state: AppBlockerUiState,
+    callbacks: AppBlockerCallbacks,
     isLocked: Boolean = false,
-    onDismiss: () -> Unit,
-    onSave: () -> Unit
 ) {
     var showAppPicker by remember { mutableStateOf(false) }
-    val pickerConfig = remember(vm.groupApps, vm.groupEditorMode) {
-        AppBlockerVm.buildGroupPickerConfig(
-            currentApps = vm.groupApps,
-            mode = vm.groupEditorMode,
+    val pickerConfig = remember(state.groupApps, state.groupEditorMode) {
+        buildGroupPickerConfig(
+            currentApps = state.groupApps,
+            mode = state.groupEditorMode,
         )
     }
-    val isAppendMode = vm.groupEditorMode == AppBlockerVm.GroupEditorMode.AppendApps
-    val isExistingGroup = vm.editingGroup != null
+    val isAppendMode = state.groupEditorMode == AppBlockerGroupEditorMode.AppendApps
+    val isExistingGroup = state.editingGroup != null
     val appsReadOnly = isExistingGroup
     val canOpenAppPicker = !isLocked && (!isExistingGroup || isAppendMode)
     val scrollState = rememberScrollState()
@@ -82,7 +82,7 @@ internal fun GroupEditorSheet(
     )
 
     ModalBottomSheet(
-        onDismissRequest = onDismiss,
+        onDismissRequest = callbacks.onDismissGroupEditor,
         sheetState = sheetState,
     ) {
         Column(
@@ -94,10 +94,10 @@ internal fun GroupEditorSheet(
         ) {
             Text(
                 text = when {
-                    vm.editingGroup == null -> "添加应用组"
-                    isLocked -> "查看应用组 (已锁定)"
-                    isAppendMode -> "添加应用"
-                    else -> "编辑应用组"
+                    state.editingGroup == null -> stringResource(R.string.editor_add_app_group)
+                    isLocked -> stringResource(R.string.editor_view_app_group_locked)
+                    isAppendMode -> stringResource(R.string.editor_add_app)
+                    else -> stringResource(R.string.editor_edit_app_group)
                 },
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold
@@ -106,8 +106,8 @@ internal fun GroupEditorSheet(
             Spacer(modifier = Modifier.height(24.dp))
 
             OutlinedTextField(
-                value = vm.groupName,
-                onValueChange = { vm.groupName = it },
+                value = state.groupName,
+                onValueChange = callbacks.onGroupNameChange,
                 label = { Text(li.songe.gkd.sdp.app.getString(R.string.s_67f4598335)) },
                 placeholder = { Text(li.songe.gkd.sdp.app.getString(R.string.s_6deabd286d)) },
                 modifier = Modifier.fillMaxWidth(),
@@ -131,7 +131,7 @@ internal fun GroupEditorSheet(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text(
-                    text = li.songe.gkd.sdp.app.getString(R.string.s_71e649ba01, (vm.groupApps.size).toString()),
+                    text = li.songe.gkd.sdp.app.getString(R.string.s_71e649ba01, (state.groupApps.size).toString()),
                     style = MaterialTheme.typography.bodyMedium,
                     modifier = Modifier.weight(1f)
                 )
@@ -142,13 +142,13 @@ internal fun GroupEditorSheet(
                 }
             }
 
-            if (vm.groupApps.isNotEmpty()) {
+            if (state.groupApps.isNotEmpty()) {
                 Spacer(modifier = Modifier.height(8.dp))
                 FlowRow(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    vm.groupApps.forEach { packageName ->
+                    state.groupApps.forEach { packageName ->
                         val appName = remember(packageName) {
                             try {
                                 val appInfo = app.packageManager.getApplicationInfo(packageName, 0)
@@ -161,7 +161,7 @@ internal fun GroupEditorSheet(
                             selected = true,
                             onClick = {
                                 if (!appsReadOnly && !isLocked) {
-                                    vm.removeAppFromGroup(packageName)
+                                    callbacks.onRemoveGroupApp(packageName)
                                 }
                             },
                             label = { Text(appName) },
@@ -175,14 +175,14 @@ internal fun GroupEditorSheet(
 
             if (!isLocked) {
                 Button(
-                    onClick = onSave,
+                    onClick = callbacks.onSaveGroup,
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text(li.songe.gkd.sdp.app.getString(R.string.s_fadf24dbc5))
                 }
             } else {
                 Button(
-                    onClick = onDismiss,
+                    onClick = callbacks.onDismissGroupEditor,
                     modifier = Modifier.fillMaxWidth(),
                     colors = androidx.compose.material3.ButtonDefaults.buttonColors(
                         containerColor = MaterialTheme.colorScheme.secondaryContainer,
@@ -201,13 +201,41 @@ internal fun GroupEditorSheet(
         AppPickerDialog(
             currentApps = pickerConfig.initialSelection,
             excludedApps = pickerConfig.excludedApps,
-            titleText = if (isAppendMode) "添加应用" else "选择应用列表",
-            emptyText = if (isAppendMode) "没有可继续添加的应用" else "未找到匹配的应用",
+            titleText = if (isAppendMode) {
+                stringResource(R.string.editor_add_app)
+            } else {
+                stringResource(R.string.editor_choose_app_list)
+            },
+            emptyText = if (isAppendMode) {
+                stringResource(R.string.editor_no_more_apps)
+            } else {
+                stringResource(R.string.editor_no_matching_apps)
+            },
             onDismiss = { showAppPicker = false },
             onConfirm = { selected ->
-                vm.applyPickedApps(selected)
+                callbacks.onGroupAppsPicked(selected)
                 showAppPicker = false
             }
         )
     }
+}
+
+private data class AppGroupPickerConfig(
+    val initialSelection: List<String>,
+    val excludedApps: Set<String>,
+)
+
+private fun buildGroupPickerConfig(
+    currentApps: List<String>,
+    mode: AppBlockerGroupEditorMode,
+): AppGroupPickerConfig = when (mode) {
+    AppBlockerGroupEditorMode.Create -> AppGroupPickerConfig(
+        initialSelection = currentApps,
+        excludedApps = emptySet(),
+    )
+    AppBlockerGroupEditorMode.Edit,
+    AppBlockerGroupEditorMode.AppendApps -> AppGroupPickerConfig(
+        initialSelection = emptyList(),
+        excludedApps = currentApps.toSet(),
+    )
 }

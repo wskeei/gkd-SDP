@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -33,14 +32,12 @@ import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import coil3.EventListener
 import coil3.compose.AsyncImagePainter
 import coil3.compose.rememberAsyncImagePainter
 import coil3.decode.Decoder
 import coil3.fetch.Fetcher
-import coil3.imageLoader
 import coil3.request.CachePolicy
 import coil3.request.ErrorResult
 import coil3.request.ImageRequest
@@ -48,6 +45,7 @@ import coil3.request.Options
 import coil3.request.SuccessResult
 import coil3.request.crossfade
 import kotlinx.coroutines.flow.MutableStateFlow
+import li.songe.gkd.sdp.remote.ImagePreviewNetworkPolicy
 import li.songe.gkd.sdp.util.throttle
 import me.saket.telephoto.zoomable.ZoomableContentLocation
 import me.saket.telephoto.zoomable.rememberZoomableState
@@ -60,10 +58,28 @@ internal fun UriImage(
     onToggleBars: () -> Unit = {},
 ) {
     val context = LocalContext.current
-    val imageLoader = context.imageLoader
-    val isNetworkImage = remember(uri) { URLUtil.isNetworkUrl(uri) }
+    val loader = imageLoader
+    val isNetworkImage = remember(uri) { ImagePreviewNetworkPolicy.isNetworkUri(uri) }
     val phaseTextFlow = remember(uri) { MutableStateFlow<String?>(null) }
     val phaseText by phaseTextFlow.collectAsStateWithLifecycle()
+
+    if (!ImagePreviewNetworkPolicy.isDisplayAllowed(uri)) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .pointerInput(uri) {
+                    detectTapGestures(onTap = { onToggleBars() })
+                },
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(
+                text = li.songe.gkd.sdp.app.getString(R.string.s_ceac8790d1),
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodyMedium,
+            )
+        }
+        return
+    }
 
     // 手势层切至 Telephoto，loading / error 还是使用 AsyncImagePainter.State 统一驱动。
     val model = remember(uri) {
@@ -72,7 +88,9 @@ internal fun UriImage(
             uri = uri,
             listener = object : EventListener() {
                 override fun onStart(request: ImageRequest) {
-                    phaseTextFlow.value = "请求中"
+                    phaseTextFlow.value = li.songe.gkd.sdp.app.getString(
+                        R.string.image_preview_phase_requesting,
+                    )
                 }
 
                 override fun fetchStart(
@@ -80,7 +98,13 @@ internal fun UriImage(
                     fetcher: Fetcher,
                     options: Options,
                 ) {
-                    phaseTextFlow.value = if (isNetworkImage) "下载中" else "读取中"
+                    phaseTextFlow.value = li.songe.gkd.sdp.app.getString(
+                        if (isNetworkImage) {
+                            R.string.image_preview_phase_downloading
+                        } else {
+                            R.string.image_preview_phase_reading
+                        },
+                    )
                 }
 
                 override fun decodeStart(
@@ -88,7 +112,9 @@ internal fun UriImage(
                     decoder: Decoder,
                     options: Options,
                 ) {
-                    phaseTextFlow.value = "解码中"
+                    phaseTextFlow.value = li.songe.gkd.sdp.app.getString(
+                        R.string.image_preview_phase_decoding,
+                    )
                 }
 
                 override fun onSuccess(request: ImageRequest, result: SuccessResult) {
@@ -107,7 +133,7 @@ internal fun UriImage(
     }
     val painter = rememberAsyncImagePainter(
         model = model,
-        imageLoader = imageLoader,
+        imageLoader = loader,
     )
     val state by painter.state.collectAsStateWithLifecycle()
 
@@ -167,16 +193,6 @@ internal fun UriImage(
                         color = MaterialTheme.colorScheme.error,
                         style = MaterialTheme.typography.bodyMedium
                     )
-                    stateVal.result.throwable.message?.let { msg ->
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = msg,
-                            color = MaterialTheme.colorScheme.outline,
-                            style = MaterialTheme.typography.labelSmall,
-                            modifier = Modifier.padding(horizontal = 16.dp),
-                            textAlign = TextAlign.Center
-                        )
-                    }
                 }
             }
         }

@@ -11,7 +11,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginBottom="8dp"
-        android:text="快速专注"
+        android:text="@string/widget_focus_quick_title"
         android:textColor="@color/better_black"
         android:textSize="16sp"
         android:textStyle="bold" />

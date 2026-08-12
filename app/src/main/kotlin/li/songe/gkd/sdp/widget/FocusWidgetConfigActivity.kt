@@ -16,6 +16,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import li.songe.gkd.sdp.data.FocusRule
 import li.songe.gkd.sdp.db.DbSet
@@ -81,6 +82,7 @@ class FocusWidgetConfigActivity : ComponentActivity() {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FocusWidgetConfigScreen(onSave: (Set<Long>) -> Unit) {
+    val context = LocalContext.current
     var rules by remember { mutableStateOf<List<FocusRule>>(emptyList()) }
     var selectedIds by remember { mutableStateOf<Set<Long>>(emptySet()) }
     
@@ -122,7 +124,10 @@ fun FocusWidgetConfigScreen(onSave: (Set<Long>) -> Unit) {
                         Spacer(modifier = Modifier.width(8.dp))
                         Column {
                             Text(text = rule.name, style = MaterialTheme.typography.bodyLarge)
-                            Text(text = rule.formatDuration(), style = MaterialTheme.typography.bodyMedium)
+                            Text(
+                                text = rule.formatDuration(context),
+                                style = MaterialTheme.typography.bodyMedium,
+                            )
                         }
                     }
                     HorizontalDivider()

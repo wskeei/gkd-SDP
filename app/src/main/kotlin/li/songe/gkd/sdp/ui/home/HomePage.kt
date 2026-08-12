@@ -15,7 +15,7 @@ fun HomePage(route: HomeRoute) {
             HomeDestination.OVERVIEW -> OverviewScreen()
             HomeDestination.SELF_CONTROL -> SelfControlHubScreen()
             HomeDestination.RULES -> RulesScreen(initialTab = route.rulesTab)
-            HomeDestination.SETTINGS -> useSettingsPage()
+            HomeDestination.SETTINGS -> SettingsScreen()
         }
     }
 }

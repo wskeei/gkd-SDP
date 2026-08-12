@@ -38,6 +38,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.onClick
@@ -99,7 +100,7 @@ fun useAppListPage(): ScaffoldExt {
     val ruleSummary by ruleSummaryFlow.collectAsStateWithLifecycle()
 
     val globalDesc = if (ruleSummary.globalGroups.isNotEmpty()) {
-        "${ruleSummary.globalGroups.size}全局"
+        stringResource(R.string.app_list_global_count, ruleSummary.globalGroups.size)
     } else {
         null
     }
@@ -121,7 +122,7 @@ fun useAppListPage(): ScaffoldExt {
             }
         }
         mainVm.resetPageScrollEvent.collect {
-            if (it == BottomNavItem.AppList) {
+            if (it == HomeDestination.RULES) {
                 scrollKey.intValue++
             }
         }
@@ -149,7 +150,7 @@ fun useAppListPage(): ScaffoldExt {
                     AppBarTextField(
                         value = searchStr,
                         onValueChange = { newValue -> vm.searchStrFlow.value = newValue.trim() },
-                        hint = "请输入应用名称/ID",
+                        hint = stringResource(R.string.app_list_search_hint),
                         modifier = if (firstShowSearchBar) Modifier else Modifier.autoFocus(),
                     )
                 } else {
@@ -176,7 +177,7 @@ fun useAppListPage(): ScaffoldExt {
                         } else {
                             Text(
                                 modifier = titleModifier,
-                                text = BottomNavItem.AppList.label,
+                                text = stringResource(BottomNavItem.AppList.labelRes),
                             )
                         }
                     }
@@ -186,7 +187,7 @@ fun useAppListPage(): ScaffoldExt {
                     CompositionLocalProvider(LocalContentColor provides MaterialTheme.colorScheme.error) {
                         PerfIconButton(
                             imageVector = PerfIcon.WarningAmber,
-                            contentDescription = canQueryPkgState.name + "异常",
+                            contentDescription = stringResource(R.string.app_list_permission_abnormal, canQueryPkgState.name),
                             onClick = throttle {
                                 mainVm.dialogFlow.updateDialogOptions(
                                     title = li.songe.gkd.sdp.app.getString(R.string.s_a15a6fbc16),
@@ -198,8 +199,12 @@ fun useAppListPage(): ScaffoldExt {
                 }
                 PerfIconButton(
                     imageVector = PerfIcon.Block,
-                    contentDescription = "切换白名单编辑模式",
-                    onClickLabel = if (editWhiteListMode) "退出编辑" else "进入编辑",
+                    contentDescription = stringResource(R.string.app_list_toggle_whitelist_edit),
+                    onClickLabel = if (editWhiteListMode) {
+                        stringResource(R.string.app_list_exit_edit)
+                    } else {
+                        stringResource(R.string.app_list_enter_edit)
+                    },
                     colors = IconButtonDefaults.iconButtonColors(
                         contentColor = if (editWhiteListMode) {
                             CheckboxDefaults.colors().checkedBoxColor
@@ -225,12 +230,16 @@ fun useAppListPage(): ScaffoldExt {
                     },
                     id = R.drawable.ic_anim_search_close,
                     atEnd = showSearchBar,
-                    contentDescription = if (showSearchBar) "关闭搜索" else "搜索应用列表",
+                    contentDescription = if (showSearchBar) {
+                        stringResource(R.string.app_list_close_search)
+                    } else {
+                        stringResource(R.string.app_list_open_search)
+                    },
                 )
                 var expanded by remember { mutableStateOf(false) }
                 PerfIconButton(
                     imageVector = PerfIcon.Sort,
-                    contentDescription = "排序筛选",
+                    contentDescription = stringResource(R.string.app_list_sort_filter),
                     onClick = {
                         expanded = true
                     }
@@ -243,31 +252,31 @@ fun useAppListPage(): ScaffoldExt {
                         expanded = expanded,
                         onDismissRequest = { expanded = false }
                     ) {
-                        MenuGroupCard(inTop = true, title = "排序") {
+                        MenuGroupCard(inTop = true, title = stringResource(R.string.app_list_sort_title)) {
                             var sortType by vm.sortTypeFlow.asMutableState()
                             AppSortOption.objects.forEach { option ->
                                 MenuItemRadioButton(
-                                    text = option.label,
+                                    text = stringResource(option.labelRes),
                                     selected = sortType == option,
                                     onClick = { sortType = option },
                                 )
                             }
                         }
-                        MenuGroupCard(title = "分组") {
+                        MenuGroupCard(title = stringResource(R.string.app_list_group_title)) {
                             var appGroupType by vm.appGroupTypeFlow.asMutableState()
                             AppGroupOption.normalObjects.forEach { option ->
                                 val newValue = option.invert(appGroupType)
                                 MenuItemCheckbox(
                                     enabled = newValue != 0,
-                                    text = option.label,
+                                    text = stringResource(option.labelRes),
                                     checked = option.include(appGroupType),
                                     onClick = { appGroupType = newValue },
                                 )
                             }
                         }
-                        MenuGroupCard(title = "筛选") {
+                        MenuGroupCard(title = stringResource(R.string.app_list_filter_title)) {
                             MenuItemCheckbox(
-                                text = "白名单",
+                                text = stringResource(R.string.app_list_whitelist_title),
                                 stateFlow = vm.showBlockAppFlow,
                             )
                         }
@@ -278,7 +287,7 @@ fun useAppListPage(): ScaffoldExt {
         floatingActionButton = {
             AnimationFloatingActionButton(
                 visible = editWhiteListMode,
-                contentDescription = "编辑白名单",
+                contentDescription = stringResource(R.string.app_list_edit_whitelist),
                 onClick = {
                     mainVm.navigatePage(EditBlockAppListRoute)
                 },
@@ -308,10 +317,19 @@ fun useAppListPage(): ScaffoldExt {
                         val appGroups = ruleSummary.appIdToAllGroups[appInfo.id] ?: emptyList()
                         val appDesc = if (appGroups.isNotEmpty()) {
                             when (val disabledCount = appGroups.count { g -> !g.enable }) {
-                                0 -> "${appGroups.size}组规则"
-                                appGroups.size -> "${appGroups.size}组规则/${disabledCount}关闭"
+                                0 -> stringResource(R.string.app_list_group_count, appGroups.size)
+                                appGroups.size -> stringResource(
+                                    R.string.app_list_group_count_disabled,
+                                    appGroups.size,
+                                    disabledCount,
+                                )
                                 else -> {
-                                    "${appGroups.size}组规则/${appGroups.size - disabledCount}启用/${disabledCount}关闭"
+                                    stringResource(
+                                        R.string.app_list_group_count_enabled_disabled,
+                                        appGroups.size,
+                                        appGroups.size - disabledCount,
+                                        disabledCount,
+                                    )
                                 }
                             }
                         } else {
@@ -369,15 +387,26 @@ private fun AppItemCard(
                 contentDescription = if (editWhiteListMode) {
                     appInfo.name
                 } else {
-                    "应用：${appInfo.name}，${desc ?: appInfo.id}"
+                    li.songe.gkd.sdp.app.getString(
+                        R.string.app_list_app_content,
+                        appInfo.name,
+                        desc ?: appInfo.id,
+                    )
                 }
                 if (inWhiteList) {
-                    stateDescription = "已加入白名单"
+                    stateDescription = li.songe.gkd.sdp.app.getString(R.string.app_list_in_whitelist)
                 } else if (editWhiteListMode) {
-                    stateDescription = "未加入白名单"
+                    stateDescription = li.songe.gkd.sdp.app.getString(R.string.app_list_not_in_whitelist)
                 }
                 onClick(
-                    label = if (editWhiteListMode) if (inWhiteList) "从白名单中移除" else "加入白名单" else "进入规则汇总页面",
+                    label = when {
+                        editWhiteListMode && inWhiteList ->
+                            li.songe.gkd.sdp.app.getString(R.string.app_list_remove_from_whitelist)
+                        editWhiteListMode ->
+                            li.songe.gkd.sdp.app.getString(R.string.app_list_add_to_whitelist)
+                        else ->
+                            li.songe.gkd.sdp.app.getString(R.string.app_list_enter_rule_summary)
+                    },
                     action = null
                 )
             }

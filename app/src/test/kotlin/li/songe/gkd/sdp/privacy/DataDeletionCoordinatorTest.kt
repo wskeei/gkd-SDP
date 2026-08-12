@@ -24,7 +24,7 @@ class DataDeletionCoordinatorTest {
             hasActiveSession = true,
         )
         assertFalse(DataDeletionCoordinator.deletionBlocked(DataCategory.USAGE_REQUEST_HISTORY, active))
-        assertNull(DataDeletionCoordinator.deletionBlockReason(DataCategory.USAGE_REQUEST_HISTORY, active))
+        assertNull(DataDeletionCoordinator.deletionBlockReasonRes(DataCategory.USAGE_REQUEST_HISTORY, active))
     }
 
     @Test
@@ -36,7 +36,7 @@ class DataDeletionCoordinatorTest {
         )
         assertTrue(DataDeletionCoordinator.deletionBlocked(DataCategory.SELF_CONTROL_CONFIG, active))
         assertTrue(DataDeletionCoordinator.deletionBlocked(DataCategory.ALL_APP_DATA, active))
-        assertTrue(DataDeletionCoordinator.deletionBlockReason(DataCategory.ALL_APP_DATA, active) != null)
+        assertTrue(DataDeletionCoordinator.deletionBlockReasonRes(DataCategory.ALL_APP_DATA, active) != null)
     }
 
     @Test

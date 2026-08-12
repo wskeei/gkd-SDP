@@ -22,9 +22,16 @@ kotlin {
 dependencies {
     compileOnly(libs.lint.api)
     testImplementation(libs.lint.tests)
+    testImplementation(libs.lint.api)
     testImplementation(libs.junit)
 }
 
 tasks.withType<Test>().configureEach {
     maxHeapSize = "2g"
+}
+
+tasks.jar {
+    manifest {
+        attributes["Lint-Registry-v2"] = "li.songe.gkd.sdp.lint.SdpIssueRegistry"
+    }
 }

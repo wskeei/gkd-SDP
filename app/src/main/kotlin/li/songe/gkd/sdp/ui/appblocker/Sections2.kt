@@ -265,7 +265,7 @@ private fun AppGroupRuleList(rules: List<BlockTimeRule>) {
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
-                        text = li.songe.gkd.sdp.app.getString(R.string.s_e713116e5e, (rule.formatTimeRange()).toString(), (rule.formatDaysOfWeek()).toString()),
+                        text = li.songe.gkd.sdp.app.getString(R.string.s_e713116e5e, rule.formatTimeRange(), rule.formatDaysOfWeek(li.songe.gkd.sdp.app)),
                         style = MaterialTheme.typography.bodyMedium,
                     )
                 }

@@ -6,6 +6,7 @@ import androidx.compose.runtime.Composable
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -344,8 +345,11 @@ class RuleGroupState(
                 onClickDelete = mainVm.viewModelScope.launchAsFn {
                     dismissGroupShow()
                     val r = mainVm.dialogFlow.getResult(
-                        title = "删除规则组",
-                        text = "确定删除 ${showGroup.name} ?",
+                        title = li.songe.gkd.sdp.app.getString(R.string.rule_delete_group_title),
+                        text = li.songe.gkd.sdp.app.getString(
+                            R.string.rule_delete_group_confirm,
+                            showGroup.name,
+                        ),
                         error = true,
                     )
                     if (!r) {
@@ -412,7 +416,7 @@ class RuleGroupState(
                             title = {
                                 TowLineText(
                                     title = excludeGroup.name,
-                                    subtitle = "编辑禁用",
+                                    subtitle = stringResource(R.string.subs_edit_disabled),
                                 )
                             },
                             actions = {
@@ -445,7 +449,7 @@ class RuleGroupState(
                     MultiTextField(
                         modifier = Modifier.scaffoldPadding(contentPadding),
                         textFlow = excludeTextFlow,
-                        placeholderText = "请填入需要禁用的 activityId 列表\n每行一个",
+                        placeholderText = stringResource(R.string.rule_activity_placeholder),
                     )
                 }
             }

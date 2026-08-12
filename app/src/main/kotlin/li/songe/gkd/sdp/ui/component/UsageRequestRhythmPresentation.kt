@@ -9,7 +9,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import li.songe.gkd.sdp.data.SelfControlIntervalRepository
 import li.songe.gkd.sdp.util.SelfControlInsightWindowPolicy
@@ -34,6 +36,8 @@ data class UsageRequestRhythmPresentation(
     val ratioSampleCountByWindow: Map<SelfControlInsightWindowPolicy.Window, Int>,
     val comparisonText: String?,
     val statusText: String,
+    val statusTextRes: Int,
+    val comparisonTextRes: Int? = null,
 ) {
     enum class Status {
         FIRST,
@@ -105,27 +109,55 @@ data class UsageRequestRhythmPresentation(
             } ?: "—"
             val equationText = currentFormula?.let(::formatEquation)
             val gapText = currentGap?.let(SelfControlIntervalPolicy::formatDurationCompact) ?: "—"
+            // i18n-ignore: legacy fallback or non-display heuristic data
             val durationText = requestedDurationMinutes.takeIf { it > 0 }?.let { "$it 分钟" } ?: "—"
             val baseline = averages[selectedWindow]
             val comparison = if (currentRatio != null && baseline != null) {
                 val delta = currentRatio - baseline
                 when {
+                    // i18n-ignore: legacy fallback or non-display heuristic data
                     delta > 0.0 -> "本次比${selectedWindow.label}平均高 ${formatRatioDelta(delta)}"
+                    // i18n-ignore: legacy fallback or non-display heuristic data
                     delta < 0.0 -> "本次比${selectedWindow.label}平均低 ${formatRatioDelta(-delta)}"
+                    // i18n-ignore: legacy fallback or non-display heuristic data
                     else -> "本次与${selectedWindow.label}平均相同"
                 }
             } else {
                 null
             }
             val statusText = when (status) {
+                // i18n-ignore: legacy fallback or non-display heuristic data
                 Status.FIRST -> "此前没有成功的使用申请"
                 Status.AVAILABLE -> if (data?.samples.orEmpty().none { it.gapMs != null }) {
+                    // i18n-ignore: legacy fallback or non-display heuristic data
                     "间用比新口径从本版本开始积累"
                 } else {
+                    // i18n-ignore: legacy fallback or non-display heuristic data
                     "未使用间隔从上次结束使用开始计算"
                 }
+                // i18n-ignore: legacy fallback or non-display heuristic data
                 Status.MISSING_ACTUAL_END -> "暂无可确认的上次结束时间"
+                // i18n-ignore: legacy fallback or non-display heuristic data
                 Status.UNAVAILABLE -> "暂时无法读取上次结束时间"
+            }
+            val statusTextRes = when (status) {
+                Status.FIRST -> R.string.usage_request_status_first
+                Status.AVAILABLE -> if (data?.samples.orEmpty().none { it.gapMs != null }) {
+                    R.string.usage_request_status_ratio_new
+                } else {
+                    R.string.usage_request_status_available
+                }
+                Status.MISSING_ACTUAL_END -> R.string.usage_request_status_missing_end
+                Status.UNAVAILABLE -> R.string.usage_request_status_unavailable
+            }
+            val comparisonTextRes = if (currentRatio != null && baseline != null) {
+                when {
+                    currentRatio - baseline > 0.0 -> R.string.usage_request_comparison_high
+                    currentRatio - baseline < 0.0 -> R.string.usage_request_comparison_low
+                    else -> R.string.usage_request_comparison_same
+                }
+            } else {
+                null
             }
             return UsageRequestRhythmPresentation(
                 status = status,
@@ -143,6 +175,8 @@ data class UsageRequestRhythmPresentation(
                 ratioSampleCountByWindow = counts,
                 comparisonText = comparison,
                 statusText = statusText,
+                statusTextRes = statusTextRes,
+                comparisonTextRes = comparisonTextRes,
             )
         }
 
@@ -150,6 +184,7 @@ data class UsageRequestRhythmPresentation(
             "${UsageRequestRhythmPolicy.formatRatio(value) ?: "暂无"}×"
 
         fun formatFormula(formula: UsageRequestRhythmPolicy.Formula?): String {
+            // i18n-ignore: legacy fallback or non-display heuristic data
             return "公式：${formatEquation(formula)}"
         }
 
@@ -181,18 +216,24 @@ fun UsageDurationRatioFeedback(
             modifier = Modifier.padding(12.dp),
             verticalArrangement = Arrangement.spacedBy(6.dp),
         ) {
-            Text(li.songe.gkd.sdp.app.getString(R.string.s_4cec547cf2), style = MaterialTheme.typography.titleSmall)
+            Text(stringResource(R.string.s_4cec547cf2), style = MaterialTheme.typography.titleSmall)
             FlowRow(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(16.dp),
                 verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
                 Column {
-                    Text(li.songe.gkd.sdp.app.getString(R.string.s_7fd47e102e), style = MaterialTheme.typography.bodySmall)
+                    Text(stringResource(R.string.s_7fd47e102e), style = MaterialTheme.typography.bodySmall)
                     Text(presentation.currentRatioText, style = MaterialTheme.typography.titleLarge)
                 }
                 Column {
-                    Text(li.songe.gkd.sdp.app.getString(R.string.s_34e7ba7c70, (presentation.selectedWindow.label).toString()), style = MaterialTheme.typography.bodySmall)
+                    Text(
+                        stringResource(
+                            R.string.s_34e7ba7c70,
+                            stringResource(presentation.selectedWindow.labelRes()),
+                        ),
+                        style = MaterialTheme.typography.bodySmall,
+                    )
                     Text(presentation.selectedWindowAverageText, style = MaterialTheme.typography.bodyMedium)
                 }
             }
@@ -201,21 +242,78 @@ fun UsageDurationRatioFeedback(
                 horizontalArrangement = Arrangement.spacedBy(16.dp),
                 verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
-                Text(li.songe.gkd.sdp.app.getString(R.string.s_0db6dd2e7f, (presentation.gapText).toString()), style = MaterialTheme.typography.bodyMedium)
-                Text(li.songe.gkd.sdp.app.getString(R.string.s_d11b352c3e, (presentation.durationText).toString()), style = MaterialTheme.typography.bodyMedium)
+                Text(
+                    stringResource(
+                        R.string.s_0db6dd2e7f,
+                        localizedDuration(presentation.currentGapMs),
+                    ),
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+                Text(
+                    stringResource(
+                        R.string.s_d11b352c3e,
+                        stringResource(R.string.usage_request_minutes_value, presentation.requestedDurationMinutes ?: 0),
+                    ),
+                    style = MaterialTheme.typography.bodyMedium,
+                )
             }
             Text(
-                text = li.songe.gkd.sdp.app.getString(R.string.s_112997acfa, (presentation.equationText ?: "—").toString()),
+                text = stringResource(
+                    R.string.usage_request_equation_label,
+                    localizedEquation(presentation.currentFormula),
+                ),
                 style = MaterialTheme.typography.bodyMedium,
             )
-            presentation.comparisonText?.let {
-                Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
+            presentation.comparisonTextRes?.let { res ->
+                Text(
+                    stringResource(
+                        res,
+                        stringResource(presentation.selectedWindow.labelRes()),
+                        formatRatioDelta(presentation),
+                    ),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.primary,
+                )
             }
             Text(
-                text = presentation.statusText,
+                text = stringResource(presentation.statusTextRes),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
+    }
+}
+
+@Composable
+private fun localizedEquation(formula: UsageRequestRhythmPolicy.Formula?): String {
+    if (formula == null) return "—"
+    val unit = stringResource(formula.unit.labelRes())
+    val gap = "${formula.gapValue.stripTrailingZeros().toPlainString()} $unit"
+    val duration = "${formula.durationValue.stripTrailingZeros().toPlainString()} $unit"
+    val ratio = UsageRequestRhythmPolicy.formatRatio(formula.ratio) ?: "—"
+    return stringResource(R.string.usage_request_equation, gap, duration, "$ratio×")
+}
+
+@Composable
+private fun formatRatioDelta(presentation: UsageRequestRhythmPresentation): String {
+    val current = presentation.currentRatio ?: return "—"
+    val baseline = presentation.averageRatioByWindow[presentation.selectedWindow] ?: return "—"
+    val delta = kotlin.math.abs(current - baseline)
+    return "${UsageRequestRhythmPolicy.formatRatio(delta) ?: "—"}×"
+}
+
+@Composable
+private fun localizedDuration(durationMs: Long?): String {
+    if (durationMs == null || durationMs < 0L) return "—"
+    val totalSeconds = durationMs / 1_000L
+    val days = totalSeconds / 86_400L
+    val hours = (totalSeconds / 3_600L) % 24L
+    val minutes = (totalSeconds / 60L) % 60L
+    val seconds = totalSeconds % 60L
+    return when {
+        days > 0L -> stringResource(R.string.duration_days_hours, days, hours)
+        hours > 0L -> stringResource(R.string.duration_hours_minutes, hours, minutes)
+        minutes > 0L -> stringResource(R.string.duration_minutes_seconds, minutes, seconds)
+        else -> stringResource(R.string.duration_seconds, seconds)
     }
 }

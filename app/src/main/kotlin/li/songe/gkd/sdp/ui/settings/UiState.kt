@@ -1,10 +1,15 @@
-@file:JvmName("SettingsUiState")
+@file:JvmName("SettingsUiState0")
 
 package li.songe.gkd.sdp.ui.home
+import androidx.compose.runtime.Immutable
 
 import android.net.Uri
+import androidx.navigation3.runtime.NavKey
+import li.songe.gkd.sdp.R
 import li.songe.gkd.sdp.backup.PreparedBackupImport
 import li.songe.gkd.sdp.backup.BackupErrorCode
+import li.songe.gkd.sdp.settings.SettingsEntry
+import li.songe.gkd.sdp.store.SettingsStore
 import li.songe.gkd.sdp.util.BackupUtils
 internal enum class BackupWorkflowStage {
     EXPORT_CATEGORIES,
@@ -14,6 +19,7 @@ internal enum class BackupWorkflowStage {
     IMPORT_PREVIEW,
 }
 
+@Immutable
 internal data class BackupWorkflowState(
     val stage: BackupWorkflowStage,
     val selectedCategoryIds: Set<String> = BackupUtils.defaultCategoryIds,
@@ -25,40 +31,100 @@ internal data class BackupWorkflowState(
     val errorText: String? = null,
 )
 
-internal fun backupCategoryTitle(categoryId: String): String = when (categoryId) {
-    "settings" -> "应用设置"
-    "subscriptions" -> "订阅与规则配置"
-    "self_control_config" -> "数字自律配置"
-    "self_control_history" -> "数字自律历史"
-    "upstream_history" -> "规则触发与活动历史"
-    "sensitive_optional" -> "敏感可选数据"
-    else -> categoryId
+@Immutable
+internal data class SettingsUiState(
+    val backup: BackupWorkflowState = BackupWorkflowState(BackupWorkflowStage.EXPORT_CATEGORIES),
+)
+
+@Immutable
+internal data class SettingsRenderState(
+    val store: SettingsStore,
+    val backupWorkflow: BackupWorkflowState?,
+    val showToastInputDlg: Boolean,
+    val showNotifTextInputDlg: Boolean,
+    val showToastSettingsDlg: Boolean,
+    val showA11yBlockDlg: Boolean,
+    val showBackupDlg: Boolean,
+    val subsStatus: String,
+    val trackServiceRunning: Boolean,
+    val shizukuOk: Boolean,
+    val ignoreBatteryOptimizations: Boolean,
+    val statusRunning: Boolean,
+    val showA11ySection: Boolean,
+    val activeLockCount: Int,
+)
+
+internal data class SettingsCallbacks(
+    val updateStore: (SettingsStore) -> Unit,
+    val navigateRoute: (NavKey) -> Unit,
+    val showToastInput: () -> Unit,
+    val dismissToastInput: () -> Unit,
+    val confirmToast: (String) -> Unit,
+    val showToastHelp: () -> Unit,
+    val showNotifInput: () -> Unit,
+    val dismissNotifInput: () -> Unit,
+    val confirmNotif: (String, String) -> Unit,
+    val showNotifHelp: () -> Unit,
+    val dismissA11yBlock: () -> Unit,
+    val confirmA11yBlock: () -> Unit,
+    val guardShizuku: () -> Unit,
+    val requestStatusService: () -> Unit,
+    val openBatterySettings: () -> Unit,
+    val openAppDetails: () -> Unit,
+    val switchRecentApps: () -> Unit,
+    val toggleToastSettings: () -> Unit,
+    val showViewRestrictions: () -> Unit,
+    val toggleTrackService: (Boolean) -> Unit,
+    val toggleExcludeFromRecents: (Boolean) -> Unit,
+    val enableBlockA11y: (Boolean) -> Unit,
+    val navigateBlockA11y: () -> Unit,
+    val showBackup: () -> Unit,
+    val dismissBackup: () -> Unit,
+    val importBackup: () -> Unit,
+    val exportBackup: () -> Unit,
+    val updateBackupWorkflow: (BackupWorkflowState?) -> Unit,
+)
+
+internal sealed interface SettingsAction {
+    data class UpdateBackupCategory(val categoryId: String, val selected: Boolean) : SettingsAction
+    data object ResetBackupWorkflow : SettingsAction
+    data object ClearBackupError : SettingsAction
 }
 
-internal fun backupCategorySubtitle(categoryId: String): String = when (categoryId) {
-    "settings" -> "普通 Store；不含私有 Store、令牌和本机权限"
-    "subscriptions" -> "订阅表、配置表与订阅 JSON"
-    "self_control_config" -> "专注、拦截、锁定、使用申请与监控配置"
-    "self_control_history" -> "专注会话、使用申请、拦截尝试与安装记录"
-    "upstream_history" -> "规则动作、Activity 与应用访问历史"
-    else -> ""
+internal fun backupCategoryTitleRes(categoryId: String): Int = when (categoryId) {
+    "settings" -> R.string.backup_category_settings_title
+    "subscriptions" -> R.string.backup_category_subscriptions_title
+    "self_control_config" -> R.string.backup_category_self_control_config_title
+    "self_control_history" -> R.string.backup_category_self_control_history_title
+    "upstream_history" -> R.string.backup_category_upstream_history_title
+    "sensitive_optional" -> R.string.backup_category_sensitive_optional_title
+    else -> R.string.backup_category_unknown_title
 }
 
-internal fun backupErrorText(code: BackupErrorCode): String = when (code) {
-    BackupErrorCode.WEAK_PASSWORD -> "密码至少需要 12 个 Unicode 字符"
-    BackupErrorCode.AUTHENTICATION_FAILED -> "密码错误，或备份内容已损坏"
-    BackupErrorCode.INVALID_MAGIC -> "所选文件不是 GKD-SDP 加密备份 v2"
-    BackupErrorCode.TRUNCATED -> "备份文件不完整"
+internal fun backupCategorySubtitleRes(categoryId: String): Int? = when (categoryId) {
+    "settings" -> R.string.backup_category_settings_subtitle
+    "subscriptions" -> R.string.backup_category_subscriptions_subtitle
+    "self_control_config" -> R.string.backup_category_self_control_config_subtitle
+    "self_control_history" -> R.string.backup_category_self_control_history_subtitle
+    "upstream_history" -> R.string.backup_category_upstream_history_subtitle
+    else -> null
+}
+
+internal fun backupErrorTextRes(code: BackupErrorCode): Int = when (code) {
+    BackupErrorCode.WEAK_PASSWORD -> R.string.backup_error_weak_password
+    BackupErrorCode.AUTHENTICATION_FAILED -> R.string.backup_error_authentication_failed
+    BackupErrorCode.INVALID_MAGIC -> R.string.backup_error_invalid_magic
+    BackupErrorCode.TRUNCATED -> R.string.backup_error_truncated
     BackupErrorCode.UNSUPPORTED_VERSION,
-    BackupErrorCode.UNSUPPORTED_KDF -> "此备份格式暂不受当前版本支持"
-    BackupErrorCode.SCHEMA_MISMATCH -> "备份数据结构与当前版本不兼容"
-    BackupErrorCode.REFERENCE_MISMATCH -> "备份中的数据引用不完整"
+    BackupErrorCode.UNSUPPORTED_KDF -> R.string.backup_error_unsupported
+    BackupErrorCode.SCHEMA_MISMATCH -> R.string.backup_error_schema_mismatch
+    BackupErrorCode.REFERENCE_MISMATCH -> R.string.backup_error_reference_mismatch
     BackupErrorCode.NONCE_REUSE,
     BackupErrorCode.MALFORMED_HEADER,
-    BackupErrorCode.INVALID_PAYLOAD -> "备份校验失败，文件可能已损坏"
-    BackupErrorCode.IMPORT_NOT_CONFIRMED -> "导入尚未确认"
-    BackupErrorCode.IMPORT_PREVIEW_STALE -> "当前数据已变化，请刷新冲突预览后再次确认"
-    BackupErrorCode.IMPORT_FAILED -> "导入失败，新数据已撤销并恢复原状态"
-    BackupErrorCode.IMPORT_RECOVERY_REQUIRED -> "导入未完成，恢复记录已保留；请重启应用继续恢复"
-    BackupErrorCode.CRYPTO_FAILURE -> "加密处理失败"
+    BackupErrorCode.INVALID_PAYLOAD -> R.string.backup_error_invalid_payload
+    BackupErrorCode.IMPORT_NOT_CONFIRMED -> R.string.backup_error_import_not_confirmed
+    BackupErrorCode.IMPORT_PREVIEW_STALE -> R.string.backup_error_import_preview_stale
+    BackupErrorCode.IMPORT_FAILED -> R.string.backup_error_import_failed
+    BackupErrorCode.IMPORT_RECOVERY_REQUIRED -> R.string.backup_error_import_recovery_required
+    BackupErrorCode.CRYPTO_FAILURE -> R.string.backup_error_crypto_failure
 }

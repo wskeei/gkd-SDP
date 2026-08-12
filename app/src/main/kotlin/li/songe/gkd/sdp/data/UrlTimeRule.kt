@@ -1,5 +1,6 @@
 package li.songe.gkd.sdp.data
 
+import android.content.Context
 import androidx.room.ColumnInfo
 import androidx.room.Dao
 import androidx.room.Delete
@@ -11,6 +12,7 @@ import androidx.room.Query
 import androidx.room.Update
 import kotlinx.coroutines.flow.Flow
 import kotlinx.serialization.Serializable
+import li.songe.gkd.sdp.R
 import java.time.LocalDateTime
 import java.time.LocalTime
 
@@ -38,7 +40,7 @@ data class UrlTimeRule(
 
     @ColumnInfo(name = "created_at") val createdAt: Long = System.currentTimeMillis(),
 
-    @ColumnInfo(name = "intercept_message") val interceptMessage: String = "这真的重要吗？",
+    @ColumnInfo(name = "intercept_message") val interceptMessage: String = "",
 
     // 是否为允许模式（反选）：true = 时间段内允许，其他时间拦截
     @ColumnInfo(name = "is_allow_mode", defaultValue = "0") val isAllowMode: Boolean = false,
@@ -54,19 +56,19 @@ data class UrlTimeRule(
 
         // 预设模板
         data class TimeTemplate(
-            val name: String,
+            val nameRes: Int,
             val startTime: String,
             val endTime: String,
             val daysOfWeek: String,
-            val description: String
+            val descriptionRes: Int,
         )
 
         val TEMPLATES = listOf(
-            TimeTemplate("工作日", "09:00", "18:00", "1,2,3,4,5", "周一至周五 9:00-18:00"),
-            TimeTemplate("周末", "00:00", "23:59", "6,7", "周六日全天"),
-            TimeTemplate("每晚", "22:00", "08:00", "1,2,3,4,5,6,7", "每天 22:00-次日08:00"),
-            TimeTemplate("午休", "12:00", "14:00", "1,2,3,4,5", "周一至周五 12:00-14:00"),
-            TimeTemplate("全天候", "00:00", "23:59", "1,2,3,4,5,6,7", "每天全天"),
+            TimeTemplate(R.string.time_template_workday, "09:00", "18:00", "1,2,3,4,5", R.string.time_template_workday_desc),
+            TimeTemplate(R.string.time_template_weekend, "00:00", "23:59", "6,7", R.string.time_template_weekend_desc),
+            TimeTemplate(R.string.time_template_every_night, "22:00", "08:00", "1,2,3,4,5,6,7", R.string.time_template_every_night_desc),
+            TimeTemplate(R.string.time_template_lunch_break, "12:00", "14:00", "1,2,3,4,5", R.string.time_template_lunch_break_desc),
+            TimeTemplate(R.string.time_template_all_day, "00:00", "23:59", "1,2,3,4,5,6,7", R.string.time_template_all_day_desc),
         )
     }
 
@@ -134,16 +136,41 @@ data class UrlTimeRule(
      */
     fun formatDaysOfWeek(): String {
         val days = getDaysOfWeekList()
+        // i18n-ignore: legacy fallback or non-display heuristic data
         if (days.isEmpty()) return "未设置"
+        // i18n-ignore: legacy fallback or non-display heuristic data
         if (days.size == 7) return "每天"
+        // i18n-ignore: legacy fallback or non-display heuristic data
         if (days == listOf(1, 2, 3, 4, 5)) return "工作日"
+        // i18n-ignore: legacy fallback or non-display heuristic data
         if (days == listOf(6, 7)) return "周末"
 
         val dayNames = mapOf(
+            // i18n-ignore: legacy fallback or non-display heuristic data
             1 to "周一", 2 to "周二", 3 to "周三", 4 to "周四",
+            // i18n-ignore: legacy fallback or non-display heuristic data
             5 to "周五", 6 to "周六", 7 to "周日"
         )
         return days.mapNotNull { dayNames[it] }.joinToString("、")
+    }
+
+    fun formatDaysOfWeek(context: Context): String {
+        val days = getDaysOfWeekList()
+        if (days.isEmpty()) return context.getString(R.string.days_not_set)
+        if (days.size == 7) return context.getString(R.string.days_everyday)
+        if (days == listOf(1, 2, 3, 4, 5)) return context.getString(R.string.days_weekdays)
+        if (days == listOf(6, 7)) return context.getString(R.string.days_weekend)
+
+        val dayNames = mapOf(
+            1 to R.string.day_monday,
+            2 to R.string.day_tuesday,
+            3 to R.string.day_wednesday,
+            4 to R.string.day_thursday,
+            5 to R.string.day_friday,
+            6 to R.string.day_saturday,
+            7 to R.string.day_sunday,
+        )
+        return days.mapNotNull { dayNames[it]?.let(context::getString) }.joinToString("、")
     }
 
     /**
@@ -184,5 +211,8 @@ data class UrlTimeRule(
 
         @Query("UPDATE url_time_rule SET enabled = 1 WHERE enabled = 0")
         suspend fun enableAllDisabled(): Int
+
+        @Query("DELETE FROM url_time_rule")
+        suspend fun deleteAll(): Int
     }
 }

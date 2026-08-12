@@ -1,5 +1,6 @@
 package li.songe.gkd.sdp.ui.selfcontrol
 
+import androidx.compose.runtime.Immutable
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -15,6 +16,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
@@ -31,11 +33,13 @@ import li.songe.gkd.sdp.ui.UrlBlockRoute
 import li.songe.gkd.sdp.ui.UsageGuardRoute
 import li.songe.gkd.sdp.ui.UsageGuardReviewRoute
 
-private data class SelfControlEntry(
+@Immutable
+data class SelfControlEntryUi(
     val title: String,
     val description: String,
     val icon: ImageVector,
-    val navigate: () -> Unit,
+    val onClick: () -> Unit,
+    val testTag: String,
 )
 
 /**
@@ -46,44 +50,58 @@ private data class SelfControlEntry(
 fun SelfControlHubScreen() {
     val mainVm = LocalMainViewModel.current
     val entries = listOf(
-        SelfControlEntry(
+        SelfControlEntryUi(
             title = stringResource(R.string.s_356c996618),
             description = stringResource(R.string.s_2755dbd77c),
             icon = PerfIcon.ToggleOn,
-            navigate = { mainVm.navigatePage(UsageGuardRoute) },
+            onClick = { mainVm.navigatePage(UsageGuardRoute) },
+            testTag = "self_control_usage",
         ),
-        SelfControlEntry(
+        SelfControlEntryUi(
             title = stringResource(R.string.s_c7380c3c20),
             description = stringResource(R.string.s_302471b81d),
             icon = PerfIcon.Equalizer,
-            navigate = { mainVm.navigatePage(UsageGuardReviewRoute) },
+            onClick = { mainVm.navigatePage(UsageGuardReviewRoute) },
+            testTag = "self_control_review",
         ),
-        SelfControlEntry(
+        SelfControlEntryUi(
             title = stringResource(R.string.s_63c1371c03),
             description = stringResource(R.string.s_6905b9f1f9),
             icon = PerfIcon.Schedule,
-            navigate = { mainVm.navigatePage(FocusModeRoute) },
+            onClick = { mainVm.navigatePage(FocusModeRoute) },
+            testTag = "self_control_focus",
         ),
-        SelfControlEntry(
+        SelfControlEntryUi(
             title = stringResource(R.string.s_e6bbd743b3),
             description = stringResource(R.string.s_25d9aca60f),
             icon = PerfIcon.Block,
-            navigate = { mainVm.navigatePage(AppBlockerRoute) },
+            onClick = { mainVm.navigatePage(AppBlockerRoute) },
+            testTag = "self_control_app_blocker",
         ),
-        SelfControlEntry(
+        SelfControlEntryUi(
             title = stringResource(R.string.s_dcbbbab7a5),
             description = stringResource(R.string.s_86629471c3),
             icon = PerfIcon.Info,
-            navigate = { mainVm.navigatePage(UrlBlockRoute) },
+            onClick = { mainVm.navigatePage(UrlBlockRoute) },
+            testTag = "self_control_url_blocker",
         ),
-        SelfControlEntry(
+        SelfControlEntryUi(
             title = stringResource(R.string.s_6337015d1f),
             description = stringResource(R.string.s_0b707d6dcc),
             icon = PerfIcon.Lock,
-            navigate = { mainVm.navigatePage(FocusLockRoute) },
+            onClick = { mainVm.navigatePage(FocusLockRoute) },
+            testTag = "self_control_lock",
         ),
     )
-    Column(modifier = Modifier.padding(DimensionTokens.SpacingBase)) {
+    SelfControlHubContent(entries = entries)
+}
+
+@Composable
+internal fun SelfControlHubContent(
+    entries: List<SelfControlEntryUi>,
+    modifier: Modifier = Modifier,
+) {
+    Column(modifier = modifier.padding(DimensionTokens.SpacingBase)) {
         entries.forEach { entry ->
             SelfControlEntryCard(entry = entry)
         }
@@ -91,11 +109,12 @@ fun SelfControlHubScreen() {
 }
 
 @Composable
-private fun SelfControlEntryCard(entry: SelfControlEntry) {
+private fun SelfControlEntryCard(entry: SelfControlEntryUi) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = entry.navigate),
+            .clickable(onClick = entry.onClick)
+            .testTag(entry.testTag),
         colors = surfaceCardColors,
         shape = CardDefaults.shape,
     ) {

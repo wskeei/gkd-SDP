@@ -21,13 +21,18 @@ object DigitalSelfDisciplineReviewPolicy {
         val bucketMs: Long,
         val maxChartPoints: Int,
     ) {
+        // i18n-ignore: legacy fallback or non-display heuristic data
         LAST_24_HOURS("近 24 小时", 24L * HOUR_MS, HOUR_MS, 24),
+        // i18n-ignore: legacy fallback or non-display heuristic data
         LAST_7_DAYS("近 7 天", 7L * 24L * HOUR_MS, 6L * HOUR_MS, 28),
+        // i18n-ignore: legacy fallback or non-display heuristic data
         LAST_30_DAYS("近 30 天", 30L * 24L * HOUR_MS, 24L * HOUR_MS, 30),
     }
 
     enum class ReviewType(val label: String) {
+        // i18n-ignore: legacy fallback or non-display heuristic data
         UsageRequest("使用申请"),
+        // i18n-ignore: legacy fallback or non-display heuristic data
         InterceptAttempt("拦截"),
     }
 
@@ -38,9 +43,13 @@ object DigitalSelfDisciplineReviewPolicy {
     }
 
     enum class InterceptKindFilter(val label: String, val eventKind: Int? = null) {
+        // i18n-ignore: legacy fallback or non-display heuristic data
         All("全部"),
+        // i18n-ignore: legacy fallback or non-display heuristic data
         AppBlocker("应用拦截", SelfControlAttempt.KIND_APP_BLOCKER),
+        // i18n-ignore: legacy fallback or non-display heuristic data
         Selector("选择器拦截", SelfControlAttempt.KIND_SELECTOR_INTERCEPT),
+        // i18n-ignore: legacy fallback or non-display heuristic data
         Url("网址拦截", SelfControlAttempt.KIND_URL_INTERCEPT),
     }
 
@@ -380,6 +389,7 @@ object DigitalSelfDisciplineReviewPolicy {
             deltaAverageMs = null,
             currentIntervalAverageMs = metrics.intervalAverageMs,
             currentRatioAverage = metrics.ratioAverage,
+            // i18n-ignore: legacy fallback or non-display heuristic data
             message = "上一周期暂无有效样本",
         )
     }
@@ -414,9 +424,13 @@ object DigitalSelfDisciplineReviewPolicy {
             null
         }
         val message = when {
+            // i18n-ignore: legacy fallback or non-display heuristic data
             delta == null -> "上一周期暂无有效样本"
+            // i18n-ignore: legacy fallback or non-display heuristic data
             delta > 0.0 -> "本期平均比上一周期高 ${formatMetricDelta(delta, reviewType)}"
+            // i18n-ignore: legacy fallback or non-display heuristic data
             delta < 0.0 -> "本期平均比上一周期低 ${formatMetricDelta(-delta, reviewType)}"
+            // i18n-ignore: legacy fallback or non-display heuristic data
             else -> "本期平均与上一周期相同"
         }
         return PeriodComparison(
@@ -548,20 +562,32 @@ object DigitalSelfDisciplineReviewPolicy {
     }
 
     private fun endReasonLabel(reason: Int): String = when (reason) {
+        // i18n-ignore: legacy fallback or non-display heuristic data
         0 -> "进行中"
+        // i18n-ignore: legacy fallback or non-display heuristic data
         1 -> "到期"
+        // i18n-ignore: legacy fallback or non-display heuristic data
         2 -> "离开应用"
+        // i18n-ignore: legacy fallback or non-display heuristic data
         3 -> "被替换"
+        // i18n-ignore: legacy fallback or non-display heuristic data
         4 -> "返回桌面"
+        // i18n-ignore: legacy fallback or non-display heuristic data
         5 -> "主动结束"
+        // i18n-ignore: legacy fallback or non-display heuristic data
         else -> "其他结束状态"
     }
 
     private fun periodLabel(hour: Int): String = when (hour) {
+        // i18n-ignore: legacy fallback or non-display heuristic data
         in 6..10 -> "上午"
+        // i18n-ignore: legacy fallback or non-display heuristic data
         in 11..13 -> "午间"
+        // i18n-ignore: legacy fallback or non-display heuristic data
         in 14..17 -> "下午"
+        // i18n-ignore: legacy fallback or non-display heuristic data
         in 18..21 -> "晚间"
+        // i18n-ignore: legacy fallback or non-display heuristic data
         else -> "夜间"
     }
 

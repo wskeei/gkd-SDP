@@ -52,6 +52,11 @@ jobs:
       - name: Verify test quality policy
         run: python3 scripts/verify-test-quality-policy.py
 
+      - name: Verify localization resources
+        run: python3 scripts/verify-localization-resources.py
+      - name: Verify localization source exemptions
+        run: python3 scripts/verify-localization-sources.py
+
       - name: Test release tooling contracts
         run: |
           bash scripts/test-verify-release-metadata.sh
@@ -63,6 +68,7 @@ jobs:
       - name: Run unit tests and lint
         run: |
           ./gradlew \
+            :quality-lint:test \
             :selector:jvmTest \
             :app:testGkdDebugUnitTest \
             :app:lintGkdDebug \
@@ -151,6 +157,10 @@ jobs:
             :app:koverVerifyGkdDebug \
             :app:koverXmlReportGkdDebug \
             :app:koverHtmlReportGkdDebug
+          python3 scripts/verify-kover-report.py \
+            --xml app/build/reports/kover/reportGkdDebug.xml \
+            --includes config/quality/kover-includes.txt \
+            --excludes config/quality/kover-excludes.txt
 
       - name: Upload coverage reports
         if: ${{ always() }}
@@ -310,6 +320,15 @@ jobs:
         with:
           cache-provider: basic
 
+      - name: Prepare performance baseline
+        run: |
+          if [ "$GITHUB_EVENT_NAME" = "pull_request" ]; then
+            baseline_ref="$(git merge-base HEAD origin/main)"
+          else
+            baseline_ref="$(git rev-parse HEAD~1)"
+          fi
+          git worktree add --detach .worktrees/performance-baseline "$baseline_ref"
+
       - name: Generate Baseline Profile
         run: |
           ./gradlew :app:generateGkdReleaseBaselineProfile \
@@ -329,8 +348,13 @@ jobs:
       - name: Assemble release and verify performance policy
         run: |
           ./gradlew :app:assembleGkdRelease
+          ./gradlew -p .worktrees/performance-baseline :app:assembleGkdRelease
           python3 scripts/verify-performance-reports.py \
-            --thresholds config/quality/performance-thresholds.json
+            --thresholds config/quality/performance-thresholds.json \
+            --current-apk app/build/outputs/apk/gkd/release/app-gkd-release.apk \
+            --baseline-apk .worktrees/performance-baseline/app/build/outputs/apk/gkd/release/app-gkd-release.apk \
+            --compose-report app/build/compose_compiler \
+            --compose-baseline config/quality/compose-stability-baseline.json
 
       - name: Upload performance reports
         if: ${{ always() }}

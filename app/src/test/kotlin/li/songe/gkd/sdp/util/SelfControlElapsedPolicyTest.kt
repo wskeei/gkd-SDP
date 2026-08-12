@@ -5,6 +5,7 @@ import java.time.ZoneId
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import li.songe.gkd.sdp.R
 
 class SelfControlElapsedPolicyTest {
     @Test
@@ -52,7 +53,7 @@ class SelfControlElapsedPolicyTest {
         val timestamp = Instant.parse("2026-08-01T01:02:03Z").toEpochMilli()
 
         assertEquals(
-            "2026年08月01日 09:02:03",
+            "2026-08-01 09:02:03",
             SelfControlElapsedPolicy.formatAbsolute(
                 epochMs = timestamp,
                 zoneId = ZoneId.of("Asia/Shanghai"),
@@ -64,9 +65,8 @@ class SelfControlElapsedPolicyTest {
     fun usageRequestCopyUsesActualEndAndDoesNotResetOnCancel() {
         val copy = SelfControlElapsedPolicy.copyFor(SelfControlElapsedPolicy.Context.USAGE_REQUEST)
 
-        assertTrue(copy.supportingText.contains("取消"))
-        assertTrue(copy.supportingText.contains("结束使用"))
-        assertEquals("距离上次结束使用", copy.title)
+        assertEquals(R.string.elapsed_support_use, copy.supportingTextRes)
+        assertEquals(R.string.elapsed_title_since_last_use, copy.titleRes)
     }
 
     @Test
@@ -78,8 +78,8 @@ class SelfControlElapsedPolicyTest {
             SelfControlElapsedPolicy.Context.RULE_TRIGGER,
         )
 
-        assertEquals("距离上次尝试打开", appCopy.title)
-        assertEquals("距离上次触发拦截", ruleCopy.title)
+        assertEquals(R.string.elapsed_title_since_last_attempt, appCopy.titleRes)
+        assertEquals(R.string.elapsed_title_since_last_trigger, ruleCopy.titleRes)
     }
 
     @Test
