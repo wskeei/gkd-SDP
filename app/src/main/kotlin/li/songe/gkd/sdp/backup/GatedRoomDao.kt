@@ -13,12 +13,10 @@ import kotlin.coroutines.intrinsics.suspendCoroutineUninterceptedOrReturn
  * Flow/Paging accessors keep their normal cold-query behavior and are not writes themselves.
  */
 @Suppress("UNCHECKED_CAST")
-internal fun <T : Any> gateRoomDao(delegate: T): T {
+internal fun <T : Any> gateRoomDao(daoType: Class<T>, delegate: T): T {
     synchronized(daoProxyLock) {
         daoProxyCache[delegate]?.let { return it as T }
     }
-    require(delegate::class.java.interfaces.isNotEmpty())
-    val daoType = delegate::class.java.interfaces.first()
     require(daoType.isInterface)
     val proxy = Proxy.newProxyInstance(
         daoType.classLoader,
