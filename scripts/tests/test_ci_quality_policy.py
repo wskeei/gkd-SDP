@@ -28,6 +28,26 @@ class CiQualityPolicyTest(unittest.TestCase):
         self.assertIn(":baselineprofile:pixel6Api35GkdNonMinifiedReleaseAndroidTest", ci)
         self.assertIn("verify-performance-reports.py", ci)
 
+    def test_ci_starts_the_actual_minified_release_on_api_boundaries(self):
+        ci = (ROOT / ".github/workflows/ci.yml").read_text()
+        nightly = (ROOT / ".github/workflows/nightly.yml").read_text()
+
+        smoke_runner = (ROOT / "scripts/run-release-apk-smoke-emulator.sh").read_text()
+        self.assertIn("smoke-test-release-apk.sh", smoke_runner)
+        self.assertNotIn("rg ", smoke_runner)
+        smoke_script = (ROOT / "scripts/smoke-test-release-apk.sh").read_text()
+        self.assertNotIn("rg ", smoke_script)
+        for task in (
+            "scripts/run-release-apk-smoke-emulator.sh",
+        ):
+            self.assertIn(task, ci)
+            self.assertIn(task, nightly)
+        for workflow in (ci, nightly):
+            self.assertIn("--api 26", workflow)
+            self.assertIn("--api 35", workflow)
+            self.assertIn("app-gkd-release.apk", workflow)
+            self.assertIn("app-play-release.apk", workflow)
+
     def test_ruleset_script_is_safe_and_has_required_modes(self):
         script = (ROOT / "scripts/apply-main-ruleset.sh").read_text()
         self.assertIn("--dry-run", script)

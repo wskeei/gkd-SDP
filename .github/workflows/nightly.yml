@@ -101,6 +101,14 @@ jobs:
             -Pandroid.experimental.testOptions.managedDevices.maxConcurrentDevices=1 \
             -Pandroid.experimental.testOptions.managedDevices.setupTimeoutMinutes=30
 
+      - name: Install release smoke emulator images
+        run: |
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" \
+            "platform-tools" \
+            "emulator" \
+            "system-images;android-26;google_apis;x86_64" \
+            "system-images;android-35;google_apis;x86_64"
+
       - name: Build all variants and verify performance policy
         run: |
           ./gradlew \
@@ -108,6 +116,14 @@ jobs:
             :app:assemblePlayDebug \
             :app:assembleGkdRelease \
             :app:assemblePlayRelease
+          bash scripts/run-release-apk-smoke-emulator.sh \
+            --api 26 \
+            --apk app/build/outputs/apk/gkd/release/app-gkd-release.apk \
+            --apk app/build/outputs/apk/play/release/app-play-release.apk
+          bash scripts/run-release-apk-smoke-emulator.sh \
+            --api 35 \
+            --apk app/build/outputs/apk/gkd/release/app-gkd-release.apk \
+            --apk app/build/outputs/apk/play/release/app-play-release.apk
           git worktree add --detach .worktrees/performance-baseline v2.2.1
           ./gradlew -p .worktrees/performance-baseline :app:assembleGkdRelease
           python3 scripts/verify-performance-reports.py \
