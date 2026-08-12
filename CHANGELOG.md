@@ -6,12 +6,20 @@ All notable GKD-SDP changes are documented here. The format follows
 
 ## [Unreleased]
 
+## [2.2.3] - 2026-08-13
+
 ### Fixed
 
-- Prevent the minified release APK from crashing during `Application.onCreate`
-  when R8 removes runtime Room DAO interface metadata; keep the DAO contracts
-  required by the backup-gated dynamic proxies and add API 26/API 35 cold-start
-  smoke gates for both release flavors.
+- Prevent minified release APKs from crashing during startup when Room DAO
+  proxies are initialized. Keep Room DAO contracts available to Java
+  reflection and pass their explicit interface types to the proxy wrapper.
+- Add API 26 and API 35 cold-start smoke gates for both release flavors to CI,
+  including process, resumed-activity, crash, and ANR checks.
+
+### Testing
+
+- Verify release startup on local API 26/API 35 emulators and in the CI
+  performance gate.
 
 ## [2.2.2] - 2026-08-12
 
