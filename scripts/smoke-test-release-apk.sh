@@ -32,7 +32,7 @@ adb shell am force-stop "$package_name"
 adb logcat -c >/dev/null 2>&1 || true
 start_output="$(adb shell am start -W -S "${package_name}/${activity_name}" 2>&1)"
 echo "$start_output"
-rg -q '^Status: ok$' <<<"$start_output" || { echo "release APK launch failed" >&2; exit 1; }
+grep -qE '^Status: ok$' <<<"$start_output" || { echo "release APK launch failed" >&2; exit 1; }
 
 pid=""
 for _ in {1..20}; do
@@ -42,22 +42,22 @@ for _ in {1..20}; do
 done
 if [[ -z "$pid" ]]; then
   echo "release APK process exited during cold start" >&2
-  adb logcat -d -t 400 | tr -d '\r' | rg -n "${package_name}|FATAL EXCEPTION|ANR" || true
+  adb logcat -d -t 400 | tr -d '\r' | grep -En "${package_name}|FATAL EXCEPTION|ANR" || true
   exit 1
 fi
 activity_line=""
 for _ in {1..20}; do
-  activity_line="$(adb shell dumpsys activity activities | tr -d '\r' | rg 'mResumedActivity|topResumedActivity' | head -1 || true)"
-  if rg -q "$package_name" <<<"$activity_line"; then break; fi
+  activity_line="$(adb shell dumpsys activity activities | tr -d '\r' | grep -E 'mResumedActivity|topResumedActivity' | head -1 || true)"
+  if grep -qF "$package_name" <<<"$activity_line"; then break; fi
   sleep 1
 done
 echo "pid=$pid"
 echo "resumed=$activity_line"
-if ! rg -q "$package_name" <<<"$activity_line"; then
+if ! grep -qF "$package_name" <<<"$activity_line"; then
   echo "launcher activity was not resumed" >&2
-  adb logcat -d -t 400 | tr -d '\r' | rg -n "${package_name}|FATAL EXCEPTION|ANR" || true
+  adb logcat -d -t 400 | tr -d '\r' | grep -En "${package_name}|FATAL EXCEPTION|ANR" || true
   exit 1
 fi
-crash_log="$(adb logcat -d -t 400 | tr -d '\r' | rg -n "FATAL EXCEPTION|ANR in $package_name|Process: $package_name" || true)"
+crash_log="$(adb logcat -d -t 400 | tr -d '\r' | grep -En "FATAL EXCEPTION|ANR in $package_name|Process: $package_name" || true)"
 if [[ -n "$crash_log" ]]; then echo "$crash_log" >&2; exit 1; fi
 echo "release APK cold-start smoke passed: $package_name"

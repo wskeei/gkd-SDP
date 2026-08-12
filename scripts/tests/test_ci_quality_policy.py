@@ -35,6 +35,8 @@ class CiQualityPolicyTest(unittest.TestCase):
         smoke_runner = (ROOT / "scripts/run-release-apk-smoke-emulator.sh").read_text()
         self.assertIn("smoke-test-release-apk.sh", smoke_runner)
         self.assertNotIn("rg ", smoke_runner)
+        smoke_script = (ROOT / "scripts/smoke-test-release-apk.sh").read_text()
+        self.assertNotIn("rg ", smoke_script)
         for task in (
             "scripts/run-release-apk-smoke-emulator.sh",
         ):
