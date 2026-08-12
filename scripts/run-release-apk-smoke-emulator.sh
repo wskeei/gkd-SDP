@@ -25,7 +25,7 @@ case "$(uname -m)" in
   *) echo "unsupported host architecture: $(uname -m)" >&2; exit 2 ;;
 esac
 image="system-images;android-${api};google_apis;${abi}"
-"$sdk_root/cmdline-tools/latest/bin/sdkmanager" --list_installed 2>/dev/null | rg -Fq "$image" || { echo "missing system image: $image" >&2; exit 2; }
+"$sdk_root/cmdline-tools/latest/bin/sdkmanager" --list_installed 2>/dev/null | grep -Fq "$image" || { echo "missing system image: $image" >&2; exit 2; }
 
 smoke_root="$(mktemp -d "${RUNNER_TEMP:-${TMPDIR:-/tmp}}/gkd-release-smoke.XXXXXX")"
 avd_name="gkd_release_smoke_${api}_$$"
