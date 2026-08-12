@@ -4,6 +4,7 @@ import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+import li.songe.gkd.sdp.R
 
 object SelfControlElapsedPolicy {
     enum class Context {
@@ -13,12 +14,12 @@ object SelfControlElapsedPolicy {
     }
 
     data class Copy(
-        val title: String,
-        val previousTimeLabel: String,
-        val firstTimeLabel: String,
-        val noHistoryText: String,
-        val firstSupportingText: String,
-        val supportingText: String,
+        val titleRes: Int,
+        val previousTimeLabelRes: Int,
+        val firstTimeLabelRes: Int,
+        val noHistoryTextRes: Int,
+        val firstSupportingTextRes: Int,
+        val supportingTextRes: Int,
     )
 
     sealed interface ElapsedState {
@@ -38,16 +39,22 @@ object SelfControlElapsedPolicy {
     }
 
     private val absoluteFormatter = DateTimeFormatter
-        .ofPattern("yyyy年MM月dd日 HH:mm:ss", Locale.CHINA)
+        .ofPattern("yyyy-MM-dd HH:mm:ss", Locale.ROOT)
 
     fun formatElapsed(anchorAtEpochMs: Long, nowEpochMs: Long): String {
+        val (days, clock) = elapsedParts(anchorAtEpochMs, nowEpochMs)
+        // i18n-ignore: legacy fallback or non-display heuristic data
+        return if (days > 0L) "${days}天 $clock" else clock
+    }
+
+    fun elapsedParts(anchorAtEpochMs: Long, nowEpochMs: Long): Pair<Long, String> {
         val totalSeconds = ((nowEpochMs - anchorAtEpochMs).coerceAtLeast(0L)) / 1_000L
         val days = totalSeconds / (24 * 60 * 60)
         val hours = (totalSeconds / (60 * 60)) % 24
         val minutes = (totalSeconds / 60) % 60
         val seconds = totalSeconds % 60
         val clock = "%02d:%02d:%02d".format(Locale.ROOT, hours, minutes, seconds)
-        return if (days > 0L) "${days}天 $clock" else clock
+        return days to clock
     }
 
     fun formatAbsolute(epochMs: Long, zoneId: ZoneId = ZoneId.systemDefault()): String {
@@ -57,30 +64,30 @@ object SelfControlElapsedPolicy {
     fun copyFor(context: Context): Copy {
         return when (context) {
             Context.USAGE_REQUEST -> Copy(
-                title = "距离上次结束使用",
-                previousTimeLabel = "上次结束使用",
-                firstTimeLabel = "本次申请",
-                noHistoryText = "此前没有成功的使用申请",
-                firstSupportingText = "完成一次使用并离开后开始统计；取消申请不会重置这段时间。",
-                supportingText = "这段时间从上次实际结束使用开始计算；取消申请不会重置。",
+                titleRes = R.string.elapsed_title_since_last_use,
+                previousTimeLabelRes = R.string.elapsed_previous_use,
+                firstTimeLabelRes = R.string.elapsed_current_request,
+                noHistoryTextRes = R.string.elapsed_no_history,
+                firstSupportingTextRes = R.string.elapsed_first_support_use,
+                supportingTextRes = R.string.elapsed_support_use,
             )
 
             Context.APP_OPEN_ATTEMPT -> Copy(
-                title = "距离上次尝试打开",
-                previousTimeLabel = "上次尝试",
-                firstTimeLabel = "本次尝试",
-                noHistoryText = "首次记录到这个应用的拦截",
-                firstSupportingText = "从本次尝试开始累计下一段间隔。",
-                supportingText = "退出后，下一段间隔会从本次尝试继续累计。",
+                titleRes = R.string.elapsed_title_since_last_attempt,
+                previousTimeLabelRes = R.string.elapsed_previous_attempt,
+                firstTimeLabelRes = R.string.elapsed_current_attempt,
+                noHistoryTextRes = R.string.elapsed_no_history_attempt,
+                firstSupportingTextRes = R.string.elapsed_first_support_attempt,
+                supportingTextRes = R.string.elapsed_support_attempt,
             )
 
             Context.RULE_TRIGGER -> Copy(
-                title = "距离上次触发拦截",
-                previousTimeLabel = "上次触发",
-                firstTimeLabel = "本次触发",
-                noHistoryText = "首次记录到这条拦截规则",
-                firstSupportingText = "从本次触发开始累计下一段间隔。",
-                supportingText = "退出后，下一段间隔会从本次触发继续累计。",
+                titleRes = R.string.elapsed_title_since_last_trigger,
+                previousTimeLabelRes = R.string.elapsed_previous_trigger,
+                firstTimeLabelRes = R.string.elapsed_current_trigger,
+                noHistoryTextRes = R.string.elapsed_no_history_trigger,
+                firstSupportingTextRes = R.string.elapsed_first_support_trigger,
+                supportingTextRes = R.string.elapsed_support_trigger,
             )
         }
     }

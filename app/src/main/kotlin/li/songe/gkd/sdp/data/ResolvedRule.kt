@@ -219,11 +219,17 @@ sealed class ResetMatchType(val value: String) {
 
 sealed class RuleStatus(val name: String) {
     data object StatusOk : RuleStatus("ok")
+    // i18n-ignore: legacy fallback or non-display heuristic data
     data object Status1 : RuleStatus("达到最大执行次数")
+    // i18n-ignore: legacy fallback or non-display heuristic data
     data object Status2 : RuleStatus("需要提前触发某个规则")
+    // i18n-ignore: legacy fallback or non-display heuristic data
     data object Status3 : RuleStatus("处于匹配延迟")
+    // i18n-ignore: legacy fallback or non-display heuristic data
     data object Status4 : RuleStatus("超出匹配时间")
+    // i18n-ignore: legacy fallback or non-display heuristic data
     data object Status5 : RuleStatus("处于冷却时间")
+    // i18n-ignore: legacy fallback or non-display heuristic data
     data object Status6 : RuleStatus("处于触发延迟")
 
     val ok: Boolean

@@ -1,4 +1,5 @@
 package li.songe.gkd.sdp.store
+import androidx.compose.runtime.Immutable
 
 import kotlinx.serialization.Serializable
 import li.songe.gkd.sdp.META
@@ -12,6 +13,7 @@ import li.songe.gkd.sdp.util.UsageGuardPolicy
 import li.songe.gkd.sdp.util.UsageGuardUiStatePolicy
 
 @Serializable
+@Immutable
 data class SettingsStore(
     val enableAutomator: Boolean = false,
     val automatorMode: Int = AutomatorModeOption.A11yMode.value,
@@ -37,7 +39,7 @@ data class SettingsStore(
     val useSystemToast: Boolean = false,
     val useCustomNotifText: Boolean = false,
     val customNotifTitle: String = META.appName,
-    val customNotifText: String = $$"${i}全局/${k}应用/${u}规则/${n}触发",
+    val customNotifText: String = "",
     val updateChannel: Int = if (META.isBeta) UpdateChannelOption.Beta.value else UpdateChannelOption.Stable.value,
     val appSort: Int = AppSortOption.ByUsedTime.value,
     val showBlockApp: Boolean = true,
@@ -75,6 +77,7 @@ data class SettingsStore(
     val usageGuardDurationOptionsMinutes: List<Int> = UsageGuardUiStatePolicy.defaultDurationOptions,
     val accessibilityGuardEnabled: Boolean = false,
     val accessibilityGuardAutoReenableArmed: Boolean = false,
+    val recentSettingsIds: List<String> = emptyList(),
 ) {
     val useA11y get() = automatorMode == AutomatorModeOption.A11yMode.value
     val useAutomation get() = automatorMode == AutomatorModeOption.AutomationMode.value

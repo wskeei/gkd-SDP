@@ -59,7 +59,7 @@ class UpdateStatus(val scope: CoroutineScope) {
         checkUpdatingMutex.whenUnLock {
             lastCheckTime = System.currentTimeMillis()
             if (!NetworkUtils.isAvailable()) {
-                error("网络不可用")
+                error(li.songe.gkd.sdp.app.getString(R.string.upgrade_network_unavailable))
             }
             val beta = storeFlow.value.updateChannel == UpdateChannelOption.Beta.value
             val newVersion = GitHubReleaseUpdateSource.fetchLatest(client, beta)
@@ -94,7 +94,10 @@ class UpdateStatus(val scope: CoroutineScope) {
                 val channel = client.get(newVersion.downloadUrl) {
                 }.also { response ->
                     require(response.status.value in 200..299) {
-                        "下载文件请求失败：HTTP ${response.status.value}"
+                        li.songe.gkd.sdp.app.getString(
+                            R.string.upgrade_download_failed_http,
+                            response.status.value,
+                        )
                     }
                 }.bodyAsChannel()
                 try {
@@ -104,7 +107,7 @@ class UpdateStatus(val scope: CoroutineScope) {
                             if (count == -1) break
                             if (count == 0) continue
                             require(bytesReceived + count <= newVersion.fileSize) {
-                                "下载文件超过 manifest 声明大小"
+                                li.songe.gkd.sdp.app.getString(R.string.upgrade_download_too_large)
                             }
                             output.write(buffer, 0, count)
                             digest.update(buffer, 0, count)
@@ -120,14 +123,18 @@ class UpdateStatus(val scope: CoroutineScope) {
                     channel.cancel(null)
                 }
                 require(bytesReceived == newVersion.fileSize) {
-                    "下载文件大小校验失败：${bytesReceived} != ${newVersion.fileSize}"
+                    li.songe.gkd.sdp.app.getString(
+                        R.string.upgrade_download_size_mismatch,
+                        bytesReceived,
+                        newVersion.fileSize,
+                    )
                 }
                 val actualSha256 = digest.digest().joinToString("") { byte -> "%02x".format(byte) }
                 require(actualSha256.equals(newVersion.sha256, ignoreCase = true)) {
-                    "下载文件 SHA-256 校验失败"
+                    li.songe.gkd.sdp.app.getString(R.string.upgrade_download_sha_mismatch)
                 }
                 check(partialFile.renameTo(apkFile)) {
-                    "无法保存下载文件"
+                    li.songe.gkd.sdp.app.getString(R.string.upgrade_download_save_failed)
                 }
                 if (downloadStatusFlow.value is LoadStatus.Loading) {
                     downloadStatusFlow.value = LoadStatus.Success(apkFile)
@@ -220,6 +227,7 @@ class UpdateStatus(val scope: CoroutineScope) {
                         confirmButton = {
                             TextButton(onClick = {
                                 downloadStatusFlow.value = LoadStatus.Failure(
+                                    // i18n-ignore: legacy fallback or non-display heuristic data
                                     Exception("终止下载")
                                 )
                                 downloadJob?.cancel()

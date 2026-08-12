@@ -40,7 +40,6 @@
     <string name="s_0c96adb235" formatted="false">关闭后立即倒计时，并按 15/10/5/3/2/1 分钟分阶段提醒</string>
     <string name="s_0cc07c757c">已抓取: %1$s</string>
     <string name="s_0ce42bb010">确定要删除规则组「%1$s」吗？组内的所有规则也会被删除。</string>
-    <string name="s_0ce6ca1568">本次所在时段：%1$s</string>
     <string name="s_0d9a428066" formatted="false">添加应用规则</string>
     <string name="s_0db6dd2e7f">未使用间隔 %1$s</string>
     <string name="s_0ee51f3213">确定删除所选 %1$s 个订阅?</string>
@@ -55,7 +54,6 @@
     <string name="s_104a39b093" formatted="false">使用协议</string>
     <string name="s_108a9199f2" formatted="false">保存提示</string>
     <string name="s_1090ec0cd1">当前剩余: %1$s</string>
-    <string name="s_112997acfa">同单位换算：%1$s</string>
     <string name="s_115793186c" formatted="false">每行一个，如：
 bilibili.com
 youtube.com</string>
@@ -159,7 +157,6 @@ ${1}/${2}/${3}
     <string name="s_28b124759e">• %1$s</string>
     <string name="s_28bf227b9b" formatted="false">分钟</string>
     <string name="s_29207cc695" formatted="false">请输入提示内容</string>
-    <string name="s_2937d0d547">本次：%1$s · 所在时段：%2$s</string>
     <string name="s_2990881615">%1$s / %2$s</string>
     <string name="s_29aa760a1e" formatted="false">如：bilibili.com</string>
     <string name="s_29ea25d303" formatted="false">提示样式</string>
@@ -254,7 +251,6 @@ ${i}全局/${k}应用/${u}规则/${n}触发
     <string name="s_407094d575" formatted="false">目标规则组已锁定，无法修改其时间规则</string>
     <string name="s_40d80a0879" formatted="false">请输入有效的锁定时长</string>
     <string name="s_4194ebb566">确定要删除应用组「%1$s」吗？相关的时间规则也会被删除。</string>
-    <string name="s_41d7664f15" formatted="false">未使用间隔</string>
     <string name="s_421b5975e0">%1$s已关闭</string>
     <string name="s_427069f0a2" formatted="false">专注时长</string>
     <string name="s_42a36e9497" formatted="false">反馈</string>
@@ -348,7 +344,6 @@ ${i}全局/${k}应用/${u}规则/${n}触发
     <string name="s_5a73d0b9c6" formatted="false">搜索应用名或包名</string>
     <string name="s_5a9f8deb3e" formatted="false">提示: 可使用 GKD 的快照功能查看浏览器地址栏的节点 ID</string>
     <string name="s_5ae6bc88fe" formatted="false">已持有「写入安全设置权限」 优先使用此项</string>
-    <string name="s_5b265e25d5">%1$s：%2$s%3$s%4$s</string>
     <string name="s_5b62e0a895" formatted="false">删除快照</string>
     <string name="s_5bf7ff408f" formatted="false">触发提示</string>
     <string name="s_5bf8fdca8e" formatted="false">正在读取上次记录…</string>
@@ -482,7 +477,6 @@ ${i}全局/${k}应用/${u}规则/${n}触发
     <string name="s_7c423e3f43" formatted="false">运行后授权失败?</string>
     <string name="s_7cce6f6775" formatted="false">点击撤销；后续更新请求会立即拒绝</string>
     <string name="s_7d38b53290">更新错误: %1$s</string>
-    <string name="s_7dcbc271db">本次：%1$s</string>
     <string name="s_7e2a3403ff" formatted="false">规则已锁定，无法删除</string>
     <string name="s_7e3742f2bf" formatted="false">自律拦截运行状态</string>
     <string name="s_7e4c9176ba" formatted="false">进入无障碍白名单页面</string>
@@ -770,7 +764,6 @@ HTTP 内容可能在传输中被读取或修改；授权仅适用于此 scheme�
     <string name="s_c9a939b41d" formatted="false">锁定后无法关闭或删除此规则。</string>
     <string name="s_c9d242c96c" formatted="false">格式版本：旧版未加密备份（已安全转换为 v2）</string>
     <string name="s_c9f77c0be6" formatted="false">已暂时关闭，将由自动重开保护恢复</string>
-    <string name="s_ca0dc4aed7" formatted="false">本次：已记录，暂无可比较的间隔值</string>
     <string name="s_ca18550e48" formatted="false">自动重开保护</string>
     <string name="s_ca22cd537c" formatted="false">添加时间规则</string>
     <string name="s_ca41e1bef4" formatted="false">收起数据</string>
@@ -983,10 +976,882 @@ HTTP 内容可能在传输中被读取或修改；授权仅适用于此 scheme�
     <string name="snapshot_button" formatted="false">快照按钮</string>
     <string name="subscription_rules_tab" formatted="false">订阅规则</string>
     <string name="settings_search" formatted="false">搜索设置</string>
+    <string name="settings_recent" formatted="false">最近</string>
     <string name="privacy_data_title" formatted="false">隐私与数据</string>
     <string name="privacy_data_intro" formatted="false">数据仅保存在本机。可查看保留范围、删除历史记录、生成加密备份或白名单支持包。</string>
     <string name="privacy_settings_subtitle" formatted="false">查看保留范围、删除与加密备份</string>
     <string name="privacy_delete_title" formatted="false">删除数据</string>
     <string name="privacy_delete" formatted="false">删除</string>
     <string name="privacy_delete_failed" formatted="false">删除失败，请重试</string>
+    <string name="privacy_inventory_title" formatted="false">数据清单</string>
+    <string name="privacy_danger_zone_title" formatted="false">危险区</string>
+    <string name="privacy_cleartext_title" formatted="false">明文订阅来源</string>
+    <string name="privacy_cleartext_empty" formatted="false">暂无已授权 HTTP 来源</string>
+    <string name="privacy_revoke_origin" formatted="false">撤销</string>
+    <string name="privacy_support_title" formatted="false">支持包白名单</string>
+    <string name="privacy_support_summary" formatted="false">支持包仅包含白名单诊断摘要，不包含数据库、申请理由、URL、截图或联系信息。</string>
+    <string name="privacy_backup_title" formatted="false">加密备份</string>
+    <string name="privacy_backup_action" formatted="false">管理加密备份</string>
+    <string name="export_apps" formatted="false">导出应用</string>
+    <string name="capability_why_title" formatted="false">为什么需要这些权限？</string>
+    <string name="capability_mode_explanation" formatted="false">运行模式决定使用哪些系统能力：无障碍模式通过系统无障碍服务读取屏幕；自动化模式通过 Shizuku 直接调用系统接口。其余权限只用于展示申请、拦截提示、守护提醒与规则管理。</string>
+    <string name="capability_ready_count">运行能力：%1$s/%2$s 就绪</string>
+    <string name="capability_refresh" formatted="false">重新检查</string>
+    <string name="capability_next_step" formatted="false">唯一下一步</string>
+    <string name="capability_next_summary">下一步：%1$s</string>
+    <string name="capability_all_ready" formatted="false">全部就绪，可以开始使用</string>
+    <string name="capability_limited_title" formatted="false">受限但不阻断</string>
+    <string name="capability_ready_title" formatted="false">已就绪</string>
+    <string name="appblocker_empty_group" formatted="false">暂无应用组</string>
+    <string name="appblocker_empty_single_rule" formatted="false">暂无单独应用规则</string>
+    <string name="usage_guard_scope_hint" formatted="false">选中应用适合精细控制；全局模式适合高压场景。</string>
+    <string name="usage_guard_strict_mode_hint" formatted="false">严格模式离开即失效，普通模式在到时前可继续返回。</string>
+    <string name="learn_more" formatted="false">了解更多</string>
+    <string name="usage_guard_min_reason_hint" formatted="false">保存后会直接影响申请弹窗的最少字数要求。</string>
+    <string name="usage_guard_duration_options_hint" formatted="false">申请弹窗会优先展示这四个固定时长，把自定义留在次级入口。</string>
+    <string name="usage_guard_tag_hint" formatted="false">预设标签负责快速说明动机，自定义标签只保留你真正常用的词。</string>
+    <string name="view_restrictions" formatted="false">查看限制</string>
+    <string name="get_tutorial" formatted="false">获取教程</string>
+    <string name="enable_anyway" formatted="false">仍然启用</string>
+    <string name="overview_notification_title" formatted="false">常驻通知</string>
+    <string name="overview_notification_subtitle" formatted="false">显示运行状态及统计数据</string>
+    <string name="overview_service_title" formatted="false">服务状态</string>
+    <string name="overview_service_accessibility_running" formatted="false">无障碍正在运行</string>
+    <string name="overview_service_accessibility_fault" formatted="false">无障碍发生故障</string>
+    <string name="overview_service_accessibility_partial_off" formatted="false">无障碍局部关闭</string>
+    <string name="overview_service_accessibility_off" formatted="false">无障碍已关闭</string>
+    <string name="overview_service_accessibility_unauthorized" formatted="false">无障碍未授权</string>
+    <string name="overview_service_automation_running" formatted="false">自动化正在运行</string>
+    <string name="overview_service_automation_unauthorized" formatted="false">自动化未授权</string>
+    <string name="overview_service_automation_partial_off" formatted="false">自动化局部关闭</string>
+    <string name="overview_service_automation_off" formatted="false">自动化已关闭</string>
+    <string name="overview_inspector_paired" formatted="false">已配对</string>
+    <string name="overview_inspector_waiting_pair" formatted="false">等待配对</string>
+    <string name="overview_inspector_local_summary">仅本机监听｜%1$s｜授权 %2$s</string>
+    <string name="overview_lan_session_minutes">剩余 %1$s 分钟</string>
+    <string name="overview_lan_session_summary">局域网会话%1$s｜%2$s｜授权 %3$s</string>
+    <string name="overview_activity_log_subtitle" formatted="false">记录打开的应用及界面</string>
+    <string name="overview_go_work_mode_label" formatted="false">前往工作模式页面</string>
+    <string name="overview_work_mode_content_description" formatted="false">工作模式</string>
+    <string name="overview_open_inspector_settings" formatted="false">打开本地 Inspector 设置</string>
+    <string name="overview_review_title" formatted="false">数字自律复盘</string>
+    <string name="overview_open_review" formatted="false">打开数字自律复盘页面</string>
+    <string name="overview_trigger_log_title" formatted="false">触发记录</string>
+    <string name="overview_trigger_log_subtitle" formatted="false">规则误触可定位关闭</string>
+    <string name="overview_open_trigger_log" formatted="false">打开触发记录页面</string>
+    <string name="overview_activity_log_title" formatted="false">界面日志</string>
+    <string name="overview_open_activity_log" formatted="false">打开界面日志页面</string>
+    <string name="overview_learn_gkd_title" formatted="false">了解 GKD</string>
+    <string name="overview_learn_gkd_subtitle" formatted="false">查阅规则文档和常见问题</string>
+    <string name="overview_open_gkd_docs" formatted="false">打开 GKD 文档页面</string>
+    <string name="overview_open_latest_record" formatted="false">前往应用的规则汇总页面</string>
+    <string name="overview_latest_trigger_prefix" formatted="false">最近触发: </string>
+    <string name="overview_local_inspector_title" formatted="false">本地 Inspector</string>
+    <string name="overview_toggle_action">切换%1$s</string>
+    <string name="overview_remove_restriction_label" formatted="false">前往解除限制页面</string>
+    <string name="notif_accessibility_running" formatted="false">无障碍正在运行</string>
+    <string name="notif_screenshot_service_running" formatted="false">截屏服务正在运行</string>
+    <string name="notif_screenshot_service_capture" formatted="false">保存快照时截取屏幕</string>
+    <string name="notif_button_service_running" formatted="false">快照按钮服务正在运行</string>
+    <string name="notif_button_service_capture" formatted="false">点击按钮捕获快照</string>
+    <string name="notif_http_service_running" formatted="false">HTTP服务正在运行</string>
+    <string name="notif_expose_service_running" formatted="false">运行外部调用任务中</string>
+    <string name="notif_expose_service_complete" formatted="false">任务完成后自动关闭</string>
+    <string name="notif_snapshot_saved" formatted="false">快照已保存</string>
+    <string name="notif_record_service_running" formatted="false">记录服务正在运行</string>
+    <string name="notif_event_service_running" formatted="false">事件服务正在运行</string>
+    <string name="notif_track_service_running" formatted="false">轨迹服务正在运行</string>
+    <string name="notif_focus_end_title" formatted="false">专注结束</string>
+    <string name="notif_focus_end_text" formatted="false">专注时间已结束，做得很好！</string>
+    <string name="notif_stop_action" formatted="false">停止</string>
+    <string name="notif_channel_snapshot" formatted="false">保存快照通知</string>
+    <string name="notif_channel_focus" formatted="false">专注模式通知</string>
+    <string name="notif_channel_focus_desc" formatted="false">专注会话开始和结束通知</string>
+    <string name="notif_channel_guard" formatted="false">无障碍权限守护</string>
+    <string name="notif_channel_guard_desc" formatted="false">无障碍权限关闭后的分阶段提醒</string>
+    <string name="capability_choose_mode_summary" formatted="false">请选择运行模式</string>
+    <string name="capability_choose_accessibility_action" formatted="false">选择无障碍模式</string>
+    <string name="capability_accessibility_running" formatted="false">无障碍模式运行中</string>
+    <string name="capability_accessibility_required" formatted="false">需要开启无障碍服务</string>
+    <string name="capability_open_system_settings" formatted="false">前往系统设置开启</string>
+    <string name="capability_automation_running" formatted="false">自动化模式（Shizuku）运行中</string>
+    <string name="capability_shizuku_required" formatted="false">需要授权 Shizuku</string>
+    <string name="capability_open_shizuku" formatted="false">打开 Shizuku 授权</string>
+    <string name="capability_overlay_ready" formatted="false">悬浮窗权限已就绪</string>
+    <string name="capability_overlay_required" formatted="false">使用申请、拦截与倒计时需要悬浮窗权限</string>
+    <string name="capability_open_overlay_settings" formatted="false">前往系统设置开启</string>
+    <string name="capability_notification_ready" formatted="false">通知权限已就绪</string>
+    <string name="capability_notification_required" formatted="false">前台服务与守护提醒需要通知权限</string>
+    <string name="capability_open_notification_settings" formatted="false">前往系统设置开启</string>
+    <string name="capability_battery_active" formatted="false">已加入电池优化白名单</string>
+    <string name="capability_battery_limited" formatted="false">未加入电池优化白名单（推荐，不阻断使用）</string>
+    <string name="capability_open_battery_settings" formatted="false">前往系统设置</string>
+    <string name="capability_shizuku_after_mode" formatted="false">选择自动化模式后需要 Shizuku</string>
+    <string name="capability_shizuku_not_needed_accessibility" formatted="false">无障碍模式不需要 Shizuku</string>
+    <string name="capability_shizuku_authorized" formatted="false">Shizuku 已授权</string>
+    <string name="capability_shizuku_automation_required" formatted="false">自动化模式需要 Shizuku 授权</string>
+    <string name="capability_guard_not_applicable" formatted="false">此版本不适用</string>
+    <string name="capability_guard_after_mode" formatted="false">选择运行模式后可用</string>
+    <string name="capability_guard_automation_not_applicable" formatted="false">自动化模式不适用</string>
+    <string name="capability_guard_locked" formatted="false">守护已开启（锁定保护生效中，不可关闭）</string>
+    <string name="capability_guard_active" formatted="false">无障碍守护已开启</string>
+    <string name="capability_guard_ready" formatted="false">无障碍守护可在无障碍服务关闭时先行开启</string>
+    <string name="capability_guard_enable" formatted="false">开启守护</string>
+    <string name="capability_app_list_ready" formatted="false">应用列表权限已就绪</string>
+    <string name="capability_app_list_required" formatted="false">应用选择与应用拦截需要应用列表权限</string>
+    <string name="capability_open_app_list_settings" formatted="false">前往系统设置开启</string>
+    <string name="settings_capabilities_title" formatted="false">运行能力与权限</string>
+    <string name="settings_self_control_title" formatted="false">数字自律</string>
+    <string name="settings_rules_title" formatted="false">规则、订阅与触发</string>
+    <string name="settings_display_theme_title" formatted="false">显示、主题与无障碍</string>
+    <string name="settings_privacy_title" formatted="false">隐私与数据</string>
+    <string name="settings_diagnostics_title" formatted="false">诊断与开发者工具</string>
+    <string name="settings_about_title" formatted="false">关于与更新</string>
+    <string name="settings_group_capabilities" formatted="false">运行能力与权限</string>
+    <string name="settings_group_self_control" formatted="false">数字自律</string>
+    <string name="settings_group_rules" formatted="false">规则、订阅与触发</string>
+    <string name="settings_group_display" formatted="false">显示、主题与无障碍</string>
+    <string name="settings_group_privacy" formatted="false">隐私与数据</string>
+    <string name="settings_group_diagnostics" formatted="false">诊断与开发者工具</string>
+    <string name="settings_group_about" formatted="false">关于与更新</string>
+    <string name="usage_guard_end_left_app" formatted="false">离开应用结束</string>
+    <string name="usage_guard_end_home_button" formatted="false">已回到桌面</string>
+    <string name="usage_guard_end_user_terminated" formatted="false">已主动终止</string>
+    <string name="nav_home" formatted="false">首页</string>
+    <string name="nav_overview" formatted="false">概览</string>
+    <string name="nav_self_control" formatted="false">自律</string>
+    <string name="nav_rules" formatted="false">规则</string>
+    <string name="nav_settings" formatted="false">设置</string>
+    <string name="nav_subscriptions" formatted="false">订阅</string>
+    <string name="nav_apps" formatted="false">应用</string>
+    <string name="widget_focus_quick_title" formatted="false">快速专注</string>
+    <string name="widget_usage_review_title_default" formatted="false">今日申请 0 次</string>
+    <string name="widget_usage_review_metric_default" formatted="false">保持安静</string>
+    <string name="widget_usage_review_hint_default" formatted="false">还没有新的使用申请。</string>
+    <string name="usage_review_error_message" formatted="false">复盘数据暂时不可用</string>
+    <string name="usage_review_loading_title" formatted="false">正在读取复盘数据</string>
+    <string name="usage_review_loading_desc" formatted="false">统计只在本机生成，不会上传。</string>
+    <string name="usage_review_error_title" formatted="false">暂时无法读取复盘</string>
+    <string name="usage_review_error_desc" formatted="false">原有使用申请功能仍可正常使用。</string>
+    <string name="usage_review_trend_title">趋势 · %1$s</string>
+    <string name="usage_review_trend_desc" formatted="false">本期与上一周期保持同一口径</string>
+    <string name="usage_review_overview_title" formatted="false">数据概览</string>
+    <string name="usage_review_ranked_desc" formatted="false">按数量排序，比例同时用文字和进度表达</string>
+    <string name="usage_review_recent_title" formatted="false">最近明细</string>
+    <string name="usage_review_recent_desc" formatted="false">最多显示最近 10 条，不包含申请理由、网址或选择器文本</string>
+    <string name="backup_import_entry" formatted="false">导入备份（v2 / 旧版）</string>
+    <string name="backup_export_entry" formatted="false">导出备份</string>
+    <string name="backup_file_picker_unavailable" formatted="false">当前界面不支持文件选择，请在应用主页中导入</string>
+    <string name="backup_save_location_unavailable" formatted="false">当前界面不支持选择保存位置</string>
+    <string name="backup_no_save_location" formatted="false">未选择保存位置，请重新输入密码后导出</string>
+    <string name="backup_write_failed" formatted="false">写入目标文件失败，请重新输入密码并选择保存位置</string>
+    <string name="backup_preview_changed" formatted="false">当前数据已变化，冲突预览已刷新，请再次确认导入</string>
+    <string name="backup_workflow_export_categories" formatted="false">选择备份内容</string>
+    <string name="backup_workflow_export_summary" formatted="false">确认导出清单</string>
+    <string name="backup_workflow_export_password" formatted="false">设置备份密码</string>
+    <string name="backup_workflow_import_password" formatted="false">输入备份密码</string>
+    <string name="backup_workflow_import_preview" formatted="false">确认导入影响</string>
+    <string name="backup_workflow_confirm_view_summary" formatted="false">查看清单</string>
+    <string name="backup_workflow_confirm_set_password" formatted="false">设置密码</string>
+    <string name="backup_workflow_confirm_choose_location" formatted="false">选择位置并导出</string>
+    <string name="backup_workflow_confirm_decrypt_preview" formatted="false">解密并预览</string>
+    <string name="backup_workflow_confirm_replace_import" formatted="false">确认替换并导入</string>
+    <string name="backup_password_import_explanation" formatted="false">加密 v2 密码至少包含 12 个 Unicode 字符；导入旧版未加密备份时留空。密码不会持久化。</string>
+    <string name="backup_password_export_explanation" formatted="false">密码至少包含 12 个 Unicode 字符。密码不写入日志、备份或持久化设置。</string>
+    <string name="backup_password_label" formatted="false">备份密码</string>
+    <string name="backup_password_repeat_label" formatted="false">再次输入密码</string>
+    <string name="backup_category_settings_title" formatted="false">应用设置</string>
+    <string name="backup_category_settings_subtitle" formatted="false">普通 Store；不含私有 Store、令牌和本机权限</string>
+    <string name="backup_category_subscriptions_title" formatted="false">订阅与规则配置</string>
+    <string name="backup_category_subscriptions_subtitle" formatted="false">订阅表、配置表与订阅 JSON</string>
+    <string name="backup_category_self_control_config_title" formatted="false">数字自律配置</string>
+    <string name="backup_category_self_control_config_subtitle" formatted="false">专注、拦截、锁定、使用申请与监控配置</string>
+    <string name="backup_category_self_control_history_title" formatted="false">数字自律历史</string>
+    <string name="backup_category_self_control_history_subtitle" formatted="false">专注会话、使用申请、拦截尝试与安装记录</string>
+    <string name="backup_category_upstream_history_title" formatted="false">规则触发与活动历史</string>
+    <string name="backup_category_upstream_history_subtitle" formatted="false">规则动作、Activity 与应用访问历史</string>
+    <string name="backup_category_sensitive_optional_title" formatted="false">敏感可选数据</string>
+    <string name="backup_category_unknown_title" formatted="false">未知类别</string>
+    <string name="backup_error_weak_password" formatted="false">密码至少需要 12 个 Unicode 字符</string>
+    <string name="backup_error_authentication_failed" formatted="false">密码错误，或备份内容已损坏</string>
+    <string name="backup_error_invalid_magic" formatted="false">所选文件不是 GKD-SDP 加密备份 v2</string>
+    <string name="backup_error_truncated" formatted="false">备份文件不完整</string>
+    <string name="backup_error_unsupported" formatted="false">此备份格式暂不受当前版本支持</string>
+    <string name="backup_error_schema_mismatch" formatted="false">备份数据结构与当前版本不兼容</string>
+    <string name="backup_error_reference_mismatch" formatted="false">备份中的数据引用不完整</string>
+    <string name="backup_error_invalid_payload" formatted="false">备份校验失败，文件可能已损坏</string>
+    <string name="backup_error_import_not_confirmed" formatted="false">导入尚未确认</string>
+    <string name="backup_error_import_preview_stale" formatted="false">当前数据已变化，请刷新冲突预览后再次确认</string>
+    <string name="backup_error_import_failed" formatted="false">导入失败，新数据已撤销并恢复原状态</string>
+    <string name="backup_error_import_recovery_required" formatted="false">导入未完成，恢复记录已保留；请重启应用继续恢复</string>
+    <string name="backup_error_crypto_failure" formatted="false">加密处理失败</string>
+    <string name="privacy_category_usage_request_history_title" formatted="false">使用申请历史</string>
+    <string name="privacy_category_usage_request_history_description" formatted="false">删除本地使用申请记录，不改变当前自律开关。</string>
+    <string name="privacy_category_focus_session_history_title" formatted="false">专注会话历史</string>
+    <string name="privacy_category_focus_session_history_description" formatted="false">删除专注会话记录，不改变规则和锁定状态。</string>
+    <string name="privacy_category_interception_trigger_records_title" formatted="false">拦截与触发记录</string>
+    <string name="privacy_category_interception_trigger_records_description" formatted="false">删除应用、网址、选择器拦截与触发历史。</string>
+    <string name="privacy_category_app_install_monitor_history_title" formatted="false">应用安装监控历史</string>
+    <string name="privacy_category_app_install_monitor_history_description" formatted="false">删除应用安装/卸载监控历史。</string>
+    <string name="privacy_category_snapshots_title" formatted="false">快照与截图</string>
+    <string name="privacy_category_snapshots_description" formatted="false">同时删除数据库记录与本地快照文件。</string>
+    <string name="privacy_category_event_activity_logs_title" formatted="false">事件与活动日志</string>
+    <string name="privacy_category_event_activity_logs_description" formatted="false">删除界面、无障碍事件和应用访问日志。</string>
+    <string name="privacy_category_diagnostics_crash_summary_title" formatted="false">诊断与崩溃摘要</string>
+    <string name="privacy_category_diagnostics_crash_summary_description" formatted="false">删除本地脱敏诊断事件与崩溃摘要。</string>
+    <string name="privacy_category_subscriptions_rules_config_title" formatted="false">订阅与规则配置</string>
+    <string name="privacy_category_subscriptions_rules_config_description" formatted="false">删除订阅与规则配置。</string>
+    <string name="privacy_category_self_control_config_title" formatted="false">数字自律配置</string>
+    <string name="privacy_category_self_control_config_description" formatted="false">重置数字自律配置，保留当前运行时状态。</string>
+    <string name="privacy_category_all_app_data_title" formatted="false">全部应用数据</string>
+    <string name="privacy_category_all_app_data_description" formatted="false">删除本机全部应用数据；需要输入确认短语。</string>
+    <string name="privacy_block_config_manage" formatted="false">请在对应设置页管理订阅与自律配置。</string>
+    <string name="privacy_block_active_session" formatted="false">存在活动使用申请、专注会话或锁定保护，对应配置删除已禁用；历史删除可在活动会话结束后执行。</string>
+    <string name="action_log_outcome_intercepted_title" formatted="false">已拦截</string>
+    <string name="action_log_outcome_intercepted_description" formatted="false">动作未执行：命中拦截规则后展示了拦截界面</string>
+    <string name="action_log_outcome_executed_title" formatted="false">已执行</string>
+    <string name="action_log_outcome_executed_description" formatted="false">动作已执行</string>
+    <string name="a11y_guard_title" formatted="false">无障碍权限已关闭</string>
+    <string name="a11y_guard_final_reminder">已关闭 %1$d 分钟，将显示全屏提醒，请前往重新开启</string>
+    <string name="a11y_guard_reminder">已关闭 %1$d 分钟，请前往重新开启</string>
+    <string name="a11y_guard_last_sent" formatted="false">最后提醒已发送，请立即开启无障碍</string>
+    <string name="a11y_guard_next_reminder">距离第 %1$d 次提醒</string>
+    <string name="action_log_delete_subs" formatted="false">确定删除当前订阅所有触发记录?</string>
+    <string name="action_log_delete_app" formatted="false">确定删除当前应用所有触发记录?</string>
+    <string name="action_log_delete_all" formatted="false">确定删除所有触发记录?</string>
+    <string name="action_log_view_group" formatted="false">查看规则组</string>
+    <string name="action_log_group_fallback">规则组 %1$s</string>
+    <string name="action_log_rule_index">index=%1$s</string>
+    <string name="action_log_rule_key">key=%1$s</string>
+    <string name="action_log_rule_key_unset" formatted="false">未设置 key</string>
+    <string name="action_log_disable_this_app" formatted="false">在此应用禁用</string>
+    <string name="action_log_remove_app_disable" formatted="false">移除在此应用的禁用</string>
+    <string name="action_log_disable_this_page" formatted="false">在此页面禁用</string>
+    <string name="action_log_remove_page_disable" formatted="false">移除在此页面的禁用</string>
+    <string name="usage_guard_drag_instruction_tap" formatted="false">点按图标可改模式，长按拖到另一列可直接切换。</string>
+    <string name="usage_guard_drag_instruction_drop" formatted="false">拖到另一列松手即可切换模式。</string>
+    <string name="usage_guard_strict_mode_title" formatted="false">严格模式</string>
+    <string name="usage_guard_strict_mode_subtitle" formatted="false">离开应用后重新申请</string>
+    <string name="usage_guard_normal_mode_title" formatted="false">普通模式</string>
+    <string name="usage_guard_normal_mode_subtitle" formatted="false">到时前可继续返回</string>
+    <string name="usage_guard_whitelist_empty" formatted="false">暂无白名单应用</string>
+    <string name="usage_guard_override_empty" formatted="false">暂无模式覆盖应用</string>
+    <string name="review_selected_plain" formatted="false">已选择</string>
+    <string name="review_unselected_plain" formatted="false">未选择</string>
+    <string name="review_selected_state">%1$s，已选择</string>
+    <string name="review_unselected_state">%1$s，未选择</string>
+    <string name="subs_cancel_selection" formatted="false">取消选择</string>
+    <string name="subs_delete_selected" formatted="false">删除选中订阅</string>
+    <string name="subs_slow_rules" formatted="false">缓慢查询规则列表</string>
+    <string name="subs_view_slow_rules" formatted="false">查看列表</string>
+    <string name="subs_rule_match_enabled" formatted="false">规则匹配已启用</string>
+    <string name="subs_rule_match_disabled" formatted="false">规则匹配已禁用</string>
+    <string name="subs_toggle_match" formatted="false">切换开关</string>
+    <string name="subs_settings" formatted="false">订阅设置</string>
+    <string name="subs_open_settings" formatted="false">打开设置弹窗</string>
+    <string name="subs_more_actions" formatted="false">更多操作</string>
+    <string name="subs_add_subscription" formatted="false">添加订阅</string>
+    <string name="subs_open_add_subscription" formatted="false">打开添加订阅弹窗</string>
+    <string name="app_list_permission_abnormal">%1$s异常</string>
+    <string name="app_list_toggle_whitelist_edit" formatted="false">切换白名单编辑模式</string>
+    <string name="app_list_exit_edit" formatted="false">退出编辑</string>
+    <string name="app_list_enter_edit" formatted="false">进入编辑</string>
+    <string name="app_list_close_search" formatted="false">关闭搜索</string>
+    <string name="app_list_open_search" formatted="false">搜索应用列表</string>
+    <string name="app_list_sort_filter" formatted="false">排序筛选</string>
+    <string name="app_list_edit_whitelist" formatted="false">编辑白名单</string>
+    <string name="app_list_in_whitelist" formatted="false">已加入白名单</string>
+    <string name="app_list_not_in_whitelist" formatted="false">未加入白名单</string>
+    <string name="app_list_remove_from_whitelist" formatted="false">从白名单中移除</string>
+    <string name="app_list_add_to_whitelist" formatted="false">加入白名单</string>
+    <string name="app_list_enter_rule_summary" formatted="false">进入规则汇总页面</string>
+    <string name="app_list_app_content">应用：%1$s，%2$s</string>
+    <string name="app_list_sort_title" formatted="false">排序</string>
+    <string name="app_list_group_title" formatted="false">分组</string>
+    <string name="app_list_filter_title" formatted="false">筛选</string>
+    <string name="app_list_whitelist_title" formatted="false">白名单</string>
+    <string name="app_list_search_hint" formatted="false">请输入应用名称/ID</string>
+    <string name="a11y_scope_edit_text_mode" formatted="false">进入文本编辑模式</string>
+    <string name="a11y_scope_edit_text" formatted="false">编辑文本</string>
+    <string name="rule_add_rule" formatted="false">添加规则</string>
+    <string name="a11y_block_toggle_mode" formatted="false">切换模式</string>
+    <string name="a11y_block_edit_whitelist_text_mode" formatted="false">进入白名单文本编辑模式</string>
+    <string name="a11y_block_edit_whitelist_text" formatted="false">编辑白名单文本</string>
+    <string name="a11y_block_follow_app_whitelist" formatted="false">已设置为跟随应用白名单</string>
+    <string name="a11y_block_independent_whitelist" formatted="false">已设置为独立无障碍白名单</string>
+    <string name="settings_copy_rules" formatted="false">文案规则</string>
+    <string name="settings_open_copy_rules" formatted="false">打开文案规则弹窗</string>
+    <string name="dialog_close" formatted="false">关闭弹窗</string>
+    <string name="settings_open_battery_settings" formatted="false">打开忽略电池优化设置页面</string>
+    <string name="settings_open_app_details" formatted="false">打开应用详情页面</string>
+    <string name="advanced_open_shizuku_state" formatted="false">打开 Shizuku 状态弹窗</string>
+    <string name="advanced_shizuku_state" formatted="false">Shizuku 状态</string>
+    <string name="rule_edit_exclude_list" formatted="false">编辑禁用名单</string>
+    <string name="rule_open_detail" formatted="false">打开规则详情弹窗</string>
+    <string name="rule_excluded_pages" formatted="false">此规则已排除部分页面</string>
+    <string name="rule_batch_disable" formatted="false">批量关闭规则</string>
+    <string name="rule_batch_enable" formatted="false">批量打开规则</string>
+    <string name="rule_batch_reset" formatted="false">批量重置规则开关</string>
+    <string name="rule_open_disable_help" formatted="false">打开规则禁用说明</string>
+    <string name="rule_group_content" formatted="false">规则组内容</string>
+    <string name="rule_edit_exclusion" formatted="false">编辑规则排除名单</string>
+    <string name="rule_reset_switch_state" formatted="false">重置开关状态至默认值</string>
+    <string name="subs_view_global_rules" formatted="false">查看全局规则列表</string>
+    <string name="subs_view_app_rules" formatted="false">查看应用规则列表</string>
+    <string name="subs_view_category_rules" formatted="false">查看规则类别列表</string>
+    <string name="subs_edit_link" formatted="false">编辑订阅链接</string>
+    <string name="subs_view_link" formatted="false">查看订阅链接</string>
+    <string name="subs_help" formatted="false">订阅帮助</string>
+    <string name="app_checkbox_app_content">应用：%1$s</string>
+    <string name="app_checkbox_in_list" formatted="false">已加入名单</string>
+    <string name="app_checkbox_not_in_list" formatted="false">未加入名单</string>
+    <string name="app_checkbox_remove" formatted="false">从名单中移除</string>
+    <string name="app_checkbox_add" formatted="false">加入名单</string>
+    <string name="insight_interval_description" formatted="false">统计间隔</string>
+    <string name="insight_ratio_description" formatted="false">统计间用比</string>
+    <string name="common_toggle_state">切换%1$s状态</string>
+    <string name="common_enter_page">进入%1$s页面</string>
+    <string name="common_enabled_state" formatted="false">已开启</string>
+    <string name="common_disabled_state" formatted="false">已关闭</string>
+    <string name="common_empty" formatted="false">暂无数据</string>
+    <string name="common_select_app" formatted="false">选择应用</string>
+    <string name="common_select_app_list" formatted="false">选择应用列表</string>
+    <string name="common_no_matching_apps" formatted="false">未找到匹配的应用</string>
+    <string name="common_got_it" formatted="false">我知道了</string>
+    <string name="common_confirm" formatted="false">确定</string>
+    <string name="common_cancel" formatted="false">取消</string>
+    <string name="fullscreen_dialog_title" formatted="false">全局弹窗</string>
+    <string name="perf_icon_add" formatted="false">添加</string>
+    <string name="perf_icon_edit" formatted="false">编辑</string>
+    <string name="perf_icon_save" formatted="false">保存</string>
+    <string name="perf_icon_delete" formatted="false">删除</string>
+    <string name="perf_icon_share" formatted="false">分享</string>
+    <string name="perf_icon_settings" formatted="false">设置</string>
+    <string name="perf_icon_close" formatted="false">关闭</string>
+    <string name="perf_icon_back" formatted="false">返回</string>
+    <string name="perf_icon_help" formatted="false">帮助</string>
+    <string name="perf_icon_toggle_off" formatted="false">关闭</string>
+    <string name="perf_icon_toggle_on" formatted="false">开启</string>
+    <string name="perf_icon_history" formatted="false">历史记录</string>
+    <string name="perf_icon_sort" formatted="false">排序筛选</string>
+    <string name="perf_icon_open_in_new" formatted="false">新页面打开</string>
+    <string name="perf_icon_copy" formatted="false">复制文本</string>
+    <string name="perf_icon_more" formatted="false">更多操作</string>
+    <string name="block_a11y_warning_touch" formatted="false">切换服务会造成短暂触摸卡顿，请自行测试后再编辑白名单</string>
+    <string name="block_a11y_warning_other_a11y" formatted="false">使用其它无障碍应用可能导致优化无效，可在服务关闭后自行确认</string>
+    <string name="block_a11y_warning_background" formatted="false">必须确保服务关闭后的持续后台运行，否则会被系统暂停或结束运行导致重启失败</string>
+    <string name="block_a11y_require_shizuku" formatted="false">Shizuku 授权</string>
+    <string name="block_a11y_require_notification" formatted="false">开启「常驻通知」</string>
+    <string name="block_a11y_require_battery" formatted="false">省电策略设置为无限制</string>
+    <string name="block_a11y_optional_autostart" formatted="false">(可选) 允许自启动</string>
+    <string name="block_a11y_optional_recent_lock" formatted="false">(可选) 在「最近任务」锁定</string>
+    <string name="interception_source_selector_title" formatted="false">拦截来源：选择器规则</string>
+    <string name="interception_source_selector_subscription">订阅：%1$s · v%2$d</string>
+    <string name="interception_source_rule_group_fallback">规则组 %1$d</string>
+    <string name="interception_source_group_type_app" formatted="false">应用</string>
+    <string name="interception_source_group_type_global" formatted="false">全局</string>
+    <string name="interception_source_group_type_unknown" formatted="false">未知类型</string>
+    <string name="interception_source_group_line">规则组：%1$s（%2$s，key=%3$d）</string>
+    <string name="interception_source_rule_line">具体规则：%1$s</string>
+    <string name="interception_source_identity_with_key">规则标识：groupType=%1$d, groupKey=%2$d, index=%3$d, key=%4$s</string>
+    <string name="interception_source_identity_without_key">规则标识：groupType=%1$d, groupKey=%2$d, index=%3$d, 未设置 key</string>
+    <string name="interception_source_target_app">目标应用：%1$s</string>
+    <string name="interception_source_page">页面：%1$s</string>
+    <string name="interception_source_url_title" formatted="false">拦截来源：网址规则</string>
+    <string name="interception_source_url_rule_fallback" formatted="false">网址规则</string>
+    <string name="interception_source_url_rule_line">规则：%1$s</string>
+    <string name="interception_source_url_id_line">规则编号：%1$s</string>
+    <string name="interception_source_app_title" formatted="false">拦截来源：应用时间规则</string>
+    <string name="interception_source_app_rule_id">规则 #%1$d</string>
+    <string name="interception_source_app_target_group">目标：应用组 · %1$s</string>
+    <string name="interception_source_app_target_app">目标：应用 · %1$s</string>
+    <string name="interception_source_app_time">时段：%1$s</string>
+    <string name="interception_source_app_days">日期：%1$s</string>
+    <string name="interception_source_app_mode">模式：%1$s</string>
+    <string name="interception_source_unknown_title" formatted="false">拦截来源</string>
+    <string name="interception_source_unknown_line" formatted="false">本次规则信息暂不可用</string>
+    <string name="usage_request_status_first" formatted="false">此前没有成功的使用申请</string>
+    <string name="usage_request_status_ratio_new" formatted="false">间用比新口径从本版本开始积累</string>
+    <string name="usage_request_status_available" formatted="false">未使用间隔从上次结束使用开始计算</string>
+    <string name="usage_request_status_missing_end" formatted="false">暂无可确认的上次结束时间</string>
+    <string name="usage_request_status_unavailable" formatted="false">暂时无法读取上次结束时间</string>
+    <string name="usage_request_comparison_high">本次比%1$s平均高 %2$s</string>
+    <string name="usage_request_comparison_low">本次比%1$s平均低 %2$s</string>
+    <string name="usage_request_comparison_same">本次与%1$s平均相同</string>
+    <string name="usage_request_equation">公式：%1$s ÷ %2$s = %3$s</string>
+    <string name="usage_request_equation_label">同单位换算：%1$s</string>
+    <string name="usage_request_unit_seconds" formatted="false">秒</string>
+    <string name="usage_request_unit_minutes" formatted="false">分钟</string>
+    <string name="usage_request_unit_hours" formatted="false">小时</string>
+    <string name="usage_request_minutes_value">%1$d 分钟</string>
+    <string name="duration_seconds">%1$d 秒</string>
+    <string name="duration_minutes_seconds">%1$d 分 %2$d 秒</string>
+    <string name="duration_hours_minutes">%1$d 小时 %2$d 分</string>
+    <string name="duration_days_hours">%1$d 天 %2$d 小时</string>
+    <string name="review_range_24h" formatted="false">近 24 小时</string>
+    <string name="review_range_7d" formatted="false">近 7 天</string>
+    <string name="review_range_30d" formatted="false">近 30 天</string>
+    <string name="review_metric_ratio" formatted="false">间用比</string>
+    <string name="review_metric_gap" formatted="false">未使用间隔</string>
+    <string name="review_metric_intercept" formatted="false">拦截间隔</string>
+    <string name="review_type_usage" formatted="false">使用申请</string>
+    <string name="review_type_intercept" formatted="false">拦截</string>
+    <string name="review_filter_all" formatted="false">全部</string>
+    <string name="review_filter_app" formatted="false">应用拦截</string>
+    <string name="review_filter_selector" formatted="false">选择器拦截</string>
+    <string name="review_filter_url" formatted="false">网址拦截</string>
+    <string name="review_period_morning" formatted="false">上午</string>
+    <string name="review_period_noon" formatted="false">午间</string>
+    <string name="review_period_afternoon" formatted="false">下午</string>
+    <string name="review_period_evening" formatted="false">晚间</string>
+    <string name="review_period_night" formatted="false">夜间</string>
+    <string name="review_period_calm" formatted="false">平稳</string>
+    <string name="insight_metric_interval" formatted="false">间隔</string>
+    <string name="insight_metric_ratio" formatted="false">间用比</string>
+    <string name="review_empty" formatted="false">所选范围暂无可绘制的有效样本</string>
+    <string name="review_current_average" formatted="false">本期平均</string>
+    <string name="review_previous_average" formatted="false">上一周期</string>
+    <string name="review_delta" formatted="false">差值</string>
+    <string name="review_count_times">%1$d 次</string>
+    <string name="review_count_items">%1$d 条</string>
+    <string name="review_count_minutes">%1$d 分钟</string>
+    <string name="review_percent">%1$s%%</string>
+    <string name="review_other" formatted="false">其他</string>
+    <string name="review_coverage_text">有效样本 %1$d 条 / 总记录 %2$d 条 · 图形点 %3$d 个</string>
+    <string name="review_coverage_text_excluded">有效样本 %1$d 条 / 总记录 %2$d 条 · 图形点 %3$d 个 · 未纳入 %4$d 条</string>
+    <string name="review_semantic">%1$s趋势；本期平均 %2$s；上一周期 %3$s；差值 %4$s；%5$s。</string>
+    <string name="review_metric_count_request" formatted="false">申请次数</string>
+    <string name="review_metric_total_requested" formatted="false">申请总时长</string>
+    <string name="review_metric_avg_gap" formatted="false">平均未使用间隔</string>
+    <string name="review_metric_avg_ratio" formatted="false">平均间用比</string>
+    <string name="review_metric_intercept_count" formatted="false">拦截次数</string>
+    <string name="review_metric_valid_intervals" formatted="false">有效间隔</string>
+    <string name="review_metric_avg_interval" formatted="false">平均间隔</string>
+    <string name="review_metric_median_interval" formatted="false">中位间隔</string>
+    <string name="review_distribution_apps" formatted="false">应用分布</string>
+    <string name="review_distribution_tags" formatted="false">标签分布</string>
+    <string name="review_distribution_end_reasons" formatted="false">结束状态</string>
+    <string name="review_distribution_period" formatted="false">集中时段</string>
+    <string name="review_distribution_top_targets" formatted="false">高频拦截目标</string>
+    <string name="review_recent_usage_line">间用比 %1$s · 未使用间隔 %2$s · 申请 %3$d 分钟 · 标签：%4$s · 结束状态：%5$s</string>
+    <string name="review_recent_intercept_line">间隔 %1$s · %2$s</string>
+    <string name="review_event_kind_app" formatted="false">应用拦截</string>
+    <string name="review_event_kind_selector" formatted="false">选择器拦截</string>
+    <string name="review_event_kind_url" formatted="false">网址拦截</string>
+    <string name="review_event_kind_other" formatted="false">拦截</string>
+    <string name="review_end_active" formatted="false">进行中</string>
+    <string name="review_end_expired" formatted="false">到期</string>
+    <string name="review_end_left" formatted="false">离开应用</string>
+    <string name="review_end_replaced" formatted="false">被替换</string>
+    <string name="review_end_home" formatted="false">返回桌面</string>
+    <string name="review_end_terminated" formatted="false">主动结束</string>
+    <string name="review_end_unknown" formatted="false">未知</string>
+    <string name="review_end_other" formatted="false">其他结束状态</string>
+    <string name="review_home_summary">今日 %1$d 次申请 · %2$d 次拦截</string>
+    <string name="review_axis_adaptive" formatted="false">自适应时间</string>
+    <string name="review_coverage_request">总申请 %1$d 条 · 有效间隔 %2$d 条 · 有效间用比 %3$d 条 · 未纳入间隔 %4$d 条 · 未纳入间用比 %5$d 条</string>
+    <string name="review_coverage_intercept">总拦截 %1$d 条 · 已完成间隔 %2$d 条 · 首次或未完成 %3$d 条</string>
+    <string name="review_recent_primary">%1$s · %2$s</string>
+    <string name="review_text_row">%1$s：%2$s</string>
+    <string name="review_text_row_average">%1$s：%2$s，平均 %3$d 条</string>
+    <string name="usage_review_preview_subtitle" formatted="false">合成数据预览</string>
+    <string name="insight_semantic_empty">%1$s暂无%2$s样本 · %3$s。</string>
+    <string name="insight_semantic_data">%1$s%2$s平均 %3$s · 中位 %4$s · %5$s。</string>
+    <string name="insight_coverage">总记录 %1$d 条 · 有效样本 %2$d 条 · 图形点 %3$d 个</string>
+    <string name="insight_coverage_excluded">总记录 %1$d 条 · 有效样本 %2$d 条 · 图形点 %3$d 个 · 未纳入 %4$d 条</string>
+    <string name="insight_support_empty">所选范围暂无可用样本；%1$s；已加载的近 30 天数据会在切换范围时继续复用。</string>
+    <string name="insight_support_aggregated">%1$s，每个时间桶显示桶内样本平均值；%2$s。</string>
+    <string name="insight_support_detail">图表逐条显示所选范围的有效样本；%1$s；文字明细与图表一一对应。</string>
+    <string name="insight_comparison_high">本次比所选范围平均高 %1$s</string>
+    <string name="insight_comparison_low">本次比所选范围平均低 %1$s</string>
+    <string name="insight_comparison_same">本次与所选范围平均相同</string>
+    <string name="insight_text_row">%1$s：%2$s</string>
+    <string name="insight_text_row_current">%1$s：%2$s，本次</string>
+    <string name="insight_text_row_bucket">%1$s：%2$s，时间桶平均 %3$d 条</string>
+    <string name="insight_text_row_current_bucket">%1$s：%2$s，本次，时间桶平均 %3$d 条</string>
+    <string name="insight_current_point">本次所在时段：%1$s</string>
+    <string name="insight_no_value" formatted="false">暂无可用值</string>
+    <string name="insight_average_missing" formatted="false">暂无</string>
+    <string name="insight_aggregation_1h" formatted="false">按 1 小时聚合</string>
+    <string name="insight_aggregation_6h" formatted="false">按 6 小时聚合</string>
+    <string name="insight_aggregation_1d" formatted="false">按 1 天聚合</string>
+    <string name="insight_current_with_point">%1$s · %2$s</string>
+    <string name="insight_current_value">%1$s</string>
+    <string name="insight_chart_current_point">本次所在时段：%1$s</string>
+    <string name="insight_chart_current_value">本次值：%1$s</string>
+    <string name="insight_chart_no_aggregation" formatted="false">图表逐条显示有效样本</string>
+    <string name="axis_unit_seconds" formatted="false">秒</string>
+    <string name="axis_unit_minutes" formatted="false">分</string>
+    <string name="axis_unit_hours" formatted="false">小时</string>
+    <string name="axis_unit_days" formatted="false">天</string>
+    <string name="usage_guard_period_today" formatted="false">今日</string>
+    <string name="usage_guard_widget_title_empty">%1$s申请 0 次</string>
+    <string name="usage_guard_widget_metric_calm" formatted="false">保持安静</string>
+    <string name="usage_guard_widget_hint_empty_today" formatted="false">还没有新的使用申请。</string>
+    <string name="usage_guard_widget_hint_empty_period">%1$s还没有新的使用申请。</string>
+    <string name="usage_guard_widget_title">%1$s申请 %2$d 次</string>
+    <string name="usage_guard_widget_metric_used">累计使用 %1$s</string>
+    <string name="usage_guard_widget_metric_used_top">累计使用 %1$s · 高频 %2$s</string>
+    <string name="usage_guard_widget_risk_morning" formatted="false">上午申请偏多，先保护开局节奏。</string>
+    <string name="usage_guard_widget_risk_noon" formatted="false">午间申请偏多，休息前先定边界。</string>
+    <string name="usage_guard_widget_risk_afternoon" formatted="false">下午申请偏多，注意任务切换成本。</string>
+    <string name="usage_guard_widget_risk_evening" formatted="false">晚间申请偏多，先安排离线缓冲。</string>
+    <string name="usage_guard_widget_risk_night" formatted="false">夜间申请偏多，睡前先收紧入口。</string>
+    <string name="usage_guard_widget_risk_calm" formatted="false">今天的申请节奏很安静。</string>
+    <string name="usage_guard_end_active" formatted="false">进行中</string>
+    <string name="usage_guard_end_expired" formatted="false">已到时</string>
+    <string name="usage_guard_end_left" formatted="false">离开结束</string>
+    <string name="usage_guard_end_replaced" formatted="false">被替换</string>
+    <string name="usage_guard_end_home" formatted="false">回桌面</string>
+    <string name="usage_guard_end_terminated" formatted="false">主动终止</string>
+    <string name="usage_guard_end_unknown" formatted="false">未知</string>
+    <string name="usage_guard_duration_seconds">%1$d 秒</string>
+    <string name="usage_guard_duration_minutes">%1$d 分钟</string>
+    <string name="usage_guard_duration_minutes_seconds">%1$d 分 %2$d 秒</string>
+    <string name="advanced_unauthorized" formatted="false">未授权</string>
+    <string name="advanced_authorize_hint" formatted="false">点击授权以优化体验</string>
+    <string name="subs_view_detail_label" formatted="false">查看订阅详情</string>
+    <string name="subs_enter_multi_select_label" formatted="false">进入多选模式</string>
+    <string name="image_preview_phase_requesting" formatted="false">请求中</string>
+    <string name="image_preview_phase_downloading" formatted="false">下载中</string>
+    <string name="image_preview_phase_reading" formatted="false">读取中</string>
+    <string name="image_preview_phase_decoding" formatted="false">解码中</string>
+    <string name="focus_mode_empty_quick_start" formatted="false">暂无快速启动模板，点击右上角 + 添加</string>
+    <string name="focus_mode_empty_scheduled" formatted="false">暂无定时规则，点击右上角 + 添加</string>
+    <string name="appblocker_extend_global_lock" formatted="false">延长全局锁定</string>
+    <string name="appblocker_global_lock" formatted="false">全局锁定</string>
+    <string name="appblocker_global_lock_desc" formatted="false">锁定后无法删除或修改任何应用/组/规则，但可以新增。</string>
+    <string name="appblocker_extend_lock" formatted="false">延长锁定</string>
+    <string name="appblocker_lock_group" formatted="false">锁定应用组</string>
+    <string name="appblocker_lock_group_desc" formatted="false">锁定后无法关闭、删除或修改此应用组。</string>
+    <string name="appblocker_lock_rule" formatted="false">锁定规则</string>
+    <string name="appblocker_lock_rule_desc" formatted="false">锁定后无法关闭、删除或修改此规则。</string>
+    <string name="appblocker_groups_count">应用组 (%1$d)</string>
+    <string name="appblocker_individual_apps" formatted="false">单独应用</string>
+    <string name="duration_option_8h" formatted="false">8小时</string>
+    <string name="duration_option_1d" formatted="false">1天</string>
+    <string name="duration_option_3d" formatted="false">3天</string>
+    <string name="common_default_intercept_message" formatted="false">这真的重要吗？</string>
+    <string name="common_default_focus_message" formatted="false">专注当下</string>
+    <string name="common_yes" formatted="false">是</string>
+    <string name="common_no" formatted="false">否</string>
+    <string name="time_years_ago">%1$d 年前</string>
+    <string name="time_months_ago">%1$d 月前</string>
+    <string name="time_weeks_ago">%1$d 周前</string>
+    <string name="time_days_ago">%1$d 天前</string>
+    <string name="time_hours_ago">%1$d 小时前</string>
+    <string name="time_minutes_ago">%1$d 分钟前</string>
+    <string name="time_just_now" formatted="false">刚刚</string>
+    <string name="elapsed_days_clock">%1$d 天 %2$s</string>
+    <string name="focus_duration_hours_minutes">%1$d 小时 %2$d 分钟</string>
+    <string name="focus_duration_hours">%1$d 小时</string>
+    <string name="focus_duration_minutes">%1$d 分钟</string>
+    <string name="days_not_set" formatted="false">未设置</string>
+    <string name="days_everyday" formatted="false">每天</string>
+    <string name="days_weekdays" formatted="false">工作日</string>
+    <string name="days_weekend" formatted="false">周末</string>
+    <string name="day_monday" formatted="false">周一</string>
+    <string name="day_tuesday" formatted="false">周二</string>
+    <string name="day_wednesday" formatted="false">周三</string>
+    <string name="day_thursday" formatted="false">周四</string>
+    <string name="day_friday" formatted="false">周五</string>
+    <string name="day_saturday" formatted="false">周六</string>
+    <string name="day_sunday" formatted="false">周日</string>
+    <string name="time_allow_period" formatted="false">允许时间段</string>
+    <string name="time_forbid_period" formatted="false">禁止时间段</string>
+    <string name="time_template_workday" formatted="false">工作日</string>
+    <string name="time_template_workday_desc" formatted="false">周一至周五 9:00-18:00</string>
+    <string name="time_template_weekend" formatted="false">周末</string>
+    <string name="time_template_weekend_desc" formatted="false">周六日全天</string>
+    <string name="time_template_every_night" formatted="false">每晚</string>
+    <string name="time_template_every_night_desc" formatted="false">每天 22:00-次日08:00</string>
+    <string name="time_template_lunch_break" formatted="false">午休</string>
+    <string name="time_template_lunch_break_desc" formatted="false">周一至周五 12:00-14:00</string>
+    <string name="time_template_all_day" formatted="false">全天候</string>
+    <string name="time_template_all_day_desc" formatted="false">每天全天</string>
+    <string name="rule_key_fallback">规则 key=%1$d</string>
+    <string name="rule_index_fallback">规则 #%1$d</string>
+    <string name="privacy_summary_count_size">%1$d 条，%2$s</string>
+    <string name="privacy_summary_count_size_range">%1$d 条，%2$s，最早 %3$s，最新 %4$s</string>
+    <string name="privacy_summary_count_unavailable">%1$d 条，空间不可用</string>
+    <string name="privacy_summary_count_range_unavailable">%1$d 条，空间不可用，最早 %2$s，最新 %3$s</string>
+    <string name="privacy_delete_all_phrase" formatted="false">删除全部数据</string>
+    <string name="usage_request_error_no_tags" formatted="false">至少选择一个标签</string>
+    <string name="usage_request_error_tag_invalid" formatted="false">标签名称不能为空且不能超过 20 个字符</string>
+    <string name="usage_request_error_tag_duplicate" formatted="false">标签名称不能重复</string>
+    <string name="usage_request_error_reason_short" formatted="false">理由长度不足</string>
+    <string name="usage_request_error_duration" formatted="false">时长必须大于 0</string>
+    <string name="main_subscription_added" formatted="false">成功添加订阅</string>
+    <string name="main_subscription_updated" formatted="false">成功修改订阅</string>
+    <string name="permission_foreground_service_special_use" formatted="false">特殊用途的前台服务</string>
+    <string name="permission_foreground_service_restricted" formatted="false">当前操作权限「特殊用途的前台服务」已被限制, 请先解除限制</string>
+    <string name="permission_access_a11y" formatted="false">访问无障碍</string>
+    <string name="permission_create_a11y_overlay" formatted="false">创建无障碍悬浮窗</string>
+    <string name="permission_get_app_ops_stats" formatted="false">获取应用权限状态</string>
+    <string name="permission_access_restricted_settings" formatted="false">访问受限设置</string>
+    <string name="permission_notification" formatted="false">通知权限</string>
+    <string name="permission_notification_required" formatted="false">当前操作需要「通知权限」\n请先前往权限页面授权</string>
+    <string name="permission_query_apps" formatted="false">读取应用列表权限</string>
+    <string name="permission_query_apps_required" formatted="false">当前操作需要「读取应用列表权限」\n请先前往权限页面授权</string>
+    <string name="permission_overlay" formatted="false">悬浮窗权限</string>
+    <string name="permission_overlay_required" formatted="false">当前操作需要「悬浮窗权限」\n请先前往权限页面授权</string>
+    <string name="permission_write_external_storage" formatted="false">写入外部存储权限</string>
+    <string name="permission_write_external_storage_required" formatted="false">当前操作需要「写入外部存储权限」\n请先前往权限页面授权</string>
+    <string name="permission_ignore_battery" formatted="false">忽略电池优化权限</string>
+    <string name="permission_ignore_battery_required" formatted="false">当前操作需要「忽略电池优化权限」\n请先前往权限页面授权</string>
+    <string name="permission_write_secure_settings" formatted="false">写入安全设置权限</string>
+    <string name="permission_shizuku" formatted="false">Shizuku 权限</string>
+    <string name="snapshot_error_service_unavailable" formatted="false">服务不可用，请先授权</string>
+    <string name="snapshot_error_saving_in_progress" formatted="false">正在保存快照，不可重复操作</string>
+    <string name="snapshot_error_no_a11y_info" formatted="false">当前应用没有无障碍信息，捕获失败</string>
+    <string name="snapshot_empty_screen" formatted="false">无截图权限\n请自行替换</string>
+    <string name="snapshot_success_no_screen" formatted="false">快照成功 (无截图)</string>
+    <string name="snapshot_success_blocked" formatted="false">快照成功 (应用可能禁止截图)</string>
+    <string name="snapshot_success" formatted="false">快照成功</string>
+    <string name="snapshot_saved_notification">快照「%1$s」已保存至记录</string>
+    <string name="upgrade_network_unavailable" formatted="false">网络不可用</string>
+    <string name="upgrade_download_failed_http">下载文件请求失败：HTTP %1$d</string>
+    <string name="upgrade_download_too_large" formatted="false">下载文件超过 manifest 声明大小</string>
+    <string name="upgrade_download_size_mismatch">下载文件大小校验失败：%1$d != %2$d</string>
+    <string name="upgrade_download_sha_mismatch" formatted="false">下载文件 SHA-256 校验失败</string>
+    <string name="upgrade_download_save_failed" formatted="false">无法保存下载文件</string>
+    <string name="upgrade_github_rate_limit">GitHub 更新接口触发访问频率限制（HTTP %1$d），请稍后重试或打开 %2$s</string>
+    <string name="upgrade_github_not_found">GitHub 更新接口不存在（HTTP 404），请打开 %1$s 检查版本</string>
+    <string name="upgrade_github_request_failed">GitHub Releases 请求失败（HTTP %1$d），请稍后重试或打开 %2$s</string>
+    <string name="contact_fetch_ready" formatted="false">准备抓取...</string>
+    <string name="contact_fetch_getting_zero" formatted="false">已获取: 0</string>
+    <string name="contact_fetch_stop" formatted="false">停止</string>
+    <string name="contact_fetch_count">已获取: %1$d 人</string>
+    <string name="contact_fetch_processing">正在处理: %1$s</string>
+    <string name="contact_fetch_starting" formatted="false">准备开始抓取...</string>
+    <string name="contact_fetch_wait_contacts" formatted="false">等待进入微信通讯录...</string>
+    <string name="contact_fetch_open_contacts" formatted="false">请打开微信通讯录页面</string>
+    <string name="contact_fetch_fetching">正在抓取第 %1$d 个联系人...</string>
+    <string name="contact_fetch_retry_adjust" formatted="false">抓取失败，微调位置重试...</string>
+    <string name="contact_fetch_retry_skip" formatted="false">重试失败，跳过此人</string>
+    <string name="contact_fetch_no_wechat_id_skip" formatted="false">未找到微信号，跳过...</string>
+    <string name="contact_fetch_completed">抓取完成：%1$d 个联系人</string>
+    <string name="contact_fetch_none" formatted="false">未抓取到联系人</string>
+    <string name="contact_fetch_stopped" formatted="false">已停止抓取</string>
+    <string name="advanced_remote_scope_server_info" formatted="false">服务信息</string>
+    <string name="advanced_remote_scope_snapshot_list" formatted="false">快照列表</string>
+    <string name="advanced_remote_scope_view_snapshot" formatted="false">查看快照/截图</string>
+    <string name="advanced_remote_scope_capture_snapshot" formatted="false">捕获快照</string>
+    <string name="advanced_remote_scope_delete_snapshot" formatted="false">删除快照</string>
+    <string name="advanced_remote_scope_update_subscription" formatted="false">更新内存订阅</string>
+    <string name="advanced_remote_scope_exec_selector" formatted="false">执行选择器</string>
+    <string name="advanced_listen_local" formatted="false">监听范围：仅本机</string>
+    <string name="advanced_listen_lan">监听范围：局域网｜剩余 %1$s 分钟</string>
+    <string name="advanced_port_placeholder">请输入 %1$s-%2$s 的整数</string>
+    <string name="focus_lock_ended" formatted="false">已结束</string>
+    <string name="focus_lock_days_hours">%1$d 天 %2$d 小时</string>
+    <string name="focus_lock_hours_minutes">%1$d 小时 %2$d 分钟</string>
+    <string name="focus_lock_minutes">%1$d 分钟</string>
+    <string name="focus_lock_editable_now" formatted="false">可立即修改</string>
+    <string name="focus_lock_not_effective" formatted="false">尚未生效：请添加时间规则</string>
+    <string name="focus_lock_enabled_count">%1$d 个应用组 · %2$d 条启用规则</string>
+    <string name="focus_lock_scope_selected" formatted="false">仅选中应用</string>
+    <string name="focus_lock_scope_global" formatted="false">全局生效</string>
+    <string name="focus_lock_usage_guard_line">打开受控应用前先说明原因并申请时长 · %1$s</string>
+    <string name="focus_lock_disabled" formatted="false">未启用</string>
+    <string name="focus_lock_source_app" formatted="false">(应用)</string>
+    <string name="focus_lock_source_subscription" formatted="false">(订阅)</string>
+    <string name="focus_lock_locked">锁定中%1$s </string>
+    <string name="focus_lock_fullscreen" formatted="false">全屏拦截</string>
+    <string name="usage_guard_scope_global_whitelist" formatted="false">全局生效（白名单跳过）</string>
+    <string name="editor_add_app_group" formatted="false">添加应用组</string>
+    <string name="editor_view_app_group_locked" formatted="false">查看应用组 (已锁定)</string>
+    <string name="editor_add_app" formatted="false">添加应用</string>
+    <string name="editor_edit_app_group" formatted="false">编辑应用组</string>
+    <string name="editor_choose_app_list" formatted="false">选择应用列表</string>
+    <string name="editor_no_more_apps" formatted="false">没有可继续添加的应用</string>
+    <string name="editor_no_matching_apps" formatted="false">未找到匹配的应用</string>
+    <string name="app_list_id_placeholder" formatted="false">请输入应用ID列表\n示例:\ncom.android.systemui\ncom.android.settings</string>
+    <string name="app_list_global_count">%1$d全局</string>
+    <string name="app_list_group_count">%1$d组规则</string>
+    <string name="app_list_group_count_disabled">%1$d组规则/%2$d关闭</string>
+    <string name="app_list_group_count_enabled_disabled">%1$d组规则/%2$d启用/%3$d关闭</string>
+    <string name="focus_runtime_mode_unselected" formatted="false">未选择</string>
+    <string name="focus_runtime_issue_ready" formatted="false">可拦截</string>
+    <string name="focus_runtime_issue_switching" formatted="false">运行模式切换中</string>
+    <string name="focus_runtime_issue_unavailable" formatted="false">运行引擎未连接</string>
+    <string name="focus_runtime_issue_overlay_permission" formatted="false">悬浮窗权限缺失</string>
+    <string name="focus_runtime_switching" formatted="false">切换中</string>
+    <string name="focus_runtime_connected" formatted="false">已连接</string>
+    <string name="focus_runtime_disconnected" formatted="false">未连接</string>
+    <string name="focus_overlay_granted" formatted="false">已授权</string>
+    <string name="focus_overlay_denied" formatted="false">未授权</string>
+    <string name="focus_remaining_hours">剩余 %1$d 小时 %2$d 分钟</string>
+    <string name="focus_remaining_minutes">剩余 %1$d 分钟 %2$d 秒</string>
+    <string name="focus_remaining_seconds">剩余 %1$d 秒</string>
+    <string name="usage_countdown_missing_reason" formatted="false">未填写申请理由</string>
+    <string name="app_list_app_rules_count">%1$d应用/%2$d规则</string>
+    <string name="subs_global_rules" formatted="false">全局规则</string>
+    <string name="subs_app_rules" formatted="false">应用规则</string>
+    <string name="subs_rule_category" formatted="false">规则类别</string>
+    <string name="subs_edit_disabled" formatted="false">编辑禁用</string>
+    <string name="subs_builtin_disabled" formatted="false">内置禁用</string>
+    <string name="subs_whitelist" formatted="false">白名单</string>
+    <string name="auth_grant_accessibility" formatted="false">授予「无障碍权限」</string>
+    <string name="auth_a11y_reauthorize" formatted="false">无障碍关闭后需重新授权</string>
+    <string name="auth_grant_write_secure" formatted="false">授予「写入安全设置权限」</string>
+    <string name="auth_can_control_a11y" formatted="false">应用可自行控制开关无障碍</string>
+    <string name="auth_automation_a11y" formatted="false">自动化驱动的无障碍</string>
+    <string name="auth_automation_no_ui_issue" formatted="false">不会导致界面显示异常</string>
+    <string name="auth_automation_not_detected" formatted="false">不会被其它应用检测为无障碍</string>
+    <string name="auth_some_apps_need_a11y" formatted="false">部分应用仍需切换至无障碍模式</string>
+    <string name="auth_generating_command" formatted="false">正在生成一次性授权命令…</string>
+    <string name="auth_command_generation_failed" formatted="false">授权命令生成失败，请关闭后重试</string>
+    <string name="share_support_package" formatted="false">分享支持包</string>
+    <string name="share_install_file" formatted="false">分享安装文件</string>
+    <string name="share_snapshot_file" formatted="false">分享快照文件</string>
+    <string name="save_to_downloads" formatted="false">保存到下载</string>
+    <string name="share_to_other_apps" formatted="false">分享到其他应用</string>
+    <string name="export_install_log" formatted="false">导出安装记录</string>
+    <string name="app_install_export_header" formatted="false">日期,时间,应用名,包名,操作,是否仍存在</string>
+    <string name="app_install_export_install" formatted="false">安装</string>
+    <string name="app_install_export_uninstall" formatted="false">卸载</string>
+    <string name="option_sort_by_name" formatted="false">按应用名称</string>
+    <string name="option_sort_by_action_time" formatted="false">按最近触发</string>
+    <string name="option_sort_by_used_time" formatted="false">按最近使用</string>
+    <string name="option_update_pause" formatted="false">暂停</string>
+    <string name="option_update_daily" formatted="false">每天</string>
+    <string name="option_update_3d" formatted="false">每3天</string>
+    <string name="option_update_7d" formatted="false">每7天</string>
+    <string name="option_theme_auto" formatted="false">自动</string>
+    <string name="option_theme_enabled" formatted="false">启用</string>
+    <string name="option_theme_disabled" formatted="false">关闭</string>
+    <string name="option_theme_menu_dark" formatted="false">深色</string>
+    <string name="option_theme_menu_light" formatted="false">浅色</string>
+    <string name="option_density_compact" formatted="false">紧凑</string>
+    <string name="option_density_standard" formatted="false">标准</string>
+    <string name="option_density_comfortable" formatted="false">舒适</string>
+    <string name="option_density_large" formatted="false">放大</string>
+    <string name="option_language_follow_system" formatted="false">跟随系统</string>
+    <string name="option_language_simplified_chinese" formatted="false">简体中文</string>
+    <string name="option_enable_follow_subscription" formatted="false">跟随订阅</string>
+    <string name="option_enable_all" formatted="false">全部启用</string>
+    <string name="option_disable_all" formatted="false">全部关闭</string>
+    <string name="option_rule_sort_default" formatted="false">按默认顺序</string>
+    <string name="option_rule_sort_action_time" formatted="false">按最近触发</string>
+    <string name="option_rule_sort_name" formatted="false">按规则名称</string>
+    <string name="option_channel_stable" formatted="false">稳定版</string>
+    <string name="option_channel_beta" formatted="false">测试版</string>
+    <string name="option_app_group_system" formatted="false">系统应用</string>
+    <string name="option_app_group_user" formatted="false">用户应用</string>
+    <string name="option_app_group_uninstalled" formatted="false">未安装应用</string>
+    <string name="option_automator_a11y" formatted="false">无障碍</string>
+    <string name="option_automator_automation" formatted="false">自动化</string>
+    <string name="elapsed_title_since_last_use" formatted="false">距离上次结束使用</string>
+    <string name="elapsed_previous_use" formatted="false">上次结束使用</string>
+    <string name="elapsed_current_request" formatted="false">本次申请</string>
+    <string name="elapsed_no_history" formatted="false">此前没有成功的使用申请</string>
+    <string name="elapsed_first_support_use" formatted="false">完成一次使用并离开后开始统计；取消申请不会重置这段时间。</string>
+    <string name="elapsed_support_use" formatted="false">这段时间从上次实际结束使用开始计算；取消申请不会重置。</string>
+    <string name="elapsed_title_since_last_attempt" formatted="false">距离上次尝试打开</string>
+    <string name="elapsed_previous_attempt" formatted="false">上次尝试</string>
+    <string name="elapsed_current_attempt" formatted="false">本次尝试</string>
+    <string name="elapsed_no_history_attempt" formatted="false">首次记录到这个应用的拦截</string>
+    <string name="elapsed_first_support_attempt" formatted="false">从本次尝试开始累计下一段间隔。</string>
+    <string name="elapsed_support_attempt" formatted="false">退出后，下一段间隔会从本次尝试继续累计。</string>
+    <string name="elapsed_title_since_last_trigger" formatted="false">距离上次触发拦截</string>
+    <string name="elapsed_previous_trigger" formatted="false">上次触发</string>
+    <string name="elapsed_current_trigger" formatted="false">本次触发</string>
+    <string name="elapsed_no_history_trigger" formatted="false">首次记录到这条拦截规则</string>
+    <string name="elapsed_first_support_trigger" formatted="false">从本次触发开始累计下一段间隔。</string>
+    <string name="elapsed_support_trigger" formatted="false">退出后，下一段间隔会从本次触发继续累计。</string>
+    <string name="focus_overlay_cannot_launch_app" formatted="false">无法启动该应用</string>
+    <string name="focus_overlay_launch_failed">启动失败：%1$s</string>
+    <string name="url_rule_fallback">网址规则 #%1$d</string>
+    <string name="usage_guard_submit_failed" formatted="false">暂时无法保存本次申请，请稍后重试</string>
+    <string name="usage_guard_countdown_missing_reason" formatted="false">未填写申请理由</string>
+    <string name="local_subscription_name" formatted="false">本地订阅</string>
+    <string name="memory_subscription_name" formatted="false">内存订阅</string>
+    <string name="subs_no_rules" formatted="false">暂无规则</string>
+    <string name="subs_status_trigger">%1$s/%2$d触发</string>
+    <string name="subs_item_selected" formatted="false">已选中</string>
+    <string name="subs_item_not_selected" formatted="false">未选中</string>
+    <string name="subs_item_enabled" formatted="false">已启用</string>
+    <string name="subs_item_disabled" formatted="false">已禁用</string>
+    <string name="common_disabled" formatted="false">已禁用</string>
+    <string name="chart_sample_count">样本 %1$d</string>
+    <string name="chart_no_data" formatted="false">无数据</string>
+    <string name="rule_delete_group_title" formatted="false">删除规则组</string>
+    <string name="rule_delete_group_confirm">确定删除 %1$s ?</string>
+    <string name="rule_activity_placeholder" formatted="false">请填入需要禁用的 activityId 列表\n每行一个</string>
+    <string name="subs_category_help_intro" formatted="false">类别会捕获以当前类别开头的所有应用规则, 因此可调整类别开关(分类手动配置)来批量开关规则</string>
+    <string name="subs_category_help_priority" formatted="false">规则开关优先级为:\n规则手动配置 > 分类手动配置 > 分类默认 > 规则默认</string>
+    <string name="subs_category_help_reset" formatted="false">因此如果手动开关了规则(规则手动配置), 则该规则不会被批量开关, 可通过点击类别-重置规则开关, 来移除类别下所有规则手动配置</string>
+    <string name="subs_category_duplicate" formatted="false">不可添加同名类别</string>
+    <string name="slow_rule_intro" formatted="false">任意单个规则同时满足以下 3 个条件即判定为缓慢查询</string>
+    <string name="slow_rule_conditions" formatted="false">1. 选择器右侧无法快速查询且不是主动查询, 或内部使用&lt;&lt;且无法快速查询\n2. preKeys 为空\n3. matchTime 为空或大于 10s</string>
+    <string name="slow_rule_suggestions" formatted="false">缓慢查询可能导致触发缓慢或更多耗电, 一些可能优化的建议操作\n1. 降低选择器获取新节点次数\n2. 降低或限制规则查询时间或次数</string>
+    <string name="slow_global_rule">%1$s/全局规则</string>
+    <string name="slow_app_rule">%1$s/应用规则/%2$s</string>
+    <string name="app_ops_shizuku_authorize" formatted="false">Shizuku 授权</string>
+    <string name="app_ops_command_authorize" formatted="false">命令授权</string>
+    <string name="app_ops_reinstall" formatted="false">卸载重装</string>
+    <string name="upsert_subscription_missing" formatted="false">订阅不存在</string>
+    <string name="upsert_rule_empty" formatted="false">规则不能为空</string>
+    <string name="upsert_invalid_format">非法格式\n%1$s</string>
+    <string name="upsert_rule_object_expected" formatted="false">规则应为对象格式</string>
+    <string name="upsert_missing_id" formatted="false">缺少id</string>
+    <string name="upsert_id_mismatch" formatted="false">id与当前应用不一致</string>
+    <string name="upsert_at_least_one_rule" formatted="false">至少输入一个规则</string>
+    <string name="upsert_invalid_rule">非法规则\n%1$s</string>
+    <string name="upsert_app_missing" formatted="false">应用不存在</string>
+    <string name="upsert_duplicate_rule_name">已存在同名「%1$s」规则</string>
+    <string name="about_feedback_thanks" formatted="false">感谢您愿意花时间反馈，</string>
+    <string name="about_feedback_scope" formatted="false">GKD 默认不携带任何规则，只接受应用本体功能相关的反馈</string>
+    <string name="about_feedback_third_party" formatted="false">请先判断是不是第三方规则订阅的问题，如果是，您应该向规则提供者反馈，而不是在此处反馈。</string>
+    <string name="about_feedback_confident" formatted="false">如果您已经确信是 GKD 应用本体的问题</string>
+    <string name="about_feedback_continue" formatted="false">，可点击下方继续反馈</string>
+    <string name="about_export_play_tip" formatted="false">当前导出的 APK 文件只能在已安装 Google 框架的设备上才能使用，否则安装打开后会提示报错，</string>
+    <string name="about_export_play_download_link" formatted="false">建议点此从官网下载</string>
+    <string name="about_export_play_continue" formatted="false">，或点击下方继续操作</string>
+    <string name="terms_usage_title" formatted="false">使用声明</string>
+    <string name="terms_usage_intro" formatted="false">感谢使用 GKD！您需要阅读并同意「</string>
+    <string name="terms_user_agreement" formatted="false">用户协议</string>
+    <string name="terms_and" formatted="false">」和「</string>
+    <string name="terms_privacy_policy" formatted="false">隐私政策</string>
+    <string name="terms_usage_suffix" formatted="false">」才能继续使用, 请仔细阅读相关内容</string>
+    <string name="terms_a11y_title" formatted="false">关于无障碍</string>
+    <string name="usage_guard_auto_reenable_message" formatted="false">自动重开保护会恢复使用申请总开关，不会改动范围、默认授权模式或时长选项。</string>
+    <string name="usage_guard_strict_mode_line" formatted="false">严格模式：离开应用后需要重新申请</string>
+    <string name="usage_guard_normal_mode_line" formatted="false">普通模式：到时前可继续回到应用</string>
+    <string name="subs_sheet_author_meta">作者：%1$s, 版本号：v%2$d, 更新时间：%3$s</string>
+    <string name="common_unknown" formatted="false">未知</string>
+    <string name="status_permission_restricted" formatted="false">权限受限，请解除限制</string>
+    <string name="status_shizuku_disconnected" formatted="false">Shizuku 未连接，请授权或关闭优化</string>
+    <string name="status_partial_off_with_name">%1$s · %2$s</string>
+    <string name="http_status_local" formatted="false">仅本机访问</string>
+    <string name="http_status_lan">局域网会话剩余 %1$d 分钟</string>
+    <string name="snapshot_delete_success" formatted="false">快照删除成功</string>
+    <string name="a11y_error_invalid_selector" formatted="false">非法选择器</string>
+    <string name="a11y_error_selector_type">选择器类型错误:%1$s</string>
+    <string name="a11y_error_service_not_connected" formatted="false">服务未连接</string>
+    <string name="a11y_error_no_window_nodes" formatted="false">界面没有节点信息</string>
+    <string name="a11y_error_no_node_found" formatted="false">没有查询到节点</string>
+    <string name="usage_guard_preset_tag_work" formatted="false">联系工作</string>
+    <string name="usage_guard_preset_tag_reply" formatted="false">回复消息</string>
+    <string name="usage_guard_preset_tag_research" formatted="false">查资料</string>
+    <string name="usage_guard_preset_tag_payment" formatted="false">支付</string>
+    <string name="usage_guard_preset_tag_other" formatted="false">其他</string>
+    <string name="notif_custom_text_default" formatted="false">${i}全局/${k}应用/${u}规则/${n}触发</string>
+    <string name="crash_error_code">错误码：%1$s</string>
+    <string name="crash_category">类别：%1$s</string>
+    <string name="crash_time">时间：%1$s</string>
+    <string name="crash_app_frames" formatted="false">应用内位置：</string>
+    <string name="github_cookie_expired" formatted="false">检测到 cookie 失效, 请更换</string>
+    <string name="intent_create_uri_failed" formatted="false">创建URI失败</string>
+    <string name="diagnostic_operation_failed">操作失败（错误码：%1$s）</string>
+    <string name="subscription_missing" formatted="false">订阅已不存在</string>
+    <string name="subscription_changed" formatted="false">订阅已发生变化</string>
+    <string name="subscription_time_overflow" formatted="false">订阅时间溢出</string>
+    <string name="subs_file_missing" formatted="false">订阅文件不存在</string>
+    <string name="subs_file_parse_failed" formatted="false">订阅文件解析失败</string>
+    <string name="subs_file_id_mismatch" formatted="false">订阅文件id不一致</string>
+    <string name="subs_update_request_failed" formatted="false">请求更新链接失败</string>
+    <string name="subs_parse_text_failed" formatted="false">解析文本失败</string>
+    <string name="subs_id_mismatch">新id=%1$s不匹配旧id=%2$s</string>
 </resources>

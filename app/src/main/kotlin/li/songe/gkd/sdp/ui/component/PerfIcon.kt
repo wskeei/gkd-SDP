@@ -65,17 +65,20 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.res.stringResource
+import androidx.annotation.StringRes
+import li.songe.gkd.sdp.R
 
 @Composable
 fun PerfIcon(
     imageVector: ImageVector,
     modifier: Modifier = Modifier,
     tint: Color = LocalContentColor.current,
-    contentDescription: String? = getIconDefaultDesc(imageVector),
+    contentDescription: String? = null,
 ) = Icon(
     imageVector = imageVector,
     modifier = modifier,
-    contentDescription = contentDescription,
+    contentDescription = contentDescription ?: iconDefaultDescription(imageVector),
     tint = tint
 )
 
@@ -86,10 +89,10 @@ fun PerfIconButton(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
     colors: IconButtonColors = IconButtonDefaults.iconButtonColors(),
-    contentDescription: String? = getIconDefaultDesc(imageVector),
+    contentDescription: String? = null,
     onClickLabel: String? = null,
 ) = TooltipIconButtonBox(
-    contentDescription = contentDescription,
+    contentDescription = contentDescription ?: iconDefaultDescription(imageVector),
 ) {
     IconButton(
         modifier = modifier.semantics {
@@ -103,7 +106,7 @@ fun PerfIconButton(
     ) {
         PerfIcon(
             imageVector = imageVector,
-            contentDescription = contentDescription,
+            contentDescription = contentDescription ?: iconDefaultDescription(imageVector),
         )
     }
 }
@@ -150,25 +153,30 @@ fun PerfIconButton(
     }
 }
 
-fun getIconDefaultDesc(imageVector: ImageVector): String? = when (imageVector) {
-    PerfIcon.Add -> "添加"
-    PerfIcon.Edit -> "编辑"
-    PerfIcon.Save -> "保存"
-    PerfIcon.Delete -> "删除"
-    PerfIcon.Share -> "分享"
-    PerfIcon.Settings -> "设置"
-    PerfIcon.Close -> "关闭"
-    PerfIcon.ArrowBack -> "返回"
-    PerfIcon.HelpOutline -> "帮助"
-    PerfIcon.ToggleOff -> "关闭"
-    PerfIcon.ToggleOn -> "开启"
-    PerfIcon.History -> "历史记录"
-    PerfIcon.Sort -> "排序筛选"
-    PerfIcon.OpenInNew -> "新页面打开"
-    PerfIcon.ContentCopy -> "复制文本"
-    PerfIcon.MoreVert -> "更多操作"
+@StringRes
+fun getIconDefaultDescRes(imageVector: ImageVector): Int? = when (imageVector) {
+    PerfIcon.Add -> R.string.perf_icon_add
+    PerfIcon.Edit -> R.string.perf_icon_edit
+    PerfIcon.Save -> R.string.perf_icon_save
+    PerfIcon.Delete -> R.string.perf_icon_delete
+    PerfIcon.Share -> R.string.perf_icon_share
+    PerfIcon.Settings -> R.string.perf_icon_settings
+    PerfIcon.Close -> R.string.perf_icon_close
+    PerfIcon.ArrowBack -> R.string.perf_icon_back
+    PerfIcon.HelpOutline -> R.string.perf_icon_help
+    PerfIcon.ToggleOff -> R.string.perf_icon_toggle_off
+    PerfIcon.ToggleOn -> R.string.perf_icon_toggle_on
+    PerfIcon.History -> R.string.perf_icon_history
+    PerfIcon.Sort -> R.string.perf_icon_sort
+    PerfIcon.OpenInNew -> R.string.perf_icon_open_in_new
+    PerfIcon.ContentCopy -> R.string.perf_icon_copy
+    PerfIcon.MoreVert -> R.string.perf_icon_more
     else -> null
 }
+
+@Composable
+private fun iconDefaultDescription(imageVector: ImageVector): String? =
+    getIconDefaultDescRes(imageVector)?.let { stringResource(it) }
 
 object PerfIcon {
     val Block get() = Icons.Default.Block

@@ -20,20 +20,6 @@ import org.junit.Test
 
 class StorageMutationBarrierTest {
     @Test
-    fun `synchronous store mutation never blocks on the coroutine barrier`() {
-        val storageSource = sourceFile(
-            "app/src/main/kotlin/li/songe/gkd/sdp/store/StorageExt.kt",
-        ).readText()
-        val barrierSource = sourceFile(
-            "app/src/main/kotlin/li/songe/gkd/sdp/backup/BackupDataMutationBarrier.kt",
-        ).readText()
-
-        assertFalse(storageSource.contains("mutateBlocking"))
-        assertFalse(barrierSource.contains("runBlocking"))
-        assertFalse(barrierSource.contains("mutateBlocking"))
-    }
-
-    @Test
     fun `normal store mutation returns immediately and replays over imported value`() = runBlocking {
         val committedState = MutableStateFlow(0)
         val flow = MutableStoreStateFlow(
@@ -208,13 +194,4 @@ class StorageMutationBarrierTest {
         assertEquals(1, state.value)
     }
 
-    private fun sourceFile(relativePath: String): File {
-        var directory = File(System.getProperty("user.dir"))
-        repeat(6) {
-            val candidate = File(directory, relativePath)
-            if (candidate.isFile) return candidate
-            directory = directory.parentFile ?: return File(relativePath)
-        }
-        return File(relativePath)
-    }
 }

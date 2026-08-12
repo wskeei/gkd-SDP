@@ -7,77 +7,58 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SheetState
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
 import li.songe.gkd.sdp.META
-import li.songe.gkd.sdp.a11y.AppBlockerEngine
-import li.songe.gkd.sdp.a11y.FocusModeEngine
-import li.songe.gkd.sdp.a11y.UrlBlockerEngine
 import li.songe.gkd.sdp.store.SettingsStore
-import li.songe.gkd.sdp.store.storeFlow
 import li.songe.gkd.sdp.ui.component.PerfIcon
 import li.songe.gkd.sdp.ui.component.PerfIconButton
 import li.songe.gkd.sdp.ui.component.PerfTopAppBar
-import li.songe.gkd.sdp.ui.share.LocalMainViewModel
 import li.songe.gkd.sdp.ui.style.itemPadding
 import li.songe.gkd.sdp.ui.style.scaffoldPadding
 import li.songe.gkd.sdp.R
 
 @Composable
-fun FocusLockPageSections() {
-    val vm = viewModel<FocusLockVm>()
-    val subStates by vm.subStatesFlow.collectAsStateWithLifecycle()
-    val expandedSubs by vm.expandedSubs.collectAsStateWithLifecycle()
-    val expandedApps by vm.expandedApps.collectAsStateWithLifecycle()
-    val settings by storeFlow.collectAsStateWithLifecycle()
-    val lockSheetState = rememberModalBottomSheetState()
-    val pauseSheetState = rememberModalBottomSheetState()
-    val dialogState = rememberFocusLockDialogState()
-
-    FocusLockPageScaffold(
-        vm = vm,
-        subStates = subStates,
-        expandedSubs = expandedSubs,
-        expandedApps = expandedApps,
-        settings = settings,
-        dialogState = dialogState,
-        lockSheetState = lockSheetState,
-        pauseSheetState = pauseSheetState,
-    )
-}
-
-@Composable
-private fun FocusLockPageScaffold(
-    vm: FocusLockVm,
-    subStates: List<SubscriptionState>,
-    expandedSubs: Set<Long>,
-    expandedApps: Set<String>,
+internal fun FocusLockPageSections(
+    state: FocusLockUiState,
     settings: SettingsStore,
+    runtimeStatus: li.songe.gkd.sdp.a11y.SdpRuntimeFeatureCoordinator.RuntimeStatus,
+    overlayPermission: Boolean,
+    autoReenableUiState: AutoReenableUiState,
+    urlBlockerEnabled: Boolean,
+    focusModeActive: Boolean,
+    appBlockerRules: List<*>,
+    appBlockerGroups: List<*>,
     dialogState: FocusLockDialogState,
-    lockSheetState: androidx.compose.material3.SheetState,
-    pauseSheetState: androidx.compose.material3.SheetState,
+    lockSheetState: SheetState,
+    pauseSheetState: SheetState,
+    onBack: () -> Unit,
+    onOpenFocusMode: () -> Unit,
+    onOpenUrlBlocker: () -> Unit,
+    onOpenAppBlocker: () -> Unit,
+    onOpenUsageGuard: () -> Unit,
+    onOpenAppInstallMonitor: () -> Unit,
+    onAccessibilityGuardCheckedChange: (Boolean) -> Unit,
+    onAutoReenableClick: () -> Unit,
+    onToggleExpandSubs: (Long) -> Unit,
+    onToggleExpandApp: (String) -> Unit,
+    onLockClick: (LockTarget) -> Unit,
+    onPauseClick: (PauseTarget) -> Unit,
+    onLockTarget: (LockTarget, LockDurationRequest) -> Unit,
+    onUpdateInterceptConfig: (PauseTarget, Boolean, Int, String) -> Unit,
+    onSaveAutoReenable: (Int?, Int?) -> Unit,
+    onNavigateAuthA11y: () -> Unit,
 ) {
-    val mainVm = LocalMainViewModel.current
-    val context = LocalContext.current
-    val urlBlockerEnabled by UrlBlockerEngine.enabledFlow.collectAsStateWithLifecycle()
-    val focusModeActive by FocusModeEngine.isActiveFlow.collectAsStateWithLifecycle()
-    val appBlockerRules by AppBlockerEngine.enabledRulesFlow.collectAsStateWithLifecycle()
-    val appBlockerGroups by AppBlockerEngine.enabledGroupsFlow.collectAsStateWithLifecycle()
-
     Scaffold(
         topBar = {
             PerfTopAppBar(
                 navigationIcon = {
                     PerfIconButton(
                         imageVector = PerfIcon.ArrowBack,
-                        onClick = { mainVm.popPage() },
+                        onClick = onBack,
                     )
                 },
                 title = { Text(text = li.songe.gkd.sdp.app.getString(R.string.s_6337015d1f)) },
@@ -86,20 +67,23 @@ private fun FocusLockPageScaffold(
     ) { padding ->
         LazyColumn(modifier = Modifier.scaffoldPadding(padding)) {
             item(key = "self_control_runtime_status") {
-                SelfControlRuntimeStatusCard()
+                SelfControlRuntimeStatusCard(
+                    runtime = runtimeStatus,
+                    overlayPermission = overlayPermission,
+                )
                 Spacer(modifier = Modifier.height(12.dp))
             }
             item(key = "focus_mode") {
                 FocusModeCard(
                     isActive = focusModeActive,
-                    onClick = { mainVm.navigatePage(FocusModeRoute) },
+                    onClick = onOpenFocusMode,
                 )
                 Spacer(modifier = Modifier.height(12.dp))
             }
             item(key = "url_blocker") {
                 UrlBlockerCard(
                     enabled = urlBlockerEnabled,
-                    onClick = { mainVm.navigatePage(UrlBlockRoute) },
+                    onClick = onOpenUrlBlocker,
                 )
                 Spacer(modifier = Modifier.height(12.dp))
             }
@@ -107,7 +91,7 @@ private fun FocusLockPageScaffold(
                 AppBlockerCard(
                     enabledRuleCount = appBlockerRules.size,
                     enabledGroupCount = appBlockerGroups.size,
-                    onClick = { mainVm.navigatePage(AppBlockerRoute) },
+                    onClick = onOpenAppBlocker,
                 )
                 Spacer(modifier = Modifier.height(12.dp))
             }
@@ -115,7 +99,7 @@ private fun FocusLockPageScaffold(
                 UsageGuardCard(
                     enabled = settings.usageGuardEnabled,
                     scopeMode = settings.usageGuardScopeMode,
-                    onClick = { mainVm.navigatePage(UsageGuardRoute) },
+                    onClick = onOpenUsageGuard,
                 )
                 Spacer(modifier = Modifier.height(12.dp))
             }
@@ -124,20 +108,14 @@ private fun FocusLockPageScaffold(
                     AccessibilityGuardCard(
                         enabled = settings.accessibilityGuardEnabled,
                         armed = settings.accessibilityGuardAutoReenableArmed,
-                        onCheckedChange = { requestedEnabled ->
-                            if (requestedEnabled) {
-                                dialogState.showAccessibilityGuardDialog = true
-                            } else {
-                                dialogState.showAccessibilityGuardDisableDialog = true
-                            }
-                        },
+                        onCheckedChange = onAccessibilityGuardCheckedChange,
                     )
                     Spacer(modifier = Modifier.height(12.dp))
                 }
             }
             item(key = "app_install_monitor") {
                 AppInstallMonitorCard(
-                    onClick = { mainVm.navigatePage(AppInstallMonitorRoute) },
+                    onClick = onOpenAppInstallMonitor,
                 )
                 Spacer(modifier = Modifier.height(12.dp))
             }
@@ -149,11 +127,12 @@ private fun FocusLockPageScaffold(
                     dailyDisableLimit = settings.autoReenableDailyDisableLimit,
                     dailyDisableUsed = settings.autoReenableDailyDisableUsed,
                     dailyDisableDayStartAt = settings.autoReenableDailyDisableDayStartAt,
-                    onClick = { dialogState.showAutoReenableDialog = true },
+                    autoReenableUiState = autoReenableUiState,
+                    onClick = onAutoReenableClick,
                 )
                 Spacer(modifier = Modifier.height(12.dp))
             }
-            if (subStates.isEmpty()) {
+            if (state.subStates.isEmpty()) {
                 item {
                     Text(
                         text = li.songe.gkd.sdp.app.getString(R.string.s_86539a3eb0),
@@ -162,39 +141,31 @@ private fun FocusLockPageScaffold(
                     )
                 }
             }
-            subStates.forEach { subState ->
+            state.subStates.forEach { subState ->
                 item(key = "sub_${subState.subsId}") {
                     SubscriptionCard(
                         subState = subState,
-                        isExpanded = expandedSubs.contains(subState.subsId),
-                        expandedApps = expandedApps,
-                        onExpandSubs = { vm.toggleExpandSubs(subState.subsId) },
-                        onExpandApp = { appId ->
-                            vm.toggleExpandApp("${subState.subsId}_$appId")
-                        },
-                        onLockClick = { target ->
-                            dialogState.currentLockTarget = target
-                            dialogState.showLockSheet = true
-                        },
-                        onPauseClick = { target ->
-                            if (!android.provider.Settings.canDrawOverlays(context)) {
-                                dialogState.showPermissionDialog = true
-                            } else {
-                                dialogState.currentPauseTarget = target
-                                dialogState.showPauseSheet = true
-                            }
-                        },
+                        isExpanded = state.expandedSubs.contains(subState.subsId),
+                        expandedApps = state.expandedApps,
+                        onExpandSubs = { onToggleExpandSubs(subState.subsId) },
+                        onExpandApp = { appId -> onToggleExpandApp("${subState.subsId}_$appId") },
+                        onLockClick = onLockClick,
+                        onPauseClick = onPauseClick,
                     )
                     Spacer(modifier = Modifier.height(12.dp))
                 }
             }
         }
         FocusLockPageDialogs(
-            vm = vm,
             settings = settings,
+            autoReenableUiState = autoReenableUiState,
             state = dialogState,
             lockSheetState = lockSheetState,
             pauseSheetState = pauseSheetState,
+            onLockTarget = onLockTarget,
+            onUpdateInterceptConfig = onUpdateInterceptConfig,
+            onSaveAutoReenable = onSaveAutoReenable,
+            onNavigateAuthA11y = onNavigateAuthA11y,
         )
     }
 }

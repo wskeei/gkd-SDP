@@ -3,6 +3,7 @@
 package li.songe.gkd.sdp.service
 
 import android.content.Intent
+import li.songe.gkd.sdp.R
 import android.graphics.PixelFormat
 import android.view.Gravity
 import android.view.WindowManager
@@ -90,7 +91,7 @@ class UsageGuardCountdownOverlayService : LifecycleService(), SavedStateRegistry
     private var overlayLeaseId: Long = 0L
     private var expiresAtState by mutableStateOf(0L)
     private var reasonTextState by mutableStateOf(
-        UsageGuardCountdownOverlayPolicy.MISSING_REASON_TEXT,
+        getString(R.string.usage_guard_countdown_missing_reason),
     )
     private var showTerminateConfirm by mutableStateOf(false)
 
@@ -109,6 +110,7 @@ class UsageGuardCountdownOverlayService : LifecycleService(), SavedStateRegistry
         val incomingRuntimeGeneration = intent?.getLongExtra(EXTRA_RUNTIME_GENERATION, 0L) ?: 0L
         val incomingReasonText = UsageGuardCountdownOverlayPolicy.displayReasonText(
             intent?.getStringExtra(EXTRA_REASON_TEXT).orEmpty(),
+            this,
         )
         val now = System.currentTimeMillis()
         val incomingSession = UsageGuardCountdownOverlaySession(
@@ -396,7 +398,7 @@ class UsageGuardCountdownOverlayService : LifecycleService(), SavedStateRegistry
         recordId = 0L
         overlayLeaseId = 0L
         expiresAtState = 0L
-        reasonTextState = UsageGuardCountdownOverlayPolicy.MISSING_REASON_TEXT
+        reasonTextState = getString(R.string.usage_guard_countdown_missing_reason)
         showTerminateConfirm = false
     }
 }

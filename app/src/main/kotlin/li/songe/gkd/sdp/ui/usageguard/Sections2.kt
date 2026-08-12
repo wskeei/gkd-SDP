@@ -9,74 +9,39 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import java.time.LocalDate
-import li.songe.gkd.sdp.MainViewModel
 import li.songe.gkd.sdp.data.*
-import li.songe.gkd.sdp.store.SettingsStore
 import li.songe.gkd.sdp.ui.component.*
 import li.songe.gkd.sdp.ui.style.scaffoldPadding
 import li.songe.gkd.sdp.util.UsageGuardPolicy
-import li.songe.gkd.sdp.util.UsageGuardUiStatePolicy
 import androidx.compose.ui.res.stringResource
 import li.songe.gkd.sdp.R
 @Composable
 internal fun UsageGuardSettingsList(
-    mainVm: MainViewModel,
-    vm: UsageGuardVm,
-    settings: SettingsStore,
-    appProfiles: List<UsageGuardAppProfile>,
-    tags: List<UsageGuardTag>,
-    history: List<UsageGuardRecord>,
-    groupedApps: UsageGuardUiStatePolicy.SelectedAppSections,
-    durationOptions: List<Int>,
-    appInfoMap: Map<String, AppInfo>,
+    state: UsageGuardSettingsRenderState,
     context: Context,
 ) {
-    val selectedTargetApps = remember(appProfiles) { appProfiles.filter { it.selectedTarget }.map { it.appId } }
-    val whitelistApps = remember(appProfiles) { appProfiles.filter { it.globalWhitelist }.map { it.appId } }
-    val profileMap = remember(appProfiles) { appProfiles.associateBy { it.appId } }
-    val globalOverrideApps = remember(appProfiles, settings.usageGuardDefaultGrantMode) {
-        appProfiles.filter { !it.globalWhitelist && it.grantMode != settings.usageGuardDefaultGrantMode }.map { it.appId }
-    }
-    val minReasonLengthText = remember(settings.usageGuardMinReasonLength) {
-        mutableStateOf(settings.usageGuardMinReasonLength.toString())
-    }
-    val durationOptionTexts = remember(durationOptions) { mutableStateOf(durationOptions.map(Int::toString)) }
-    val customTagText = remember { mutableStateOf("") }
-    val selectedDate = remember { mutableStateOf(java.time.LocalDate.now()) }
-    val showSelectedPicker = remember { mutableStateOf(false) }
-    val showWhitelistPicker = remember { mutableStateOf(false) }
-    val showOverridePicker = remember { mutableStateOf(false) }
-    val appAction = remember { mutableStateOf<UsageGuardAppAction?>(null) }
-    val strictBoardBounds = remember { mutableStateOf<androidx.compose.ui.geometry.Rect?>(null) }
-    val resumableBoardBounds = remember { mutableStateOf<androidx.compose.ui.geometry.Rect?>(null) }
-    val draggingAppId = remember { mutableStateOf<String?>(null) }
-    val state = UsageGuardSettingsRenderState(
-        mainVm, vm, settings, tags, history, groupedApps, durationOptions, appInfoMap, context,
-        selectedTargetApps, whitelistApps, globalOverrideApps, profileMap,
-        minReasonLengthText, durationOptionTexts, customTagText, selectedDate,
-        showSelectedPicker, showWhitelistPicker, showOverridePicker, appAction,
-        strictBoardBounds, resumableBoardBounds, draggingAppId,
-    )
-    LaunchedEffect(selectedDate.value) {
-        vm.updateSelectedHistoryDate(selectedDate.value)
-    }
-    UsageGuardSettingsScaffold(state)
+    UsageGuardSettingsScaffold(state, context)
     UsageGuardDialogs(state)
 }
 @Composable
-private fun UsageGuardSettingsScaffold(state: UsageGuardSettingsRenderState) {
+private fun UsageGuardSettingsScaffold(
+    state: UsageGuardSettingsRenderState,
+    context: Context,
+) {
     Scaffold(
+        modifier = Modifier.testTag("usage_guard_settings_list"),
         topBar = {
             PerfTopAppBar(
                 navigationIcon = {
                     PerfIconButton(
                         imageVector = PerfIcon.ArrowBack,
-                        onClick = { state.mainVm.popPage() },
+                        onClick = state.onBack,
                     )
                 },
                 title = { Text(li.songe.gkd.sdp.app.getString(R.string.s_356c996618)) },
@@ -90,25 +55,29 @@ private fun UsageGuardSettingsScaffold(state: UsageGuardSettingsRenderState) {
             item(key = "status_section") { UsageGuardStatusSection(state) }
             item(key = "rules_section") { UsageGuardRulesSection(state) }
             item(key = "app_section") { UsageGuardAppsSection(state) }
-            item(key = "history_section") { UsageGuardHistorySection(state) }
+            item(key = "history_section") { UsageGuardHistorySection(state, context) }
         }
     }
 }
 @Composable
 private fun UsageGuardRulesSection(state: UsageGuardSettingsRenderState) {
-    val settings = state.settings
-    val vm = state.vm
-    val tags = state.tags
-    val minReasonLengthText = state.minReasonLengthText
-    val durationOptionTexts = state.durationOptionTexts
-    val customTagText = state.customTagText
+    val settings = state.state.settings
+    val onDispatch = state.onDispatch
+    val tags = state.state.tags
+    val minReasonLengthText = remember(settings.usageGuardMinReasonLength) {
+        mutableStateOf(settings.usageGuardMinReasonLength.toString())
+    }
+    val durationOptionTexts = remember(state.state.durationOptions) {
+        mutableStateOf(state.state.durationOptions.map(Int::toString))
+    }
+    val customTagText = remember { mutableStateOf("") }
     SectionCard(
         title = stringResource(R.string.s_4b7e05a71a),
         subtitle = stringResource(R.string.s_0c81c7ca27),
     ) {
         PreferenceBlock(
             title = li.songe.gkd.sdp.app.getString(R.string.s_a6a2d4845d),
-            supporting = "选中应用适合精细控制；全局模式适合高压场景。",
+            supporting = li.songe.gkd.sdp.app.getString(R.string.usage_guard_scope_hint),
         ) {
             FlowRow(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -116,12 +85,12 @@ private fun UsageGuardRulesSection(state: UsageGuardSettingsRenderState) {
             ) {
                 FilterChip(
                     selected = settings.usageGuardScopeMode == UsageGuardPolicy.SCOPE_SELECTED_ONLY,
-                    onClick = { vm.updateScopeMode(UsageGuardPolicy.SCOPE_SELECTED_ONLY) },
+                    onClick = { onDispatch(UsageGuardAction.UpdateScopeMode(UsageGuardPolicy.SCOPE_SELECTED_ONLY)) },
                     label = { Text(li.songe.gkd.sdp.app.getString(R.string.s_2a5a0db475)) },
                 )
                 FilterChip(
                     selected = settings.usageGuardScopeMode == UsageGuardPolicy.SCOPE_GLOBAL_EXCEPT_WHITELIST,
-                    onClick = { vm.updateScopeMode(UsageGuardPolicy.SCOPE_GLOBAL_EXCEPT_WHITELIST) },
+                    onClick = { onDispatch(UsageGuardAction.UpdateScopeMode(UsageGuardPolicy.SCOPE_GLOBAL_EXCEPT_WHITELIST)) },
                     label = { Text(li.songe.gkd.sdp.app.getString(R.string.s_3af2ad9aac)) },
                 )
             }
@@ -129,7 +98,7 @@ private fun UsageGuardRulesSection(state: UsageGuardSettingsRenderState) {
         HorizontalDivider()
         PreferenceBlock(
             title = li.songe.gkd.sdp.app.getString(R.string.s_cb1d1e7bde),
-            supporting = "严格模式离开即失效，普通模式在到时前可继续返回。",
+            supporting = li.songe.gkd.sdp.app.getString(R.string.usage_guard_strict_mode_hint),
         ) {
             FlowRow(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -137,12 +106,12 @@ private fun UsageGuardRulesSection(state: UsageGuardSettingsRenderState) {
             ) {
                 FilterChip(
                     selected = settings.usageGuardDefaultGrantMode == UsageGuardPolicy.GRANT_MODE_STRICT,
-                    onClick = { vm.updateDefaultGrantMode(UsageGuardPolicy.GRANT_MODE_STRICT) },
+                    onClick = { onDispatch(UsageGuardAction.UpdateDefaultGrantMode(UsageGuardPolicy.GRANT_MODE_STRICT)) },
                     label = { Text(li.songe.gkd.sdp.app.getString(R.string.s_cce3d12ecc)) },
                 )
                 FilterChip(
                     selected = settings.usageGuardDefaultGrantMode == UsageGuardPolicy.GRANT_MODE_RESUMABLE,
-                    onClick = { vm.updateDefaultGrantMode(UsageGuardPolicy.GRANT_MODE_RESUMABLE) },
+                    onClick = { onDispatch(UsageGuardAction.UpdateDefaultGrantMode(UsageGuardPolicy.GRANT_MODE_RESUMABLE)) },
                     label = { Text(li.songe.gkd.sdp.app.getString(R.string.s_e8a4554eb3)) },
                 )
             }
@@ -150,7 +119,7 @@ private fun UsageGuardRulesSection(state: UsageGuardSettingsRenderState) {
         HorizontalDivider()
         PreferenceBlock(
             title = li.songe.gkd.sdp.app.getString(R.string.s_be695b05b4),
-            supporting = "保存后会直接影响申请弹窗的最少字数要求。",
+            supporting = li.songe.gkd.sdp.app.getString(R.string.usage_guard_min_reason_hint),
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -168,8 +137,10 @@ private fun UsageGuardRulesSection(state: UsageGuardSettingsRenderState) {
                 )
                 Button(
                     onClick = {
-                        vm.updateMinReasonLength(
-                            minReasonLengthText.value.toIntOrNull() ?: settings.usageGuardMinReasonLength,
+                        onDispatch(
+                            UsageGuardAction.UpdateMinReasonLength(
+                                minReasonLengthText.value.toIntOrNull() ?: settings.usageGuardMinReasonLength,
+                            ),
                         )
                     },
                 ) {
@@ -180,7 +151,7 @@ private fun UsageGuardRulesSection(state: UsageGuardSettingsRenderState) {
         HorizontalDivider()
         PreferenceBlock(
             title = li.songe.gkd.sdp.app.getString(R.string.s_067f4e9588),
-            supporting = "申请弹窗会优先展示这四个固定时长，把自定义留在次级入口。",
+            supporting = li.songe.gkd.sdp.app.getString(R.string.usage_guard_duration_options_hint),
         ) {
             FlowRow(
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
@@ -206,7 +177,11 @@ private fun UsageGuardRulesSection(state: UsageGuardSettingsRenderState) {
             Spacer(modifier = Modifier.height(10.dp))
             Button(
                 onClick = {
-                    vm.updateDurationOptions(durationOptionTexts.value.map { it.toIntOrNull() ?: 0 })
+                    onDispatch(
+                        UsageGuardAction.UpdateDurationOptions(
+                            durationOptionTexts.value.map { it.toIntOrNull() ?: 0 },
+                        ),
+                    )
                 },
             ) {
                 Text(li.songe.gkd.sdp.app.getString(R.string.s_b0871a4a6b))
@@ -215,7 +190,7 @@ private fun UsageGuardRulesSection(state: UsageGuardSettingsRenderState) {
         HorizontalDivider()
         PreferenceBlock(
             title = li.songe.gkd.sdp.app.getString(R.string.s_9d227c591a),
-            supporting = "预设标签负责快速说明动机，自定义标签只保留你真正常用的词。",
+            supporting = li.songe.gkd.sdp.app.getString(R.string.usage_guard_tag_hint),
         ) {
             FlowRow(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -224,7 +199,7 @@ private fun UsageGuardRulesSection(state: UsageGuardSettingsRenderState) {
                 tags.forEach { tag ->
                     FilterChip(
                         selected = false,
-                        onClick = { if (!tag.isPreset) vm.deleteCustomTag(tag) },
+                        onClick = { if (!tag.isPreset) state.onDeleteCustomTag(tag) },
                         label = {
                             Text(
                                 if (tag.isPreset) tag.name else li.songe.gkd.sdp.app.getString(R.string.s_fd325af405, (tag.name).toString()),
@@ -249,7 +224,7 @@ private fun UsageGuardRulesSection(state: UsageGuardSettingsRenderState) {
                 )
                 Button(
                     onClick = {
-                        vm.addCustomTag(customTagText.value)
+                        onDispatch(UsageGuardAction.AddCustomTag(customTagText.value))
                         customTagText.value = ""
                     },
                 ) {
@@ -261,20 +236,13 @@ private fun UsageGuardRulesSection(state: UsageGuardSettingsRenderState) {
 }
 @Composable
 private fun UsageGuardAppsSection(state: UsageGuardSettingsRenderState) {
-    val settings = state.settings
-    val vm = state.vm
-    val groupedApps = state.groupedApps
-    val appInfoMap = state.appInfoMap
-    val whitelistApps = state.whitelistApps
-    val globalOverrideApps = state.globalOverrideApps
-    val profileMap = state.profileMap
-    val showSelectedPicker = state.showSelectedPicker
-    val showWhitelistPicker = state.showWhitelistPicker
-    val showOverridePicker = state.showOverridePicker
-    val appAction = state.appAction
-    val strictBoardBounds = state.strictBoardBounds
-    val resumableBoardBounds = state.resumableBoardBounds
-    val draggingAppId = state.draggingAppId
+    val settings = state.state.settings
+    val groupedApps = state.state.groupedApps
+    val appInfoMap = state.state.appInfoMap
+    val whitelistApps = state.state.whitelistApps
+    val globalOverrideApps = state.state.globalOverrideApps
+    val profileMap = state.state.profileMap
+    val draggingAppId = state.state.draggingAppId
     SectionCard(
         title = stringResource(R.string.s_52fa962ab3),
         subtitle = stringResource(R.string.s_34a4bd22d5),
@@ -288,64 +256,64 @@ private fun UsageGuardAppsSection(state: UsageGuardSettingsRenderState) {
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text(li.songe.gkd.sdp.app.getString(R.string.s_2a5a0db475), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
                     Text(
-                        if (draggingAppId.value == null) {
-                            "点按图标可改模式，长按拖到另一列可直接切换。"
+                        if (draggingAppId == null) {
+                            stringResource(R.string.usage_guard_drag_instruction_tap)
                         } else {
-                            "拖到另一列松手即可切换模式。"
+                            stringResource(R.string.usage_guard_drag_instruction_drop)
                         },
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
-                TextButton(onClick = { showSelectedPicker.value = true }) { Text(li.songe.gkd.sdp.app.getString(R.string.s_e0c8442c8f)) }
+                TextButton(onClick = state.onOpenSelectedPicker) { Text(li.songe.gkd.sdp.app.getString(R.string.s_e0c8442c8f)) }
             }
             Spacer(modifier = Modifier.height(12.dp))
             SelectedAppModeBoard(
-                title = "严格模式",
-                subtitle = "离开应用后重新申请",
+                title = stringResource(R.string.usage_guard_strict_mode_title),
+                subtitle = stringResource(R.string.usage_guard_strict_mode_subtitle),
                 appIds = groupedApps.strictAppIds,
                 appInfoMap = appInfoMap,
-                onBoardBoundsChanged = { strictBoardBounds.value = it },
+                onBoardBoundsChanged = state.onStrictBoardBounds,
                 onAppClick = {
-                    appAction.value = UsageGuardAppAction(it, UsageGuardActionScope.Selected)
+                    state.onOpenAppAction(it, UsageGuardActionScope.Selected)
                 },
-                onDragStart = { appId -> draggingAppId.value = appId },
+                onDragStart = state.onDraggingAppId,
                 onDragEnd = { appId, dropPosition ->
                     val targetMode = when {
-                        strictBoardBounds.value?.contains(dropPosition) == true ->
+                        state.state.strictBoardBounds?.contains(dropPosition) == true ->
                             UsageGuardPolicy.GRANT_MODE_STRICT
-                        resumableBoardBounds.value?.contains(dropPosition) == true ->
+                        state.state.resumableBoardBounds?.contains(dropPosition) == true ->
                             UsageGuardPolicy.GRANT_MODE_RESUMABLE
                         else -> null
                     }
-                    draggingAppId.value = null
+                    state.onDraggingAppId(null)
                     if (targetMode != null && profileMap[appId]?.grantMode != targetMode) {
-                        vm.moveSelectedAppToGrantMode(appId, targetMode)
+                        state.onDispatch(UsageGuardAction.MoveSelectedAppToGrantMode(appId, targetMode))
                     }
                 },
             )
             Spacer(modifier = Modifier.height(16.dp))
             SelectedAppModeBoard(
-                title = "普通模式",
-                subtitle = "到时前可继续返回",
+                title = stringResource(R.string.usage_guard_normal_mode_title),
+                subtitle = stringResource(R.string.usage_guard_normal_mode_subtitle),
                 appIds = groupedApps.resumableAppIds,
                 appInfoMap = appInfoMap,
-                onBoardBoundsChanged = { resumableBoardBounds.value = it },
+                onBoardBoundsChanged = state.onResumableBoardBounds,
                 onAppClick = {
-                    appAction.value = UsageGuardAppAction(it, UsageGuardActionScope.Selected)
+                    state.onOpenAppAction(it, UsageGuardActionScope.Selected)
                 },
-                onDragStart = { appId -> draggingAppId.value = appId },
+                onDragStart = state.onDraggingAppId,
                 onDragEnd = { appId, dropPosition ->
                     val targetMode = when {
-                        strictBoardBounds.value?.contains(dropPosition) == true ->
+                        state.state.strictBoardBounds?.contains(dropPosition) == true ->
                             UsageGuardPolicy.GRANT_MODE_STRICT
-                        resumableBoardBounds.value?.contains(dropPosition) == true ->
+                        state.state.resumableBoardBounds?.contains(dropPosition) == true ->
                             UsageGuardPolicy.GRANT_MODE_RESUMABLE
                         else -> null
                     }
-                    draggingAppId.value = null
+                    state.onDraggingAppId(null)
                     if (targetMode != null && profileMap[appId]?.grantMode != targetMode) {
-                        vm.moveSelectedAppToGrantMode(appId, targetMode)
+                        state.onDispatch(UsageGuardAction.MoveSelectedAppToGrantMode(appId, targetMode))
                     }
                 },
             )
@@ -363,15 +331,15 @@ private fun UsageGuardAppsSection(state: UsageGuardSettingsRenderState) {
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
-                TextButton(onClick = { showWhitelistPicker.value = true }) { Text(li.songe.gkd.sdp.app.getString(R.string.s_4adcd23b06)) }
+                TextButton(onClick = state.onOpenWhitelistPicker) { Text(li.songe.gkd.sdp.app.getString(R.string.s_4adcd23b06)) }
             }
             Spacer(modifier = Modifier.height(12.dp))
             IconAppFlow(
                 appIds = whitelistApps,
                 appInfoMap = appInfoMap,
-                emptyText = "暂无白名单应用",
+                emptyText = stringResource(R.string.usage_guard_whitelist_empty),
                 onAppClick = {
-                    appAction.value = UsageGuardAppAction(it, UsageGuardActionScope.Whitelist)
+                    state.onOpenAppAction(it, UsageGuardActionScope.Whitelist)
                 },
             )
             Spacer(modifier = Modifier.height(16.dp))
@@ -388,26 +356,28 @@ private fun UsageGuardAppsSection(state: UsageGuardSettingsRenderState) {
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
-                TextButton(onClick = { showOverridePicker.value = true }) { Text(li.songe.gkd.sdp.app.getString(R.string.s_3ab400ba10)) }
+                TextButton(onClick = state.onOpenOverridePicker) { Text(li.songe.gkd.sdp.app.getString(R.string.s_3ab400ba10)) }
             }
             Spacer(modifier = Modifier.height(12.dp))
             IconAppFlow(
                 appIds = globalOverrideApps,
                 appInfoMap = appInfoMap,
-                emptyText = "暂无模式覆盖应用",
+                emptyText = stringResource(R.string.usage_guard_override_empty),
                 onAppClick = {
-                    appAction.value = UsageGuardAppAction(it, UsageGuardActionScope.Override)
+                    state.onOpenAppAction(it, UsageGuardActionScope.Override)
                 },
             )
         }
     }
 }
 @Composable
-private fun UsageGuardHistorySection(state: UsageGuardSettingsRenderState) {
-    val selectedDate = state.selectedDate
-    val context = state.context
-    val history = state.history
-    val appInfoMap = state.appInfoMap
+private fun UsageGuardHistorySection(
+    state: UsageGuardSettingsRenderState,
+    context: Context,
+) {
+    val selectedDate = LocalDate.ofEpochDay(state.state.selectedHistoryDateEpochDay)
+    val history = state.state.history
+    val appInfoMap = state.state.appInfoMap
     SectionCard(
         title = stringResource(R.string.s_242a10d8a9),
         subtitle = stringResource(R.string.s_20b86aa7ab),
@@ -420,7 +390,7 @@ private fun UsageGuardHistorySection(state: UsageGuardSettingsRenderState) {
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(li.songe.gkd.sdp.app.getString(R.string.s_2cf75123ae), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
                 Text(
-                    li.songe.gkd.sdp.app.getString(R.string.s_5a46f954cd, (selectedDate.value.format(usageGuardDateFormatter)).toString()),
+                    li.songe.gkd.sdp.app.getString(R.string.s_5a46f954cd, (selectedDate.format(usageGuardDateFormatter)).toString()),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -430,15 +400,15 @@ private fun UsageGuardHistorySection(state: UsageGuardSettingsRenderState) {
                     DatePickerDialog(
                         context,
                         { _, year, month, dayOfMonth ->
-                            selectedDate.value = LocalDate.of(year, month + 1, dayOfMonth)
+                            state.onSelectDate(LocalDate.of(year, month + 1, dayOfMonth))
                         },
-                        selectedDate.value.year,
-                        selectedDate.value.monthValue - 1,
-                        selectedDate.value.dayOfMonth,
+                        selectedDate.year,
+                        selectedDate.monthValue - 1,
+                        selectedDate.dayOfMonth,
                     ).show()
                 },
             ) {
-                Text(selectedDate.value.format(usageGuardDateFormatter))
+                Text(selectedDate.format(usageGuardDateFormatter))
             }
         }
         Spacer(modifier = Modifier.height(12.dp))

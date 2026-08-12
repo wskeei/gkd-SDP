@@ -18,6 +18,8 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
+import li.songe.gkd.sdp.R
 import li.songe.gkd.sdp.ui.style.itemPadding
 import li.songe.gkd.sdp.util.throttle
 
@@ -47,7 +49,7 @@ fun SettingItem(
                 } else if (onClick != null) {
                     it.clickable(
                         onClick = throttle(fn = onClick),
-                        onClickLabel = onClickLabel ?: "进入${title}页面",
+                        onClickLabel = onClickLabel ?: stringResource(R.string.common_enter_page, title),
                     )
                 } else {
                     it

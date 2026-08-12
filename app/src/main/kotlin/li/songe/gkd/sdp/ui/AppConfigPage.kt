@@ -31,6 +31,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.style.TextOverflow
@@ -235,13 +236,13 @@ fun AppConfigPage(route: AppConfigRoute) {
                                     }
                                 )
                             } else {
-                                MenuGroupCard(inTop = true, title = "排序") {
+                                MenuGroupCard(inTop = true, title = stringResource(R.string.app_list_sort_title)) {
                                     val handleItem: (RuleSortOption) -> Unit = throttle { v ->
                                         storeFlow.update { s -> s.copy(appRuleSort = v.value) }
                                     }
                                     RuleSortOption.objects.forEach { s ->
                                         MenuItemRadioButton(
-                                            text = s.label,
+                                            text = stringResource(s.labelRes),
                                             selected = ruleSortType == s,
                                             onClick = {
                                                 handleItem(s)
@@ -249,9 +250,9 @@ fun AppConfigPage(route: AppConfigRoute) {
                                         )
                                     }
                                 }
-                                MenuGroupCard(title = "筛选") {
+                                MenuGroupCard(title = stringResource(R.string.app_list_filter_title)) {
                                     MenuItemCheckbox(
-                                        text = "未启用",
+                                        text = stringResource(R.string.common_disabled_state),
                                         stateFlow = vm.showDisabledRuleFlow,
                                     )
                                 }
@@ -274,7 +275,7 @@ fun AppConfigPage(route: AppConfigRoute) {
                     )
                 },
                 imageVector = PerfIcon.Add,
-                contentDescription = "添加规则"
+                contentDescription = li.songe.gkd.sdp.app.getString(R.string.rule_add_rule)
             )
         },
     ) { contentPadding ->

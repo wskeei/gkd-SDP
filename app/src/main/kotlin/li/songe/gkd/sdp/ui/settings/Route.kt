@@ -10,4 +10,4 @@ import androidx.compose.runtime.Composable
  * reaching into the section implementation directly.
  */
 @Composable
-fun useSettingsRoute(): ScaffoldExt = useSettingsPageSections()
+fun useSettingsRoute(): ScaffoldExt = useSettingsPageHost()

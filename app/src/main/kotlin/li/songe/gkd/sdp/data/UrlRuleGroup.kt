@@ -18,6 +18,7 @@ data class UrlRuleGroup(
     @PrimaryKey(autoGenerate = true)
     @ColumnInfo(name = "id") val id: Long = 0,
 
+    // i18n-ignore: legacy fallback or non-display heuristic data
     @ColumnInfo(name = "name") val name: String,  // 组名，如"视频网站"
 
     @ColumnInfo(name = "enabled") val enabled: Boolean = true,
@@ -67,5 +68,8 @@ data class UrlRuleGroup(
 
         @Query("UPDATE url_rule_group SET enabled = 1 WHERE enabled = 0")
         suspend fun enableAllDisabled(): Int
+
+        @Query("DELETE FROM url_rule_group")
+        suspend fun deleteAll(): Int
     }
 }

@@ -37,6 +37,7 @@ import li.songe.gkd.sdp.diagnostics.DiagnosticResult
 import li.songe.gkd.sdp.diagnostics.DiagnosticStage
 import li.songe.gkd.sdp.data.selfAppInfo
 import li.songe.gkd.sdp.notif.initChannel
+import li.songe.gkd.sdp.performance.DebugRuntimeChecks
 import li.songe.gkd.sdp.service.AutoReenableEnforcer
 import li.songe.gkd.sdp.service.clearHttpSubs
 import li.songe.gkd.sdp.service.initA11yWhiteAppList
@@ -230,6 +231,7 @@ class App : Application() {
                 scope = appScope,
             )
         )
+        DebugRuntimeChecks.enable()
         LogUtils.d()
         Thread.setDefaultUncaughtExceptionHandler { t, e ->
             LogUtils.d("UncaughtExceptionHandler", t, e)

@@ -36,7 +36,6 @@ import li.songe.gkd.sdp.store.createTextFlow
 import li.songe.gkd.sdp.store.storeFlow
 import li.songe.gkd.sdp.ui.AdvancedPageRoute
 import li.songe.gkd.sdp.ui.ActionLogRoute
-import li.songe.gkd.sdp.ui.AppOpsAllowRoute
 import li.songe.gkd.sdp.ui.CrashReportRoute
 import li.songe.gkd.sdp.ui.FocusLockRoute
 import li.songe.gkd.sdp.ui.SnapshotPageRoute
@@ -44,6 +43,7 @@ import li.songe.gkd.sdp.ui.UsageGuardReviewRoute
 import li.songe.gkd.sdp.ui.UsageGuardRoute
 import li.songe.gkd.sdp.ui.WebViewRoute
 import li.songe.gkd.sdp.ui.CrashReportRepository
+import li.songe.gkd.sdp.ui.capability.CapabilityCenterRoute
 import li.songe.gkd.sdp.ui.component.AlertDialogOptions
 import li.songe.gkd.sdp.ui.component.InputSubsLinkOption
 import li.songe.gkd.sdp.ui.component.RuleGroupState
@@ -202,7 +202,13 @@ class MainViewModel(
                 order = if (subItems.isEmpty()) 1 else (subItems.maxBy { it.order }.order + 1)
             )
             updateSubscription(newSubsRaw, newItem)
-            toast(if (oldItem == null) "成功添加订阅" else "成功修改订阅")
+            toast(
+                if (oldItem == null) {
+                    li.songe.gkd.sdp.app.getString(R.string.main_subscription_added)
+                } else {
+                    li.songe.gkd.sdp.app.getString(R.string.main_subscription_updated)
+                },
+            )
         } finally {
             addOrModifySubsMutex.unlock()
         }
@@ -219,27 +225,24 @@ class MainViewModel(
         }
     }
 
-    val resetPageScrollEvent = MutableSharedFlow<BottomNavItem>()
-    private var lastClickTabTime = 0L
+    val resetPageScrollEvent = MutableSharedFlow<HomeDestination>()
     fun handleClickDestination(destination: HomeDestination) {
-        val t = System.currentTimeMillis()
         val currentTab = (backStack.firstOrNull() as? HomeRoute)?.tabKey
-        if (destination.key == currentTab && t - lastClickTabTime < 500) {
-            viewModelScope.launch { resetPageScrollEvent.emit(BottomNavItem.Control) }
+        if (destination.key == currentTab) {
+            viewModelScope.launch { resetPageScrollEvent.emit(destination) }
+        } else {
+            navigator.navigateHome(destination.key)
         }
-        navigator.navigateHome(destination.key)
-        lastClickTabTime = t
     }
 
     fun handleClickTab(navItem: BottomNavItem) {
-        val t = System.currentTimeMillis()
-        val currentTab = (backStack.firstOrNull() as? HomeRoute)?.tabKey
-        // double click
-        if (navItem.key == currentTab && t - lastClickTabTime < 500) {
-            viewModelScope.launch { resetPageScrollEvent.emit(navItem) }
-        }
-        navigator.navigateHome(navItem.key)
-        lastClickTabTime = t
+        handleClickDestination(
+            when (navItem) {
+                BottomNavItem.Control -> HomeDestination.OVERVIEW
+                BottomNavItem.SubsManage, BottomNavItem.AppList -> HomeDestination.RULES
+                BottomNavItem.Settings -> HomeDestination.SETTINGS
+            }
+        )
     }
 
     fun handleGkdUri(uri: Uri) {
@@ -249,7 +252,7 @@ class MainViewModel(
             DeepLinkParseResult.Invalid -> when (WebOriginPolicy.legacyDeepLinkTarget(uri.toString())) {
                 li.songe.gkd.sdp.remote.LegacyDeepLinkTarget.ADVANCED -> navigatePage(AdvancedPageRoute)
                 li.songe.gkd.sdp.remote.LegacyDeepLinkTarget.SNAPSHOT -> navigatePage(SnapshotPageRoute)
-                li.songe.gkd.sdp.remote.LegacyDeepLinkTarget.APP_OPS -> navigatePage(AppOpsAllowRoute)
+                li.songe.gkd.sdp.remote.LegacyDeepLinkTarget.CAPABILITY_CENTER -> navigatePage(CapabilityCenterRoute)
                 li.songe.gkd.sdp.remote.LegacyDeepLinkTarget.WECHAT_SCANNER -> openWeChatScaner()
                 else -> notFoundToast()
             }
@@ -380,7 +383,7 @@ class MainViewModel(
                 } else {
                     RawSubscription(
                         id = LOCAL_SUBS_ID,
-                        name = "本地订阅",
+                        name = li.songe.gkd.sdp.app.getString(R.string.local_subscription_name),
                         version = 0,
                     )
                 }
@@ -412,6 +415,7 @@ class MainViewModel(
                 try {
                     json.decodeFromString<CrashData>(it.readText())
                 } catch (e: Exception) {
+                    // i18n-ignore: legacy fallback or non-display heuristic data
                     LogUtils.d("解析崩溃日志失败: ${it.name}", e)
                     null
                 }

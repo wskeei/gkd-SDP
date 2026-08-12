@@ -118,6 +118,17 @@ plugins {
     alias(libs.plugins.baselineprofile)
 }
 
+val koverIncludes = rootProject.file("config/quality/kover-includes.txt")
+    .readLines()
+    .map(String::trim)
+    .filter { it.isNotEmpty() && !it.startsWith("#") }
+    .distinct()
+val koverExcludes = rootProject.file("config/quality/kover-excludes.txt")
+    .readLines()
+    .map(String::trim)
+    .filter { it.isNotEmpty() && !it.startsWith("#") }
+    .distinct()
+
 android {
     namespace = rootProject.ext["android.namespace"].toString()
     compileSdk = rootProject.ext["android.compileSdk"] as Int
@@ -257,27 +268,10 @@ android {
         reports {
             filters {
                 includes {
-                    classes(
-                        "li.songe.gkd.sdp.capability.*",
-                        "li.songe.gkd.sdp.settings.*",
-                        "li.songe.gkd.sdp.usage.*",
-                        "li.songe.gkd.sdp.runtime.*",
-                        "li.songe.gkd.sdp.util.*Policy*",
-                        "li.songe.gkd.sdp.remote.*Policy*",
-                        "li.songe.gkd.sdp.store.*Policy*",
-                        "li.songe.gkd.sdp.privacy.DataDeletionCoordinator*",
-                    )
+                    classes(*koverIncludes.toTypedArray())
                 }
                 excludes {
-                    classes(
-                        "androidx.compose.**",
-                        "li.songe.gkd.sdp.ui.**",
-                        "li.songe.gkd.sdp.service.**",
-                        "li.songe.gkd.sdp.receiver.**",
-                        "li.songe.gkd.sdp.widget.**",
-                        "li.songe.gkd.sdp.db.**",
-                        "li.songe.gkd.sdp.data.**",
-                    )
+                    classes(*koverExcludes.toTypedArray())
                 }
             }
             verify {

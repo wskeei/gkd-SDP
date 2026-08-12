@@ -23,7 +23,7 @@ import li.songe.gkd.sdp.R
 data class FetchState(
     val isFetching: Boolean = false,
     val fetchedCount: Int = 0,
-    val statusText: String = "准备中...",
+    val statusText: String = "",
     val currentTarget: String? = null
 )
 
@@ -32,8 +32,11 @@ object WechatContactFetcher {
     private const val WECHAT_PACKAGE = "com.tencent.mm"
 
     private val BLACK_LIST = setOf(
+        // i18n-ignore: legacy fallback or non-display heuristic data
         "新的朋友", "仅聊天的朋友", "群聊", "标签", "公众号", "服务号",
+        // i18n-ignore: legacy fallback or non-display heuristic data
         "企业微信联系人", "企业微信通知", "我的企业及企业联系人",
+        // i18n-ignore: legacy fallback or non-display heuristic data
         "微信团队", "文件传输助手"
     )
 
@@ -51,7 +54,13 @@ object WechatContactFetcher {
     private val processedNodes = mutableSetOf<String>()
     private val failedAttempts = mutableMapOf<String, Int>()
 
-    private fun updateStatus(text: String? = null, target: String? = null, count: Int? = null, fetching: Boolean? = null) {
+    private fun updateStatus(
+        text: String? = null,
+        target: String? = null,
+        count: Int? = null,
+        fetching: Boolean? = null,
+        showToast: Boolean = false,
+    ) {
         fetchStateFlow.update { currentState ->
             currentState.copy(
                 isFetching = fetching ?: currentState.isFetching,
@@ -71,7 +80,7 @@ object WechatContactFetcher {
         if (target != null) {
             toast(li.songe.gkd.sdp.app.getString(R.string.s_0cc07c757c, (target).toString()))
         }
-        if (text != null && (text.contains("失败") || text.contains("完成") || text.contains("停止"))) {
+        if (showToast && text != null) {
             toast(text)
         }
     }
@@ -84,7 +93,11 @@ object WechatContactFetcher {
 
         service = accessibilityService
         isFetching = true
-        updateStatus(text = "准备开始抓取...", count = 0, fetching = true)
+        updateStatus(
+            text = li.songe.gkd.sdp.app.getString(R.string.contact_fetch_starting),
+            count = 0,
+            fetching = true,
+        )
         
         fetchedContacts.clear()
         fetchCount = 0
@@ -105,7 +118,7 @@ object WechatContactFetcher {
         appScope.launch(Dispatchers.IO) {
             try {
                 toast(li.songe.gkd.sdp.app.getString(R.string.s_439ce2d1bb))
-                updateStatus("等待进入微信通讯录...")
+                updateStatus(li.songe.gkd.sdp.app.getString(R.string.contact_fetch_wait_contacts))
 
                 // 等待用户打开通讯录
                 delay(3000)
@@ -133,7 +146,7 @@ object WechatContactFetcher {
 
             // 检查是否在通讯录页面
             if (!isInContactsPage(rootNode)) {
-                updateStatus("请打开微信通讯录页面")
+                updateStatus(li.songe.gkd.sdp.app.getString(R.string.contact_fetch_open_contacts))
                 delay(2000)
                 continue
             }
@@ -162,7 +175,13 @@ object WechatContactFetcher {
                 
                 if (nodeId in processedNodes) continue
 
-                updateStatus("正在抓取第 ${fetchCount + 1} 个联系人...", count = fetchCount)
+                updateStatus(
+                    li.songe.gkd.sdp.app.getString(
+                        R.string.contact_fetch_fetching,
+                        fetchCount + 1,
+                    ),
+                    count = fetchCount,
+                )
 
                 val success = processSingleContact(node)
                 
@@ -176,7 +195,9 @@ object WechatContactFetcher {
                     if (fails < 2) {
                         failedAttempts[nodeText] = fails + 1
                         LogUtils.d(TAG, "Fetch failed for $nodeText, attempting micro-scroll retry ($fails/2)")
-                        updateStatus("抓取失败，微调位置重试...")
+                        updateStatus(
+                            li.songe.gkd.sdp.app.getString(R.string.contact_fetch_retry_adjust),
+                        )
                         performMicroScroll(rootNode)
                         delay(800)
                         // 中断当前循环，重新扫描屏幕以获取新位置的节点
@@ -184,7 +205,10 @@ object WechatContactFetcher {
                     } else {
                         LogUtils.d(TAG, "Fetch failed for $nodeText after retries, skipping")
                         processedNodes.add(nodeId) // 放弃，标记为已处理
-                        updateStatus("重试失败，跳过此人", count = fetchCount)
+                        updateStatus(
+                            li.songe.gkd.sdp.app.getString(R.string.contact_fetch_retry_skip),
+                            count = fetchCount,
+                        )
                         delay(1000)
                     }
                 }
@@ -291,7 +315,10 @@ object WechatContactFetcher {
                 updateStatus(count = fetchCount, target = contact.displayName)
                 LogUtils.d("$TAG: Fetched contact: ${contact.displayName} (${contact.wechatId})")
             } else {
-                updateStatus("未找到微信号，跳过...", count = fetchCount)
+                updateStatus(
+                    li.songe.gkd.sdp.app.getString(R.string.contact_fetch_no_wechat_id_skip),
+                    count = fetchCount,
+                )
                 LogUtils.d("$TAG: Failed to extract info (no wechatId found)")
                 delay(1500) // 让用户看清错误提示
             }
@@ -314,9 +341,13 @@ object WechatContactFetcher {
 
     private fun isInDetailPage(root: AccessibilityNodeInfo): Boolean {
         // 特征：存在"发消息"、"音视频通话"、"个人信息"等
+        // i18n-ignore: heuristic node text
         if (root.findAccessibilityNodeInfosByText("发消息").isNotEmpty()) return true
+        // i18n-ignore: legacy fallback or non-display heuristic data
         if (root.findAccessibilityNodeInfosByText("音视频通话").isNotEmpty()) return true
+        // i18n-ignore: legacy fallback or non-display heuristic data
         if (root.findAccessibilityNodeInfosByText("微信号").isNotEmpty()) return true
+        // i18n-ignore: legacy fallback or non-display heuristic data
         if (root.findAccessibilityNodeInfosByText("添加到通讯录").isNotEmpty()) return true
         // 地区也是一个特征，但可能太通用？结合前面几项应该够了。
         return false
@@ -370,9 +401,11 @@ object WechatContactFetcher {
 
     private fun isAtBottom(root: AccessibilityNodeInfo): Boolean {
         // Check for "X位联系人"
+        // i18n-ignore: heuristic node text
         val nodes = root.findAccessibilityNodeInfosByText("位联系人")
         for (node in nodes) {
             val text = node.text?.toString() ?: continue
+            // i18n-ignore: legacy fallback or non-display heuristic data
             if (text.matches(Regex("^\\d+位联系人$"))) {
                 return true
             }
@@ -382,6 +415,7 @@ object WechatContactFetcher {
 
     private fun isInContactsPage(rootNode: AccessibilityNodeInfo): Boolean {
         // 检查是否在通讯录页面（通过查找特征控件）
+        // i18n-ignore: heuristic node text
         val nodes = rootNode.findAccessibilityNodeInfosByText("通讯录")
         return nodes.isNotEmpty()
     }
@@ -509,7 +543,9 @@ object WechatContactFetcher {
         LogUtils.d(TAG, "Detail Page Content Dump: $allText")
 
         // 策略1: 查找包含"微信号"的节点
+        // i18n-ignore: heuristic node text
         val nodes = rootNode.findAccessibilityNodeInfosByText("微信号")
+        // i18n-ignore: legacy fallback or non-display heuristic data
         LogUtils.d(TAG, "Found '微信号' nodes: ${nodes.size}")
         
         for (node in nodes) {
@@ -517,7 +553,9 @@ object WechatContactFetcher {
             LogUtils.d(TAG, "Checking node: text='$text', contentDesc='${node.contentDescription}'")
             
             // 情况A: 文本是 "微信号: wxid_xxx"
+            // i18n-ignore: heuristic node text
             if (text != null && text.contains("微信号") && text.length > 4) {
+                // i18n-ignore: legacy fallback or non-display heuristic data
                 val id = text.substringAfter("微信号").replace(":", "").trim()
                 LogUtils.d(TAG, "Candidate from text: '$id'")
                 if (isValidWechatId(id)) return id
@@ -531,6 +569,7 @@ object WechatContactFetcher {
                     val sibling = parent.getChild(i) ?: continue
                     val siblingText = sibling.text?.toString()
                     LogUtils.d(TAG, "  Sibling $i: '$siblingText'")
+                    // i18n-ignore: legacy fallback or non-display heuristic data
                     if (siblingText != null && siblingText != "微信号" && siblingText.isNotBlank() && isValidWechatId(siblingText)) {
                         LogUtils.d(TAG, "Found ID in sibling: '$siblingText'")
                         return siblingText.trim()
@@ -562,6 +601,7 @@ object WechatContactFetcher {
 
     private fun isValidWechatId(text: String): Boolean {
         // 排除常见干扰词
+        // i18n-ignore: heuristic node text
         if (text.contains("地区") || text.contains("昵称") || text.contains("来源")) return false
         // 微信号通常是 wxid_ 开头，或者 6-20位，支持减号和下划线
         // 简单正则：包含字母或数字，且长度合适
@@ -574,8 +614,10 @@ object WechatContactFetcher {
         val text = node.text?.toString()
         if (text != null) {
             // 策略A: 文本包含 "微信号" (处理 "微信号: xxx" 在同一节点的情况)
+            // i18n-ignore: heuristic node text
             if (text.contains("微信号")) {
                 // 提取冒号后面的部分
+                // i18n-ignore: heuristic node text
                 val candidate = text.substringAfter("微信号").replace(":", "").replace("：", "").trim()
                 if (isValidWechatId(candidate)) {
                     LogUtils.d(TAG, "Regex scan found via prefix: '$candidate' (origin: '$text')")
@@ -616,15 +658,20 @@ object WechatContactFetcher {
             if (text.isEmpty()) continue
             
             // 排除系统关键词
+            // i18n-ignore: heuristic node text
             if (text == "返回" || text == "更多" || text == "朋友资料" || text == "详细资料") continue
+            // i18n-ignore: legacy fallback or non-display heuristic data
             if (text.startsWith("微信号")) continue
+            // i18n-ignore: legacy fallback or non-display heuristic data
             if (text.startsWith("地区")) continue
+            // i18n-ignore: legacy fallback or non-display heuristic data
             if (text == "发消息" || text == "音视频通话") continue
             
             // 排除长文本 (功能描述)
             if (text.length > 40) continue 
             
             // 排除包含"添加朋友"的提示文本
+            // i18n-ignore: heuristic node text
             if (text.contains("添加朋友") || text.contains("设置朋友权限")) continue
 
             // 找到了! (按顺序，第一个非排除项通常就是标题/昵称)
@@ -636,12 +683,14 @@ object WechatContactFetcher {
 
     private fun findRemark(rootNode: AccessibilityNodeInfo): String? {
         // 查找包含"备注"的节点
+        // i18n-ignore: heuristic node text
         val nodes = rootNode.findAccessibilityNodeInfosByText("备注")
         for (node in nodes) {
             val parent = node.parent ?: continue
             for (i in 0 until parent.childCount) {
                 val sibling = parent.getChild(i) ?: continue
                 val text = sibling.text?.toString() ?: continue
+                // i18n-ignore: legacy fallback or non-display heuristic data
                 if (text != "备注" && text.isNotBlank()) {
                     return text.trim()
                 }
@@ -675,10 +724,19 @@ object WechatContactFetcher {
             // 保存到数据库
             DbSet.wechatContactDao.insertAll(fetchedContacts)
             toast(li.songe.gkd.sdp.app.getString(R.string.s_375b87905f, (fetchedContacts.size).toString()))
-            updateStatus("抓取完成：${fetchedContacts.size} 个联系人")
+            updateStatus(
+                li.songe.gkd.sdp.app.getString(
+                    R.string.contact_fetch_completed,
+                    fetchedContacts.size,
+                ),
+                showToast = true,
+            )
         } else {
             toast(li.songe.gkd.sdp.app.getString(R.string.s_464d02f662))
-            updateStatus("未抓取到联系人")
+            updateStatus(
+                li.songe.gkd.sdp.app.getString(R.string.contact_fetch_none),
+                showToast = true,
+            )
         }
 
         // Delay slightly to let user see "Finished" status
@@ -694,7 +752,11 @@ object WechatContactFetcher {
 
     fun stopFetch() {
         isFetching = false
-        updateStatus(text = "已停止抓取", fetching = false)
+        updateStatus(
+            text = li.songe.gkd.sdp.app.getString(R.string.contact_fetch_stopped),
+            fetching = false,
+            showToast = true,
+        )
         FetchOverlayController.hide()
         collectJob?.cancel()
         collectJob = null

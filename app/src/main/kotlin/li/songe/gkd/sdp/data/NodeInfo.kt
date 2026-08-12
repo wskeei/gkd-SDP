@@ -79,6 +79,7 @@ fun info2nodeList(root: AccessibilityNodeInfo?): List<NodeInfo> {
                 // https://github.com/gkd-kit/gkd/issues/28
                 toast(li.songe.gkd.sdp.app.getString(R.string.s_e073a2b7df, (MAX_KEEP_SIZE).toString()))
                 LogUtils.d(
+                    // i18n-ignore: legacy fallback or non-display heuristic data
                     "节点数量过多",
                     root.packageName,
                     topActivityFlow.value.activityId,
@@ -206,7 +207,9 @@ fun info2nodeList(root: AccessibilityNodeInfo?): List<NodeInfo> {
 
     LogUtils.d(
         topActivityFlow.value,
+        // i18n-ignore: legacy fallback or non-display heuristic data
         "快照节点数量:${nodes.size}, 总耗时:${collectTime + qfTime}ms",
+        // i18n-ignore: legacy fallback or non-display heuristic data
         "收集节点耗时:${collectTime}ms, 收集 fastQuery 耗时:${qfTime}ms",
     )
 

@@ -16,6 +16,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -92,9 +93,9 @@ fun CrashReportPage() {
             verticalArrangement = Arrangement.spacedBy(DimensionTokens.SpacingMd)
         ) {
             if (vm.crashDataList.isNotEmpty()) {
-                vm.crashSummaries.forEach { crashSummary ->
+                vm.crashDataList.forEach { crash ->
                     CopyTextCard(
-                        text = crashSummary,
+                        text = crash.summaryText(LocalContext.current),
                         modifier = Modifier.padding(horizontal = 8.dp),
                     )
                 }

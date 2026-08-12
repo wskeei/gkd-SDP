@@ -1,5 +1,8 @@
 package li.songe.gkd.sdp.capability
 
+import androidx.compose.runtime.Immutable
+import li.songe.gkd.sdp.R
+
 /** The capability nodes of the runtime capability center. */
 enum class CapabilityId {
     RUNTIME_MODE,
@@ -39,14 +42,15 @@ enum class CapabilityActionTarget {
 }
 
 data class CapabilityAction(
-    val label: String,
+    val labelRes: Int,
     val target: CapabilityActionTarget,
 )
 
+@Immutable
 data class CapabilityNode(
     val id: CapabilityId,
     val status: CapabilityStatus,
-    val summary: String,
+    val summaryRes: Int,
     val primaryAction: CapabilityAction? = null,
 )
 
@@ -82,9 +86,9 @@ object CapabilityResolver {
                 CapabilityNode(
                     id = CapabilityId.RUNTIME_MODE,
                     status = CapabilityStatus.ACTION_REQUIRED,
-                    summary = "请选择运行模式",
+                    summaryRes = R.string.capability_choose_mode_summary,
                     primaryAction = CapabilityAction(
-                        label = "选择无障碍模式",
+                        labelRes = R.string.capability_choose_accessibility_action,
                         target = CapabilityActionTarget.SET_MODE_ACCESSIBILITY,
                     ),
                 )
@@ -93,16 +97,16 @@ object CapabilityResolver {
                 CapabilityNode(
                     id = CapabilityId.RUNTIME_MODE,
                     status = CapabilityStatus.ACTIVE,
-                    summary = "无障碍模式运行中",
+                    summaryRes = R.string.capability_accessibility_running,
                 )
 
             mode == RuntimeModeChoice.ACCESSIBILITY ->
                 CapabilityNode(
                     id = CapabilityId.RUNTIME_MODE,
                     status = CapabilityStatus.ACTION_REQUIRED,
-                    summary = "需要开启无障碍服务",
+                    summaryRes = R.string.capability_accessibility_required,
                     primaryAction = CapabilityAction(
-                        label = "前往系统设置开启",
+                        labelRes = R.string.capability_open_system_settings,
                         target = CapabilityActionTarget.OPEN_A11Y_SETTINGS,
                     ),
                 )
@@ -111,16 +115,16 @@ object CapabilityResolver {
                 CapabilityNode(
                     id = CapabilityId.RUNTIME_MODE,
                     status = CapabilityStatus.ACTIVE,
-                    summary = "自动化模式（Shizuku）运行中",
+                    summaryRes = R.string.capability_automation_running,
                 )
 
             else ->
                 CapabilityNode(
                     id = CapabilityId.RUNTIME_MODE,
                     status = CapabilityStatus.ACTION_REQUIRED,
-                    summary = "需要授权 Shizuku",
+                    summaryRes = R.string.capability_shizuku_required,
                     primaryAction = CapabilityAction(
-                        label = "打开 Shizuku 授权",
+                        labelRes = R.string.capability_open_shizuku,
                         target = CapabilityActionTarget.OPEN_SHIZUKU,
                     ),
                 )
@@ -128,89 +132,161 @@ object CapabilityResolver {
 
         // 2. overlay
         nodes += if (input.overlayReady) {
-            CapabilityNode(CapabilityId.OVERLAY, CapabilityStatus.READY, "悬浮窗权限已就绪")
+            CapabilityNode(
+                CapabilityId.OVERLAY,
+                CapabilityStatus.READY,
+                R.string.capability_overlay_ready,
+            )
         } else {
             CapabilityNode(
                 CapabilityId.OVERLAY,
                 CapabilityStatus.ACTION_REQUIRED,
-                "使用申请、拦截与倒计时需要悬浮窗权限",
-                CapabilityAction("前往系统设置开启", CapabilityActionTarget.OPEN_OVERLAY_SETTINGS),
+                R.string.capability_overlay_required,
+                CapabilityAction(
+                    R.string.capability_open_overlay_settings,
+                    CapabilityActionTarget.OPEN_OVERLAY_SETTINGS,
+                ),
             )
         }
 
         // 3. notification
         nodes += if (input.notificationReady) {
-            CapabilityNode(CapabilityId.NOTIFICATION, CapabilityStatus.READY, "通知权限已就绪")
+            CapabilityNode(
+                CapabilityId.NOTIFICATION,
+                CapabilityStatus.READY,
+                R.string.capability_notification_ready,
+            )
         } else {
             CapabilityNode(
                 CapabilityId.NOTIFICATION,
                 CapabilityStatus.ACTION_REQUIRED,
-                "前台服务与守护提醒需要通知权限",
-                CapabilityAction("前往系统设置开启", CapabilityActionTarget.OPEN_NOTIFICATION_SETTINGS),
+                R.string.capability_notification_required,
+                CapabilityAction(
+                    R.string.capability_open_notification_settings,
+                    CapabilityActionTarget.OPEN_NOTIFICATION_SETTINGS,
+                ),
             )
         }
 
         // 4. battery exemption: recommended, not blocking
         nodes += if (input.batteryExempted) {
-            CapabilityNode(CapabilityId.BATTERY_EXEMPTION, CapabilityStatus.ACTIVE, "已加入电池优化白名单")
+            CapabilityNode(
+                CapabilityId.BATTERY_EXEMPTION,
+                CapabilityStatus.ACTIVE,
+                R.string.capability_battery_active,
+            )
         } else {
             CapabilityNode(
                 CapabilityId.BATTERY_EXEMPTION,
                 CapabilityStatus.LIMITED,
-                "未加入电池优化白名单（推荐，不阻断使用）",
-                CapabilityAction("前往系统设置", CapabilityActionTarget.OPEN_BATTERY_SETTINGS),
+                R.string.capability_battery_limited,
+                CapabilityAction(
+                    R.string.capability_open_battery_settings,
+                    CapabilityActionTarget.OPEN_BATTERY_SETTINGS,
+                ),
             )
         }
 
         // 5. shizuku: only needed in Automation mode
         nodes += when {
             mode == null ->
-                CapabilityNode(CapabilityId.SHIZUKU, CapabilityStatus.READY, "选择自动化模式后需要 Shizuku")
+                CapabilityNode(
+                    CapabilityId.SHIZUKU,
+                    CapabilityStatus.READY,
+                    R.string.capability_shizuku_after_mode,
+                )
 
             mode == RuntimeModeChoice.ACCESSIBILITY ->
-                CapabilityNode(CapabilityId.SHIZUKU, CapabilityStatus.UNAVAILABLE, "无障碍模式不需要 Shizuku")
+                CapabilityNode(
+                    CapabilityId.SHIZUKU,
+                    CapabilityStatus.UNAVAILABLE,
+                    R.string.capability_shizuku_not_needed_accessibility,
+                )
 
             input.shizukuReady ->
-                CapabilityNode(CapabilityId.SHIZUKU, CapabilityStatus.ACTIVE, "Shizuku 已授权")
+                CapabilityNode(
+                    CapabilityId.SHIZUKU,
+                    CapabilityStatus.ACTIVE,
+                    R.string.capability_shizuku_authorized,
+                )
 
             else ->
                 CapabilityNode(
                     CapabilityId.SHIZUKU,
                     CapabilityStatus.ACTION_REQUIRED,
-                    "自动化模式需要 Shizuku 授权",
-                    CapabilityAction("打开 Shizuku 授权", CapabilityActionTarget.OPEN_SHIZUKU),
+                    R.string.capability_shizuku_automation_required,
+                    CapabilityAction(
+                        R.string.capability_open_shizuku,
+                        CapabilityActionTarget.OPEN_SHIZUKU,
+                    ),
                 )
         }
 
         // 6. a11y guard: gkd/A11y scenario only; locked guard cannot be disabled
         nodes += when {
             !input.isGkdFlavor ->
-                CapabilityNode(CapabilityId.A11Y_GUARD, CapabilityStatus.UNAVAILABLE, "此版本不适用")
+                CapabilityNode(
+                    CapabilityId.A11Y_GUARD,
+                    CapabilityStatus.UNAVAILABLE,
+                    R.string.capability_guard_not_applicable,
+                )
+
+            mode == null ->
+                CapabilityNode(
+                    CapabilityId.A11Y_GUARD,
+                    CapabilityStatus.UNAVAILABLE,
+                    R.string.capability_guard_after_mode,
+                )
+
+            mode != RuntimeModeChoice.ACCESSIBILITY ->
+                CapabilityNode(
+                    CapabilityId.A11Y_GUARD,
+                    CapabilityStatus.UNAVAILABLE,
+                    R.string.capability_guard_automation_not_applicable,
+                )
 
             input.selfControlLocked && input.a11yGuardEnabled ->
-                CapabilityNode(CapabilityId.A11Y_GUARD, CapabilityStatus.ACTIVE, "守护已开启（锁定保护生效中，不可关闭）")
+                CapabilityNode(
+                    CapabilityId.A11Y_GUARD,
+                    CapabilityStatus.ACTIVE,
+                    R.string.capability_guard_locked,
+                )
 
             input.a11yGuardEnabled ->
-                CapabilityNode(CapabilityId.A11Y_GUARD, CapabilityStatus.ACTIVE, "无障碍守护已开启")
+                CapabilityNode(
+                    CapabilityId.A11Y_GUARD,
+                    CapabilityStatus.ACTIVE,
+                    R.string.capability_guard_active,
+                )
 
             else ->
                 CapabilityNode(
                     CapabilityId.A11Y_GUARD,
                     CapabilityStatus.READY,
-                    "无障碍守护可在无障碍服务关闭时先行开启",
-                    CapabilityAction("开启守护", CapabilityActionTarget.TOGGLE_A11Y_GUARD),
+                    R.string.capability_guard_ready,
+                    CapabilityAction(
+                        R.string.capability_guard_enable,
+                        CapabilityActionTarget.TOGGLE_A11Y_GUARD,
+                    ),
                 )
         }
 
         // 7. app list access
         nodes += if (input.appListReady) {
-            CapabilityNode(CapabilityId.APP_LIST_ACCESS, CapabilityStatus.READY, "应用列表权限已就绪")
+            CapabilityNode(
+                CapabilityId.APP_LIST_ACCESS,
+                CapabilityStatus.READY,
+                R.string.capability_app_list_ready,
+            )
         } else {
             CapabilityNode(
                 CapabilityId.APP_LIST_ACCESS,
                 CapabilityStatus.ACTION_REQUIRED,
-                "应用选择与应用拦截需要应用列表权限",
-                CapabilityAction("前往系统设置开启", CapabilityActionTarget.OPEN_APP_LIST_SETTINGS),
+                R.string.capability_app_list_required,
+                CapabilityAction(
+                    R.string.capability_open_app_list_settings,
+                    CapabilityActionTarget.OPEN_APP_LIST_SETTINGS,
+                ),
             )
         }
 

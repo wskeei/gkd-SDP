@@ -35,7 +35,6 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -53,8 +52,6 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogProperties
-import androidx.lifecycle.viewModelScope
-import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -70,17 +67,7 @@ import li.songe.gkd.sdp.backup.BackupErrorCode
 import li.songe.gkd.sdp.backup.BackupResult
 import li.songe.gkd.sdp.backup.PreparedBackupImport
 import li.songe.gkd.sdp.backup.BackupSourceFormat
-import li.songe.gkd.sdp.permission.canDrawOverlaysState
-import li.songe.gkd.sdp.permission.foregroundServiceSpecialUseState
-import li.songe.gkd.sdp.permission.ignoreBatteryOptimizationsState
-import li.songe.gkd.sdp.permission.notificationState
-import li.songe.gkd.sdp.permission.requiredPermission
-import li.songe.gkd.sdp.service.StatusService
-import li.songe.gkd.sdp.service.TrackService
-import li.songe.gkd.sdp.service.fixRestartAutomatorService
-import li.songe.gkd.sdp.shizuku.shizukuContextFlow
 import li.songe.gkd.sdp.settings.SettingsFormPolicy
-import li.songe.gkd.sdp.store.storeFlow
 import li.songe.gkd.sdp.ui.AboutRoute
 import li.songe.gkd.sdp.ui.AdvancedPageRoute
 import li.songe.gkd.sdp.ui.BlockA11yAppListRoute
@@ -99,27 +86,10 @@ import li.songe.gkd.sdp.ui.component.autoFocus
 import li.songe.gkd.sdp.ui.component.updateDialogOptions
 import li.songe.gkd.sdp.ui.component.useScrollBehaviorState
 import li.songe.gkd.sdp.ui.component.waitResult
-import li.songe.gkd.sdp.ui.share.LocalMainViewModel
-import li.songe.gkd.sdp.ui.share.asMutableState
 import li.songe.gkd.sdp.ui.style.EmptyHeight
 import li.songe.gkd.sdp.ui.style.iconTextSize
 import li.songe.gkd.sdp.ui.style.titleItemPadding
-import li.songe.gkd.sdp.util.AndroidTarget
-import li.songe.gkd.sdp.util.BackupUtils
-import li.songe.gkd.sdp.util.DarkThemeOption
-import li.songe.gkd.sdp.util.DisplayDensityOption
-import li.songe.gkd.sdp.util.FocusLockUtils
-import li.songe.gkd.sdp.util.LanguageOption
-import li.songe.gkd.sdp.util.findOption
-import li.songe.gkd.sdp.util.launchAsFn
-import li.songe.gkd.sdp.util.mapState
-import li.songe.gkd.sdp.util.openAppDetailsSettings
-import li.songe.gkd.sdp.util.ruleSummaryFlow
 import li.songe.gkd.sdp.util.throttle
-import li.songe.gkd.sdp.util.toast
-import li.songe.gkd.sdp.util.UriUtils
-import androidx.compose.runtime.MutableState
-import li.songe.gkd.sdp.MainViewModel
 import li.songe.gkd.sdp.store.SettingsStore
 import androidx.compose.ui.res.stringResource
 import li.songe.gkd.sdp.ui.style.DimensionTokens
@@ -127,22 +97,42 @@ import li.songe.gkd.sdp.ui.style.DimensionTokens
 @Composable
 internal fun SettingsTextDialogs(
     context: MainActivity,
-    mainVm: MainViewModel,
     store: SettingsStore,
-    showToastInputDlg: MutableState<Boolean>,
-    showNotifTextInputDlg: MutableState<Boolean>,
+    showToastInputDlg: Boolean,
+    showNotifTextInputDlg: Boolean,
+    onDismissToastInput: () -> Unit,
+    onConfirmToastInput: (String) -> Unit,
+    onShowToastHelp: () -> Unit,
+    onDismissNotifInput: () -> Unit,
+    onConfirmNotifInput: (String, String) -> Unit,
+    onShowNotifHelp: () -> Unit,
 ) {
-    SettingsToastDialog(mainVm, store, showToastInputDlg)
-    SettingsNotificationDialog(context, mainVm, store, showNotifTextInputDlg)
+    SettingsToastDialog(
+        store = store,
+        showToastInputDlg = showToastInputDlg,
+        onDismissToastInput = onDismissToastInput,
+        onConfirmToastInput = onConfirmToastInput,
+        onShowToastHelp = onShowToastHelp,
+    )
+    SettingsNotificationDialog(
+        context = context,
+        store = store,
+        showNotifTextInputDlg = showNotifTextInputDlg,
+        onDismissNotifInput = onDismissNotifInput,
+        onConfirmNotifInput = onConfirmNotifInput,
+        onShowNotifHelp = onShowNotifHelp,
+    )
 }
 
 @Composable
 private fun SettingsToastDialog(
-    mainVm: MainViewModel,
     store: SettingsStore,
-    showToastInputDlg: MutableState<Boolean>,
+    showToastInputDlg: Boolean,
+    onDismissToastInput: () -> Unit,
+    onConfirmToastInput: (String) -> Unit,
+    onShowToastHelp: () -> Unit,
 ) {
-    if (!showToastInputDlg.value) return
+    if (!showToastInputDlg) return
     var value by remember { mutableStateOf(store.actionToast) }
     val maxCharLen = 64
     AlertDialog(
@@ -152,18 +142,9 @@ private fun SettingsToastDialog(
                 Text(stringResource(R.string.s_5bf7ff408f))
                 PerfIconButton(
                     imageVector = PerfIcon.HelpOutline,
-                    contentDescription = "文案规则",
-                    onClickLabel = "打开文案规则弹窗",
-                    onClick = throttle {
-                        showToastInputDlg.value = false
-                        val confirmAction = { mainVm.dialogFlow.value = null; showToastInputDlg.value = true }
-                        mainVm.dialogFlow.updateDialogOptions(
-                            title = li.songe.gkd.sdp.app.getString(R.string.s_d88d6e6c25),
-                            text = li.songe.gkd.sdp.app.getString(R.string.s_1941b8aa85),
-                            confirmAction = confirmAction,
-                            onDismissRequest = confirmAction,
-                        )
-                    },
+                    contentDescription = stringResource(R.string.settings_copy_rules),
+                    onClickLabel = stringResource(R.string.settings_open_copy_rules),
+                    onClick = throttle(onShowToastHelp),
                 )
             }
         },
@@ -176,33 +157,39 @@ private fun SettingsToastDialog(
                 modifier = Modifier.fillMaxWidth().autoFocus(),
             )
         },
-        onDismissRequest = { showToastInputDlg.value = false },
+        onDismissRequest = onDismissToastInput,
         confirmButton = {
             TextButton(
                 enabled = value.isNotEmpty(),
-                onClick = {
-                    if (value != storeFlow.value.actionToast) {
-                        storeFlow.update { it.copy(actionToast = value) }
-                        toast(li.songe.gkd.sdp.app.getString(R.string.s_e2cff77372))
-                    }
-                    showToastInputDlg.value = false
-                },
+                onClick = { onConfirmToastInput(value) },
             ) { Text(stringResource(R.string.s_b56d9ac6c5)) }
         },
-        dismissButton = { TextButton(onClick = { showToastInputDlg.value = false }) { Text(stringResource(R.string.s_4d0b4688c7)) } },
+        dismissButton = {
+            TextButton(onClick = onDismissToastInput) {
+                Text(stringResource(R.string.s_4d0b4688c7))
+            }
+        },
     )
 }
 
 @Composable
 private fun SettingsNotificationDialog(
     context: MainActivity,
-    mainVm: MainViewModel,
     store: SettingsStore,
-    showNotifTextInputDlg: MutableState<Boolean>,
+    showNotifTextInputDlg: Boolean,
+    onDismissNotifInput: () -> Unit,
+    onConfirmNotifInput: (String, String) -> Unit,
+    onShowNotifHelp: () -> Unit,
 ) {
-    if (!showNotifTextInputDlg.value) return
+    if (!showNotifTextInputDlg) return
     var titleValue by remember { mutableStateOf(store.customNotifTitle) }
-    var textValue by remember { mutableStateOf(store.customNotifText) }
+    var textValue by remember {
+        mutableStateOf(
+            store.customNotifText.ifBlank {
+                context.getString(R.string.notif_custom_text_default)
+            },
+        )
+    }
     AlertDialog(
         properties = DialogProperties(dismissOnClickOutside = false),
         title = {
@@ -210,18 +197,9 @@ private fun SettingsNotificationDialog(
                 Text(stringResource(R.string.s_ce7c7d71a7))
                 PerfIconButton(
                     imageVector = PerfIcon.HelpOutline,
-                    contentDescription = "文案规则",
-                    onClickLabel = "打开文案规则弹窗",
-                    onClick = throttle {
-                        showNotifTextInputDlg.value = false
-                        val confirmAction = { mainVm.dialogFlow.value = null; showNotifTextInputDlg.value = true }
-                        mainVm.dialogFlow.updateDialogOptions(
-                            title = li.songe.gkd.sdp.app.getString(R.string.s_d88d6e6c25),
-                            text = li.songe.gkd.sdp.app.getString(R.string.s_3036ac5688),
-                            confirmAction = confirmAction,
-                            onDismissRequest = confirmAction,
-                        )
-                    },
+                    contentDescription = stringResource(R.string.settings_copy_rules),
+                    onClickLabel = stringResource(R.string.settings_open_copy_rules),
+                    onClick = throttle(onShowNotifHelp),
                 )
             }
         },
@@ -252,35 +230,41 @@ private fun SettingsNotificationDialog(
                 )
             }
         },
-        onDismissRequest = { showNotifTextInputDlg.value = false },
+        onDismissRequest = onDismissNotifInput,
         confirmButton = {
             TextButton(onClick = {
                 context.justHideSoftInput()
-                if (SettingsFormPolicy.notificationTextChanged(store.customNotifTitle, store.customNotifText, titleValue, textValue)) {
-                    storeFlow.update { it.copy(customNotifTitle = titleValue, customNotifText = textValue) }
-                    toast(li.songe.gkd.sdp.app.getString(R.string.s_e2cff77372))
-                }
-                showNotifTextInputDlg.value = false
+                onConfirmNotifInput(titleValue, textValue)
             }) { Text(stringResource(R.string.s_b56d9ac6c5)) }
         },
-        dismissButton = { TextButton(onClick = { showNotifTextInputDlg.value = false }) { Text(stringResource(R.string.s_4d0b4688c7)) } },
+        dismissButton = {
+            TextButton(onClick = onDismissNotifInput) {
+                Text(stringResource(R.string.s_4d0b4688c7))
+            }
+        },
     )
 }
 
 @Composable
-internal fun BlockA11yDialog(onDismissRequest: () -> Unit) = FullscreenDialog(onDismissRequest) {
-    val mainVm = LocalMainViewModel.current
-    val statusRunning by StatusService.isRunning.collectAsStateWithLifecycle()
-    val shizukuContext by shizukuContextFlow.collectAsStateWithLifecycle()
-    val ignoreBatteryOptimizations by ignoreBatteryOptimizationsState.stateFlow.collectAsStateWithLifecycle()
-    val context = LocalActivity.current as MainActivity
+internal fun BlockA11yDialog(
+    onDismissRequest: () -> Unit,
+    onConfirm: () -> Unit,
+    shizukuOk: Boolean,
+    statusRunning: Boolean,
+    ignoreBatteryOptimizations: Boolean,
+    onGuardShizuku: () -> Unit,
+    onRequestStatusService: () -> Unit,
+    onOpenBatterySettings: () -> Unit,
+    onOpenAppDetails: () -> Unit,
+    onSwitchRecentApps: () -> Unit,
+) = FullscreenDialog(onDismissRequest) {
     Scaffold(
         topBar = {
             PerfTopAppBar(
                 navigationIcon = {
                     PerfIconButton(
                         imageVector = PerfIcon.Close,
-                        onClickLabel = "关闭弹窗",
+                        onClickLabel = stringResource(R.string.dialog_close),
                         onClick = onDismissRequest,
                     )
                 },
@@ -293,12 +277,8 @@ internal fun BlockA11yDialog(onDismissRequest: () -> Unit) = FullscreenDialog(on
             BottomAppBar {
                 Spacer(modifier = Modifier.weight(1f))
                 TextButton(
-                    enabled = shizukuContext.ok && statusRunning && ignoreBatteryOptimizations,
-                    onClick = mainVm.viewModelScope.launchAsFn {
-                        onDismissRequest()
-                        delay(200)
-                        storeFlow.update { it.copy(enableBlockA11yAppList = true) }
-                    }
+                    enabled = shizukuOk && statusRunning && ignoreBatteryOptimizations,
+                    onClick = onConfirm,
                 ) {
                     Text(text = li.songe.gkd.sdp.app.getString(R.string.s_1fc1afc5c5))
                 }
@@ -320,9 +300,9 @@ internal fun BlockA11yDialog(onDismissRequest: () -> Unit) = FullscreenDialog(on
                 Column(
                     verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
-                    RequiredTextItem(text = "切换服务会造成短暂触摸卡顿，请自行测试后再编辑白名单")
-                    RequiredTextItem(text = "使用其它无障碍应用可能导致优化无效，可在服务关闭后自行确认")
-                    RequiredTextItem(text = "必须确保服务关闭后的持续后台运行，否则会被系统暂停或结束运行导致重启失败")
+                    RequiredTextItem(text = stringResource(R.string.block_a11y_warning_touch))
+                    RequiredTextItem(text = stringResource(R.string.block_a11y_warning_other_a11y))
+                    RequiredTextItem(text = stringResource(R.string.block_a11y_warning_background))
                 }
                 Spacer(modifier = Modifier.height(16.dp))
                 Text(text = li.songe.gkd.sdp.app.getString(R.string.s_b412fa069d), style = MaterialTheme.typography.titleMedium)
@@ -330,52 +310,37 @@ internal fun BlockA11yDialog(onDismissRequest: () -> Unit) = FullscreenDialog(on
                     verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
                     RequiredTextItem(
-                        text = "Shizuku 授权",
-                        enabled = !shizukuContext.ok,
-                        imageVector = if (shizukuContext.ok) PerfIcon.Check else PerfIcon.ArrowForward,
-                        onClick = mainVm.viewModelScope.launchAsFn(Dispatchers.IO) {
-                            mainVm.guardShizukuContext()
-                        },
+                        text = stringResource(R.string.block_a11y_require_shizuku),
+                        enabled = !shizukuOk,
+                        imageVector = if (shizukuOk) PerfIcon.Check else PerfIcon.ArrowForward,
+                        onClick = onGuardShizuku,
                     )
                     RequiredTextItem(
-                        text = "开启「常驻通知」",
+                        text = stringResource(R.string.block_a11y_require_notification),
                         enabled = !statusRunning,
                         imageVector = if (statusRunning) PerfIcon.Check else PerfIcon.ArrowForward,
-                        onClick = mainVm.viewModelScope.launchAsFn {
-                            StatusService.requestStart(context)
-                        },
+                        onClick = onRequestStatusService,
                     )
                     RequiredTextItem(
-                        text = "省电策略设置为无限制",
+                        text = stringResource(R.string.block_a11y_require_battery),
                         enabled = !ignoreBatteryOptimizations,
                         imageVector = if (ignoreBatteryOptimizations) PerfIcon.Check else PerfIcon.ArrowForward,
-                        onClickLabel = "打开忽略电池优化设置页面",
-                        onClick = mainVm.viewModelScope.launchAsFn {
-                            requiredPermission(context, ignoreBatteryOptimizationsState)
-                        },
+                        onClickLabel = stringResource(R.string.settings_open_battery_settings),
+                        onClick = onOpenBatterySettings,
                     )
                     RequiredTextItem(
-                        text = "(可选) 允许自启动",
+                        text = stringResource(R.string.block_a11y_optional_autostart),
                         enabled = true,
                         imageVector = PerfIcon.OpenInNew,
-                        onClickLabel = "打开应用详情页面",
-                        onClick = {
-                            openAppDetailsSettings()
-                        },
+                        onClickLabel = stringResource(R.string.settings_open_app_details),
+                        onClick = onOpenAppDetails,
                     )
                     RequiredTextItem(
-                        text = "(可选) 在「最近任务」锁定",
+                        text = stringResource(R.string.block_a11y_optional_recent_lock),
                         enabled = true,
                         imageVector = PerfIcon.OpenInNew,
-                        onClickLabel = "打开应用详情页面",
-                        onClick = {
-                            val m = shizukuContextFlow.value.inputManager
-                            if (m != null) {
-                                m.key(KeyEvent.KEYCODE_APP_SWITCH)
-                            } else {
-                                toast(li.songe.gkd.sdp.app.getString(R.string.s_7b29e9051a))
-                            }
-                        },
+                        onClickLabel = stringResource(R.string.settings_open_app_details),
+                        onClick = onSwitchRecentApps,
                     )
                 }
                 Spacer(modifier = Modifier.height(16.dp))

@@ -13,6 +13,7 @@ const val LOCAL_SUBS_ID = -2L
 const val LOCAL_HTTP_SUBS_ID = -1L
 val LOCAL_SUBS_IDS = arrayOf(LOCAL_SUBS_ID, LOCAL_HTTP_SUBS_ID)
 
+// i18n-ignore: legacy fallback or non-display heuristic data
 const val EMPTY_RULE_TIP = "暂无规则"
 
 object ShortUrlSet {

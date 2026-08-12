@@ -33,6 +33,13 @@ import li.songe.gkd.sdp.util.format
 import androidx.compose.ui.res.stringResource
 import li.songe.gkd.sdp.R
 
+data class LockDurationRequest(
+    val durationMinutes: Int,
+    val isCustom: Boolean,
+    val daysText: String,
+    val hoursText: String,
+)
+
 @Composable
 fun MindfulPauseSheet(
     target: PauseTarget,
@@ -41,7 +48,11 @@ fun MindfulPauseSheet(
     var enabled by remember { mutableStateOf(target.config?.enabled ?: target.initialEnabled) }
     // Cooldown is hardcoded to 10s by request
     val cooldown = 10
-    var message by remember { mutableStateOf(target.config?.message ?: "这真的重要吗？") }
+    var message by remember {
+        mutableStateOf(
+            target.config?.message ?: li.songe.gkd.sdp.app.getString(R.string.common_default_intercept_message),
+        )
+    }
 
     val isBatch = target.groupKey == null
 
@@ -110,10 +121,13 @@ fun MindfulPauseSheet(
 fun LockDurationSheet(
     targetName: String,
     currentEndTime: Long,
-    vm: FocusLockVm,
-    onConfirm: () -> Unit
+    onConfirm: (LockDurationRequest) -> Unit
 ) {
     val isLocked = currentEndTime > System.currentTimeMillis()
+    var selectedDuration by remember { mutableStateOf(480) }
+    var isCustomDuration by remember { mutableStateOf(false) }
+    var customDaysText by remember { mutableStateOf("") }
+    var customHoursText by remember { mutableStateOf("") }
 
     Column(
         modifier = Modifier
@@ -152,24 +166,24 @@ fun LockDurationSheet(
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 val options = listOf(
-                    480 to "8小时",
-                    1440 to "1天",
-                    4320 to "3天"
+                    480 to stringResource(R.string.duration_option_8h),
+                    1440 to stringResource(R.string.duration_option_1d),
+                    4320 to stringResource(R.string.duration_option_3d),
                 )
                 options.forEach { (duration, label) ->
                     TextButton(
                         onClick = {
-                            vm.selectedDuration = duration
-                            vm.isCustomDuration = false
+                            selectedDuration = duration
+                            isCustomDuration = false
                         },
                         modifier = Modifier.weight(1f),
-                        border = if (!vm.isCustomDuration && vm.selectedDuration == duration)
+                        border = if (!isCustomDuration && selectedDuration == duration)
                             androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.primary)
                             else null
                     ) {
                         Text(
                             text = label,
-                            color = if (!vm.isCustomDuration && vm.selectedDuration == duration)
+                            color = if (!isCustomDuration && selectedDuration == duration)
                                 MaterialTheme.colorScheme.primary
                             else
                                 MaterialTheme.colorScheme.onSurface
@@ -183,31 +197,31 @@ fun LockDurationSheet(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 TextButton(
-                    onClick = { vm.isCustomDuration = true },
+                    onClick = { isCustomDuration = true },
                     modifier = Modifier.width(100.dp),
-                     border = if (vm.isCustomDuration)
+                     border = if (isCustomDuration)
                             androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.primary)
                             else null
                 ) {
                     Text(
                         text = stringResource(R.string.s_c493338e8c),
-                        color = if (vm.isCustomDuration)
+                        color = if (isCustomDuration)
                             MaterialTheme.colorScheme.primary
                         else
                             MaterialTheme.colorScheme.onSurface
                     )
                 }
                 Spacer(modifier = Modifier.width(16.dp))
-                if (vm.isCustomDuration) {
+                if (isCustomDuration) {
                     Row(
                         modifier = Modifier.weight(1f),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         OutlinedTextField(
-                            value = vm.customDaysText,
+                            value = customDaysText,
                             onValueChange = { newValue ->
                                 if (newValue.all { it.isDigit() }) {
-                                    vm.customDaysText = newValue
+                                    customDaysText = newValue
                                 }
                             },
                             label = { Text(stringResource(R.string.s_c3304d1e49)) },
@@ -216,10 +230,10 @@ fun LockDurationSheet(
                             modifier = Modifier.weight(1f)
                         )
                         OutlinedTextField(
-                            value = vm.customHoursText,
+                            value = customHoursText,
                             onValueChange = { newValue ->
                                 if (newValue.all { it.isDigit() }) {
-                                    vm.customHoursText = newValue
+                                    customHoursText = newValue
                                 }
                             },
                             label = { Text(stringResource(R.string.s_99f6904ff3)) },
@@ -234,7 +248,16 @@ fun LockDurationSheet(
 
         Spacer(modifier = Modifier.height(32.dp))
         Button(
-            onClick = onConfirm,
+            onClick = {
+                onConfirm(
+                    LockDurationRequest(
+                        durationMinutes = selectedDuration,
+                        isCustom = isCustomDuration,
+                        daysText = customDaysText,
+                        hoursText = customHoursText,
+                    )
+                )
+            },
             modifier = Modifier.fillMaxWidth()
         ) {
             Text(if (isLocked) stringResource(R.string.s_89120c94be) else stringResource(R.string.s_3718c68dfd))

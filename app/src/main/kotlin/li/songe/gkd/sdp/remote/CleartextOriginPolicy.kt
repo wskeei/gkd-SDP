@@ -1,11 +1,14 @@
 package li.songe.gkd.sdp.remote
 
+import androidx.compose.runtime.Stable
 import li.songe.gkd.sdp.store.createAnyFlow
+import kotlinx.coroutines.flow.MutableStateFlow
 import okhttp3.Interceptor
 import okhttp3.Response
 import java.io.IOException
 import java.net.URI
 
+@Stable
 class CleartextOriginPolicy(
     private val authorizedOrigins: () -> Set<String>,
 ) {
@@ -35,12 +38,19 @@ class CleartextOriginPolicy(
 }
 
 object CleartextOriginAuthorizations {
-    val originsFlow by lazy {
+    /** Unit-test seam; production callers always use the persisted store. */
+    @Volatile
+    internal var testOrigins: MutableStateFlow<Set<String>>? = null
+
+    private val persistentOriginsFlow by lazy {
         createAnyFlow(
             key = "cleartext_origins",
             default = { emptySet<String>() },
         )
     }
+
+    val originsFlow: MutableStateFlow<Set<String>>
+        get() = testOrigins ?: persistentOriginsFlow
 
     val policy = CleartextOriginPolicy { originsFlow.value }
 
@@ -53,6 +63,7 @@ object CleartextOriginAuthorizations {
     }
 }
 
+@Stable
 class CleartextOriginInterceptor(
     private val policy: CleartextOriginPolicy = CleartextOriginAuthorizations.policy,
 ) : Interceptor {

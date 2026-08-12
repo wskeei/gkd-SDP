@@ -58,9 +58,9 @@ internal fun UsageRequestHeaderAndRhythm(
     )
     Text(
         text = if (grantMode == UsageGuardPolicy.GRANT_MODE_STRICT) {
-            "严格模式：离开应用后需要重新申请"
+            stringResource(R.string.usage_guard_strict_mode_line)
         } else {
-            "普通模式：到时前可继续回到应用"
+            stringResource(R.string.usage_guard_normal_mode_line)
         },
         style = MaterialTheme.typography.bodyMedium,
         color = MaterialTheme.colorScheme.primary,
@@ -128,7 +128,7 @@ internal fun UsageRequestTags(
         enabled = !isSubmitting,
         onClick = { showAddTagEditor.value = !showAddTagEditor.value },
     ) {
-        Text(if (showAddTagEditor.value) li.songe.gkd.sdp.app.getString(R.string.s_8f68cd6535) else li.songe.gkd.sdp.app.getString(R.string.s_12460118b0))
+        Text(if (showAddTagEditor.value) stringResource(R.string.s_8f68cd6535) else stringResource(R.string.s_12460118b0))
     }
     if (showAddTagEditor.value) {
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -191,8 +191,8 @@ internal fun UsageRequestReasonAndDuration(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
-                Text(li.songe.gkd.sdp.app.getString(R.string.s_58d3737769, (minReasonLength).toString()))
-                Text(li.songe.gkd.sdp.app.getString(R.string.s_cf989beabc, (reasonText.value.trim().length).toString()))
+                Text(stringResource(R.string.s_58d3737769, (minReasonLength).toString()))
+                Text(stringResource(R.string.s_cf989beabc, (reasonText.value.trim().length).toString()))
             }
         },
         isError = reasonError.value != null,
@@ -222,7 +222,7 @@ internal fun UsageRequestReasonAndDuration(
                     customMinutesText.value = ""
                     showCustomDuration.value = false
                 },
-                label = { Text(li.songe.gkd.sdp.app.getString(R.string.s_5f4ec4b0ec, (minutes).toString())) },
+                label = { Text(stringResource(R.string.s_5f4ec4b0ec, (minutes).toString())) },
             )
         }
     }
@@ -231,7 +231,7 @@ internal fun UsageRequestReasonAndDuration(
         enabled = !isSubmitting,
         onClick = { showCustomDuration.value = !showCustomDuration.value },
     ) {
-        Text(if (showCustomDuration.value) li.songe.gkd.sdp.app.getString(R.string.s_bda66bc5a5) else li.songe.gkd.sdp.app.getString(R.string.s_ea6dccc0a6))
+        Text(if (showCustomDuration.value) stringResource(R.string.s_bda66bc5a5) else stringResource(R.string.s_ea6dccc0a6))
     }
     if (showCustomDuration.value) {
         OutlinedTextField(
@@ -305,9 +305,9 @@ internal fun UsageRequestActions(
                 minReasonLength = minReasonLength,
                 requestedDurationMinutes = requestedDurationMinutes,
             )
-            tagsError.value = validation.tagsError
-            reasonError.value = validation.reasonError
-            durationError.value = validation.durationError
+            tagsError.value = validation.tagsErrorRes?.let(li.songe.gkd.sdp.app::getString)
+            reasonError.value = validation.reasonErrorRes?.let(li.songe.gkd.sdp.app::getString)
+            durationError.value = validation.durationErrorRes?.let(li.songe.gkd.sdp.app::getString)
             if (validation.accepted) {
                 onSubmit(selectedTags.value.toList(), reasonText.value, requestedDurationMinutes)
             }
@@ -321,6 +321,6 @@ internal fun UsageRequestActions(
         onClick = onCancel,
         modifier = Modifier.fillMaxWidth(),
     ) {
-        Text(li.songe.gkd.sdp.app.getString(R.string.s_4d0b4688c7))
+        Text(stringResource(R.string.s_4d0b4688c7))
     }
 }

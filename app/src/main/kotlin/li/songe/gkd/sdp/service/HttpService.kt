@@ -97,7 +97,7 @@ class HttpService : Service(), OnSimpleLife by DefaultSimpleLifeImpl() {
     init {
         useLogLifecycle()
         useAliveFlow(isRunning)
-        useAliveToast("HTTP服务")
+        useAliveToast(getString(R.string.http_server))
         StopServiceReceiver.autoRegister()
         onCreated {
             registerScreenLockReceiver()
@@ -174,12 +174,12 @@ class HttpService : Service(), OnSimpleLife by DefaultSimpleLifeImpl() {
 
     private fun notifyRemoteState(state: RemoteSessionSnapshot, nowMillis: Long) {
         val text = if (state.mode == RemoteListenMode.LOCAL_ONLY) {
-            "仅本机访问"
+            getString(R.string.http_status_local)
         } else {
             val minutes = state.accessExpiresAtMillis
                 ?.let { ((it - nowMillis).coerceAtLeast(0) + 59_999) / 60_000 }
                 ?: 0
-            "局域网会话剩余 $minutes 分钟"
+            getString(R.string.http_status_lan, minutes)
         }
         if (text == lastNotificationText) return
         lastNotificationText = text
@@ -389,14 +389,16 @@ private fun CoroutineScope.createServer(port: Int, host: String) = embeddedServe
                     call.respondRemoteError("SNAPSHOT_NOT_FOUND", HttpStatusCode.NotFound)
                 } else {
                     SnapshotExt.deleteSnapshot(snapshot)
-                    call.respondJsonBounded(RpcOk("快照删除成功"))
+                    call.respondJsonBounded(
+                        RpcOk(li.songe.gkd.sdp.app.getString(R.string.snapshot_delete_success)),
+                    )
                 }
             }
             post("/updateSubscription") {
                 if (!call.requireRemote(RemoteScope.UPDATE_SUBSCRIPTION)) return@post
                 val subscription = RawSubscription.parse(call.receiveText(), json5 = false).copy(
                     id = LOCAL_HTTP_SUBS_ID,
-                    name = "内存订阅",
+                    name = li.songe.gkd.sdp.app.getString(R.string.memory_subscription_name),
                     version = 0,
                     author = "@gkd-kit/inspect",
                 )

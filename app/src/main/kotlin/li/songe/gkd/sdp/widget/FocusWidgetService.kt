@@ -56,7 +56,7 @@ class FocusViewsFactory(private val context: Context, intent: Intent) : RemoteVi
         val rule = rules[position]
         val views = RemoteViews(context.packageName, R.layout.widget_focus_item)
         views.setTextViewText(R.id.item_name, rule.name)
-        views.setTextViewText(R.id.item_duration, rule.formatDuration())
+        views.setTextViewText(R.id.item_duration, rule.formatDuration(context))
 
         val fillInIntent = Intent().apply {
             putExtra(FocusQuickStartWidget.EXTRA_RULE_ID, rule.id)

@@ -29,7 +29,9 @@ data class SelectorRuleSnapshot(
 
     fun displayRuleIdentity(): String {
         normalizeLabel(ruleName)?.let { return it }
+        // i18n-ignore: legacy fallback or non-display heuristic data
         ruleKey?.let { return "规则 key=$it" }
+        // i18n-ignore: legacy fallback or non-display heuristic data
         return "规则 #${ruleIndex.coerceAtLeast(0) + 1}"
     }
 

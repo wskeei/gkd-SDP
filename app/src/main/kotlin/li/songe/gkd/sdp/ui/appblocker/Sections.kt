@@ -2,9 +2,6 @@
 
 package li.songe.gkd.sdp.ui
 
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
-
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -23,20 +20,16 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import li.songe.gkd.sdp.data.AppGroup
 import li.songe.gkd.sdp.data.BlockTimeRule
 import li.songe.gkd.sdp.ui.component.PerfIcon
 import li.songe.gkd.sdp.ui.component.PerfIconButton
 import li.songe.gkd.sdp.ui.component.PerfTopAppBar
-import li.songe.gkd.sdp.ui.share.LocalMainViewModel
+import li.songe.gkd.sdp.ui.component.formatDurationLocalized
 import li.songe.gkd.sdp.ui.style.itemPadding
 import li.songe.gkd.sdp.ui.style.scaffoldPadding
 import li.songe.gkd.sdp.ui.style.surfaceCardColors
@@ -44,126 +37,108 @@ import androidx.compose.ui.res.stringResource
 import li.songe.gkd.sdp.R
 
 @Composable
-fun AppBlockerPageSections() {
-    val mainVm = LocalMainViewModel.current
-    val vm = viewModel<AppBlockerVm>()
-    val allGroups by vm.allGroupsFlow.collectAsStateWithLifecycle()
-    val allRules by vm.allRulesFlow.collectAsStateWithLifecycle()
-    val globalLock by vm.globalLockFlow.collectAsStateWithLifecycle()
-
-    var showGlobalLockSheet by remember { mutableStateOf(false) }
-    var showGroupLockSheet by remember { mutableStateOf(false) }
-    var showRuleLockSheet by remember { mutableStateOf(false) }
-    var lockTargetGroup by remember { mutableStateOf<AppGroup?>(null) }
-    var lockTargetRule by remember { mutableStateOf<BlockTimeRule?>(null) }
+fun AppBlockerPageSections(
+    state: AppBlockerUiState,
+    showGlobalLockSheet: Boolean,
+    showGroupLockSheet: Boolean,
+    showRuleLockSheet: Boolean,
+    lockTargetGroup: AppGroup?,
+    lockTargetRule: BlockTimeRule?,
+    runtimeStatus: li.songe.gkd.sdp.a11y.SdpRuntimeFeatureCoordinator.RuntimeStatus,
+    overlayPermission: Boolean,
+    callbacks: AppBlockerCallbacks,
+) {
+    val groupEditorLocked = state.globalLock?.isCurrentlyLocked == true ||
+        state.editingGroup?.isCurrentlyLocked == true
+    val ruleEditorLocked = state.globalLock?.isCurrentlyLocked == true ||
+        state.editingRule?.isCurrentlyLocked == true ||
+        if (state.ruleTargetType == BlockTimeRule.TARGET_TYPE_GROUP) {
+            state.allGroups.find { it.id == state.ruleTargetId.toLongOrNull() }
+                ?.isCurrentlyLocked == true
+        } else {
+            false
+        }
 
     AppBlockerPageScaffold(
-        globalLock = globalLock,
-        allGroups = allGroups,
-        allRules = allRules,
-        vm = vm,
-        onNavigateBack = { mainVm.popPage() },
-        onShowGlobalLock = { showGlobalLockSheet = true },
-        onLockGroup = { group ->
-            lockTargetGroup = group
-            showGroupLockSheet = true
-        },
-        onLockRule = { rule ->
-            lockTargetRule = rule
-            showRuleLockSheet = true
-        },
+        state = state,
+        runtimeStatus = runtimeStatus,
+        overlayPermission = overlayPermission,
+        callbacks = callbacks,
     )
 
-    // 应用组编辑器
-    if (vm.showGroupEditor) {
-        val isLocked = globalLock?.isCurrentlyLocked == true || vm.editingGroup?.isCurrentlyLocked == true
+    if (state.showGroupEditor) {
         GroupEditorSheet(
-            vm = vm,
-            isLocked = isLocked,
-            onDismiss = { vm.resetGroupForm() },
-            onSave = { vm.saveGroup() }
+            state = state,
+            callbacks = callbacks,
+            isLocked = groupEditorLocked,
         )
     }
 
-    // 规则编辑器
-    if (vm.showRuleEditor) {
-        val targetIsLocked = if (vm.ruleTargetType == BlockTimeRule.TARGET_TYPE_GROUP) {
-            allGroups.find { it.id == vm.ruleTargetId.toLongOrNull() }?.isCurrentlyLocked == true
-        } else false
-        val isLocked = globalLock?.isCurrentlyLocked == true || vm.editingRule?.isCurrentlyLocked == true || targetIsLocked
+    if (state.showRuleEditor) {
         RuleEditorSheet(
-            vm = vm,
-            allGroups = allGroups,
-            isLocked = isLocked,
-            onDismiss = { vm.resetRuleForm() },
-            onSave = { vm.saveRule() }
+            state = state,
+            callbacks = callbacks,
+            isLocked = ruleEditorLocked,
         )
     }
 
-    // 全局锁定 Sheet
     if (showGlobalLockSheet) {
         LockSheet(
-            title = if (globalLock?.isCurrentlyLocked == true) "延长全局锁定" else "全局锁定",
-            description = "锁定后无法删除或修改任何应用/组/规则，但可以新增。",
-            currentLockEndTime = globalLock?.lockEndTime,
-            vm = vm,
-            onDismiss = { showGlobalLockSheet = false },
-            onLock = {
-                vm.lockGlobal()
-                showGlobalLockSheet = false
-            }
+            state = state,
+            callbacks = callbacks,
+            title = if (state.globalLock?.isCurrentlyLocked == true) {
+                stringResource(R.string.appblocker_extend_global_lock)
+            } else {
+                stringResource(R.string.appblocker_global_lock)
+            },
+            description = stringResource(R.string.appblocker_global_lock_desc),
+            currentLockEndTime = state.globalLock?.lockEndTime,
+            onDismiss = callbacks.onDismissGlobalLock,
+            onLock = callbacks.onLockGlobal,
         )
     }
 
-    // 应用组锁定 Sheet
     if (showGroupLockSheet && lockTargetGroup != null) {
+        val target = lockTargetGroup
         LockSheet(
-            title = if (lockTargetGroup!!.isCurrentlyLocked) "延长锁定" else "锁定应用组",
-            description = "锁定后无法关闭、删除或修改此应用组。",
-            currentLockEndTime = if (lockTargetGroup!!.isCurrentlyLocked) lockTargetGroup!!.lockEndTime else null,
-            vm = vm,
-            onDismiss = {
-                showGroupLockSheet = false
-                lockTargetGroup = null
+            state = state,
+            callbacks = callbacks,
+            title = if (target.isCurrentlyLocked) {
+                stringResource(R.string.appblocker_extend_lock)
+            } else {
+                stringResource(R.string.appblocker_lock_group)
             },
-            onLock = {
-                vm.lockGroup(lockTargetGroup!!)
-                showGroupLockSheet = false
-                lockTargetGroup = null
-            }
+            description = stringResource(R.string.appblocker_lock_group_desc),
+            currentLockEndTime = if (target.isCurrentlyLocked) target.lockEndTime else null,
+            onDismiss = callbacks.onDismissGroupLock,
+            onLock = callbacks.onLockGroupTarget,
         )
     }
 
-    // 规则锁定 Sheet
     if (showRuleLockSheet && lockTargetRule != null) {
+        val target = lockTargetRule
         LockSheet(
-            title = if (lockTargetRule!!.isCurrentlyLocked) "延长锁定" else "锁定规则",
-            description = "锁定后无法关闭、删除或修改此规则。",
-            currentLockEndTime = if (lockTargetRule!!.isCurrentlyLocked) lockTargetRule!!.lockEndTime else null,
-            vm = vm,
-            onDismiss = {
-                showRuleLockSheet = false
-                lockTargetRule = null
+            state = state,
+            callbacks = callbacks,
+            title = if (target.isCurrentlyLocked) {
+                stringResource(R.string.appblocker_extend_lock)
+            } else {
+                stringResource(R.string.appblocker_lock_rule)
             },
-            onLock = {
-                vm.lockRule(lockTargetRule!!)
-                showRuleLockSheet = false
-                lockTargetRule = null
-            }
+            description = stringResource(R.string.appblocker_lock_rule_desc),
+            currentLockEndTime = if (target.isCurrentlyLocked) target.lockEndTime else null,
+            onDismiss = callbacks.onDismissRuleLock,
+            onLock = callbacks.onLockRuleTarget,
         )
     }
 }
 
 @Composable
 private fun AppBlockerPageScaffold(
-    globalLock: li.songe.gkd.sdp.data.AppBlockerLock?,
-    allGroups: List<AppGroup>,
-    allRules: List<BlockTimeRule>,
-    vm: AppBlockerVm,
-    onNavigateBack: () -> Unit,
-    onShowGlobalLock: () -> Unit,
-    onLockGroup: (AppGroup) -> Unit,
-    onLockRule: (BlockTimeRule) -> Unit,
+    state: AppBlockerUiState,
+    runtimeStatus: li.songe.gkd.sdp.a11y.SdpRuntimeFeatureCoordinator.RuntimeStatus,
+    overlayPermission: Boolean,
+    callbacks: AppBlockerCallbacks,
 ) {
     Scaffold(
         topBar = {
@@ -171,16 +146,16 @@ private fun AppBlockerPageScaffold(
                 navigationIcon = {
                     PerfIconButton(
                         imageVector = PerfIcon.ArrowBack,
-                        onClick = onNavigateBack,
+                        onClick = callbacks.onBack,
                     )
                 },
                 title = { Text(text = li.songe.gkd.sdp.app.getString(R.string.s_e6bbd743b3)) },
                 actions = {
-                    IconButton(onClick = onShowGlobalLock) {
+                    IconButton(onClick = callbacks.onOpenGlobalLock) {
                         Icon(
                             PerfIcon.Lock,
                             contentDescription = li.songe.gkd.sdp.app.getString(R.string.s_0261a6c710),
-                            tint = if (globalLock?.isCurrentlyLocked == true) {
+                            tint = if (state.globalLock?.isCurrentlyLocked == true) {
                                 MaterialTheme.colorScheme.error
                             } else {
                                 MaterialTheme.colorScheme.onSurface
@@ -193,12 +168,10 @@ private fun AppBlockerPageScaffold(
     ) { padding ->
         AppBlockerPageList(
             contentPadding = padding,
-            globalLock = globalLock,
-            allGroups = allGroups,
-            allRules = allRules,
-            vm = vm,
-            onLockGroup = onLockGroup,
-            onLockRule = onLockRule,
+            state = state,
+            runtimeStatus = runtimeStatus,
+            overlayPermission = overlayPermission,
+            callbacks = callbacks,
         )
     }
 }
@@ -206,61 +179,52 @@ private fun AppBlockerPageScaffold(
 @Composable
 private fun AppBlockerPageList(
     contentPadding: androidx.compose.foundation.layout.PaddingValues,
-    globalLock: li.songe.gkd.sdp.data.AppBlockerLock?,
-    allGroups: List<AppGroup>,
-    allRules: List<BlockTimeRule>,
-    vm: AppBlockerVm,
-    onLockGroup: (AppGroup) -> Unit,
-    onLockRule: (BlockTimeRule) -> Unit,
+    state: AppBlockerUiState,
+    runtimeStatus: li.songe.gkd.sdp.a11y.SdpRuntimeFeatureCoordinator.RuntimeStatus,
+    overlayPermission: Boolean,
+    callbacks: AppBlockerCallbacks,
 ) {
     LazyColumn(modifier = Modifier.scaffoldPadding(contentPadding)) {
         item(key = "self_control_runtime_status") {
-            SelfControlRuntimeStatusCard()
+            SelfControlRuntimeStatusCard(
+                runtime = runtimeStatus,
+                overlayPermission = overlayPermission,
+            )
             Spacer(modifier = Modifier.height(12.dp))
         }
         item(key = "auto_reenable_notice") {
             AppBlockerAutoReenableNotice()
         }
-        if (globalLock?.isCurrentlyLocked == true) {
+        if (state.globalLock?.isCurrentlyLocked == true) {
             item(key = "global_lock_status") {
-                AppBlockerGlobalLockStatus(globalLock)
+                AppBlockerGlobalLockStatus(state.globalLock)
             }
         }
         item(key = "groups_header") {
             AppBlockerSectionHeader(
-                title = "应用组 (${allGroups.size})",
-                onAdd = {
-                    vm.resetGroupForm()
-                    vm.showGroupEditor = true
-                },
+                title = stringResource(R.string.appblocker_groups_count, state.allGroups.size),
+                onAdd = callbacks.onOpenGroupEditor,
             )
         }
-        if (allGroups.isEmpty()) {
+        if (state.allGroups.isEmpty()) {
             item(key = "no_groups") {
-                AppBlockerEmptyText("暂无应用组")
+                AppBlockerEmptyText(li.songe.gkd.sdp.app.getString(R.string.appblocker_empty_group))
             }
         } else {
-            items(allGroups, key = { "group_${it.id}" }) { group ->
+            items(state.allGroups, key = { "group_${it.id}" }) { group ->
                 AppGroupCard(
                     group = group,
-                    rules = allRules.filter {
+                    rules = state.allRules.filter {
                         it.targetType == BlockTimeRule.TARGET_TYPE_GROUP &&
                             it.targetId == group.id.toString()
                     },
-                    globalLock = globalLock,
-                    onToggleEnabled = { vm.toggleGroupEnabled(group) },
-                    onEdit = { vm.loadGroupForEdit(group) },
-                    onDelete = { vm.deleteGroup(group) },
-                    onLock = { onLockGroup(group) },
-                    onAddRule = {
-                        vm.resetRuleForm()
-                        vm.ruleTargetType = BlockTimeRule.TARGET_TYPE_GROUP
-                        vm.ruleTargetId = group.id.toString()
-                        vm.showRuleEditor = true
-                    },
-                    onAddApps = {
-                        vm.loadGroupForEdit(group, AppBlockerVm.GroupEditorMode.AppendApps)
-                    },
+                    globalLock = state.globalLock,
+                    onToggleEnabled = { callbacks.onToggleGroupEnabled(group) },
+                    onEdit = { callbacks.onEditGroup(group) },
+                    onDelete = { callbacks.onDeleteGroup(group) },
+                    onLock = { callbacks.onOpenGroupLock(group) },
+                    onAddRule = { callbacks.onOpenGroupRuleEditor(group) },
+                    onAddApps = { callbacks.onAddAppsToGroup(group) },
                 )
                 Spacer(modifier = Modifier.height(8.dp))
             }
@@ -270,18 +234,14 @@ private fun AppBlockerPageList(
         }
         item(key = "app_rules_header") {
             AppBlockerSectionHeader(
-                title = "单独应用",
-                onAdd = {
-                    vm.resetRuleForm()
-                    vm.ruleTargetType = BlockTimeRule.TARGET_TYPE_APP
-                    vm.showRuleEditor = true
-                },
+                title = stringResource(R.string.appblocker_individual_apps),
+                onAdd = callbacks.onOpenAppRuleEditor,
             )
         }
-        val appRules = allRules.filter { it.targetType == BlockTimeRule.TARGET_TYPE_APP }
+        val appRules = state.allRules.filter { it.targetType == BlockTimeRule.TARGET_TYPE_APP }
         if (appRules.isEmpty()) {
             item(key = "no_app_rules") {
-                AppBlockerEmptyText("暂无单独应用规则")
+                AppBlockerEmptyText(li.songe.gkd.sdp.app.getString(R.string.appblocker_empty_single_rule))
             }
         } else {
             appRules.groupBy { it.targetId }.forEach { (packageName, rules) ->
@@ -289,10 +249,10 @@ private fun AppBlockerPageList(
                     AppRulesCard(
                         packageName = packageName,
                         rules = rules,
-                        onToggleEnabled = { vm.toggleRuleEnabled(it) },
-                        onEdit = { vm.loadRuleForEdit(it) },
-                        onDelete = { vm.deleteRule(it) },
-                        onLock = onLockRule,
+                        onToggleEnabled = { callbacks.onToggleRuleEnabled(it) },
+                        onEdit = { callbacks.onEditRule(it) },
+                        onDelete = { callbacks.onDeleteRule(it) },
+                        onLock = callbacks.onOpenRuleLock,
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                 }
@@ -351,8 +311,9 @@ private fun AppBlockerGlobalLockStatus(globalLock: li.songe.gkd.sdp.data.AppBloc
                 )
                 val remainingMinutes =
                     ((globalLock.lockEndTime - System.currentTimeMillis()) / 60000).coerceAtLeast(0)
+                val remainingText = formatDurationLocalized(remainingMinutes * 60_000L)
                 Text(
-                    text = stringResource(R.string.s_7c36cdf41a, (if (remainingMinutes >= 60) "${remainingMinutes / 60}小时${remainingMinutes % 60}分钟" else "${remainingMinutes}分钟").toString()),
+                    text = stringResource(R.string.s_7c36cdf41a, remainingText),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.error,
                 )

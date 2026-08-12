@@ -16,44 +16,34 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
-import androidx.lifecycle.viewmodel.compose.viewModel
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.stateIn
 import li.songe.gkd.sdp.data.ActionLog
 import li.songe.gkd.sdp.data.ExcludeData
 import li.songe.gkd.sdp.data.SubsConfig
 import li.songe.gkd.sdp.db.DbSet
-import li.songe.gkd.sdp.ui.share.LocalMainViewModel
-import li.songe.gkd.sdp.util.launchAsFn
-import li.songe.gkd.sdp.util.mapState
 import li.songe.gkd.sdp.util.subsMapFlow
-import li.songe.gkd.sdp.util.toast
 import androidx.compose.ui.res.stringResource
 import li.songe.gkd.sdp.R
 
 @Composable
 internal fun ActionLogDialog(
-    vm: ViewModel,
     actionLog: ActionLog,
     onDismissRequest: () -> Unit,
+    onOpenGroup: () -> Unit,
+    onToggleGlobalApp: (SubsConfig?, ExcludeData, Boolean) -> Unit,
+    onTogglePage: (SubsConfig?, ExcludeData) -> Unit,
 ) {
-    val mainVm = LocalMainViewModel.current
-    val scope = rememberCoroutineScope()
-    val subsConfig = remember(actionLog) {
+    val subsConfig by remember(actionLog) {
         (if (actionLog.groupType == SubsConfig.AppGroupType) {
             DbSet.subsConfigDao.queryAppGroupTypeConfig(
                 actionLog.subsId, actionLog.appId, actionLog.groupKey
             )
         } else {
             DbSet.subsConfigDao.queryGlobalGroupTypeConfig(actionLog.subsId, actionLog.groupKey)
-        }).stateIn(vm.viewModelScope, SharingStarted.Eagerly, null)
-    }.collectAsStateWithLifecycle().value
+        })
+    }.collectAsStateWithLifecycle(initialValue = null)
 
     val oldExclude = remember(subsConfig?.exclude) {
         ExcludeData.parse(subsConfig?.exclude)
@@ -87,7 +77,7 @@ internal fun ActionLogDialog(
     val displayGroupName = presentationName(
         snapshot = actionLog.groupNameSnapshot,
         current = currentGroup?.name,
-        fallback = "规则组 ${actionLog.groupKey}",
+        fallback = stringResource(R.string.action_log_group_fallback, actionLog.groupKey),
     )
     val displayRuleName = presentationName(
         snapshot = actionLog.ruleNameSnapshot,
@@ -103,22 +93,10 @@ internal fun ActionLogDialog(
             shape = RoundedCornerShape(16.dp),
         ) {
             ItemText(
-                text = "查看规则组",
+                text = stringResource(R.string.action_log_view_group),
                 onClick = {
                     onDismissRequest()
-                    if (actionLog.groupType == SubsConfig.AppGroupType) {
-                        mainVm.navigatePage(
-                            SubsAppGroupListRoute(
-                                actionLog.subsId, actionLog.appId, actionLog.groupKey
-                            )
-                        )
-                    } else if (actionLog.groupType == SubsConfig.GlobalGroupType) {
-                        mainVm.navigatePage(
-                            SubsGlobalGroupListRoute(
-                                actionLog.subsId, actionLog.groupKey
-                            )
-                        )
-                    }
+                    onOpenGroup()
                 }
             )
             HorizontalDivider()
@@ -132,11 +110,11 @@ internal fun ActionLogDialog(
             HorizontalDivider()
 
             ActionLogDialogActions(
-                vm = vm,
-                scope = scope,
                 actionLog = actionLog,
                 oldExclude = oldExclude,
                 subsConfig = subsConfig,
+                onToggleGlobalApp = onToggleGlobalApp,
+                onTogglePage = onTogglePage,
             )
         }
     }
@@ -152,7 +130,7 @@ private fun ActionLogDialogSummary(
     val presentation = ActionLogPresentation.from(actionLog)
     Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
         Text(
-            text = presentation.outcomeTitle,
+            text = stringResource(presentation.outcomeTitleRes),
             style = MaterialTheme.typography.titleMedium,
             color = if (actionLog.outcome == ActionLog.OUTCOME_INTERCEPTED) {
                 MaterialTheme.colorScheme.error
@@ -161,7 +139,7 @@ private fun ActionLogDialogSummary(
             },
         )
         Text(
-            text = presentation.outcomeDescription,
+            text = stringResource(presentation.outcomeDescriptionRes),
             style = MaterialTheme.typography.bodyMedium,
             modifier = Modifier.padding(top = 4.dp),
         )
@@ -182,7 +160,11 @@ private fun ActionLogDialogSummary(
         )
         Text(
             text = stringResource(R.string.s_ea63fc76c4, (actionLog.groupType).toString(), (actionLog.groupKey).toString()) +
-                "index=${actionLog.ruleIndex}, ${actionLog.ruleKey?.let { "key=$it" } ?: "未设置 key"}",
+                stringResource(R.string.action_log_rule_index, actionLog.ruleIndex) + ", " +
+                (
+                    actionLog.ruleKey?.let { stringResource(R.string.action_log_rule_key, it) }
+                        ?: stringResource(R.string.action_log_rule_key_unset)
+                    ),
             style = MaterialTheme.typography.bodySmall,
             modifier = Modifier.padding(top = 2.dp),
         )
@@ -191,42 +173,29 @@ private fun ActionLogDialogSummary(
 
 @Composable
 private fun ActionLogDialogActions(
-    vm: ViewModel,
-    scope: kotlinx.coroutines.CoroutineScope,
     actionLog: ActionLog,
     oldExclude: ExcludeData,
     subsConfig: SubsConfig?,
+    onToggleGlobalApp: (SubsConfig?, ExcludeData, Boolean) -> Unit,
+    onTogglePage: (SubsConfig?, ExcludeData) -> Unit,
 ) {
     if (actionLog.groupType == SubsConfig.GlobalGroupType) {
-        val subs = remember(actionLog.subsId) {
-            subsMapFlow.mapState(scope) { it[actionLog.subsId] }
-        }.collectAsStateWithLifecycle().value
-        val group = subs?.globalGroups?.find { g -> g.key == actionLog.groupKey }
+        val subs by subsMapFlow.collectAsStateWithLifecycle()
+        val currentSubscription = subs[actionLog.subsId]
+        val group = currentSubscription?.globalGroups?.find { g -> g.key == actionLog.groupKey }
         val appChecked = if (group != null) {
-            getGlobalGroupChecked(subs, oldExclude, group, actionLog.appId)
+            getGlobalGroupChecked(currentSubscription, oldExclude, group, actionLog.appId)
         } else {
             null
         }
         if (appChecked != null) {
             ItemText(
-                text = if (appChecked) "在此应用禁用" else "移除在此应用的禁用",
-                onClick = vm.viewModelScope.launchAsFn {
-                    val effectiveConfig = subsConfig ?: SubsConfig(
-                        type = SubsConfig.GlobalGroupType,
-                        subsId = actionLog.subsId,
-                        groupKey = actionLog.groupKey,
-                    )
-                    DbSet.subsConfigDao.insert(
-                        effectiveConfig.copy(
-                            exclude = oldExclude.copy(
-                                appIds = oldExclude.appIds.toMutableMap().apply {
-                                    set(actionLog.appId, appChecked)
-                                },
-                            ).stringify(),
-                        ),
-                    )
-                    toast(li.songe.gkd.sdp.app.getString(R.string.s_e2cff77372))
+                text = if (appChecked) {
+                    stringResource(R.string.action_log_disable_this_app)
+                } else {
+                    stringResource(R.string.action_log_remove_app_disable)
                 },
+                onClick = { onToggleGlobalApp(subsConfig, oldExclude, appChecked) },
             )
             HorizontalDivider()
         }
@@ -235,29 +204,12 @@ private fun ActionLogDialogActions(
     if (actionLog.activityId != null) {
         val disabled = oldExclude.activityIds.contains(actionLog.appId to actionLog.activityId)
         ItemText(
-            text = if (disabled) "移除在此页面的禁用" else "在此页面禁用",
-            onClick = vm.viewModelScope.launchAsFn {
-                val effectiveConfig = if (actionLog.groupType == SubsConfig.AppGroupType) {
-                    subsConfig ?: SubsConfig(
-                        type = SubsConfig.AppGroupType,
-                        subsId = actionLog.subsId,
-                        appId = actionLog.appId,
-                        groupKey = actionLog.groupKey,
-                    )
+                text = if (disabled) {
+                    stringResource(R.string.action_log_remove_page_disable)
                 } else {
-                    subsConfig ?: SubsConfig(
-                        type = SubsConfig.GlobalGroupType,
-                        subsId = actionLog.subsId,
-                        groupKey = actionLog.groupKey,
-                    )
-                }
-                DbSet.subsConfigDao.insert(
-                    effectiveConfig.copy(
-                        exclude = oldExclude.switch(actionLog.appId, actionLog.activityId).stringify(),
-                    ),
-                )
-                toast(li.songe.gkd.sdp.app.getString(R.string.s_e2cff77372))
-            },
+                    stringResource(R.string.action_log_disable_this_page)
+                },
+                onClick = { onTogglePage(subsConfig, oldExclude) },
         )
         HorizontalDivider()
     }

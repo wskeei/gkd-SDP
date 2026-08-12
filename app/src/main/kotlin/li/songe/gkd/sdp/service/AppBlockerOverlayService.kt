@@ -99,7 +99,8 @@ class AppBlockerOverlayService : LifecycleService(), SavedStateRegistryOwner {
         super.onStartCommand(intent, flags, startId)
         if (view != null) return START_NOT_STICKY
 
-        val message = intent?.getStringExtra(EXTRA_MESSAGE) ?: "这真的重要吗？"
+        val message = intent?.getStringExtra(EXTRA_MESSAGE)
+            ?: getString(R.string.common_default_intercept_message)
         val blockedApp = intent?.getStringExtra(EXTRA_BLOCKED_APP).orEmpty()
         val eventKey = intent?.getStringExtra(EXTRA_EVENT_KEY).orEmpty()
         val eventKind = intent?.getIntExtra(
@@ -108,7 +109,8 @@ class AppBlockerOverlayService : LifecycleService(), SavedStateRegistryOwner {
         ) ?: SelfControlAttempt.KIND_APP_BLOCKER
         val subjectId = intent?.getStringExtra(EXTRA_SUBJECT_ID).orEmpty().ifBlank { blockedApp }
         val subjectLabel = intent?.getStringExtra(EXTRA_SUBJECT_LABEL).orEmpty().ifBlank { blockedApp }
-        val source = intent?.blockerSource() ?: InterceptionSourcePresentation.unknown()
+        val source = intent?.blockerSource(applicationContext)
+            ?: InterceptionSourcePresentation.unknown()
         if (eventKind != SelfControlAttempt.KIND_APP_BLOCKER ||
             blockedApp.isBlank() ||
             eventKey.isBlank() ||
@@ -254,7 +256,7 @@ class AppBlockerOverlayService : LifecycleService(), SavedStateRegistryOwner {
         view = null
     }
 
-    private fun Intent.blockerSource(): InterceptionSourcePresentation? {
+    private fun Intent.blockerSource(context: android.content.Context): InterceptionSourcePresentation? {
         if (!hasExtra(EXTRA_RULE_ID)) return null
         val ruleId = getLongExtra(EXTRA_RULE_ID, -1L)
         val targetType = getIntExtra(EXTRA_RULE_TARGET_TYPE, -1)
@@ -281,7 +283,7 @@ class AppBlockerOverlayService : LifecycleService(), SavedStateRegistryOwner {
             daysOfWeek = daysOfWeek,
             isAllowMode = getBooleanExtra(EXTRA_RULE_ALLOW_MODE, false),
         )
-        return InterceptionSourcePresentation.appBlocker(rule)
+        return InterceptionSourcePresentation.appBlocker(rule, context)
     }
 }
 

@@ -1,5 +1,7 @@
 package li.songe.gkd.sdp.usage
 
+import li.songe.gkd.sdp.R
+
 /**
  * Pure validation for the usage-request form.
  *
@@ -12,9 +14,9 @@ object UsageRequestValidationPolicy {
 
     data class Result(
         val accepted: Boolean,
-        val tagsError: String? = null,
-        val reasonError: String? = null,
-        val durationError: String? = null,
+        val tagsErrorRes: Int? = null,
+        val reasonErrorRes: Int? = null,
+        val durationErrorRes: Int? = null,
     )
 
     fun normalizeTagName(value: String): String = value.trim()
@@ -43,31 +45,31 @@ object UsageRequestValidationPolicy {
         if (selectedTags.isEmpty()) {
             return Result(
                 accepted = false,
-                tagsError = "至少选择一个标签",
+                tagsErrorRes = R.string.usage_request_error_no_tags,
             )
         }
         if (selectedTags.any { !tagNameValid(it) }) {
             return Result(
                 accepted = false,
-                tagsError = "标签名称不能为空且不能超过 20 个字符",
+                tagsErrorRes = R.string.usage_request_error_tag_invalid,
             )
         }
         if (selectedTags.map(::normalizeTagName).distinctBy(String::lowercase).size != selectedTags.size) {
             return Result(
                 accepted = false,
-                tagsError = "标签名称不能重复",
+                tagsErrorRes = R.string.usage_request_error_tag_duplicate,
             )
         }
         if (reason.trim().length < minReasonLength) {
             return Result(
                 accepted = false,
-                reasonError = "理由长度不足",
+                reasonErrorRes = R.string.usage_request_error_reason_short,
             )
         }
         if (requestedDurationMinutes <= 0) {
             return Result(
                 accepted = false,
-                durationError = "时长必须大于 0",
+                durationErrorRes = R.string.usage_request_error_duration,
             )
         }
         return Result(accepted = true)

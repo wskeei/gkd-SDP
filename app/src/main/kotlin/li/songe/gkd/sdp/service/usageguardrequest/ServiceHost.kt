@@ -56,6 +56,7 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import li.songe.gkd.sdp.a11y.A11yRuleEngine
+import li.songe.gkd.sdp.R
 import li.songe.gkd.sdp.appScope
 import li.songe.gkd.sdp.util.LogUtils
 import li.songe.gkd.sdp.a11y.UsageGuardEngine
@@ -71,6 +72,8 @@ import li.songe.gkd.sdp.ui.component.UsageDurationRatioFeedback
 import li.songe.gkd.sdp.ui.share.ServiceOverlayLifecycleOwner
 import li.songe.gkd.sdp.ui.style.AppTheme
 import li.songe.gkd.sdp.util.SelfControlElapsedPolicy
+import li.songe.gkd.sdp.usage.UsageRequestPresenter
+import li.songe.gkd.sdp.usage.UsageRequestUiState
 import li.songe.gkd.sdp.util.SelfControlInsightWindowPolicy
 import li.songe.gkd.sdp.util.UsageGuardPolicy
 import li.songe.gkd.sdp.util.UsageGuardUiStatePolicy
@@ -161,8 +164,15 @@ class UsageGuardRequestOverlayService : LifecycleService(), SavedStateRegistryOw
                 AppTheme {
                     val tags by DbSet.usageGuardTagDao.queryAll().collectAsStateWithLifecycle(initialValue = emptyList())
                     val settings by storeFlow.collectAsStateWithLifecycle()
+                    val requestUiState = UsageRequestPresenter.present(
+                        appId = appName,
+                        appName = appName,
+                        data = (datasetState as? UsageRequestDatasetState.Ready)?.data,
+                        nowEpochMs = nowEpochMs,
+                    )
                     UsageGuardRequestContent(
                         appName = appName,
+                        requestUiState = requestUiState,
                         tags = tags,
                         grantMode = grantMode,
                         minReasonLength = settings.usageGuardMinReasonLength,
@@ -217,7 +227,7 @@ class UsageGuardRequestOverlayService : LifecycleService(), SavedStateRegistryOw
                                             stopSelf()
                                         }.onFailure {
                                             isSubmitting = false
-                                            submitError = "暂时无法保存本次申请，请稍后重试"
+                                            submitError = getString(R.string.usage_guard_submit_failed)
                                         }
                                     }
                                 }

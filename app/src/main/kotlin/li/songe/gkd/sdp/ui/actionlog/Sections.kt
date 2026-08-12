@@ -35,7 +35,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -44,15 +43,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Dialog
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.paging.LoadState
-import androidx.paging.compose.collectAsLazyPagingItems
+import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.itemKey
 import li.songe.gkd.sdp.data.ActionLog
-import li.songe.gkd.sdp.db.DbSet
+import li.songe.gkd.sdp.data.ExcludeData
+import li.songe.gkd.sdp.data.RawSubscription
+import li.songe.gkd.sdp.data.SubsConfig
 import li.songe.gkd.sdp.ui.component.EmptyText
 import li.songe.gkd.sdp.ui.component.LocalNumberCharWidth
 import li.songe.gkd.sdp.ui.component.PerfIcon
@@ -63,28 +60,35 @@ import li.songe.gkd.sdp.ui.component.animateListItem
 import li.songe.gkd.sdp.ui.component.measureNumberTextWidth
 import li.songe.gkd.sdp.ui.component.useListScrollState
 import li.songe.gkd.sdp.ui.component.useSubs
-import li.songe.gkd.sdp.ui.component.waitResult
 import li.songe.gkd.sdp.ui.share.ListPlaceholder
-import li.songe.gkd.sdp.ui.share.LocalMainViewModel
 import li.songe.gkd.sdp.ui.share.noRippleClickable
 import li.songe.gkd.sdp.ui.style.EmptyHeight
 import li.songe.gkd.sdp.ui.style.scaffoldPadding
-import li.songe.gkd.sdp.util.launchAsFn
 import li.songe.gkd.sdp.util.throttle
-import li.songe.gkd.sdp.util.toast
 import androidx.compose.ui.res.stringResource
 import li.songe.gkd.sdp.R
 
 @Composable
-fun ActionLogPageSections(route: ActionLogRoute) {
+internal fun ActionLogPageSections(
+    route: ActionLogRoute,
+    uiState: ActionLogUiState,
+    list: LazyPagingItems<Triple<ActionLog, RawSubscription.RawGroupProps?, RawSubscription.RawRuleProps?>>,
+    statsUiState: ActionLogVm.StatsUiState,
+    onBack: () -> Unit,
+    onDeleteAll: () -> Unit,
+    onSelectTab: (Int) -> Unit,
+    onOpenDetail: (Int) -> Unit,
+    onDismissDetail: () -> Unit,
+    onOpenAppConfig: (ActionLog) -> Unit,
+    onOpenSubsSheet: (ActionLog) -> Unit,
+    onOpenGroup: () -> Unit,
+    onToggleGlobalApp: (SubsConfig?, ExcludeData, Boolean) -> Unit,
+    onTogglePage: (SubsConfig?, ExcludeData) -> Unit,
+) {
     val subsId = route.subsId
     val appId = route.appId
-    val mainVm = LocalMainViewModel.current
-    val vm = viewModel { ActionLogVm(route) }
-
 
     val resetKey = rememberSaveable { mutableIntStateOf(0) }
-    val list = vm.pagingDataFlow.collectAsLazyPagingItems()
     val (scrollBehavior, listState) = useListScrollState(resetKey, list.itemCount > 0)
     val timeTextWidth = measureNumberTextWidth(MaterialTheme.typography.bodySmall)
 
@@ -94,9 +98,7 @@ fun ActionLogPageSections(route: ActionLogRoute) {
             navigationIcon = {
                 PerfIconButton(
                     imageVector = PerfIcon.ArrowBack,
-                    onClick = {
-                        mainVm.popPage()
-                    },
+                    onClick = onBack,
                 )
             },
             title = {
@@ -128,34 +130,13 @@ fun ActionLogPageSections(route: ActionLogRoute) {
                 if (list.itemCount > 0) {
                     PerfIconButton(
                         imageVector = PerfIcon.Delete,
-                        onClick = throttle(fn = mainVm.viewModelScope.launchAsFn {
-                            val text = if (subsId != null) {
-                                "确定删除当前订阅所有触发记录?"
-                            } else if (appId != null) {
-                                "确定删除当前应用所有触发记录?"
-                            } else {
-                                "确定删除所有触发记录?"
-                            }
-                            mainVm.dialogFlow.waitResult(
-                                title = li.songe.gkd.sdp.app.getString(R.string.s_8f22c9908e),
-                                text = text,
-                                error = true,
-                            )
-                            if (subsId != null) {
-                                DbSet.actionLogDao.deleteSubsAll(subsId)
-                            } else if (appId != null) {
-                                DbSet.actionLogDao.deleteAppAll(appId)
-                            } else {
-                                DbSet.actionLogDao.deleteAll()
-                            }
-                            toast(li.songe.gkd.sdp.app.getString(R.string.s_86e8d12a79))
-                        })
+                        onClick = throttle(onDeleteAll),
                     )
                 }
             })
     }, content = { contentPadding ->
         Column(modifier = Modifier.scaffoldPadding(contentPadding)) {
-            val selectedTab by vm.selectedTabIndex.collectAsStateWithLifecycle()
+            val selectedTab = uiState.selectedTabIndex
             PrimaryTabRow(
                 selectedTabIndex = selectedTab,
                 modifier = Modifier.fillMaxWidth(),
@@ -164,12 +145,12 @@ fun ActionLogPageSections(route: ActionLogRoute) {
             ) {
                 Tab(
                     selected = selectedTab == 0,
-                    onClick = { vm.selectedTabIndex.value = 0 },
+                    onClick = { onSelectTab(0) },
                     text = { Text(stringResource(R.string.s_8731a78cdd)) }
                 )
                 Tab(
                     selected = selectedTab == 1,
-                    onClick = { vm.selectedTabIndex.value = 1 },
+                    onClick = { onSelectTab(1) },
                     text = { Text(stringResource(R.string.s_ad5386cf16)) }
                 )
             }
@@ -194,10 +175,12 @@ fun ActionLogPageSections(route: ActionLogRoute) {
                                 item = item,
                                 lastItem = lastItem,
                                 onClick = {
-                                    vm.showActionLogFlow.value = item.first
+                                    onOpenDetail(item.first.id)
                                 },
                                 subsId = subsId,
                                 appId = appId,
+                                onOpenAppConfig = onOpenAppConfig,
+                                onOpenSubsSheet = onOpenSubsSheet,
                             )
                         }
                         item(ListPlaceholder.KEY, ListPlaceholder.TYPE) {
@@ -209,26 +192,25 @@ fun ActionLogPageSections(route: ActionLogRoute) {
                     }
                 }
             } else {
-                ActionLogStatsView(vm)
+                ActionLogStatsView(statsUiState)
             }
         }
     })
 
-    vm.showActionLogFlow.collectAsStateWithLifecycle().value?.let {
+    uiState.detail?.let {
         ActionLogDialog(
-            vm = vm,
             actionLog = it,
-            onDismissRequest = {
-                vm.showActionLogFlow.value = null
-            }
+            onDismissRequest = onDismissDetail,
+            onOpenGroup = onOpenGroup,
+            onToggleGlobalApp = onToggleGlobalApp,
+            onTogglePage = onTogglePage,
         )
     }
 }
 
 
 @Composable
-internal fun ActionLogStatsView(vm: ActionLogVm) {
-    val statsUiState by vm.statsUiStateFlow.collectAsStateWithLifecycle()
+internal fun ActionLogStatsView(statsUiState: ActionLogVm.StatsUiState) {
     if (!statsUiState.hasAnyStats) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             EmptyText(text = stringResource(R.string.s_9cf5deae81))

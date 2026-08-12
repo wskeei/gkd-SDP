@@ -7,6 +7,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import li.songe.gkd.sdp.app
 import li.songe.gkd.sdp.appScope
+import li.songe.gkd.sdp.R
 import li.songe.gkd.sdp.runtime.appDependencies
 import li.songe.gkd.sdp.data.AppGroup
 import li.songe.gkd.sdp.data.BlockTimeRule
@@ -180,7 +181,7 @@ object AppBlockerEngine {
             if (owner != null && !sdpRuntimeFeatureCoordinator.isCurrent(owner)) return
             val result = showBlockerOverlay(
                 packageName = packageName,
-                message = message ?: "这真的重要吗？",
+                message = message ?: li.songe.gkd.sdp.app.getString(R.string.common_default_intercept_message),
                 rule = blockingRule,
                 owner = owner,
             )

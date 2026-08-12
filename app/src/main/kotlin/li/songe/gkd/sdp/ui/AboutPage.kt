@@ -244,6 +244,11 @@ fun AboutPage() {
                 style = MaterialTheme.typography.titleSmall,
                 color = MaterialTheme.colorScheme.primary,
             )
+            val feedbackThanks = stringResource(R.string.about_feedback_thanks)
+            val feedbackScope = stringResource(R.string.about_feedback_scope)
+            val feedbackThirdParty = stringResource(R.string.about_feedback_third_party)
+            val feedbackConfident = stringResource(R.string.about_feedback_confident)
+            val feedbackContinue = stringResource(R.string.about_feedback_continue)
             Column(
                 modifier = Modifier
                     .clickable(onClick = throttle(mainVm.viewModelScope.launchAsFn {
@@ -255,19 +260,19 @@ fun AboutPage() {
                                         fontWeight = FontWeight.Bold,
                                         color = MaterialTheme.colorScheme.primary,
                                     )
-                                    append("感谢您愿意花时间反馈，")
+                                    append(feedbackThanks)
                                     withStyle(style = highlightStyle) {
-                                        append("GKD 默认不携带任何规则，只接受应用本体功能相关的反馈")
+                                        append(feedbackScope)
                                     }
                                     append("\n\n")
-                                    append("请先判断是不是第三方规则订阅的问题，如果是，您应该向规则提供者反馈，而不是在此处反馈。")
+                                    append(feedbackThirdParty)
                                     withStyle(style = highlightStyle) {
-                                        append("如果您已经确信是 GKD 应用本体的问题")
+                                        append(feedbackConfident)
                                     }
-                                    append("，可点击下方继续反馈")
+                                    append(feedbackContinue)
                                 })
                             },
-                            confirmText = "继续",
+                            confirmText = li.songe.gkd.sdp.app.getString(R.string.s_1fc1afc5c5),
                             dismissRequest = true,
                         )
                         mainVm.openUrl(ISSUES_URL)
@@ -338,22 +343,22 @@ fun AboutPage() {
         TextListDialog(
             onDismiss = { showShareAppDlg = false },
             textList = listOf(
-                "分享到其他应用" to mainVm.viewModelScope.launchAsFn(Dispatchers.IO) {
+                li.songe.gkd.sdp.app.getString(R.string.share_to_other_apps) to mainVm.viewModelScope.launchAsFn(Dispatchers.IO) {
                     if (!META.isGkdChannel) {
                         mainVm.dialogFlow.waitResult(
                             title = li.songe.gkd.sdp.app.getString(R.string.s_ba964c4042),
                             textContent = { Text(text = exportPlayTipTemplate()) },
-                            confirmText = "继续",
+                            confirmText = li.songe.gkd.sdp.app.getString(R.string.s_1fc1afc5c5),
                         )
                     }
-                    context.shareFile(getShareApkFile(), "分享安装文件")
+                    context.shareFile(getShareApkFile(), li.songe.gkd.sdp.app.getString(R.string.share_install_file))
                 },
-                "保存到下载" to mainVm.viewModelScope.launchAsFn(Dispatchers.IO) {
+                li.songe.gkd.sdp.app.getString(R.string.save_to_downloads) to mainVm.viewModelScope.launchAsFn(Dispatchers.IO) {
                     if (!META.isGkdChannel) {
                         mainVm.dialogFlow.waitResult(
                             title = li.songe.gkd.sdp.app.getString(R.string.s_108a9199f2),
                             textContent = { Text(text = exportPlayTipTemplate()) },
-                            confirmText = "继续",
+                            confirmText = li.songe.gkd.sdp.app.getString(R.string.s_1fc1afc5c5),
                         )
                     }
                     context.saveFileToDownloads(getShareApkFile())
@@ -368,8 +373,11 @@ fun AboutPage() {
 
 @Composable
 private fun exportPlayTipTemplate(): AnnotatedString {
+    val tip = stringResource(R.string.about_export_play_tip)
+    val downloadLink = stringResource(R.string.about_export_play_download_link)
+    val continueText = stringResource(R.string.about_export_play_continue)
     return buildAnnotatedString {
-        append("当前导出的 APK 文件只能在已安装 Google 框架的设备上才能使用，否则安装打开后会提示报错，")
+        append(tip)
         withLink(
             LinkAnnotation.Url(
                 ShortUrlSet.URL13,
@@ -381,9 +389,9 @@ private fun exportPlayTipTemplate(): AnnotatedString {
                 )
             )
         ) {
-            append("建议点此从官网下载")
+            append(downloadLink)
         }
-        append("，或点击下方继续操作")
+        append(continueText)
     }
 }
 

@@ -1,6 +1,7 @@
 package li.songe.gkd.sdp.util
 
 import li.songe.gkd.sdp.usage.UsageRequestValidationPolicy
+import li.songe.gkd.sdp.R
 
 object UsageGuardPolicy {
     const val SCOPE_SELECTED_ONLY = 0
@@ -18,9 +19,9 @@ object UsageGuardPolicy {
 
     data class RequestValidationResult(
         val accepted: Boolean,
-        val reasonError: String? = null,
-        val durationError: String? = null,
-        val tagsError: String? = null,
+        val reasonErrorRes: Int? = null,
+        val durationErrorRes: Int? = null,
+        val tagsErrorRes: Int? = null,
     )
 
     fun shouldProtectApp(
@@ -50,9 +51,9 @@ object UsageGuardPolicy {
         )
         return RequestValidationResult(
             accepted = validation.accepted,
-            reasonError = validation.reasonError,
-            durationError = validation.durationError,
-            tagsError = validation.tagsError,
+            reasonErrorRes = validation.reasonErrorRes,
+            durationErrorRes = validation.durationErrorRes,
+            tagsErrorRes = validation.tagsErrorRes,
         )
     }
 }

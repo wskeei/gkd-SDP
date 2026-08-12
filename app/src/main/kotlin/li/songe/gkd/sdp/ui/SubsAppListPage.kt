@@ -21,6 +21,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -105,13 +106,13 @@ fun SubsAppListPage(route: SubsAppListRoute) {
                     AppBarTextField(
                         value = searchStr,
                         onValueChange = { newValue -> vm.searchStrFlow.value = newValue.trim() },
-                        hint = "请输入应用名称/ID",
+                        hint = stringResource(R.string.app_list_search_hint),
                         modifier = if (firstShowSearchBar) Modifier else Modifier.autoFocus(),
                     )
                 } else {
                     TowLineText(
                         title = useSubs(subsItemId)?.name ?: subsItemId.toString(),
-                        subtitle = "应用规则",
+                        subtitle = stringResource(R.string.subs_app_rules),
                         modifier = Modifier.noRippleClickable {
                             vm.resetKey.intValue++
                         }
@@ -143,31 +144,31 @@ fun SubsAppListPage(route: SubsAppListRoute) {
                     modifier = Modifier.wrapContentSize(Alignment.TopStart)
                 ) {
                     DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-                        MenuGroupCard(inTop = true, title = "排序") {
+                        MenuGroupCard(inTop = true, title = stringResource(R.string.app_list_sort_title)) {
                             var sortType by vm.sortTypeFlow.asMutableState()
                             AppSortOption.objects.forEach { option ->
                                 MenuItemRadioButton(
-                                    text = option.label,
+                                    text = stringResource(option.labelRes),
                                     selected = sortType == option,
                                     onClick = { sortType = option },
                                 )
                             }
                         }
-                        MenuGroupCard(title = "分组") {
+                        MenuGroupCard(title = stringResource(R.string.app_list_group_title)) {
                             var appGroupType by vm.appGroupTypeFlow.asMutableState()
                             AppGroupOption.allObjects.forEach { option ->
                                 val newValue = option.invert(appGroupType)
                                 MenuItemCheckbox(
                                     enabled = newValue != 0,
-                                    text = option.label,
+                                    text = stringResource(option.labelRes),
                                     checked = option.include(appGroupType),
                                     onClick = { appGroupType = newValue },
                                 )
                             }
                         }
-                        MenuGroupCard(title = "筛选") {
+                        MenuGroupCard(title = stringResource(R.string.app_list_filter_title)) {
                             MenuItemCheckbox(
-                                text = "白名单",
+                                text = stringResource(R.string.subs_whitelist),
                                 stateFlow = vm.showBlockAppFlow,
                             )
                         }

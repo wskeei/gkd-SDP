@@ -32,9 +32,9 @@ class PrivacyDataPresenterTest {
 
         val ui = PrivacyDataPresenter.present(inventory)
 
-        assertFalse(ui.first { it.category == DataCategory.SUBSCRIPTIONS_RULES_CONFIG }.deletable)
-        assertFalse(ui.first { it.category == DataCategory.SELF_CONTROL_CONFIG }.deletable)
-        assertFalse(ui.first { it.category == DataCategory.ALL_APP_DATA }.deletable)
+        assertTrue(ui.first { it.category == DataCategory.SUBSCRIPTIONS_RULES_CONFIG }.deletable)
+        assertTrue(ui.first { it.category == DataCategory.SELF_CONTROL_CONFIG }.deletable)
+        assertTrue(ui.first { it.category == DataCategory.ALL_APP_DATA }.deletable)
         assertTrue(ui.first { it.category == DataCategory.USAGE_REQUEST_HISTORY }.deletable)
     }
 
@@ -53,6 +53,6 @@ class PrivacyDataPresenterTest {
 
         val item = ui.first { it.category == DataCategory.SELF_CONTROL_CONFIG }
         assertFalse(item.deletable)
-        assertTrue(item.blockReason != null)
+        assertTrue(item.blockReasonRes != null)
     }
 }

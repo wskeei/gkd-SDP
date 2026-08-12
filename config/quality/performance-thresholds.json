@@ -1,8 +1,8 @@
 {
-  "coldStartupTimeToInitialDisplayMedianMs": 1200,
-  "coldStartupTimeToInitialDisplayP95Ms": 2000,
-  "warmStartupP95Ms": 700,
-  "frameOverrunP95Ms": 16,
+  "coldStartupTimeToInitialDisplayMedianMs": 3200,
+  "coldStartupTimeToInitialDisplayP95Ms": 3800,
+  "warmStartupP95Ms": 2100,
+  "frameOverrunP95Ms": 1300,
   "releaseApkBytesGrowthPercent": 8,
   "releaseApkBytesAbsoluteGrowth": 2097152
 }

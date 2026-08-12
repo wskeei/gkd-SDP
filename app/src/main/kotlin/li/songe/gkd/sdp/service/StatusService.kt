@@ -14,7 +14,6 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
 import li.songe.gkd.sdp.META
-import li.songe.gkd.sdp.MainActivity
 import li.songe.gkd.sdp.activityVisibleCountFlow
 import li.songe.gkd.sdp.a11y.useA11yServiceEnabledFlow
 import li.songe.gkd.sdp.app
@@ -28,6 +27,7 @@ import li.songe.gkd.sdp.permission.writeSecureSettingsState
 import li.songe.gkd.sdp.shizuku.uiAutomationFlow
 import li.songe.gkd.sdp.store.actionCountFlow
 import li.songe.gkd.sdp.store.storeFlow
+import li.songe.gkd.sdp.MainActivity
 import li.songe.gkd.sdp.util.DefaultSimpleLifeImpl
 import li.songe.gkd.sdp.util.OnSimpleLife
 import li.songe.gkd.sdp.util.RuleSummary
@@ -90,23 +90,27 @@ class StatusService : Service(), OnSimpleLife by DefaultSimpleLifeImpl() {
             META.appName
         }
         return if (appOpsRestrictedFlow.value) {
-            Triple(title, "权限受限，请解除限制", "gkd://settings/capabilities")
+            Triple(title, getString(R.string.status_permission_restricted), "gkd://settings/capabilities")
         } else if (shizukuWarn) {
-            Triple(title, "Shizuku 未连接，请授权或关闭优化", "gkd://settings/privacy-data")
+            Triple(title, getString(R.string.status_shizuku_disconnected), "gkd://settings/privacy-data")
         } else if (!automationRunning && !abRunning) {
             if (currentAppUseA11y) {
                 val text = if (a11yServiceEnabledFlow.value) {
-                    "无障碍发生故障"
+                    getString(R.string.overview_service_accessibility_fault)
                 } else if (writeSecureSettingsState.updateAndGet()) {
                     if (store.enableAutomator && store.enableBlockA11yAppList && a11yPartDisabledFlow.value) {
                         val name =
                             appInfoMapFlow.value[topAppIdFlow.value]?.name ?: topAppIdFlow.value
-                        "局部关闭 · $name"
+                        getString(
+                            R.string.status_partial_off_with_name,
+                            name,
+                            getString(R.string.overview_service_accessibility_partial_off),
+                        )
                     } else {
-                        "无障碍已关闭"
+                        getString(R.string.overview_service_accessibility_off)
                     }
                 } else {
-                    "无障碍未授权"
+                    getString(R.string.overview_service_accessibility_unauthorized)
                 }
                 Triple(title, text, abNotif.uri)
             } else {
@@ -114,29 +118,36 @@ class StatusService : Service(), OnSimpleLife by DefaultSimpleLifeImpl() {
                     if (store.enableAutomator && store.enableBlockA11yAppList && a11yPartDisabledFlow.value) {
                         val name =
                             appInfoMapFlow.value[topAppIdFlow.value]?.name ?: topAppIdFlow.value
-                        "局部关闭 · $name"
+                        getString(
+                            R.string.status_partial_off_with_name,
+                            name,
+                            getString(R.string.overview_service_automation_partial_off),
+                        )
                     } else {
-                        "自动化已关闭"
+                        getString(R.string.overview_service_automation_off)
                     }
                 Triple(title, text, abNotif.uri)
             }
         } else if (!store.enableMatch) {
-            Triple(title, "暂停规则匹配", "gkd://rules/subscriptions")
+            Triple(title, getString(R.string.s_2bd91e39a7), "gkd://rules/subscriptions")
         } else if (store.useCustomNotifText) {
+            val customText = store.customNotifText.ifBlank {
+                getString(R.string.notif_custom_text_default)
+            }
             Triple(
                 title,
-                store.customNotifText.replaceTemplate(ruleSummary, count),
+                customText.replaceTemplate(ruleSummary, count),
                 abNotif.uri
             )
         } else {
-            Triple(title, getSubsStatus(ruleSummary, count), abNotif.uri)
+            Triple(title, getSubsStatus(ruleSummary, count, this), abNotif.uri)
         }
     }
 
     init {
         useAliveFlow(isRunning)
         useAliveToast(
-            name = "常驻通知",
+            name = getString(R.string.overview_notification_title),
             delayMillis = if (app.justStarted) 1000 else 0,
         )
         onCreated {

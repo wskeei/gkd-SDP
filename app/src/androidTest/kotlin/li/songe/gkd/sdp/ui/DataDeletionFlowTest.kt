@@ -1,34 +1,30 @@
 package li.songe.gkd.sdp.ui
 
+import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performTextInput
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import li.songe.gkd.sdp.privacy.DataCategory
-import li.songe.gkd.sdp.privacy.DataDeletionCoordinator
-import org.junit.Assert.assertFalse
-import org.junit.Assert.assertTrue
+import li.songe.gkd.sdp.R
+import li.songe.gkd.sdp.SdpUiTestHostActivity
+import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 class DataDeletionFlowTest {
-    @Test
-    fun activeSessionBlocksConfigurationDeletionOnly() {
-        val active = DataDeletionCoordinator.CategoryStatus(
-            recordCount = 1L,
-            bytes = 0L,
-            hasActiveSession = true,
-        )
+    @get:Rule
+    val composeRule = createAndroidComposeRule<SdpUiTestHostActivity>()
 
-        assertTrue(
-            DataDeletionCoordinator.deletionBlocked(
-                DataCategory.SELF_CONTROL_CONFIG,
-                active,
-            ),
-        )
-        assertFalse(
-            DataDeletionCoordinator.deletionBlocked(
-                DataCategory.USAGE_REQUEST_HISTORY,
-                active,
-            ),
-        )
+    @Test
+    fun privacyDataPageOpensFromSettingsSearch() {
+        composeRule.onNodeWithTag("nav_settings", useUnmergedTree = true).performClick()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag("settings_search_field", useUnmergedTree = true).performTextInput("隐私")
+        composeRule.onNodeWithText(
+            composeRule.activity.getString(R.string.settings_privacy_title),
+        ).performClick()
+        composeRule.onNodeWithTag("privacy_data_title").assertExists()
     }
 }

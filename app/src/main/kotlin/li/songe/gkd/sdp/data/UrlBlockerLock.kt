@@ -47,5 +47,8 @@ data class UrlBlockerLock(
 
         @Query("UPDATE url_blocker_lock SET is_locked = 0 WHERE id = 1")
         suspend fun unlock()
+
+        @Query("DELETE FROM url_blocker_lock")
+        suspend fun deleteAll(): Int
     }
 }

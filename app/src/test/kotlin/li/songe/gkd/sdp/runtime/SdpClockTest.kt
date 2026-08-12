@@ -16,4 +16,13 @@ class SdpClockTest {
         assertEquals(2_040L, clock.elapsedRealtimeMillis())
         assertTrue(clock.elapsedRealtimeMillis() >= 0L)
     }
+
+    @Test
+    fun `system clock reports current epoch wall time`() {
+        val before = System.currentTimeMillis()
+        val now = SystemSdpClock.nowEpochMillis()
+        val after = System.currentTimeMillis()
+        assertTrue(now >= before)
+        assertTrue(now <= after)
+    }
 }

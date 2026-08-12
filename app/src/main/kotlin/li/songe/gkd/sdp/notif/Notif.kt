@@ -87,7 +87,7 @@ data class Notif(
             )
             notification
                 .setDeleteIntent(deleteIntent)
-                .addAction(0, "停止", deleteIntent)
+                .addAction(0, app.getString(R.string.notif_stop_action), deleteIntent)
         }
         return notification.build()
     }
@@ -115,43 +115,43 @@ val abNotif by lazy {
     Notif(
         id = 100,
         title = META.appName,
-        text = "无障碍正在运行",
+        text = app.getString(R.string.notif_accessibility_running),
     )
 }
 
 val screenshotNotif = Notif(
     id = 101,
-    title = "截屏服务正在运行",
-    text = "保存快照时截取屏幕",
+    title = app.getString(R.string.notif_screenshot_service_running),
+    text = app.getString(R.string.notif_screenshot_service_capture),
     uri = "gkd://settings/privacy-data",
     stopService = ScreenshotService::class,
 )
 
 val buttonNotif = Notif(
     id = 102,
-    title = "快照按钮服务正在运行",
-    text = "点击按钮捕获快照",
+    title = app.getString(R.string.notif_button_service_running),
+    text = app.getString(R.string.notif_button_service_capture),
     uri = "gkd://settings/privacy-data",
     stopService = ButtonService::class,
 )
 
 val httpNotif = Notif(
     id = 103,
-    title = "HTTP服务正在运行",
+    title = app.getString(R.string.notif_http_service_running),
     uri = "gkd://settings/privacy-data",
     stopService = HttpService::class,
 )
 
 val exposeNotif = Notif(
     id = 104,
-    title = "运行外部调用任务中",
-    text = "任务完成后自动关闭",
+    title = app.getString(R.string.notif_expose_service_running),
+    text = app.getString(R.string.notif_expose_service_complete),
 )
 
 val snapshotNotif = Notif(
     channel = NotifChannel.Snapshot,
     id = 105,
-    title = "快照已保存",
+    title = app.getString(R.string.notif_snapshot_saved),
     ongoing = false,
     autoCancel = true,
     uri = "gkd://snapshots",
@@ -159,21 +159,21 @@ val snapshotNotif = Notif(
 
 val recordNotif = Notif(
     id = 106,
-    title = "记录服务正在运行",
+    title = app.getString(R.string.notif_record_service_running),
     uri = "gkd://settings/privacy-data",
     stopService = ActivityService::class,
 )
 
 val eventNotif = Notif(
     id = 107,
-    title = "事件服务正在运行",
+    title = app.getString(R.string.notif_event_service_running),
     uri = "gkd://settings/privacy-data",
     stopService = EventService::class,
 )
 
 val trackNotif = Notif(
     id = 108,
-    title = "轨迹服务正在运行",
+    title = app.getString(R.string.notif_track_service_running),
     uri = "gkd://settings",
     stopService = TrackService::class,
 )
@@ -181,8 +181,8 @@ val trackNotif = Notif(
 val focusEndNotif = Notif(
     channel = NotifChannel.FocusMode,
     id = 109,
-    title = "专注结束",
-    text = "专注时间已结束，做得很好！",
+    title = app.getString(R.string.notif_focus_end_title),
+    text = app.getString(R.string.notif_focus_end_text),
     ongoing = false,
     autoCancel = true,
 )
@@ -196,8 +196,11 @@ fun accessibilityGuardNotif(index: Int): Notif {
     return Notif(
         channel = NotifChannel.AccessibilityGuard,
         id = ACCESSIBILITY_GUARD_NOTIF_ID_START + index,
-        title = AccessibilityGuardNotificationPolicy.TITLE,
-        text = AccessibilityGuardNotificationPolicy.text(index),
+        title = app.getString(AccessibilityGuardNotificationPolicy.TITLE_RES),
+        text = app.getString(
+            AccessibilityGuardNotificationPolicy.textRes(index),
+            *AccessibilityGuardNotificationPolicy.textArgs(index).toTypedArray(),
+        ),
         ongoing = false,
         autoCancel = true,
         uri = "gkd://overview",
@@ -213,8 +216,8 @@ private fun accessibilityGuardStatusNotif(
     return Notif(
         channel = NotifChannel.AccessibilityGuard,
         id = ACCESSIBILITY_GUARD_STATUS_NOTIF_ID,
-        title = AccessibilityGuardNotificationPolicy.TITLE,
-        text = status.text,
+        title = app.getString(AccessibilityGuardNotificationPolicy.TITLE_RES),
+        text = app.getString(status.textRes, *status.textArgs.toTypedArray()),
         ongoing = true,
         autoCancel = false,
         priority = NotificationCompat.PRIORITY_HIGH,

@@ -1,5 +1,6 @@
 package li.songe.gkd.sdp.backup
 
+import androidx.compose.runtime.Stable
 import android.content.ContentValues
 import android.database.Cursor
 import android.database.sqlite.SQLiteDatabase
@@ -27,6 +28,7 @@ import java.io.File
 import java.security.MessageDigest
 import java.util.Base64
 
+@Stable
 class AppBackupRepository : BackupExportSource, BackupImportTarget {
     override suspend fun <T> withExclusiveMutation(
         block: suspend () -> T,
@@ -229,7 +231,7 @@ class AppBackupRepository : BackupExportSource, BackupImportTarget {
         )
     }
 
-    private fun exportFiles(
+    internal fun exportFiles(
         root: File,
         categoryId: String,
         objectPrefix: String,
@@ -287,7 +289,12 @@ class AppBackupRepository : BackupExportSource, BackupImportTarget {
                     val descriptor = descriptorForTable(data.tableName)
                     require(descriptor != null && objectValue.objectId == descriptor.objectId)
                     require(objectValue.categoryId == categoryForTable(data.tableName)?.id)
-                    validateTable(database, descriptor, data, objectValue.count)
+                    validateTable(
+                        descriptor = descriptor,
+                        data = data,
+                        declaredCount = objectValue.count,
+                        currentColumns = tableColumns(database, data.tableName),
+                    )
                     require(tableData.put(data.tableName, data) == null)
                 }
                 objectValue.objectId.startsWith("subscription-file-") -> {
@@ -322,14 +329,13 @@ class AppBackupRepository : BackupExportSource, BackupImportTarget {
         )
     }
 
-    private fun validateTable(
-        database: SupportSQLiteDatabase,
+    internal fun validateTable(
         descriptor: BackupTableDescriptor,
         data: BackupTableData,
         declaredCount: Int,
+        currentColumns: List<String>,
     ) {
         require(data.rows.size == declaredCount)
-        val currentColumns = tableColumns(database, data.tableName)
         require(data.columns == currentColumns)
         require(data.rows.all { it.size == data.columns.size })
         val primaryKeyIndices = descriptor.primaryKeyColumns.map(data.columns::indexOf)
@@ -349,7 +355,7 @@ class AppBackupRepository : BackupExportSource, BackupImportTarget {
         }
     }
 
-    private fun validateLogicalReferences(decoded: DecodedPayload): Boolean {
+    internal fun validateLogicalReferences(decoded: DecodedPayload): Boolean {
         fun values(table: String, column: String): Set<String> {
             val data = decoded.tableData[table] ?: return emptySet()
             val index = data.columns.indexOf(column)
@@ -426,7 +432,7 @@ class AppBackupRepository : BackupExportSource, BackupImportTarget {
         }
     }
 
-    private fun keysByCategory(payload: BackupPayload): Map<String, Set<String>> {
+    internal fun keysByCategory(payload: BackupPayload): Map<String, Set<String>> {
         val result = mutableMapOf<String, MutableSet<String>>()
         payload.objects.forEach { objectValue ->
             val keys = result.getOrPut(objectValue.categoryId) { mutableSetOf() }
@@ -457,7 +463,7 @@ class AppBackupRepository : BackupExportSource, BackupImportTarget {
         return result
     }
 
-    private fun decodeFile(
+    internal fun decodeFile(
         objectValue: BackupPayloadObject,
         pathValidator: (String) -> Boolean,
     ): BackupFileData {
@@ -468,7 +474,7 @@ class AppBackupRepository : BackupExportSource, BackupImportTarget {
         return file
     }
 
-    private fun decodeFileBytes(file: BackupFileData): ByteArray =
+    internal fun decodeFileBytes(file: BackupFileData): ByteArray =
         Base64.getDecoder().decode(file.contentBase64)
 
     private fun Cursor.readSqlValue(columnIndex: Int): BackupSqlValue = when (getType(columnIndex)) {
@@ -510,7 +516,7 @@ class AppBackupRepository : BackupExportSource, BackupImportTarget {
             }
         }
 
-    private data class DecodedPayload(
+    internal data class DecodedPayload(
         val categoryIds: Set<String>,
         val tableData: Map<String, BackupTableData>,
         val settings: BackupSettingsData?,
@@ -522,18 +528,18 @@ class AppBackupRepository : BackupExportSource, BackupImportTarget {
         private const val SETTINGS_OBJECT_ID = "settings"
         private val SUBSCRIPTION_PATH = Regex("-?\\d+\\.json")
 
-        private fun categoryForTable(tableName: String): BackupCategory? =
+        internal fun categoryForTable(tableName: String): BackupCategory? =
             BackupCatalog.categories.firstOrNull { category ->
                 category.tables.any { it.tableName == tableName }
             }
 
-        private fun descriptorForTable(tableName: String): BackupTableDescriptor? =
+        internal fun descriptorForTable(tableName: String): BackupTableDescriptor? =
             categoryForTable(tableName)?.tables?.firstOrNull { it.tableName == tableName }
 
-        private fun quoteIdentifier(identifier: String): String =
+        internal fun quoteIdentifier(identifier: String): String =
             "\"${identifier.replace("\"", "\"\"")}\""
 
-        private fun isSafeRelativeFile(path: String): Boolean =
+        internal fun isSafeRelativeFile(path: String): Boolean =
             path.isNotBlank() &&
                 path.length <= 240 &&
                 '\\' !in path &&
@@ -541,7 +547,7 @@ class AppBackupRepository : BackupExportSource, BackupImportTarget {
                 !path.startsWith('/') &&
                 path.split('/').none { it.isBlank() || it == "." || it == ".." }
 
-        private fun isValidSnapshotPath(path: String): Boolean {
+        internal fun isValidSnapshotPath(path: String): Boolean {
             if (!isSafeRelativeFile(path)) return false
             val segments = path.split('/')
             if (segments.size != 2 || segments[0].toLongOrNull() == null) return false
@@ -551,11 +557,11 @@ class AppBackupRepository : BackupExportSource, BackupImportTarget {
                 segments[1] == "$id.png"
         }
 
-        private fun shortHash(value: String): String = MessageDigest.getInstance("SHA-256")
+        internal fun shortHash(value: String): String = MessageDigest.getInstance("SHA-256")
             .digest(value.encodeToByteArray())
             .take(8)
             .joinToString("") { byte -> "%02x".format(byte) }
 
-        private fun BackupSqlValue.stableKey(): String = "${type.name}:${value.orEmpty()}"
+        internal fun BackupSqlValue.stableKey(): String = "${type.name}:${value.orEmpty()}"
     }
 }

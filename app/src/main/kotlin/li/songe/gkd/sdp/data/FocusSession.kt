@@ -30,7 +30,7 @@ data class FocusSession(
     // Legacy column kept for DB compatibility after removing WeChat contact whitelist from focus mode.
     @ColumnInfo(name = "wechat_whitelist", defaultValue = "[]") val legacyWechatWhitelistJson: String = "[]",
 
-    @ColumnInfo(name = "intercept_message") val interceptMessage: String = "专注当下",
+    @ColumnInfo(name = "intercept_message") val interceptMessage: String = "",
 
     @ColumnInfo(name = "is_manual") val isManual: Boolean = false,  // 是否手动开启
 
@@ -98,7 +98,7 @@ data class FocusSession(
             endTime = 0,
             whitelistApps = "[]",
             legacyWechatWhitelistJson = "[]",
-            interceptMessage = "专注当下",
+            interceptMessage = "",
             isManual = false,
             isLocked = false,
             lockEndTime = 0

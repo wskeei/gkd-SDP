@@ -89,6 +89,7 @@ data class BrowserConfig(
             ),
             BrowserConfig(
                 packageName = "com.quark.browser",
+                // i18n-ignore: legacy fallback or non-display heuristic data
                 name = "夸克",
                 urlBarId = "com.quark.browser:id/url-bar",
                 enabled = true,
@@ -133,5 +134,8 @@ data class BrowserConfig(
 
         @Query("SELECT COUNT(*) FROM browser_config WHERE enabled = 1")
         fun countEnabled(): Flow<Int>
+
+        @Query("DELETE FROM browser_config")
+        suspend fun deleteAll(): Int
     }
 }

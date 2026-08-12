@@ -19,6 +19,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
@@ -27,10 +28,12 @@ import li.songe.gkd.sdp.R
 
 @Composable
 fun DigitalSelfDisciplineTrendChart(
-    presentation: DigitalSelfDisciplineReviewPresentation.TrendPresentation,
+    presentation: LocalizedTrend,
     modifier: Modifier = Modifier,
 ) {
     var detailsExpanded by remember(presentation) { mutableStateOf(false) }
+    val expandLabel = stringResource(R.string.s_55071d1cf5)
+    val collapseLabel = stringResource(R.string.s_e182c1f7ff)
     Column(
         modifier = modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(6.dp),
@@ -39,27 +42,48 @@ fun DigitalSelfDisciplineTrendChart(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            TrendHeadline("本期平均", presentation.currentAverageText, Modifier.weight(1f))
-            TrendHeadline("上一周期", presentation.previousAverageText, Modifier.weight(1f))
-            TrendHeadline("差值", presentation.deltaText, Modifier.weight(1f))
+            TrendHeadline(
+                stringResource(R.string.review_current_average),
+                presentation.currentAverage.render(),
+                Modifier.weight(1f),
+            )
+            TrendHeadline(
+                stringResource(R.string.review_previous_average),
+                presentation.previousAverage.render(),
+                Modifier.weight(1f),
+            )
+            TrendHeadline(
+                stringResource(R.string.review_delta),
+                presentation.delta.render(),
+                Modifier.weight(1f),
+            )
         }
         Text(
-            text = presentation.coverageText,
+            text = presentation.coverage.render(),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         if (presentation.empty) {
             Text(
-                text = DigitalSelfDisciplineReviewPresentation.emptyText,
+                text = stringResource(R.string.review_empty),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         } else {
             val primary = MaterialTheme.colorScheme.primary
             val minValue = presentation.points.minOf { it.value }
             val maxValue = presentation.points.maxOf { it.value }
-            val axisUnit = DigitalSelfDisciplineReviewPresentation.axisUnitLabel(presentation.metric)
+            val semanticSummary = presentation.semantic.render()
+            val axisUnit = if (presentation.metricRes == R.string.review_metric_ratio) {
+                "×"
+            } else {
+                stringResource(R.string.review_axis_adaptive)
+            }
             Text(
-                text = li.songe.gkd.sdp.app.getString(R.string.s_47d3fa79b4, (presentation.metricLabel).toString(), (axisUnit).toString()),
+                text = stringResource(
+                    R.string.s_47d3fa79b4,
+                    stringResource(presentation.metricRes),
+                    axisUnit,
+                ),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -68,12 +92,18 @@ fun DigitalSelfDisciplineTrendChart(
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
                 Text(
-                    text = li.songe.gkd.sdp.app.getString(R.string.s_d49e418af8, (DigitalSelfDisciplineReviewPresentation.formatTrendValue(maxValue, presentation.metric)).toString()),
+                    text = stringResource(
+                        R.string.s_d49e418af8,
+                        localizedTrendValue(maxValue, presentation.metricRes).render(),
+                    ),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Text(
-                    text = li.songe.gkd.sdp.app.getString(R.string.s_37feaa9b99, (DigitalSelfDisciplineReviewPresentation.formatTrendValue(minValue, presentation.metric)).toString()),
+                    text = stringResource(
+                        R.string.s_37feaa9b99,
+                        localizedTrendValue(minValue, presentation.metricRes).render(),
+                    ),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -82,7 +112,7 @@ fun DigitalSelfDisciplineTrendChart(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(164.dp)
-                    .semantics { contentDescription = presentation.semanticSummary },
+                    .semantics { contentDescription = semanticSummary },
             ) {
                 val values = presentation.points.map { it.value }
                 val minValue = values.minOrNull() ?: 0.0
@@ -124,21 +154,46 @@ fun DigitalSelfDisciplineTrendChart(
             TextButton(
                 onClick = { detailsExpanded = !detailsExpanded },
                 modifier = Modifier.semantics {
-                    contentDescription = if (detailsExpanded) li.songe.gkd.sdp.app.getString(R.string.s_e182c1f7ff) else li.songe.gkd.sdp.app.getString(R.string.s_55071d1cf5)
+                    contentDescription = if (detailsExpanded) collapseLabel else expandLabel
                 },
             ) {
-                Text(if (detailsExpanded) li.songe.gkd.sdp.app.getString(R.string.s_e182c1f7ff) else li.songe.gkd.sdp.app.getString(R.string.s_55071d1cf5))
+                Text(if (detailsExpanded) collapseLabel else expandLabel)
             }
             if (detailsExpanded) {
                 Column(
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
                     verticalArrangement = Arrangement.spacedBy(2.dp),
                 ) {
-                    presentation.textRows.forEach { Text(it, style = MaterialTheme.typography.bodySmall) }
+                    presentation.textRows.forEach { point ->
+                        val value = localizedTrendValue(point.value, presentation.metricRes)
+                        Text(
+                            if (point.sampleCount > 1) {
+                                stringResource(
+                                    R.string.review_text_row_average,
+                                    point.label,
+                                    value.render(),
+                                    point.sampleCount,
+                                )
+                            } else {
+                                stringResource(R.string.review_text_row, point.label, value.render())
+                            },
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                    }
                 }
             }
         }
     }
+}
+
+@Composable
+private fun localizedTrendValue(
+    value: Double,
+    metricRes: Int,
+): LocalizedValue = if (metricRes == R.string.review_metric_ratio) {
+    LocalizedValue.Ratio(value)
+} else {
+    LocalizedValue.Duration(value.toLong())
 }
 
 @Composable

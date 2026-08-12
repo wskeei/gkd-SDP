@@ -408,7 +408,7 @@ class FocusLockVm : BaseViewModel() {
         }
 
         fun quotaBlockedToast(limit: Int): String {
-            return "今日关闭次数已用完（$limit 次），将于明日 00:00 重置"
+            return li.songe.gkd.sdp.app.getString(R.string.s_b0bb6964b5, limit.toString())
         }
 
         fun latestInterceptConfigByKey(interceptConfigs: List<InterceptConfig>): Map<Triple<Long, String, Int>, InterceptConfig> {
@@ -486,7 +486,11 @@ class FocusLockVm : BaseViewModel() {
             val minutes = (ms / 60_000L).coerceAtLeast(0L)
             val hours = minutes / 60
             val remainMinutes = minutes % 60
-            return if (hours > 0) "${hours}小时${remainMinutes}分钟" else "${remainMinutes}分钟"
+            return if (hours > 0) {
+                li.songe.gkd.sdp.app.getString(R.string.focus_lock_hours_minutes, hours, remainMinutes)
+            } else {
+                li.songe.gkd.sdp.app.getString(R.string.focus_lock_minutes, remainMinutes)
+            }
         }
     }
 }

@@ -38,6 +38,14 @@ class UsageGuardCountdownOverlayLayoutPolicyTest {
                 nextRecordId = 8L,
             )
         )
+        assertTrue(
+            UsageGuardCountdownOverlayLayoutPolicy.shouldResetPosition(
+                previousAppId = "com.example.reader",
+                previousRecordId = 7L,
+                nextAppId = "com.example.video",
+                nextRecordId = 7L,
+            )
+        )
     }
 
     @Test
@@ -70,6 +78,23 @@ class UsageGuardCountdownOverlayLayoutPolicyTest {
             UsageGuardCountdownOverlayLayoutPolicy.maxPillWidthPx(
                 screenWidthPx = 30,
                 horizontalMarginPx = 24,
+            ),
+        )
+    }
+
+    @Test
+    fun negativeInputsClampToSafeZero() {
+        val position = UsageGuardCountdownOverlayLayoutPolicy.initialPosition(
+            marginPx = -10,
+            statusBarHeightPx = -20,
+        )
+        assertEquals(0, position.x)
+        assertEquals(0, position.y)
+        assertEquals(
+            0,
+            UsageGuardCountdownOverlayLayoutPolicy.maxPillWidthPx(
+                screenWidthPx = -10,
+                horizontalMarginPx = -5,
             ),
         )
     }

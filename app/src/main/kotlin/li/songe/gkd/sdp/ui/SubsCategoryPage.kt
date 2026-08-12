@@ -26,6 +26,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -83,7 +84,7 @@ fun SubsCategoryPage(@Suppress("unused") route: SubsCategoryRoute) {
         }, title = {
             TowLineText(
                 title = subs.name,
-                subtitle = "规则类别",
+                subtitle = stringResource(R.string.subs_rule_category),
                 modifier = Modifier.noRippleClickable(onClick = { scrollKey.intValue++ })
             )
         }, actions = {
@@ -91,9 +92,9 @@ fun SubsCategoryPage(@Suppress("unused") route: SubsCategoryRoute) {
                 mainVm.dialogFlow.updateDialogOptions(
                     title = li.songe.gkd.sdp.app.getString(R.string.s_a866534a0d),
                     text = arrayOf(
-                        "类别会捕获以当前类别开头的所有应用规则, 因此可调整类别开关(分类手动配置)来批量开关规则",
-                        "规则开关优先级为:\n规则手动配置 > 分类手动配置 > 分类默认 > 规则默认",
-                        "因此如果手动开关了规则(规则手动配置), 则该规则不会被批量开关, 可通过点击类别-重置规则开关, 来移除类别下所有规则手动配置",
+                        li.songe.gkd.sdp.app.getString(R.string.subs_category_help_intro),
+                        li.songe.gkd.sdp.app.getString(R.string.subs_category_help_priority),
+                        li.songe.gkd.sdp.app.getString(R.string.subs_category_help_reset),
                     ).joinToString("\n\n"),
                 )
             })
@@ -173,7 +174,10 @@ private fun CategoryItemCard(
                     text = category.name,
                     style = MaterialTheme.typography.bodyLarge,
                 )
-                val desc = subs.getCategoryCompatDesc(category.key)
+                val desc = subs.getCategoryCompatDesc(
+                    category.key,
+                    li.songe.gkd.sdp.app,
+                )
                 if (desc != null) {
                     Text(
                         text = desc,
@@ -202,7 +206,7 @@ private fun CategoryItemCard(
                             categoryKey = category.key
                         )).copy(enable = option.value)
                     )
-                    toast(option.label)
+                    toast(li.songe.gkd.sdp.app.getString(option.labelRes))
                 })
             )
         }
@@ -220,7 +224,7 @@ fun UpsertCategoryDialog(
     val onClick = appScope.launchAsFn {
         if (category != null) {
             if (subs.categories.any { c -> c.key != category.key && c.name == nameValue }) {
-                error("不可添加同名类别")
+                error(li.songe.gkd.sdp.app.getString(R.string.subs_category_duplicate))
             }
             onDismissRequest()
             val changed = category.name != nameValue || (category.desc ?: "") != descValue
@@ -239,7 +243,7 @@ fun UpsertCategoryDialog(
             }
         } else {
             if (subs.categories.any { c -> c.name == nameValue }) {
-                error("不可添加同名类别")
+                error(li.songe.gkd.sdp.app.getString(R.string.subs_category_duplicate))
             }
             onDismissRequest()
             updateSubscription(

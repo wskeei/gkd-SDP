@@ -16,6 +16,7 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import li.songe.gkd.sdp.META
+import li.songe.gkd.sdp.R
 import li.songe.gkd.sdp.app
 import li.songe.gkd.sdp.data.ActionPerformer
 import li.songe.gkd.sdp.data.ActionResult
@@ -582,15 +583,19 @@ class A11yRuleEngine(val service: A11yCommonImpl) {
         suspend fun screenshot(): Bitmap? = service?.screenshot()
 
         suspend fun execAction(gkdAction: GkdAction): ActionResult {
-            val selector = Selector.parseOrNull(gkdAction.selector) ?: throw RpcError("非法选择器")
+            val selector = Selector.parseOrNull(gkdAction.selector)
+                ?: throw RpcError(app.getString(R.string.a11y_error_invalid_selector))
             runCatching { selector.checkType(typeInfo) }.exceptionOrNull()?.let {
-                throw RpcError("选择器类型错误:${it.message}")
+                throw RpcError(
+                    app.getString(R.string.a11y_error_selector_type, it.message.orEmpty()),
+                )
             }
-            val s = instance ?: throw RpcError("服务未连接")
-            val a = s.safeActiveWindow ?: throw RpcError("界面没有节点信息")
+            val s = instance ?: throw RpcError(app.getString(R.string.a11y_error_service_not_connected))
+            val a = s.safeActiveWindow
+                ?: throw RpcError(app.getString(R.string.a11y_error_no_window_nodes))
             val targetNode = A11yContext(s, interruptable = false).querySelfOrSelector(
                 a, selector, MatchOption(fastQuery = gkdAction.fastQuery)
-            ) ?: throw RpcError("没有查询到节点")
+            ) ?: throw RpcError(app.getString(R.string.a11y_error_no_node_found))
             return withContext(appDependencies.dispatchers.io) {
                 ActionPerformer
                     .getAction(gkdAction.action ?: ActionPerformer.None.action)

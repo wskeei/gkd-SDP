@@ -39,8 +39,8 @@ fun AppPickerDialog(
     onConfirm: (List<String>) -> Unit,
     singleSelect: Boolean = false,
     excludedApps: Set<String> = emptySet(),
-    titleText: String = if (singleSelect) "选择应用" else "选择应用列表",
-    emptyText: String = "未找到匹配的应用",
+    titleText: String = "",
+    emptyText: String = "",
 ) {
     var selectedApps by remember(currentApps) { mutableStateOf(currentApps.toSet()) }
     var searchQuery by remember { mutableStateOf("") }
@@ -70,7 +70,15 @@ fun AppPickerDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(titleText) },
+        title = {
+            Text(
+                titleText.ifBlank {
+                    stringResource(
+                        if (singleSelect) R.string.common_select_app else R.string.common_select_app_list,
+                    )
+                },
+            )
+        },
         text = {
             Column {
                 // 搜索框
@@ -125,7 +133,7 @@ fun AppPickerDialog(
                     if (filteredApps.isEmpty()) {
                         item {
                             Text(
-                                text = emptyText,
+                                text = emptyText.ifBlank { stringResource(R.string.common_no_matching_apps) },
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                                 modifier = Modifier.padding(16.dp)

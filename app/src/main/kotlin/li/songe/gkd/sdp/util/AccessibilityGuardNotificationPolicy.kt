@@ -1,5 +1,7 @@
 package li.songe.gkd.sdp.util
 
+import li.songe.gkd.sdp.R
+
 /**
  * Pure copy and schedule rules for accessibility-permission reminders.
  *
@@ -9,7 +11,8 @@ package li.songe.gkd.sdp.util
  */
 object AccessibilityGuardNotificationPolicy {
     data class GuardStatusNotification(
-        val text: String,
+        val textRes: Int,
+        val textArgs: List<Int> = emptyList(),
         val targetEpochMs: Long?,
         val nextReminderIndex: Int?,
     )
@@ -19,7 +22,7 @@ object AccessibilityGuardNotificationPolicy {
         .map { (it / AccessibilityGuardPolicy.MINUTE_MS).toInt() }
         .toIntArray()
 
-    const val TITLE = "无障碍权限已关闭"
+    const val TITLE_RES = R.string.a11y_guard_title
 
     fun isValidIndex(index: Int): Boolean = index in ELAPSED_MINUTES.indices
 
@@ -28,14 +31,14 @@ object AccessibilityGuardNotificationPolicy {
         return ELAPSED_MINUTES[index]
     }
 
-    fun text(index: Int): String {
-        val elapsedMinutes = elapsedMinutes(index)
-        return if (index == ELAPSED_MINUTES.lastIndex) {
-            "已关闭 $elapsedMinutes 分钟，将显示全屏提醒，请前往重新开启"
+    fun textRes(index: Int): Int =
+        if (index == ELAPSED_MINUTES.lastIndex) {
+            R.string.a11y_guard_final_reminder
         } else {
-            "已关闭 $elapsedMinutes 分钟，请前往重新开启"
+            R.string.a11y_guard_reminder
         }
-    }
+
+    fun textArgs(index: Int): List<Int> = listOf(elapsedMinutes(index))
 
     /**
      * Builds the stable notification shown between stage reminders.
@@ -57,7 +60,7 @@ object AccessibilityGuardNotificationPolicy {
         if (enforcementStarted) {
             if (lastReminderIndex != ELAPSED_MINUTES.lastIndex) return null
             return GuardStatusNotification(
-                text = "最后提醒已发送，请立即开启无障碍",
+                textRes = R.string.a11y_guard_last_sent,
                 targetEpochMs = null,
                 nextReminderIndex = null,
             )
@@ -68,7 +71,8 @@ object AccessibilityGuardNotificationPolicy {
         val targetEpochMs = disabledAtEpochMs +
             AccessibilityGuardPolicy.REMINDER_OFFSETS_MS[nextReminderIndex]
         return GuardStatusNotification(
-            text = "距离第 ${nextReminderIndex + 1} 次提醒",
+            textRes = R.string.a11y_guard_next_reminder,
+            textArgs = listOf(nextReminderIndex + 1),
             targetEpochMs = targetEpochMs,
             nextReminderIndex = nextReminderIndex,
         )

@@ -27,19 +27,20 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
 import li.songe.gkd.sdp.data.FocusRule
+import li.songe.gkd.sdp.ui.component.formatDurationLocalized
 import li.songe.gkd.sdp.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun LockRuleSheet(
-    vm: FocusModeVm,
+    state: FocusModeUiState,
+    callbacks: FocusModeCallbacks,
     rule: FocusRule,
-    onDismiss: () -> Unit,
-    onLock: () -> Unit
 ) {
     ModalBottomSheet(
-        onDismissRequest = onDismiss,
+        onDismissRequest = callbacks.onDismissRuleLock,
         sheetState = rememberModalBottomSheetState()
     ) {
         Column(
@@ -64,7 +65,10 @@ internal fun LockRuleSheet(
             if (rule.isCurrentlyLocked) {
                 val remainingMinutes = ((rule.lockEndTime - System.currentTimeMillis()) / 60000).coerceAtLeast(0)
                 Text(
-                    text = li.songe.gkd.sdp.app.getString(R.string.s_1090ec0cd1, (if (remainingMinutes >= 60) "${remainingMinutes / 60}小时${remainingMinutes % 60}分钟" else "${remainingMinutes}分钟").toString()),
+                    text = li.songe.gkd.sdp.app.getString(
+                        R.string.s_1090ec0cd1,
+                        formatDurationLocalized(remainingMinutes * 60_000L),
+                    ),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.primary
                 )
@@ -74,9 +78,9 @@ internal fun LockRuleSheet(
 
             // 预设时长
             val presets = listOf(
-                480 to "8小时",
-                1440 to "1天",
-                4320 to "3天"
+                480 to stringResource(R.string.duration_option_8h),
+                1440 to stringResource(R.string.duration_option_1d),
+                4320 to stringResource(R.string.duration_option_3d),
             )
             presets.forEach { (minutes, label) ->
                 Row(
@@ -84,16 +88,16 @@ internal fun LockRuleSheet(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clickable {
-                            vm.selectedLockDuration = minutes
-                            vm.isCustomLockDuration = false
+                            callbacks.onSelectedLockDurationChange(minutes)
+                            callbacks.onCustomLockDurationChange(false)
                         }
                         .padding(vertical = 12.dp)
                 ) {
                     Checkbox(
-                        checked = !vm.isCustomLockDuration && vm.selectedLockDuration == minutes,
+                        checked = !state.isCustomLockDuration && state.selectedLockDuration == minutes,
                         onCheckedChange = {
-                            vm.selectedLockDuration = minutes
-                            vm.isCustomLockDuration = false
+                            callbacks.onSelectedLockDurationChange(minutes)
+                            callbacks.onCustomLockDurationChange(false)
                         }
                     )
                     Spacer(modifier = Modifier.width(8.dp))
@@ -106,33 +110,33 @@ internal fun LockRuleSheet(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clickable { vm.isCustomLockDuration = true }
+                    .clickable { callbacks.onCustomLockDurationChange(true) }
                     .padding(vertical = 12.dp)
             ) {
                 Checkbox(
-                    checked = vm.isCustomLockDuration,
-                    onCheckedChange = { vm.isCustomLockDuration = it }
+                    checked = state.isCustomLockDuration,
+                    onCheckedChange = callbacks.onCustomLockDurationChange,
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(li.songe.gkd.sdp.app.getString(R.string.s_c493338e8c))
             }
 
-            if (vm.isCustomLockDuration) {
+            if (state.isCustomLockDuration) {
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(16.dp),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     OutlinedTextField(
-                        value = vm.customLockDaysText,
-                        onValueChange = { vm.customLockDaysText = it },
+                        value = state.customLockDaysText,
+                        onValueChange = callbacks.onCustomLockDaysTextChange,
                         label = { Text(li.songe.gkd.sdp.app.getString(R.string.s_c3304d1e49)) },
                         modifier = Modifier.weight(1f),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         singleLine = true
                     )
                     OutlinedTextField(
-                        value = vm.customLockHoursText,
-                        onValueChange = { vm.customLockHoursText = it },
+                        value = state.customLockHoursText,
+                        onValueChange = callbacks.onCustomLockHoursTextChange,
                         label = { Text(li.songe.gkd.sdp.app.getString(R.string.s_99f6904ff3)) },
                         modifier = Modifier.weight(1f),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
@@ -144,7 +148,7 @@ internal fun LockRuleSheet(
             Spacer(modifier = Modifier.height(24.dp))
 
             Button(
-                onClick = onLock,
+                onClick = callbacks.onLockRuleTarget,
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text(if (rule.isCurrentlyLocked) li.songe.gkd.sdp.app.getString(R.string.s_eae5fd957e) else li.songe.gkd.sdp.app.getString(R.string.s_648f1e98b5))

@@ -6,6 +6,7 @@ import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
@@ -20,6 +21,7 @@ fun InnerDisableSwitch(
     isSelectedMode: Boolean = false,
 ) {
     val mainVm = LocalMainViewModel.current
+    val disabledDescription = stringResource(R.string.common_disabled)
     val onClick = {
         if (valid) {
             mainVm.dialogFlow.updateDialogOptions(
@@ -38,7 +40,7 @@ fun InnerDisableSwitch(
         enabled = false,
         onCheckedChange = null,
         modifier = modifier.semantics {
-            stateDescription = "已禁用"
+            stateDescription = disabledDescription
         }
             .minimumInteractiveComponentSize().run {
                 if (isSelectedMode) {
@@ -49,7 +51,7 @@ fun InnerDisableSwitch(
                         indication = null,
                         role = Role.Switch,
                         onClick = throttle(onClick),
-                        onClickLabel = "打开规则禁用说明",
+                        onClickLabel = li.songe.gkd.sdp.app.getString(R.string.rule_open_disable_help),
                     )
                 }
             }

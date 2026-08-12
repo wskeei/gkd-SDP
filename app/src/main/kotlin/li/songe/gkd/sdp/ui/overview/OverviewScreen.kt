@@ -4,7 +4,9 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.viewmodel.compose.viewModel
 import li.songe.gkd.sdp.ui.home.useControlPage
+import li.songe.gkd.sdp.ui.home.HomeVm
 
 /**
  * Overview: service status, current mode, pending capabilities, today's
@@ -12,8 +14,8 @@ import li.songe.gkd.sdp.ui.home.useControlPage
  * control page content so runtime behavior stays unchanged.
  */
 @Composable
-fun OverviewScreen() {
-    val control = useControlPage()
+fun OverviewScreen(vm: HomeVm = viewModel()) {
+    val control = useControlPage(vm)
     Column(modifier = Modifier) {
         control.topBar()
         control.content(PaddingValues())

@@ -25,16 +25,12 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import li.songe.gkd.sdp.app
 import li.songe.gkd.sdp.data.FocusRule
 import li.songe.gkd.sdp.data.FocusSession
@@ -42,7 +38,6 @@ import li.songe.gkd.sdp.ui.component.AppIcon
 import li.songe.gkd.sdp.ui.component.PerfIcon
 import li.songe.gkd.sdp.ui.component.PerfIconButton
 import li.songe.gkd.sdp.ui.component.PerfTopAppBar
-import li.songe.gkd.sdp.ui.share.LocalMainViewModel
 import li.songe.gkd.sdp.ui.style.itemPadding
 import li.songe.gkd.sdp.ui.style.scaffoldPadding
 import li.songe.gkd.sdp.ui.style.surfaceCardColors
@@ -50,24 +45,18 @@ import androidx.compose.ui.res.stringResource
 import li.songe.gkd.sdp.R
 
 @Composable
-fun FocusModePageSections() {
-    val mainVm = LocalMainViewModel.current
-    val vm = viewModel<FocusModeVm>()
-    val allRules by vm.allRulesFlow.collectAsStateWithLifecycle()
-    val quickStartRules = remember(allRules) { allRules.filter { it.isQuickStart } }
-    val scheduledRules = remember(allRules) { allRules.filterNot { it.isQuickStart } }
-    val activeSession by vm.activeSessionFlow.collectAsStateWithLifecycle()
-    val isActive by vm.isActiveFlow.collectAsStateWithLifecycle()
-    val currentWhitelist by vm.currentWhitelistFlow.collectAsStateWithLifecycle()
-
-    var showQuickStartSheet by remember { mutableStateOf(false) }
-    var showRuleEditorSheet by remember { mutableStateOf(false) }
-    var showWhitelistPicker by remember { mutableStateOf(false) }
-    var showLockSheet by remember { mutableStateOf(false) }
-    var lockTargetRule by remember { mutableStateOf<FocusRule?>(null) }
-    var whitelistPickerMode by remember { mutableStateOf("rule") } // "rule" or "manual"
-
-    val scope = rememberCoroutineScope()
+fun FocusModePageSections(
+    state: FocusModeUiState,
+    showQuickStartSheet: Boolean,
+    showRuleEditorSheet: Boolean,
+    showWhitelistPicker: Boolean,
+    showLockSheet: Boolean,
+    lockTargetRule: FocusRule?,
+    whitelistPickerMode: String,
+    callbacks: FocusModeCallbacks,
+) {
+    val quickStartRules = remember(state.allRules) { state.allRules.filter { it.isQuickStart } }
+    val scheduledRules = remember(state.allRules) { state.allRules.filterNot { it.isQuickStart } }
 
     Scaffold(
         topBar = {
@@ -75,15 +64,12 @@ fun FocusModePageSections() {
                 navigationIcon = {
                     PerfIconButton(
                         imageVector = PerfIcon.ArrowBack,
-                        onClick = { mainVm.popPage() },
+                        onClick = callbacks.onBack,
                     )
                 },
                 title = { Text(text = li.songe.gkd.sdp.app.getString(R.string.s_63c1371c03)) },
                 actions = {
-                    IconButton(onClick = {
-                        vm.resetRuleForm()
-                        showRuleEditorSheet = true
-                    }) {
+                    IconButton(onClick = callbacks.onOpenRuleEditor) {
                         Icon(PerfIcon.Add, contentDescription = li.songe.gkd.sdp.app.getString(R.string.s_d2fc32282a))
                     }
                 }
@@ -92,62 +78,47 @@ fun FocusModePageSections() {
     ) { padding ->
         FocusModeRulesList(
             padding = padding,
-            vm = vm,
+            state = state,
             quickStartRules = quickStartRules,
             scheduledRules = scheduledRules,
-            activeSession = activeSession,
-            isActive = isActive,
-            currentWhitelist = currentWhitelist,
-            onQuickStart = { showQuickStartSheet = true },
-            onEdit = { rule -> vm.loadRuleForEdit(rule); showRuleEditorSheet = true },
-            onLock = { rule -> lockTargetRule = rule; showLockSheet = true },
+            callbacks = callbacks,
         )
     }
 
     FocusModeSheets(
-        vm = vm,
+        state = state,
         showQuickStartSheet = showQuickStartSheet,
         showRuleEditorSheet = showRuleEditorSheet,
         showWhitelistPicker = showWhitelistPicker,
         showLockSheet = showLockSheet,
         lockTargetRule = lockTargetRule,
         whitelistPickerMode = whitelistPickerMode,
-        setQuickStartSheet = { showQuickStartSheet = it },
-        setRuleEditorSheet = { showRuleEditorSheet = it },
-        setWhitelistPicker = { showWhitelistPicker = it },
-        setLockSheet = { showLockSheet = it },
-        setLockTargetRule = { lockTargetRule = it },
-        setWhitelistPickerMode = { whitelistPickerMode = it },
+        callbacks = callbacks,
     )
 }
 
 @Composable
 private fun FocusModeRulesList(
     padding: androidx.compose.foundation.layout.PaddingValues,
-    vm: FocusModeVm,
+    state: FocusModeUiState,
     quickStartRules: List<FocusRule>,
     scheduledRules: List<FocusRule>,
-    activeSession: FocusSession?,
-    isActive: Boolean,
-    currentWhitelist: List<String>,
-    onQuickStart: () -> Unit,
-    onEdit: (FocusRule) -> Unit,
-    onLock: (FocusRule) -> Unit,
+    callbacks: FocusModeCallbacks,
 ) {
     LazyColumn(modifier = Modifier.scaffoldPadding(padding)) {
         item(key = "status") {
             ActiveSessionCard(
-                session = activeSession,
-                isActive = isActive,
-                currentWhitelist = currentWhitelist,
-                onStop = { vm.stopManualSession() },
-                onRemoveWhitelist = vm::removeFromSessionWhitelist,
+                session = state.activeSession,
+                isActive = state.isActive,
+                currentWhitelist = state.currentWhitelist,
+                onStop = callbacks.onStopManualSession,
+                onRemoveWhitelist = callbacks.onRemoveFromSessionWhitelist,
             )
             Spacer(modifier = Modifier.height(16.dp))
         }
-        if (!isActive) {
+        if (!state.isActive) {
             item(key = "quick_start") {
-                Button(onClick = onQuickStart, modifier = Modifier.fillMaxWidth().itemPadding()) { Text(li.songe.gkd.sdp.app.getString(R.string.s_eb4f824680)) }
+                Button(onClick = callbacks.onOpenQuickStart, modifier = Modifier.fillMaxWidth().itemPadding()) { Text(li.songe.gkd.sdp.app.getString(R.string.s_eb4f824680)) }
                 Spacer(modifier = Modifier.height(16.dp))
             }
         }
@@ -157,10 +128,8 @@ private fun FocusModeRulesList(
         }
         FocusModeRuleItems(
             rules = quickStartRules,
-            emptyText = "暂无快速启动模板，点击右上角 + 添加",
-            vm = vm,
-            onEdit = onEdit,
-            onLock = onLock,
+            emptyTextRes = R.string.focus_mode_empty_quick_start,
+            callbacks = callbacks,
         )
         item(key = "scheduled_rules_header") {
             Text(li.songe.gkd.sdp.app.getString(R.string.s_a497f76289), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, modifier = Modifier.itemPadding())
@@ -168,35 +137,36 @@ private fun FocusModeRulesList(
         }
         FocusModeRuleItems(
             rules = scheduledRules,
-            emptyText = "暂无定时规则，点击右上角 + 添加",
-            vm = vm,
-            onEdit = onEdit,
-            onLock = onLock,
+            emptyTextRes = R.string.focus_mode_empty_scheduled,
+            callbacks = callbacks,
         )
     }
 }
 
 private fun androidx.compose.foundation.lazy.LazyListScope.FocusModeRuleItems(
     rules: List<FocusRule>,
-    emptyText: String,
-    vm: FocusModeVm,
-    onEdit: (FocusRule) -> Unit,
-    onLock: (FocusRule) -> Unit,
+    emptyTextRes: Int,
+    callbacks: FocusModeCallbacks,
 ) {
     if (rules.isEmpty()) {
         item {
-            Text(emptyText, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f), modifier = Modifier.itemPadding())
+            Text(
+                stringResource(emptyTextRes),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                modifier = Modifier.itemPadding(),
+            )
             Spacer(modifier = Modifier.height(16.dp))
         }
     } else {
         items(rules, key = { "rule_${it.id}" }) { rule ->
             FocusRuleCard(
                 rule = rule,
-                onToggleEnabled = { vm.toggleRuleEnabled(rule) },
-                onEdit = { onEdit(rule) },
-                onDelete = { vm.deleteRule(rule) },
-                onLock = { onLock(rule) },
-                onStart = { vm.startQuickRule(rule) },
+                onToggleEnabled = { callbacks.onToggleRuleEnabled(rule) },
+                onEdit = { callbacks.onEditRule(rule) },
+                onDelete = { callbacks.onDeleteRule(rule) },
+                onLock = { callbacks.onOpenRuleLock(rule) },
+                onStart = { callbacks.onStartQuickRule(rule) },
             )
             Spacer(modifier = Modifier.height(8.dp))
         }
@@ -205,52 +175,43 @@ private fun androidx.compose.foundation.lazy.LazyListScope.FocusModeRuleItems(
 
 @Composable
 private fun FocusModeSheets(
-    vm: FocusModeVm,
+    state: FocusModeUiState,
     showQuickStartSheet: Boolean,
     showRuleEditorSheet: Boolean,
     showWhitelistPicker: Boolean,
     showLockSheet: Boolean,
     lockTargetRule: FocusRule?,
     whitelistPickerMode: String,
-    setQuickStartSheet: (Boolean) -> Unit,
-    setRuleEditorSheet: (Boolean) -> Unit,
-    setWhitelistPicker: (Boolean) -> Unit,
-    setLockSheet: (Boolean) -> Unit,
-    setLockTargetRule: (FocusRule?) -> Unit,
-    setWhitelistPickerMode: (String) -> Unit,
+    callbacks: FocusModeCallbacks,
 ) {
     if (showQuickStartSheet) {
         QuickStartSheet(
-            vm = vm,
-            onDismiss = { setQuickStartSheet(false) },
-            onShowWhitelistPicker = { setWhitelistPickerMode("manual"); setWhitelistPicker(true) },
-            onStart = { vm.startManualSession(); setQuickStartSheet(false) },
+            state = state,
+            callbacks = callbacks,
         )
     }
-    if (showRuleEditorSheet || vm.showRuleEditor) {
+    if (showRuleEditorSheet || state.showRuleEditor) {
         RuleEditorSheet(
-            vm = vm,
-            onDismiss = { setRuleEditorSheet(false); vm.resetRuleForm() },
-            onShowWhitelistPicker = { setWhitelistPickerMode("rule"); setWhitelistPicker(true) },
-            onSave = { vm.saveRule(); setRuleEditorSheet(false) },
+            state = state,
+            callbacks = callbacks,
         )
     }
     if (showWhitelistPicker) {
         WhitelistPickerDialog(
-            currentWhitelist = if (whitelistPickerMode == "rule") vm.ruleWhitelistApps else vm.manualWhitelistApps,
-            onDismiss = { setWhitelistPicker(false) },
-            onConfirm = { selected ->
-                if (whitelistPickerMode == "rule") vm.ruleWhitelistApps = selected else vm.manualWhitelistApps = selected
-                setWhitelistPicker(false)
+            currentWhitelist = if (whitelistPickerMode == "rule") {
+                state.ruleWhitelistApps
+            } else {
+                state.manualWhitelistApps
             },
+            state = state,
+            callbacks = callbacks,
         )
     }
     if (showLockSheet && lockTargetRule != null) {
         LockRuleSheet(
-            vm = vm,
+            state = state,
+            callbacks = callbacks,
             rule = lockTargetRule,
-            onDismiss = { setLockSheet(false); setLockTargetRule(null) },
-            onLock = { vm.lockRule(lockTargetRule); setLockSheet(false); setLockTargetRule(null) },
         )
     }
 }

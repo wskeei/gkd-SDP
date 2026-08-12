@@ -47,6 +47,8 @@ jobs:
       - name: Verify release metadata and Python contracts
         run: |
           python3 -m unittest discover -s scripts/tests -p 'test_*.py' -v
+          python3 scripts/verify-localization-resources.py
+          python3 scripts/verify-localization-sources.py
           bash scripts/test-verify-release-metadata.sh
           bash scripts/test-generate-update-manifest.sh
           bash scripts/verify-release-metadata.sh --no-tag
@@ -63,6 +65,11 @@ jobs:
       - name: Verify coverage and screenshots
         run: |
           ./gradlew :app:koverVerifyGkdDebug
+          ./gradlew :app:koverXmlReportGkdDebug
+          python3 scripts/verify-kover-report.py \
+            --xml app/build/reports/kover/reportGkdDebug.xml \
+            --includes config/quality/kover-includes.txt \
+            --excludes config/quality/kover-excludes.txt
           ./gradlew :app:validateGkdDebugScreenshotTest
 
       - name: Run API 26 managed device tests
@@ -101,8 +108,14 @@ jobs:
             :app:assemblePlayDebug \
             :app:assembleGkdRelease \
             :app:assemblePlayRelease
+          git worktree add --detach .worktrees/performance-baseline v2.2.1
+          ./gradlew -p .worktrees/performance-baseline :app:assembleGkdRelease
           python3 scripts/verify-performance-reports.py \
-            --thresholds config/quality/performance-thresholds.json
+            --thresholds config/quality/performance-thresholds.json \
+            --current-apk app/build/outputs/apk/gkd/release/app-gkd-release.apk \
+            --baseline-apk .worktrees/performance-baseline/app/build/outputs/apk/gkd/release/app-gkd-release.apk \
+            --compose-report app/build/compose_compiler \
+            --compose-baseline config/quality/compose-stability-baseline.json
 
       - name: Upload Nightly APK
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7

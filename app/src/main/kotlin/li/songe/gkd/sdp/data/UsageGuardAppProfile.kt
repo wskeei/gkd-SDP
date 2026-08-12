@@ -39,5 +39,8 @@ data class UsageGuardAppProfile(
             """
         )
         suspend fun deleteUnusedProfiles(defaultGrantMode: Int): Int
+
+        @Query("DELETE FROM usage_guard_app_profile")
+        suspend fun deleteAll(): Int
     }
 }

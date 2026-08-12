@@ -79,7 +79,9 @@ class UrlBlockVm : BaseViewModel() {
     var urlName by mutableStateOf("")
     var urlRedirectUrl by mutableStateOf(UrlBlockRule.DEFAULT_REDIRECT_URL)
     var urlShowIntercept by mutableStateOf(true)
-    var urlInterceptMessage by mutableStateOf("这真的重要吗？")
+    var urlInterceptMessage by mutableStateOf(
+        li.songe.gkd.sdp.app.getString(R.string.common_default_intercept_message),
+    )
     var urlGroupId by mutableStateOf(0L)  // 0 表示未分组
 
     // --- 时间规则表单 ---
@@ -88,7 +90,9 @@ class UrlBlockVm : BaseViewModel() {
     var timeRuleStartTime by mutableStateOf("22:00")
     var timeRuleEndTime by mutableStateOf("08:00")
     var timeRuleDaysOfWeek by mutableStateOf(listOf(1, 2, 3, 4, 5, 6, 7))
-    var timeRuleInterceptMsg by mutableStateOf("这真的重要吗？")
+    var timeRuleInterceptMsg by mutableStateOf(
+        li.songe.gkd.sdp.app.getString(R.string.common_default_intercept_message),
+    )
     var timeRuleIsAllowMode by mutableStateOf(false)
 
     // --- 浏览器表单 ---
@@ -210,7 +214,7 @@ class UrlBlockVm : BaseViewModel() {
         urlName = ""
         urlRedirectUrl = UrlBlockRule.DEFAULT_REDIRECT_URL
         urlShowIntercept = true
-        urlInterceptMessage = "这真的重要吗？"
+        urlInterceptMessage = li.songe.gkd.sdp.app.getString(R.string.common_default_intercept_message)
         urlGroupId = 0L
         
         // 重置时间规则字段为默认值 (全天拦截)
@@ -285,7 +289,9 @@ class UrlBlockVm : BaseViewModel() {
             name = urlName.ifBlank { urlPattern.trim() },
             redirectUrl = urlRedirectUrl.ifBlank { UrlBlockRule.DEFAULT_REDIRECT_URL },
             showIntercept = urlShowIntercept,
-            interceptMessage = urlInterceptMessage.ifBlank { "这真的重要吗？" },
+            interceptMessage = urlInterceptMessage.ifBlank {
+                li.songe.gkd.sdp.app.getString(R.string.common_default_intercept_message)
+            },
             orderIndex = editingUrlRule?.orderIndex ?: 0,
             groupId = urlGroupId,
             isLocked = editingUrlRule?.isLocked ?: false,
@@ -304,7 +310,9 @@ class UrlBlockVm : BaseViewModel() {
             daysOfWeek = timeRuleDaysOfWeek.joinToString(","),
             enabled = true,
             isAllowMode = timeRuleIsAllowMode,
-            interceptMessage = urlInterceptMessage.ifBlank { "这真的重要吗？" }
+            interceptMessage = urlInterceptMessage.ifBlank {
+                li.songe.gkd.sdp.app.getString(R.string.common_default_intercept_message)
+            }
         )
         DbSet.urlTimeRuleDao.insert(tr)
 
@@ -356,7 +364,7 @@ class UrlBlockVm : BaseViewModel() {
         timeRuleStartTime = "22:00"
         timeRuleEndTime = "08:00"
         timeRuleDaysOfWeek = listOf(1, 2, 3, 4, 5, 6, 7)
-        timeRuleInterceptMsg = "这真的重要吗？"
+        timeRuleInterceptMsg = li.songe.gkd.sdp.app.getString(R.string.common_default_intercept_message)
         timeRuleIsAllowMode = false
         showTimeRuleEditor = false
     }
@@ -421,7 +429,9 @@ class UrlBlockVm : BaseViewModel() {
             isLocked = editingTimeRule?.isLocked ?: false,
             lockEndTime = editingTimeRule?.lockEndTime ?: 0,
             createdAt = editingTimeRule?.createdAt ?: System.currentTimeMillis(),
-            interceptMessage = timeRuleInterceptMsg.ifBlank { "这真的重要吗？" },
+            interceptMessage = timeRuleInterceptMsg.ifBlank {
+                li.songe.gkd.sdp.app.getString(R.string.common_default_intercept_message)
+            },
             isAllowMode = timeRuleIsAllowMode
         )
 
@@ -648,7 +658,7 @@ class UrlBlockVm : BaseViewModel() {
         }
 
         private fun quotaBlockedToast(limit: Int): String {
-            return "今日关闭次数已用完（$limit 次），将于明日 00:00 重置"
+            return li.songe.gkd.sdp.app.getString(R.string.s_ba1f755996, limit.toString())
         }
     }
 }

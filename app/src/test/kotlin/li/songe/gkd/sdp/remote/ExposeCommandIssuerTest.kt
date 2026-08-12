@@ -51,6 +51,47 @@ class ExposeCommandIssuerTest {
         )
     }
 
+    @Test
+    fun `consume enforces optional channel and revoke clears all records for channel`() = runBlocking {
+        val issuer = issuer(InMemoryExposeCommandStore()) { 1_000 }
+        val external = issuer.issue(ExposeAction.SYNC_FIX, ExposeChannel.EXTERNAL)
+        val internal = issuer.issue(ExposeAction.STATUS_AUTOSTART, ExposeChannel.INTERNAL)
+
+        assertEquals(
+            ExposeConsumeError.CHANNEL_MISMATCH,
+            (issuer.consume(
+                external.token,
+                ExposeAction.SYNC_FIX,
+                ExposeChannel.INTERNAL,
+            ) as ExposeConsumeResult.Denied).error,
+        )
+
+        issuer.revoke(ExposeChannel.EXTERNAL)
+
+        assertEquals(
+            ExposeConsumeError.TOKEN_MISMATCH,
+            (issuer.consume(external.token, ExposeAction.SYNC_FIX) as ExposeConsumeResult.Denied).error,
+        )
+        assertTrue(
+            issuer.consume(internal.token, ExposeAction.STATUS_AUTOSTART) is ExposeConsumeResult.Allowed,
+        )
+    }
+
+    @Test
+    fun `wrong random token length fails closed`() = runBlocking {
+        val issuer = ExposeCommandIssuer(
+            store = InMemoryExposeCommandStore(),
+            nowMillis = { 1_000 },
+            randomSource = RemoteRandomSource { ByteArray(4) },
+        )
+
+        try {
+            issuer.issue(ExposeAction.SYNC_FIX, ExposeChannel.INTERNAL)
+            throw AssertionError("expected failure")
+        } catch (_: IllegalArgumentException) {
+        }
+    }
+
     private fun issuer(store: ExposeCommandStore, now: () -> Long) = ExposeCommandIssuer(
         store = store,
         nowMillis = now,

@@ -16,7 +16,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
@@ -33,9 +32,9 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -72,6 +71,7 @@ import li.songe.gkd.sdp.diagnostics.DiagnosticLogger
 import li.songe.gkd.sdp.permission.AuthDialog
 import li.songe.gkd.sdp.permission.canDrawOverlaysState
 import li.songe.gkd.sdp.permission.updatePermissionState
+import li.songe.gkd.sdp.performance.AppDrawReporter
 import li.songe.gkd.sdp.service.A11yService
 import li.songe.gkd.sdp.service.AccessibilityGuardRuntime
 import li.songe.gkd.sdp.service.StatusService
@@ -153,10 +153,11 @@ import li.songe.gkd.sdp.ui.component.TextDialog
 import li.songe.gkd.sdp.ui.home.HomePage
 import li.songe.gkd.sdp.ui.home.HomeRoute
 import li.songe.gkd.sdp.ui.share.FixedWindowInsets
+import li.songe.gkd.sdp.ui.share.appTopBarWindowInsets
+import li.songe.gkd.sdp.ui.share.LocalDrawReporter
 import li.songe.gkd.sdp.ui.share.LocalMainViewModel
 import li.songe.gkd.sdp.ui.style.AppTheme
 import li.songe.gkd.sdp.util.AndroidTarget
-import li.songe.gkd.sdp.util.BarUtils
 import li.songe.gkd.sdp.util.EditGithubCookieDlg
 import li.songe.gkd.sdp.util.KeyboardUtils
 import li.songe.gkd.sdp.util.LogUtils
@@ -180,6 +181,7 @@ import li.songe.gkd.sdp.R
 class MainActivity : ComponentActivity() {
     val startTime = System.currentTimeMillis()
     val mainVm by viewModels<MainViewModel>()
+    private val drawReporter = AppDrawReporter { reportFullyDrawn() }
     val launcher by lazy { StartActivityLauncher(this) }
     val pickContentLauncher by lazy { PickContentLauncher(this) }
 
@@ -189,8 +191,6 @@ class MainActivity : ComponentActivity() {
     private val imeVisible: Boolean
         get() = ViewCompat.getRootWindowInsets(window.decorView)
             ?.isVisible(WindowInsetsCompat.Type.ime()) == true  // fix #1315
-
-    var topBarWindowInsets by mutableStateOf(WindowInsets(top = BarUtils.getStatusBarHeight()))
 
     private fun watchKeyboardVisible() {
         if (AndroidTarget.R) {
@@ -291,13 +291,17 @@ class MainActivity : ComponentActivity() {
             mainVm.bindBackStack(saveableBackStack)
             val latestInsets = TopAppBarDefaults.windowInsets
             val density = LocalDensity.current
-            if (latestInsets.getTop(density) > topBarWindowInsets.getTop(density)) {
-                topBarWindowInsets = FixedWindowInsets(latestInsets)
+            if (latestInsets.getTop(density) > appTopBarWindowInsets.getTop(density)) {
+                appTopBarWindowInsets = FixedWindowInsets(latestInsets)
             }
             CompositionLocalProvider(
-                LocalMainViewModel provides mainVm
+                LocalMainViewModel provides mainVm,
+                LocalDrawReporter provides drawReporter,
             ) {
                 AppTheme {
+                    SideEffect {
+                        drawReporter.reportInteractiveContent()
+                    }
                     NavDisplay(
                         entryDecorators = listOf(
                             rememberSaveableStateHolderNavEntryDecorator(),

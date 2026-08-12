@@ -1,5 +1,6 @@
 package li.songe.gkd.sdp.data
 
+import android.content.Context
 import androidx.room.ColumnInfo
 import androidx.room.Dao
 import androidx.room.Delete
@@ -12,6 +13,7 @@ import androidx.room.Update
 import kotlinx.coroutines.flow.Flow
 import kotlinx.serialization.Serializable
 import li.songe.gkd.sdp.util.json
+import li.songe.gkd.sdp.R
 import java.time.DayOfWeek
 import java.time.LocalDateTime
 import java.time.LocalTime
@@ -22,6 +24,7 @@ data class FocusRule(
     @PrimaryKey(autoGenerate = true)
     @ColumnInfo(name = "id") val id: Long = 0,
 
+    // i18n-ignore: legacy fallback or non-display heuristic data
     @ColumnInfo(name = "name") val name: String,  // 规则名称，如"复盘时间"
 
     @ColumnInfo(name = "rule_type", defaultValue = "0") val ruleType: Int = RULE_TYPE_SCHEDULED,  // 规则类型
@@ -41,7 +44,7 @@ data class FocusRule(
     // Legacy column kept for DB compatibility after removing WeChat contact whitelist from focus mode.
     @ColumnInfo(name = "wechat_whitelist", defaultValue = "[]") val legacyWechatWhitelistJson: String = "[]",
 
-    @ColumnInfo(name = "intercept_message") val interceptMessage: String = "专注当下",
+    @ColumnInfo(name = "intercept_message") val interceptMessage: String = "",
 
     @ColumnInfo(name = "is_locked") val isLocked: Boolean = false,
 
@@ -150,16 +153,41 @@ data class FocusRule(
      */
     fun formatDaysOfWeek(): String {
         val days = getDaysOfWeekList()
+        // i18n-ignore: legacy fallback or non-display heuristic data
         if (days.isEmpty()) return "未设置"
+        // i18n-ignore: legacy fallback or non-display heuristic data
         if (days.size == 7) return "每天"
+        // i18n-ignore: legacy fallback or non-display heuristic data
         if (days == listOf(1, 2, 3, 4, 5)) return "工作日"
+        // i18n-ignore: legacy fallback or non-display heuristic data
         if (days == listOf(6, 7)) return "周末"
 
         val dayNames = mapOf(
+            // i18n-ignore: legacy fallback or non-display heuristic data
             1 to "周一", 2 to "周二", 3 to "周三", 4 to "周四",
+            // i18n-ignore: legacy fallback or non-display heuristic data
             5 to "周五", 6 to "周六", 7 to "周日"
         )
         return days.mapNotNull { dayNames[it] }.joinToString("、")
+    }
+
+    fun formatDaysOfWeek(context: Context): String {
+        val days = getDaysOfWeekList()
+        if (days.isEmpty()) return context.getString(R.string.days_not_set)
+        if (days.size == 7) return context.getString(R.string.days_everyday)
+        if (days == listOf(1, 2, 3, 4, 5)) return context.getString(R.string.days_weekdays)
+        if (days == listOf(6, 7)) return context.getString(R.string.days_weekend)
+
+        val dayNames = mapOf(
+            1 to R.string.day_monday,
+            2 to R.string.day_tuesday,
+            3 to R.string.day_wednesday,
+            4 to R.string.day_thursday,
+            5 to R.string.day_friday,
+            6 to R.string.day_saturday,
+            7 to R.string.day_sunday,
+        )
+        return days.mapNotNull { dayNames[it]?.let(context::getString) }.joinToString("、")
     }
 
     /**
@@ -169,9 +197,23 @@ data class FocusRule(
         val hours = durationMinutes / 60
         val minutes = durationMinutes % 60
         return when {
+            // i18n-ignore: legacy fallback or non-display heuristic data
             hours > 0 && minutes > 0 -> "${hours}小时${minutes}分钟"
+            // i18n-ignore: legacy fallback or non-display heuristic data
             hours > 0 -> "${hours}小时"
+            // i18n-ignore: legacy fallback or non-display heuristic data
             else -> "${minutes}分钟"
+        }
+    }
+
+    fun formatDuration(context: Context): String {
+        val hours = durationMinutes / 60
+        val minutes = durationMinutes % 60
+        return when {
+            hours > 0 && minutes > 0 ->
+                context.getString(R.string.focus_duration_hours_minutes, hours, minutes)
+            hours > 0 -> context.getString(R.string.focus_duration_hours, hours)
+            else -> context.getString(R.string.focus_duration_minutes, minutes)
         }
     }
 
@@ -206,5 +248,8 @@ data class FocusRule(
 
         @Query("SELECT COUNT(*) FROM focus_rule WHERE enabled = 1")
         fun countEnabled(): Flow<Int>
+
+        @Query("DELETE FROM focus_rule")
+        suspend fun deleteAll(): Int
     }
 }

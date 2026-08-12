@@ -56,5 +56,8 @@ data class AppConfig(
 
         @Query("UPDATE app_config SET enable = 1 WHERE enable = 0")
         suspend fun enableAllDisabled(): Int
+
+        @Query("DELETE FROM app_config")
+        suspend fun deleteAll(): Int
     }
 }

@@ -1,5 +1,6 @@
 package li.songe.gkd.sdp.service
 
+import li.songe.gkd.sdp.R
 import android.app.Service
 import android.content.Intent
 import coil3.Bitmap
@@ -37,7 +38,7 @@ class ScreenshotService : Service(), OnSimpleLife by DefaultSimpleLifeImpl() {
     init {
         useLogLifecycle()
         useAliveFlow(isRunning)
-        useAliveToast("截屏服务")
+        useAliveToast(getString(R.string.s_df95c4025b))
         StopServiceReceiver.autoRegister()
         onCreated { screenshotNotif.notifyService() }
         onCreated { instance = this }

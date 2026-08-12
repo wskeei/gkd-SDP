@@ -133,10 +133,15 @@ fun SubsSheet(
                     modifier = childModifier
                 )
                 if (subscription != null) {
+                    val authorMeta = li.songe.gkd.sdp.app.getString(
+                        R.string.subs_sheet_author_meta,
+                        subscription.author ?: li.songe.gkd.sdp.app.getString(R.string.common_unknown),
+                        subscription.version,
+                        subsItem.mtimeStr,
+                    )
                     Column(
                         modifier = childModifier.clearAndSetSemantics {
-                            contentDescription =
-                                "作者：${subscription.author ?: "未知"}, 版本号：v${subscription.version}, 更新时间：${subsItem.mtimeStr}"
+                            contentDescription = authorMeta
                         }
                     ) {
                         Row(
@@ -195,7 +200,7 @@ fun SubsSheet(
                     if (subscription.globalGroups.isNotEmpty() || subsItem.isLocal) {
                         Row(
                             modifier = Modifier
-                                .clickable(onClickLabel = "查看全局规则列表", onClick = throttle {
+                                .clickable(onClickLabel = stringResource(R.string.subs_view_global_rules), onClick = throttle {
                                     setSubsId(null)
                                     sheetSubsIdFlow.value = null
                                     mainVm.navigatePage(SubsGlobalGroupListRoute(subsItem.id))
@@ -231,7 +236,7 @@ fun SubsSheet(
                     if (subscription.appGroups.isNotEmpty() || subsItem.isLocal) {
                         Row(
                             modifier = Modifier
-                                .clickable(onClickLabel = "查看应用规则列表", onClick = throttle {
+                                .clickable(onClickLabel = stringResource(R.string.subs_view_app_rules), onClick = throttle {
                                     setSubsId(null)
                                     sheetSubsIdFlow.value = null
                                     mainVm.navigatePage(SubsAppListRoute(subsItem.id))
@@ -268,7 +273,7 @@ fun SubsSheet(
                     if (subscription.categories.isNotEmpty() || subsItem.isLocal) {
                         Row(
                             modifier = Modifier
-                                .clickable(onClickLabel = "查看规则类别列表", onClick = throttle {
+                                .clickable(onClickLabel = stringResource(R.string.subs_view_category_rules), onClick = throttle {
                                     setSubsId(null)
                                     sheetSubsIdFlow.value = null
                                     mainVm.navigatePage(SubsCategoryRoute(subsItem.id))
@@ -304,7 +309,7 @@ fun SubsSheet(
                     if (!subsItem.isLocal && subsItem.updateUrl != null) {
                         Row(
                             modifier = Modifier
-                                .clickable(onClickLabel = "编辑订阅链接", onClick = throttle {
+                                .clickable(onClickLabel = stringResource(R.string.subs_edit_link), onClick = throttle {
                                     if (updateSubsMutex.mutex.isLocked) {
                                         toast(li.songe.gkd.sdp.app.getString(R.string.s_2c20f3fd5e))
                                         return@throttle
@@ -334,7 +339,7 @@ fun SubsSheet(
                                     overflow = TextOverflow.MiddleEllipsis,
                                     modifier = Modifier
                                         .clearAndSetSemantics {}
-                                        .clickable(onClickLabel = "查看订阅链接", onClick = {
+                                        .clickable(onClickLabel = stringResource(R.string.subs_view_link), onClick = {
                                             mainVm.textFlow.value = subsItem.updateUrl
                                         })
                                 )

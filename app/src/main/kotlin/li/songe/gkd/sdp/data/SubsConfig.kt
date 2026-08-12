@@ -99,6 +99,9 @@ data class SubsConfig(
         @Query("DELETE FROM subs_config WHERE type=${GlobalGroupType} AND subs_id=:subsItemId AND group_key IN (:keyList)")
         suspend fun batchDeleteGlobalGroupConfig(subsItemId: Long, keyList: List<Int>): Int
 
+        @Query("DELETE FROM subs_config")
+        suspend fun deleteAll(): Int
+
         @Query("SELECT * FROM subs_config WHERE subs_id IN (SELECT si.id FROM subs_item si WHERE si.enable = 1)")
         fun queryUsedList(): Flow<List<SubsConfig>>
 

@@ -17,7 +17,12 @@ CI only runs validation:
 ./gradlew :app:validateGkdDebugScreenshotTest
 ```
 
-The current matrix covers compact/expanded widths, light/dark variants, font
-scale 2.0, core overview states, self-control hub, settings, interception
-source-missing state, usage request, and dense chart data. It does not claim
-to reproduce Android/OEM rendering, `FLAG_SECURE`, or physical-device output.
+The checked-in matrix renders production composables or production `*Content`
+surfaces with deterministic fixtures: overview, self-control hub, rules hub with
+production empty-state content, settings search, privacy data and delete
+confirmation, capability center, interception source, usage request form and
+rhythm feedback, review dashboard, and chart/state components. It includes
+compact/expanded widths, dark mode, English locale, and large font previews.
+The current 28 references cover the review's target pages and required states;
+it does not claim to reproduce Android/OEM rendering, `FLAG_SECURE`, or
+physical-device output.

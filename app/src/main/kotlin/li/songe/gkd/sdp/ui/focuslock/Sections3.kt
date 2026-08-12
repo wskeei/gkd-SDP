@@ -33,18 +33,14 @@ fun AutoReenableGuardCard(
     dailyDisableLimit: Int,
     dailyDisableUsed: Int,
     dailyDisableDayStartAt: Long,
+    autoReenableUiState: AutoReenableUiState,
     onClick: () -> Unit
 ) {
-    val autoReenableUiState = FocusLockVm.evaluateAutoReenableUiState(
-        intervalMinutes = intervalMinutes,
-        lastChangedAt = changedAt,
-        scheduledNextEnforceAt = nextEnforceAt,
-        dailyDisableLimit = dailyDisableLimit,
-        dailyDisableUsed = dailyDisableUsed,
-        dailyDisableDayStartAt = dailyDisableDayStartAt,
-        now = System.currentTimeMillis()
-    )
-    val nextEditableText = if (autoReenableUiState.canEditInterval) "可立即修改" else autoReenableUiState.nextEditableAt.format("MM-dd HH:mm")
+    val nextEditableText = if (autoReenableUiState.canEditInterval) {
+        stringResource(R.string.focus_lock_editable_now)
+    } else {
+        autoReenableUiState.nextEditableAt.format("MM-dd HH:mm")
+    }
     val nextEnforceText = autoReenableUiState.nextEnforceAt.format("MM-dd HH:mm")
     val nextDailyResetText = autoReenableUiState.nextDailyResetAt.format("MM-dd HH:mm")
 
@@ -221,9 +217,13 @@ fun AppBlockerCard(
                 )
                 Text(
                     text = if (enabledRuleCount == 0) {
-                        "尚未生效：请添加时间规则"
+                        stringResource(R.string.focus_lock_not_effective)
                     } else {
-                        "${enabledGroupCount} 个应用组 · $enabledRuleCount 条启用规则"
+                        stringResource(
+                            R.string.focus_lock_enabled_count,
+                            enabledGroupCount,
+                            enabledRuleCount,
+                        )
                     },
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -270,10 +270,14 @@ fun UsageGuardCard(
                 )
                 Text(
                     text = if (enabled) {
-                        val scopeText = if (scopeMode == 0) "仅选中应用" else "全局生效"
-                        "打开受控应用前先说明原因并申请时长 · $scopeText"
+                        val scopeText = if (scopeMode == 0) {
+                            stringResource(R.string.focus_lock_scope_selected)
+                        } else {
+                            stringResource(R.string.focus_lock_scope_global)
+                        }
+                        stringResource(R.string.focus_lock_usage_guard_line, scopeText)
                     } else {
-                        "未启用"
+                        stringResource(R.string.focus_lock_disabled)
                     },
                     style = MaterialTheme.typography.bodySmall,
                     color = if (enabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant

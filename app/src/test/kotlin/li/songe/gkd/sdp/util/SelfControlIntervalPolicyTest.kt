@@ -1,6 +1,7 @@
 package li.songe.gkd.sdp.util
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -150,5 +151,75 @@ class SelfControlIntervalPolicyTest {
             SelfControlIntervalPolicy.AxisUnit.Days,
             SelfControlIntervalPolicy.chooseAxisUnit(86_400_000L),
         )
+    }
+
+    @Test
+    fun recentLimitAndNegativeOnlyStatsStaySafe() {
+        assertEquals(
+            emptyList<Long>(),
+            SelfControlIntervalPolicy.recentCompletedIntervals(listOf(1L), limit = 0),
+        )
+        assertEquals(
+            SelfControlIntervalPolicy.SampleQuality.NoSample,
+            SelfControlIntervalPolicy.statsFor(listOf(-1L)).quality,
+        )
+        assertNull(SelfControlIntervalPolicy.statsFor(listOf(-1L)).averageMs)
+    }
+
+    @Test
+    fun wideSpanAndAxisFormatCoverBoundaries() {
+        assertFalse(SelfControlIntervalPolicy.hasWideSpan(SelfControlIntervalPolicy.statsFor(emptyList())))
+        assertFalse(
+            SelfControlIntervalPolicy.hasWideSpan(
+                SelfControlIntervalPolicy.statsFor(listOf(1_000L)),
+                factor = 1,
+            ),
+        )
+        assertFalse(
+            SelfControlIntervalPolicy.hasWideSpan(
+                SelfControlIntervalPolicy.statsFor(listOf(1_000L, 1_000L)),
+            ),
+        )
+        assertEquals(
+            "1.5小时",
+            SelfControlIntervalPolicy.formatAxisValue(
+                90 * 60_000L,
+                SelfControlIntervalPolicy.AxisUnit.Hours,
+            ),
+        )
+        assertEquals(
+            "2小时",
+            SelfControlIntervalPolicy.formatAxisValue(
+                2 * 3_600_000L,
+                SelfControlIntervalPolicy.AxisUnit.Hours,
+            ),
+        )
+    }
+
+    @Test
+    fun durationClockAndDeltaClampNegativeInputs() {
+        assertEquals("0秒", SelfControlIntervalPolicy.formatDurationCompact(-1L))
+        assertEquals(
+            "2天 00:00:00",
+            SelfControlIntervalPolicy.formatDurationClock(2 * 86_400_000L),
+        )
+        assertEquals(
+            0L,
+            SelfControlIntervalPolicy.deltaBetween(-10L, -20L),
+        )
+    }
+
+    @Test
+    fun overlayInsightWithoutAnchorHasNoComparison() {
+        val insight = SelfControlIntervalPolicy.overlayInsight(
+            anchorAtEpochMs = null,
+            firstOccurrence = true,
+            recentCompletedIntervalsMs = emptyList(),
+            nowEpochMs = 1_000L,
+        )
+
+        assertNull(insight.currentElapsedMs)
+        assertNull(insight.comparison)
+        assertEquals(0, insight.stats.sampleCount)
     }
 }

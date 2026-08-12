@@ -30,6 +30,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import li.songe.gkd.sdp.data.FocusRule
@@ -100,7 +101,7 @@ internal fun FocusRuleCard(
                     // 根据规则类型显示不同信息
                     if (rule.isQuickStart) {
                         Text(
-                            text = stringResource(R.string.s_55423fd0ff, (rule.formatDuration()).toString()),
+                            text = stringResource(R.string.s_55423fd0ff, rule.formatDuration(LocalContext.current)),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
                         )
@@ -118,7 +119,7 @@ internal fun FocusRuleCard(
                             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
                         )
                         Text(
-                            text = rule.formatDaysOfWeek(),
+                            text = rule.formatDaysOfWeek(LocalContext.current),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                         )

@@ -22,4 +22,22 @@ class BoundedResponseReaderTest {
         assertFalse(accumulator.append(byteArrayOf(6), 1))
         assertArrayEquals(byteArrayOf(1, 2, 3, 4, 5), accumulator.toByteArray())
     }
+
+    @Test
+    fun `accumulator rejects invalid counts and accepts empty chunks`() {
+        val accumulator = BoundedByteAccumulator(maxBytes = 5)
+
+        assertThrows { accumulator.append(ByteArray(1), -1) }
+        assertThrows { accumulator.append(ByteArray(1), 2) }
+        assertTrue(accumulator.append(ByteArray(1), 0))
+        assertArrayEquals(ByteArray(0), accumulator.toByteArray())
+    }
+
+    private fun assertThrows(block: () -> Unit) {
+        try {
+            block()
+            throw AssertionError("expected failure")
+        } catch (_: IllegalArgumentException) {
+        }
+    }
 }

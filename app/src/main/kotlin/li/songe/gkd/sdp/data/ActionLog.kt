@@ -105,6 +105,9 @@ data class ActionLog(
         @Query("SELECT COUNT(*) FROM action_log")
         fun count(): Flow<Int>
 
+        @Query("SELECT * FROM action_log WHERE id = :id LIMIT 1")
+        suspend fun queryById(id: Int): ActionLog?
+
 
         @Query("SELECT * FROM action_log ORDER BY id DESC LIMIT 1")
         fun queryLatest(): Flow<ActionLog?>

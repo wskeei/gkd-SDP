@@ -4,6 +4,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import li.songe.gkd.sdp.R
 
 class UsageRequestValidationPolicyTest {
     @Test
@@ -32,8 +33,8 @@ class UsageRequestValidationPolicyTest {
             requestedDurationMinutes = 0,
         )
         assertFalse(invalid.accepted)
-        assertTrue(invalid.tagsError != null)
-        assertTrue(invalid.reasonError == null)
+        assertTrue(invalid.tagsErrorRes != null)
+        assertTrue(invalid.reasonErrorRes == null)
 
         val valid = UsageRequestValidationPolicy.validate(
             selectedTags = listOf("查资料"),
@@ -53,6 +54,36 @@ class UsageRequestValidationPolicyTest {
             requestedDurationMinutes = 10,
         )
         assertFalse(result.accepted)
-        assertEquals("标签名称不能重复", result.tagsError)
+        assertEquals(R.string.usage_request_error_tag_duplicate, result.tagsErrorRes)
+    }
+
+    @Test
+    fun eachValidationFailureReturnsItsOwnErrorField() {
+        val tooLong = UsageRequestValidationPolicy.validate(
+            selectedTags = listOf("a".repeat(21)),
+            reason = "足够长的理由文本",
+            minReasonLength = 6,
+            requestedDurationMinutes = 10,
+        )
+        assertFalse(tooLong.accepted)
+        assertTrue(tooLong.tagsErrorRes != null)
+
+        val shortReason = UsageRequestValidationPolicy.validate(
+            selectedTags = listOf("工作"),
+            reason = "短",
+            minReasonLength = 6,
+            requestedDurationMinutes = 10,
+        )
+        assertFalse(shortReason.accepted)
+        assertEquals(R.string.usage_request_error_reason_short, shortReason.reasonErrorRes)
+
+        val badDuration = UsageRequestValidationPolicy.validate(
+            selectedTags = listOf("工作"),
+            reason = "足够长的理由文本",
+            minReasonLength = 6,
+            requestedDurationMinutes = 0,
+        )
+        assertFalse(badDuration.accepted)
+        assertEquals(R.string.usage_request_error_duration, badDuration.durationErrorRes)
     }
 }

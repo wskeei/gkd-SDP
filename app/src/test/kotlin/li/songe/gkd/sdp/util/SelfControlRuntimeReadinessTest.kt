@@ -17,7 +17,7 @@ class SelfControlRuntimeReadinessTest {
 
         assertTrue(status.ready)
         assertEquals(SelfControlRuntimeReadiness.Issue.None, status.issue)
-        assertEquals("自动化", status.modeLabel)
+        assertEquals(AutomatorModeOption.AutomationMode.labelRes, status.modeLabelRes)
     }
 
     @Test

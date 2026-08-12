@@ -3,6 +3,8 @@ package li.songe.gkd.sdp.diagnostics
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import li.songe.gkd.sdp.META
+import li.songe.gkd.sdp.R
+import li.songe.gkd.sdp.app
 import li.songe.gkd.sdp.util.json
 import li.songe.gkd.sdp.util.logFolder
 import li.songe.gkd.sdp.util.privateStoreFolder
@@ -118,7 +120,7 @@ object DiagnosticLogger {
     }
 
     fun userMessage(error: Throwable): String =
-        "操作失败（错误码：${errorCode(error)}）"
+        app.getString(R.string.diagnostic_operation_failed, errorCode(error))
 
     fun errorCategory(error: Throwable): DiagnosticErrorCategory = when (error) {
         is SecurityException -> DiagnosticErrorCategory.SECURITY

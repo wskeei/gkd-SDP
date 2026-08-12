@@ -1,6 +1,8 @@
 package li.songe.gkd.sdp.data
 
+import android.content.Context
 import android.graphics.Rect
+import li.songe.gkd.sdp.R
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
@@ -125,12 +127,16 @@ data class RawSubscription(
             ?: throw IllegalStateException("App not found for group ${group.name}")
     }
 
-    fun getCategoryCompatDesc(categoryKey: Int): String? {
+    fun getCategoryCompatDesc(categoryKey: Int, context: Context? = null): String? {
         val c = getSafeCategory(categoryKey)
         if (!c.desc.isNullOrBlank()) return c.desc
         val groupSize = categoryGroupsMap[categoryKey]?.size ?: 0
         val appSize = categoryAppsMap[categoryKey]?.size ?: 0
-        if (groupSize > 0) return "${appSize}应用/${groupSize}规则"
+        if (groupSize > 0) {
+            return context?.getString(R.string.app_list_app_rules_count, appSize, groupSize)
+                // i18n-ignore: legacy fallback or non-display heuristic data
+                ?: "${appSize}应用/${groupSize}规则"
+        }
         return null
     }
 
@@ -176,6 +182,7 @@ data class RawSubscription(
         val globalGroupSize = globalGroups.size
         if (appGroupsSize + globalGroupSize > 0) {
             if (globalGroupSize > 0) {
+                // i18n-ignore: legacy fallback or non-display heuristic data
                 "${globalGroupSize}全局" + if (appGroupsSize > 0) {
                     "/"
                 } else {
@@ -184,13 +191,35 @@ data class RawSubscription(
             } else {
                 ""
             } + if (appGroupsSize > 0) {
+                // i18n-ignore: legacy fallback or non-display heuristic data
                 "${appsSize}应用/${appGroupsSize}规则"
             } else {
                 ""
             }
         } else {
+            // i18n-ignore: legacy fallback or non-display heuristic data
             "暂无规则"
         }
+    }
+
+    fun numText(context: Context): String {
+        val appsSize = apps.size
+        val appGroupsSize = appGroups.size
+        val globalGroupSize = globalGroups.size
+        if (appGroupsSize + globalGroupSize > 0) {
+            val global = if (globalGroupSize > 0) {
+                context.getString(R.string.app_list_global_count, globalGroupSize)
+            } else {
+                ""
+            }
+            val app = if (appGroupsSize > 0) {
+                context.getString(R.string.app_list_app_rules_count, appsSize, appGroupsSize)
+            } else {
+                ""
+            }
+            return listOf(global, app).filter { it.isNotEmpty() }.joinToString("/")
+        }
+        return context.getString(R.string.subs_no_rules)
     }
 
     @Serializable
@@ -609,12 +638,15 @@ data class RawSubscription(
                     selector.checkType(typeInfo)
                     cacheMap[source] = selector
                 } catch (e: Exception) {
+                    // i18n-ignore: legacy fallback or non-display heuristic data
                     LogUtils.d("非法选择器", source, e.toString())
+                    // i18n-ignore: legacy fallback or non-display heuristic data
                     return "非法选择器\n$source\n${e.message}"
                 }
             }
             rules.forEach { r ->
                 if (r.position?.isValid == false) {
+                    // i18n-ignore: legacy fallback or non-display heuristic data
                     return "非法位置:${r.position}"
                 }
             }

@@ -20,52 +20,47 @@ import li.songe.gkd.sdp.R
 internal fun UsageGuardDialogs(
     state: UsageGuardSettingsRenderState,
 ) {
-    val context = state.context
-    val vm = state.vm
-    val settings = state.settings
-    val appInfoMap = state.appInfoMap
-    val selectedTargetApps = state.selectedTargetApps
-    val whitelistApps = state.whitelistApps
-    val globalOverrideApps = state.globalOverrideApps
-    val profileMap = state.profileMap
-    val showSelectedPicker = state.showSelectedPicker
-    val showWhitelistPicker = state.showWhitelistPicker
-    val showOverridePicker = state.showOverridePicker
-    val appAction = state.appAction
-    if (showSelectedPicker.value) {
+    val ui = state.state
+    val settings = ui.settings
+    val appInfoMap = ui.appInfoMap
+    val selectedTargetApps = ui.selectedTargetApps
+    val whitelistApps = ui.whitelistApps
+    val globalOverrideApps = ui.globalOverrideApps
+    val profileMap = ui.profileMap
+    if (ui.showSelectedPicker) {
         AppPickerDialog(
             currentApps = selectedTargetApps,
-            onDismiss = { showSelectedPicker.value = false },
+            onDismiss = state.onDismissSelectedPicker,
             onConfirm = {
-                vm.saveSelectedTargets(it)
-                showSelectedPicker.value = false
+                state.onSaveSelectedTargets(it)
+                state.onDismissSelectedPicker()
             },
         )
     }
-    if (showWhitelistPicker.value) {
+    if (ui.showWhitelistPicker) {
         AppPickerDialog(
             currentApps = whitelistApps,
-            onDismiss = { showWhitelistPicker.value = false },
+            onDismiss = state.onDismissWhitelistPicker,
             onConfirm = {
-                vm.saveWhitelist(it)
-                showWhitelistPicker.value = false
+                state.onSaveWhitelist(it)
+                state.onDismissWhitelistPicker()
             },
         )
     }
-    if (showOverridePicker.value) {
+    if (ui.showOverridePicker) {
         AppPickerDialog(
             currentApps = globalOverrideApps,
-            onDismiss = { showOverridePicker.value = false },
+            onDismiss = state.onDismissOverridePicker,
             onConfirm = {
-                vm.saveGrantModeOverrideApps(it)
-                showOverridePicker.value = false
+                state.onSaveGrantModeOverrideApps(it)
+                state.onDismissOverridePicker()
             },
         )
     }
-    appAction.value?.let { target ->
+    ui.appAction?.let { target ->
         val currentGrantMode = profileMap[target.appId]?.grantMode ?: settings.usageGuardDefaultGrantMode
         val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-        ModalBottomSheet(onDismissRequest = { appAction.value = null }, sheetState = sheetState) {
+        ModalBottomSheet(onDismissRequest = state.onCloseAppAction, sheetState = sheetState) {
             Column(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 12.dp),
                 verticalArrangement = Arrangement.spacedBy(14.dp),
@@ -76,16 +71,26 @@ internal fun UsageGuardDialogs(
                         FilterChip(
                             selected = currentGrantMode == UsageGuardPolicy.GRANT_MODE_STRICT,
                             onClick = {
-                                vm.moveSelectedAppToGrantMode(target.appId, UsageGuardPolicy.GRANT_MODE_STRICT)
-                                appAction.value = null
+                                state.onDispatch(
+                                    UsageGuardAction.MoveSelectedAppToGrantMode(
+                                        target.appId,
+                                        UsageGuardPolicy.GRANT_MODE_STRICT,
+                                    ),
+                                )
+                                state.onCloseAppAction()
                             },
                             label = { Text(li.songe.gkd.sdp.app.getString(R.string.s_cce3d12ecc)) },
                         )
                         FilterChip(
                             selected = currentGrantMode == UsageGuardPolicy.GRANT_MODE_RESUMABLE,
                             onClick = {
-                                vm.moveSelectedAppToGrantMode(target.appId, UsageGuardPolicy.GRANT_MODE_RESUMABLE)
-                                appAction.value = null
+                                state.onDispatch(
+                                    UsageGuardAction.MoveSelectedAppToGrantMode(
+                                        target.appId,
+                                        UsageGuardPolicy.GRANT_MODE_RESUMABLE,
+                                    ),
+                                )
+                                state.onCloseAppAction()
                             },
                             label = { Text(li.songe.gkd.sdp.app.getString(R.string.s_e8a4554eb3)) },
                         )
@@ -94,11 +99,14 @@ internal fun UsageGuardDialogs(
                 TextButton(
                     onClick = {
                         when (target.scope) {
-                            UsageGuardActionScope.Selected -> vm.saveSelectedTargets(selectedTargetApps - target.appId)
-                            UsageGuardActionScope.Whitelist -> vm.saveWhitelist(whitelistApps - target.appId)
-                            UsageGuardActionScope.Override -> vm.clearAppGrantModeOverride(target.appId)
+                            UsageGuardActionScope.Selected ->
+                                state.onSaveSelectedTargets(selectedTargetApps - target.appId)
+                            UsageGuardActionScope.Whitelist ->
+                                state.onSaveWhitelist(whitelistApps - target.appId)
+                            UsageGuardActionScope.Override ->
+                                state.onClearAppGrantModeOverride(target.appId)
                         }
-                        appAction.value = null
+                        state.onCloseAppAction()
                     },
                 ) {
                     Text(

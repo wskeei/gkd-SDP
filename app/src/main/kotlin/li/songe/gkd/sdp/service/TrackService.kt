@@ -1,5 +1,6 @@
 package li.songe.gkd.sdp.service
 
+import li.songe.gkd.sdp.R
 import android.animation.ValueAnimator
 import android.content.res.Configuration
 import android.graphics.PixelFormat
@@ -310,7 +311,7 @@ class TrackService : LifecycleService(), SavedStateRegistryOwner,
         onCreated { service = this }
         onDestroyed { service = null }
         useAliveFlow(isRunning)
-        useAliveToast("轨迹提示")
+        useAliveToast(getString(R.string.s_6a1b839874))
         StopServiceReceiver.autoRegister()
         onCreated { trackNotif.notifyService() }
     }

@@ -6,6 +6,8 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.update
 import kotlinx.serialization.encodeToString
 import li.songe.gkd.sdp.backup.BackupDataMutationBarrier
+import li.songe.gkd.sdp.R
+import li.songe.gkd.sdp.app
 import li.songe.gkd.sdp.data.RawSubscription
 import li.songe.gkd.sdp.data.SubsItem
 import li.songe.gkd.sdp.db.DbSet
@@ -41,9 +43,13 @@ object SubscriptionMutationRepository {
             var transactionCommitted = false
             val currentBefore = DbSet.subsItemDao.queryById(subsId)
             if (subsItem == null) {
-                check(currentBefore != null) { "订阅已不存在" }
+                check(currentBefore != null) {
+                    app.getString(R.string.subscription_missing)
+                }
                 expectedCurrentMtime?.let { expected ->
-                    check(currentBefore.mtime == expected) { "订阅已发生变化" }
+                    check(currentBefore.mtime == expected) {
+                        app.getString(R.string.subscription_changed)
+                    }
                 }
             }
             val now = nextMutationMtime(currentBefore?.mtime)
@@ -70,12 +76,16 @@ object SubscriptionMutationRepository {
                         cleanupSubsConfig(subsId, nextSubscription)
                         if (subsItem == null) {
                             val current = DbSet.subsItemDao.queryById(subsId)
-                            check(current != null) { "订阅已不存在" }
+                            check(current != null) {
+                                app.getString(R.string.subscription_missing)
+                            }
                             expectedCurrentMtime?.let { expected ->
-                                check(current.mtime == expected) { "订阅已发生变化" }
+                                check(current.mtime == expected) {
+                                    app.getString(R.string.subscription_changed)
+                                }
                             }
                             check(DbSet.subsItemDao.updateMtime(subsId, now) == 1) {
-                                "订阅已不存在"
+                                app.getString(R.string.subscription_missing)
                             }
                         } else {
                             DbSet.subsItemDao.insert(subsItem.copy(mtime = now))
@@ -104,6 +114,7 @@ object SubscriptionMutationRepository {
                     requirePendingDataCleanup(stagingFolder)
                 }
                 LogUtils.d(
+                    // i18n-ignore: legacy fallback or non-display heuristic data
                     "更新订阅文件",
                     "id=$subsId,version=${nextSubscription.version}",
                 )
@@ -213,7 +224,7 @@ object SubscriptionMutationRepository {
         }
     }
 
-    private fun normalizeSubscription(subscription: RawSubscription): RawSubscription {
+    internal fun normalizeSubscription(subscription: RawSubscription): RawSubscription {
         val current = subsMapFlow.value[subscription.id]
         return if (subscription.id < 0 && current?.version == subscription.version) {
             subscription.copy(
@@ -227,19 +238,23 @@ object SubscriptionMutationRepository {
         }
     }
 
-    private fun nextMutationMtime(previous: Long?): Long {
+    internal fun nextMutationMtime(previous: Long?): Long {
         val wallClock = System.currentTimeMillis()
         val floor = previous?.let {
-            check(it < Long.MAX_VALUE) { "订阅时间溢出" }
+            check(it < Long.MAX_VALUE) {
+                app.getString(R.string.subscription_time_overflow)
+            }
             it + 1
         } ?: wallClock
         return lastMutationMtime.updateAndGet { last ->
-            check(last < Long.MAX_VALUE) { "订阅时间溢出" }
+            check(last < Long.MAX_VALUE) {
+                app.getString(R.string.subscription_time_overflow)
+            }
             maxOf(floor, last + 1)
         }
     }
 
-    private fun restoreSubscriptionFile(
+    internal fun restoreSubscriptionFile(
         targetFile: File,
         stagedPreviousFile: File,
         previousStaged: Boolean,
@@ -251,7 +266,7 @@ object SubscriptionMutationRepository {
         }
     }
 
-    private fun moveSubscriptionFile(source: File, target: File) {
+    internal fun moveSubscriptionFile(source: File, target: File) {
         target.parentFile?.mkdirs()
         try {
             Files.move(

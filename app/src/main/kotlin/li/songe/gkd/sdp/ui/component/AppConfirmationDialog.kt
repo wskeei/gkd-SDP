@@ -25,9 +25,13 @@ import li.songe.gkd.sdp.R
 
 object FullDeletionPolicy {
     /** Exact phrase required to confirm a full data wipe. */
+    // i18n-ignore: legacy fallback for tests; UI uses resource phrase
     const val FullDeletionPhrase = "删除全部数据"
 
     fun isConfirmed(input: String): Boolean = input.trim() == FullDeletionPhrase
+
+    fun isConfirmed(input: String, expectedPhrase: String): Boolean =
+        input.trim() == expectedPhrase
 }
 
 /**
@@ -48,7 +52,8 @@ fun AppConfirmationDialog(
     requiresPhrase: Boolean = false,
 ) {
     var phraseInput by remember { mutableStateOf("") }
-    val phraseConfirmed = !requiresPhrase || FullDeletionPolicy.isConfirmed(phraseInput)
+    val phrase = stringResource(R.string.privacy_delete_all_phrase)
+    val phraseConfirmed = !requiresPhrase || FullDeletionPolicy.isConfirmed(phraseInput, phrase)
     AlertDialog(
         onDismissRequest = onDismiss,
         modifier = modifier,
@@ -70,7 +75,7 @@ fun AppConfirmationDialog(
                 if (requiresPhrase) {
                     Spacer(modifier = Modifier.height(DimensionTokens.SpacingBase))
                     AppFormField(
-                        label = stringResource(R.string.s_aba4ea9027, (FullDeletionPolicy.FullDeletionPhrase).toString()),
+                        label = stringResource(R.string.s_aba4ea9027, phrase),
                         value = phraseInput,
                         onValueChange = { phraseInput = it },
                         supportingText = null,

@@ -224,6 +224,42 @@ class DigitalSelfDisciplineReviewPolicyTest {
         assertTrue(comparison.message.contains("低"))
     }
 
+    @Test
+    fun comparisonHandlesEqualAndMissingSamples() {
+        val equal = DigitalSelfDisciplineReviewPolicy.compare(
+            current = SelfControlIntervalPolicy.statsFor(listOf(10L, 20L)),
+            previous = SelfControlIntervalPolicy.statsFor(listOf(10L, 20L)),
+        )
+        assertEquals(0.0, equal.metricDelta!!, 0.0001)
+        assertTrue(equal.message.contains("相同"))
+
+        val missing = DigitalSelfDisciplineReviewPolicy.compare(
+            current = SelfControlIntervalPolicy.statsFor(emptyList()),
+            previous = SelfControlIntervalPolicy.statsFor(listOf(10L)),
+        )
+        assertEquals(null, missing.metricDelta)
+        assertTrue(missing.message.contains("暂无"))
+    }
+
+    @Test
+    fun rangeBoundsClampNegativeNowAndDateBoundaryIsStable() {
+        val bounds = DigitalSelfDisciplineReviewPolicy.rangeBounds(
+            DigitalSelfDisciplineReviewPolicy.Range.LAST_24_HOURS,
+            -10L,
+            shanghai,
+        )
+        assertEquals(0L, bounds.startAt)
+        assertEquals(0L, bounds.previousStartAt)
+        assertEquals(
+            true,
+            DigitalSelfDisciplineReviewPolicy.hasCrossedDateBoundary(0L, 86_400_000L, shanghai),
+        )
+        assertEquals(
+            false,
+            DigitalSelfDisciplineReviewPolicy.hasCrossedDateBoundary(0L, 1_000L, shanghai),
+        )
+    }
+
     private fun row(
         id: Long,
         appId: String,

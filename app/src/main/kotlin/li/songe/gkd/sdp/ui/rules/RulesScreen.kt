@@ -17,6 +17,11 @@ import li.songe.gkd.sdp.R
 import li.songe.gkd.sdp.ui.home.useAppListPage
 import li.songe.gkd.sdp.ui.home.useSubsManagePage
 
+enum class RulesTab {
+    SUBSCRIPTIONS,
+    APPS,
+}
+
 /**
  * Rules: two second-level tabs — subscription rules and app rules — keeping
  * the full subscription management and app list capabilities.
@@ -24,24 +29,45 @@ import li.songe.gkd.sdp.ui.home.useSubsManagePage
 @Composable
 fun RulesScreen(initialTab: Int = 0) {
     var tab by rememberSaveable { mutableIntStateOf(initialTab) }
-    val page = if (tab == 0) useSubsManagePage() else useAppListPage()
+    val selectedTab = if (tab == 0) RulesTab.SUBSCRIPTIONS else RulesTab.APPS
+    val page = when (selectedTab) {
+        RulesTab.SUBSCRIPTIONS -> useSubsManagePage()
+        RulesTab.APPS -> useAppListPage()
+    }
+    RulesHubContent(
+        selectedTab = selectedTab,
+        onTabSelected = { target ->
+            tab = if (target == RulesTab.SUBSCRIPTIONS) 0 else 1
+        },
+        topBar = page.topBar,
+        content = page.content,
+    )
+}
+
+@Composable
+internal fun RulesHubContent(
+    selectedTab: RulesTab,
+    onTabSelected: (RulesTab) -> Unit,
+    topBar: @Composable () -> Unit,
+    content: @Composable (PaddingValues) -> Unit,
+) {
     Column(modifier = Modifier) {
-        page.topBar()
+        topBar()
         PrimaryTabRow(
-            selectedTabIndex = tab,
+            selectedTabIndex = selectedTab.ordinal,
             containerColor = MaterialTheme.colorScheme.surface,
         ) {
             Tab(
-                selected = tab == 0,
-                onClick = { tab = 0 },
+                selected = selectedTab == RulesTab.SUBSCRIPTIONS,
+                onClick = { onTabSelected(RulesTab.SUBSCRIPTIONS) },
                 text = { Text(stringResource(R.string.subscription_rules_tab)) },
             )
             Tab(
-                selected = tab == 1,
-                onClick = { tab = 1 },
+                selected = selectedTab == RulesTab.APPS,
+                onClick = { onTabSelected(RulesTab.APPS) },
                 text = { Text(stringResource(R.string.s_da6a6dc1af)) },
             )
         }
-        page.content(PaddingValues())
+        content(PaddingValues())
     }
 }

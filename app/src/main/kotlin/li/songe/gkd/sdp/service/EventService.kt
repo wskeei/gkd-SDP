@@ -182,7 +182,7 @@ class EventService : OverlayWindowService(positionKey = "event") {
 
         useLogLifecycle()
         useAliveFlow(isRunning)
-        useAliveToast("事件服务")
+        useAliveToast(getString(R.string.record_a11y_event))
         StopServiceReceiver.autoRegister()
         onCreated { eventNotif.notifyService() }
     }

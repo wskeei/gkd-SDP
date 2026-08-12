@@ -22,9 +22,13 @@ object UsageDurationPresentation {
         val minutes = (totalSeconds / 60L) % 60L
         val seconds = totalSeconds % 60L
         return when {
+            // i18n-ignore: legacy fallback or non-display heuristic data
             durationMs < MINUTE_MS -> "${seconds}秒"
+            // i18n-ignore: legacy fallback or non-display heuristic data
             durationMs < HOUR_MS -> String.format(Locale.ROOT, "%d分 %02d秒", minutes, seconds)
+            // i18n-ignore: legacy fallback or non-display heuristic data
             durationMs < DAY_MS -> String.format(Locale.ROOT, "%d小时 %02d分", hours, minutes)
+            // i18n-ignore: legacy fallback or non-display heuristic data
             else -> String.format(Locale.ROOT, "%d天 %02d小时", days, hours)
         }
     }

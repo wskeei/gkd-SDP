@@ -347,17 +347,24 @@ class AppInstallMonitorVm : BaseViewModel() {
             
             val file = File(app.cacheDir, fileName)
             file.bufferedWriter().use { writer ->
-                writer.write("日期,时间,应用名,包名,操作,是否仍存在\n")
+                writer.write(app.getString(R.string.app_install_export_header) + "\n")
                 
                 val timeFormat = SimpleDateFormat("HH:mm:ss", Locale.getDefault())
                 logs.forEach { log ->
                     val stillExists = if (log.action == AppInstallLog.ACTION_INSTALL) {
-                        if (checkIfStillInstalled(log.packageName)) "是" else "否"
+                        if (checkIfStillInstalled(log.packageName)) {
+                            app.getString(R.string.common_yes)
+                        } else {
+                            app.getString(R.string.common_no)
+                        }
                     } else {
                         "-"
                     }
                     
-                    writer.write("${log.date},${timeFormat.format(Date(log.timestamp))},${log.appName},${log.packageName},${if (log.action == "install") "安装" else "卸载"},$stillExists\n")
+                    writer.write(
+                        "${log.date},${timeFormat.format(Date(log.timestamp))},${log.appName},${log.packageName}," +
+                            "${if (log.action == "install") app.getString(R.string.app_install_export_install) else app.getString(R.string.app_install_export_uninstall)},$stillExists\n",
+                    )
                 }
             }
             
@@ -375,7 +382,7 @@ class AppInstallMonitorVm : BaseViewModel() {
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             }
             
-            app.startActivity(Intent.createChooser(shareIntent, "导出安装记录").apply {
+            app.startActivity(Intent.createChooser(shareIntent, app.getString(R.string.export_install_log)).apply {
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             })
             

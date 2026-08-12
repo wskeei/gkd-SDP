@@ -135,4 +135,63 @@ class BackupCryptoTest {
 
         assertEquals(BackupErrorCode.NONCE_REUSE, (repeated as BackupResult.Failure).code)
     }
+
+    @Test
+    fun `unsupported kdf and malformed header fields return stable errors`() {
+        val crypto = BackupCrypto()
+        val encrypted = (crypto.encrypt(
+            "payload".encodeToByteArray(),
+            "correct-password".toCharArray(),
+        ) as BackupResult.Success).value
+        val envelope = (BackupFormatV2.parse(encrypted) as BackupResult.Success).value
+
+        val changedKdf = BackupFormatV2.encode(
+            envelope.header.copy(kdf = "PBKDF2WithHmacSHA1"),
+            envelope.ciphertext,
+        )
+        assertEquals(
+            BackupErrorCode.UNSUPPORTED_KDF,
+            (crypto.decrypt(changedKdf, "correct-password".toCharArray()) as BackupResult.Failure).code,
+        )
+
+        val changedIterations = BackupFormatV2.encode(
+            envelope.header.copy(iterations = 1),
+            envelope.ciphertext,
+        )
+        assertEquals(
+            BackupErrorCode.UNSUPPORTED_KDF,
+            (crypto.decrypt(changedIterations, "correct-password".toCharArray()) as BackupResult.Failure).code,
+        )
+
+        val malformedSalt = BackupFormatV2.encode(
+            envelope.header.copy(salt = "short"),
+            envelope.ciphertext,
+        )
+        assertEquals(
+            BackupErrorCode.MALFORMED_HEADER,
+            (crypto.decrypt(malformedSalt, "correct-password".toCharArray()) as BackupResult.Failure).code,
+        )
+
+        val malformedNonce = BackupFormatV2.encode(
+            envelope.header.copy(nonce = "short"),
+            envelope.ciphertext,
+        )
+        assertEquals(
+            BackupErrorCode.MALFORMED_HEADER,
+            (crypto.decrypt(malformedNonce, "correct-password".toCharArray()) as BackupResult.Failure).code,
+        )
+    }
+
+    @Test
+    fun `wrong random lengths fail closed and clear password`() {
+        val crypto = BackupCrypto(
+            BackupRandomSource { size -> ByteArray(size - 1) },
+        )
+        val password = "correct-password".toCharArray()
+
+        val result = crypto.encrypt(ByteArray(0), password)
+
+        assertEquals(BackupErrorCode.CRYPTO_FAILURE, (result as BackupResult.Failure).code)
+        assertTrue(password.all { it == '\u0000' })
+    }
 }

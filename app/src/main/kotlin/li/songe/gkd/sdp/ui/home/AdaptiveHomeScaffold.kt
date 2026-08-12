@@ -9,7 +9,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.VerticalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -20,13 +20,14 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.unit.dp
 import li.songe.gkd.sdp.ui.component.PerfIcon
 import li.songe.gkd.sdp.ui.share.LocalMainViewModel
 import li.songe.gkd.sdp.ui.style.DimensionTokens
-import li.songe.gkd.sdp.ui.style.ResponsiveTokens
 
 /**
  * Adaptive home shell: compact windows use a bottom NavigationBar, medium and
@@ -41,7 +42,7 @@ fun AdaptiveHomeScaffold(
 ) {
     val mainVm = LocalMainViewModel.current
     val widthDp = LocalConfiguration.current.screenWidthDp
-    val useRail = widthDp >= ResponsiveTokens.CompactMaxWidthDp
+    val useRail = HomeNavigationPolicy.layout(widthDp) != HomeNavigationLayout.BOTTOM_BAR
 
     if (useRail) {
         Row(modifier = modifier.fillMaxSize()) {
@@ -51,29 +52,30 @@ fun AdaptiveHomeScaffold(
                     val selected = item == destination
                     NavigationRailItem(
                         selected = selected,
-                        onClick = { if (!selected) mainVm.handleClickDestination(item) },
+                        onClick = { mainVm.handleClickDestination(item) },
                         icon = {
                             PerfIcon(
                                 imageVector = item.icon,
-                                contentDescription = if (selected) item.label else null,
+                                contentDescription = if (selected) stringResource(item.labelRes) else null,
                             )
                         },
                         label = {
                             Text(
-                                text = item.label,
+                                text = stringResource(item.labelRes),
                                 style = MaterialTheme.typography.labelLarge,
                             )
                         },
                         modifier = Modifier.semantics {
                             this.selected = selected
-                        },
+                        }.testTag("nav_${item.name.lowercase()}"),
                     )
                 }
             }
-            HorizontalDivider()
+            VerticalDivider()
             Column(
                 modifier = Modifier
-                    .fillMaxSize()
+                    .weight(1f)
+                    .fillMaxHeight()
                     .widthIn(max = DimensionTokens.ListMaxWidth),
             ) {
                 content(destination)
@@ -88,19 +90,20 @@ fun AdaptiveHomeScaffold(
                         val selected = item == destination
                         NavigationBarItem(
                             selected = selected,
-                            onClick = { if (!selected) mainVm.handleClickDestination(item) },
+                            onClick = { mainVm.handleClickDestination(item) },
                             icon = {
                                 PerfIcon(
                                     imageVector = item.icon,
-                                    contentDescription = if (selected) item.label else null,
+                                    contentDescription = if (selected) stringResource(item.labelRes) else null,
                                 )
                             },
                             label = {
                                 Text(
-                                    text = item.label,
+                                    text = stringResource(item.labelRes),
                                     maxLines = 1,
                                 )
                             },
+                            modifier = Modifier.testTag("nav_${item.name.lowercase()}"),
                         )
                     }
                 }

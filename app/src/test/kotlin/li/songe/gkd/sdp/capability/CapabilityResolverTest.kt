@@ -1,5 +1,6 @@
 package li.songe.gkd.sdp.capability
 
+import li.songe.gkd.sdp.R
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -107,7 +108,8 @@ class CapabilityResolverTest {
         val runtime = graph.nodes.first { it.id == CapabilityId.RUNTIME_MODE }
         assertEquals(CapabilityStatus.ACTIVE, runtime.status)
         val a11yGuard = graph.nodes.first { it.id == CapabilityId.A11Y_GUARD }
-        assertEquals(CapabilityStatus.ACTIVE, a11yGuard.status)
+        assertEquals(CapabilityStatus.UNAVAILABLE, a11yGuard.status)
+        assertNull(a11yGuard.primaryAction)
     }
 
     @Test
@@ -139,7 +141,7 @@ class CapabilityResolverTest {
         val guard = graph.nodes.first { it.id == CapabilityId.A11Y_GUARD }
         assertEquals(CapabilityStatus.ACTIVE, guard.status)
         assertNull(guard.primaryAction)
-        assertTrue(guard.summary.contains("不可关闭"))
+        assertEquals(R.string.capability_guard_locked, guard.summaryRes)
     }
 
     @Test
@@ -157,5 +159,42 @@ class CapabilityResolverTest {
         val guard = graph.nodes.first { it.id == CapabilityId.A11Y_GUARD }
         assertEquals(CapabilityStatus.READY, guard.status)
         assertEquals(CapabilityActionTarget.TOGGLE_A11Y_GUARD, guard.primaryAction?.target)
+    }
+
+    @Test
+    fun a11yGuardStatusFollowsFlavorModeServiceAndLockMatrix() {
+        data class Case(
+            val isGkdFlavor: Boolean,
+            val chosenMode: RuntimeModeChoice?,
+            val a11yReady: Boolean,
+            val a11yGuardEnabled: Boolean,
+            val selfControlLocked: Boolean,
+            val expected: CapabilityStatus,
+            val expectAction: Boolean,
+        )
+
+        val cases = listOf(
+            Case(false, RuntimeModeChoice.ACCESSIBILITY, true, false, false, CapabilityStatus.UNAVAILABLE, false),
+            Case(true, RuntimeModeChoice.AUTOMATION, false, true, false, CapabilityStatus.UNAVAILABLE, false),
+            Case(true, null, false, true, false, CapabilityStatus.UNAVAILABLE, false),
+            Case(true, RuntimeModeChoice.ACCESSIBILITY, false, false, false, CapabilityStatus.READY, true),
+            Case(true, RuntimeModeChoice.ACCESSIBILITY, false, true, false, CapabilityStatus.ACTIVE, false),
+            Case(true, RuntimeModeChoice.ACCESSIBILITY, true, true, true, CapabilityStatus.ACTIVE, false),
+        )
+
+        cases.forEachIndexed { index, c ->
+            val graph = CapabilityResolver.resolve(
+                input(
+                    isGkdFlavor = c.isGkdFlavor,
+                    chosenMode = c.chosenMode,
+                    a11yReady = c.a11yReady,
+                    a11yGuardEnabled = c.a11yGuardEnabled,
+                    selfControlLocked = c.selfControlLocked,
+                ),
+            )
+            val guard = graph.nodes.first { it.id == CapabilityId.A11Y_GUARD }
+            assertEquals("case $index status", c.expected, guard.status)
+            assertEquals("case $index action", c.expectAction, guard.primaryAction != null)
+        }
     }
 }

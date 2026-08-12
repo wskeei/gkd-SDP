@@ -101,24 +101,24 @@ fun AppOpsAllowPage() {
                     AuthButtonGroup(
                         modifier = Modifier.fillMaxWidth(),
                         buttons = listOf(
-                            "Shizuku 授权" to vm.viewModelScope.launchAsFn(Dispatchers.IO) {
+                            li.songe.gkd.sdp.app.getString(R.string.app_ops_shizuku_authorize) to vm.viewModelScope.launchAsFn(Dispatchers.IO) {
                                 mainVm.guardShizukuContext()
                                 toast(li.songe.gkd.sdp.app.getString(R.string.s_027b905228))
                             },
-                            "命令授权" to {
+                            li.songe.gkd.sdp.app.getString(R.string.app_ops_command_authorize) to {
                                 vm.showCopyDlgFlow.value = true
                             },
-                            "卸载重装" to {
+                            li.songe.gkd.sdp.app.getString(R.string.app_ops_reinstall) to {
                                 mainVm.dialogFlow.updateDialogOptions(
                                     title = li.songe.gkd.sdp.app.getString(R.string.s_a50703b6a2),
                                     text = li.songe.gkd.sdp.app.getString(R.string.s_150e6661aa),
-                                    dismissText = "导出应用",
+                                    dismissText = li.songe.gkd.sdp.app.getString(R.string.export_apps),
                                     dismissAction = {
                                         mainVm.viewModelScope.launchTry(Dispatchers.IO) {
                                             context.saveFileToDownloads(getShareApkFile())
                                         }
                                     },
-                                    confirmText = "关闭",
+                                    confirmText = li.songe.gkd.sdp.app.getString(R.string.s_6c14bd7f6f),
                                 )
                             }
                         )

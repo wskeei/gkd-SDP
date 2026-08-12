@@ -24,13 +24,14 @@ data class UrlBlockRule(
 
     @ColumnInfo(name = "enabled") val enabled: Boolean = true,
 
+    // i18n-ignore: legacy fallback or non-display heuristic data
     @ColumnInfo(name = "name") val name: String = "",  // 规则名称，如 "B站"
 
     @ColumnInfo(name = "redirect_url") val redirectUrl: String = DEFAULT_REDIRECT_URL,  // 跳转目标
 
     @ColumnInfo(name = "show_intercept") val showIntercept: Boolean = true,  // 是否显示全屏拦截
 
-    @ColumnInfo(name = "intercept_message") val interceptMessage: String = "这真的重要吗？",
+    @ColumnInfo(name = "intercept_message") val interceptMessage: String = "",
 
     @ColumnInfo(name = "order_index") val orderIndex: Int = 0,  // 排序索引
 
@@ -108,5 +109,8 @@ data class UrlBlockRule(
 
         @Query("UPDATE url_block_rule SET enabled = 1 WHERE enabled = 0")
         suspend fun enableAllDisabled(): Int
+
+        @Query("DELETE FROM url_block_rule")
+        suspend fun deleteAll(): Int
     }
 }

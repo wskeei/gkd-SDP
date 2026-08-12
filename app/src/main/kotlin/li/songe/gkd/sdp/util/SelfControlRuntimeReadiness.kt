@@ -10,7 +10,7 @@ object SelfControlRuntimeReadiness {
 
     data class Status(
         val mode: AutomatorModeOption?,
-        val modeLabel: String,
+        val modeLabelRes: Int?,
         val connected: Boolean,
         val overlayPermission: Boolean,
         val ready: Boolean,
@@ -31,7 +31,7 @@ object SelfControlRuntimeReadiness {
         }
         return Status(
             mode = mode,
-            modeLabel = mode?.label ?: "未选择",
+            modeLabelRes = mode?.labelRes,
             connected = connected,
             overlayPermission = overlayPermission,
             ready = issue == Issue.None,

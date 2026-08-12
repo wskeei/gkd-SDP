@@ -44,6 +44,7 @@ import li.songe.json5.Json5
 import java.io.File
 import androidx.compose.ui.res.stringResource
 import li.songe.gkd.sdp.R
+import li.songe.gkd.sdp.app
 
 private fun HttpMessageBuilder.setCommonHeaders(cookie: String) {
     header("Cookie", cookie)
@@ -103,7 +104,7 @@ suspend fun uploadFileToGithub(
         }))
     }
     if (policiesRawResp.status == HttpStatusCode.Unauthorized) {
-        throw GithubCookieException("检测到 cookie 失效, 请更换")
+        throw GithubCookieException(app.getString(R.string.github_cookie_expired))
     }
     val policiesResp = policiesRawResp.body<UploadPoliciesAssetsResponse>()
 
@@ -257,4 +258,3 @@ fun EditGithubCookieDlg() {
         )
     }
 }
-
