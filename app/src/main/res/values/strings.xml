@@ -9,4 +9,10 @@
     <string name="rule_match" debug_suffix="true">规则匹配</string>
     <string name="record_activity" debug_suffix="true">界面服务</string>
     <string name="record_a11y_event" debug_suffix="true">事件服务</string>
+    <string name="usage_guard_control_title" formatted="false">使用控制</string>
+    <string name="usage_guard_screenshot_explanation" formatted="false">隐藏悬浮条不会暂停本次使用；提前终止会将倒计时归零并立即回到桌面。</string>
+    <string name="usage_guard_hide_for_screenshot" formatted="false">隐藏 10 秒用于截图</string>
+    <string name="usage_guard_screenshot_restore" formatted="false">隐藏期间倒计时继续，之后自动恢复。</string>
+    <string name="usage_guard_back" formatted="false">返回</string>
+    <string name="usage_guard_terminate" formatted="false">终止使用</string>
 </resources>

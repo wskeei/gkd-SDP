@@ -147,7 +147,7 @@ class ComposeHardcodedTextDetectorTest : LintDetectorTest() {
     }
 
     @Test
-    fun testFlagsToastAndNotificationText() {
+    fun testFlagsToastText() {
         lint().files(
             kotlin(
                 """
@@ -157,6 +157,12 @@ class ComposeHardcodedTextDetectorTest : LintDetectorTest() {
                 }
                 """.trimIndent(),
             ),
+        ).run().expectContains("Hardcoded user-visible text")
+    }
+
+    @Test
+    fun testFlagsNotificationText() {
+        lint().files(
             kotlin(
                 """
                 import android.app.Notification

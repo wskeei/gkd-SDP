@@ -53,6 +53,15 @@ hardcoded-text findings recorded in [`app/lint-baseline.xml`](app/lint-baseline.
 new findings still fail Lint, so the baseline is an explicit debt boundary
 rather than a disabled check.
 
+The quality job also runs v2.1.0-adapted policy tools for sensitive output,
+Compose lifecycle ownership, UI/service file boundaries, behavioral test
+quality, and localization resources/source additions. These checks preserve
+the flat v2.1.0 layout: legacy violations remain visible as an explicit
+baseline, while newly added production lines are checked against the stricter
+policy. `check-dev-environment.sh` validates the local/CI prerequisites, and
+`apply-main-ruleset.sh` provides `--dry-run`, `--check`, and `--apply` modes for
+the protected-check contract without embedding credentials.
+
 ## Repository Shape
 
 - [`app`](app): main Android application
@@ -332,7 +341,7 @@ Gradle is configured with `-Dfile.encoding=UTF-8` in [`gradle.properties`](gradl
 
 ## Build and Test
 
-The authoritative verification environment is GitHub Actions with JDK 21. Pull requests use `ci.yml`; pushes to `main` produce a short-lived Nightly artifact through `nightly.yml`. This project intentionally does not require Gradle to run locally; local checks can be limited to source inspection, shell tests, and `git diff --check`. Push the branch and inspect the Draft PR checks with `gh pr checks --watch`.
+The authoritative verification environment is GitHub Actions with JDK 21. Pull requests use `ci.yml`; the full scheduled/manual Nightly pipeline uses `nightly.yml`. The CI jobs install the API 26/API 35 managed-device images before running instrumentation and performance tasks. This project intentionally does not require Gradle to run locally; local checks can be limited to source inspection, shell tests, and `git diff --check`. Push the branch and inspect the PR checks with `gh pr checks --watch`.
 
 Formal GKD-SDP versions are maintained separately from the upstream GKD base. The source of truth is [`gradle/version.properties`](gradle/version.properties), and [`scripts/verify-release-metadata.sh`](scripts/verify-release-metadata.sh) checks tag, changelog, and `versionCode` rules. Do not add hard-coded version values to workflows or documentation; see [`docs/releasing.md`](docs/releasing.md) for the release procedure.
 

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name" formatted="false">GKD-SDP</string>
+    <string name="a11y_desc" formatted="false">Screen automation service based on advanced selectors and subscription rules
+
+With custom selectors and subscription rules, you can click any control and define custom quick actions.</string>
+    <string name="import_backup" formatted="false">Import backup</string>
+    <string name="capture_snapshot" formatted="false">Capture snapshot</string>
+    <string name="http_server" formatted="false">HTTP server</string>
+    <string name="snapshot_button" formatted="false">Snapshot button</string>
+    <string name="rule_match" formatted="false">Rule match</string>
+    <string name="record_activity" formatted="false">Activity service</string>
+    <string name="record_a11y_event" formatted="false">Event service</string>
+    <string name="usage_guard_control_title" formatted="false">Usage control</string>
+    <string name="usage_guard_screenshot_explanation" formatted="false">Hiding the countdown does not pause this session; ending it early resets the countdown and returns to the home screen.</string>
+    <string name="usage_guard_hide_for_screenshot" formatted="false">Hide for 10 seconds to take a screenshot</string>
+    <string name="usage_guard_screenshot_restore" formatted="false">The countdown continues while hidden and the bar restores automatically.</string>
+    <string name="usage_guard_back" formatted="false">Back</string>
+    <string name="usage_guard_terminate" formatted="false">End session</string>
+</resources>

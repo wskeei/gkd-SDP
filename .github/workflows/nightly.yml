@@ -1,10 +1,9 @@
 name: Nightly
 
 on:
+  schedule:
+    - cron: "0 2 * * *"
   workflow_dispatch:
-  push:
-    branches:
-      - main
 
 permissions:
   contents: read
@@ -17,15 +16,22 @@ env:
   JAVA_VERSION: '21'
 
 jobs:
-  build:
+  nightly:
     name: nightly
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 240
     steps:
       - name: Check out source
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           fetch-depth: 0
+
+      - name: Enable KVM permissions
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+          ls -al /dev/kvm
 
       - name: Set up Java
         uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
@@ -38,13 +44,112 @@ jobs:
         with:
           cache-provider: basic
 
-      - name: Verify release metadata
-        run: bash scripts/verify-release-metadata.sh --no-tag
+      - name: Check CI environment
+        run: bash scripts/check-dev-environment.sh --ci
 
-      - name: Build debug APK
+      - name: Verify static quality policies and release metadata
+        run: |
+          python3 -m unittest discover -s scripts/tests -p 'test_*.py' -v
+          python3 scripts/verify-sensitive-output-policy.py
+          python3 scripts/verify-compose-lifecycle-policy.py
+          python3 scripts/verify-ui-file-boundaries.py
+          python3 scripts/verify-test-quality-policy.py
+          python3 scripts/verify-localization-resources.py
+          python3 scripts/verify-localization-sources.py
+          bash scripts/test-verify-release-metadata.sh
+          bash scripts/test-generate-update-manifest.sh
+          bash scripts/verify-release-metadata.sh --no-tag
+
+      - name: Generate security dependency report
+        run: bash scripts/generate-security-dependency-report.sh
+
+      - name: Verify security dependency floors
+        run: |
+          python3 scripts/verify-security-dependency-report.py \
+            --report build/reports/security-dependencies.txt
+
+      - name: Run unit tests and lint
         run: |
           chmod +x ./gradlew
-          ./gradlew :app:assembleGkdDebug
+          ./gradlew \
+            :quality-lint:test \
+            :selector:jvmTest \
+            :app:testGkdDebugUnitTest \
+            :app:lintGkdDebug \
+            :app:lintPlayDebug
+
+      - name: Verify coverage and screenshots
+        run: |
+          ./gradlew \
+            :app:koverVerifyGkdDebug \
+            :app:koverXmlReportGkdDebug \
+            :app:validateGkdDebugScreenshotTest
+          python3 scripts/verify-kover-report.py \
+            --xml app/build/reports/kover/reportGkdDebug.xml \
+            --includes config/quality/kover-includes.txt \
+            --excludes config/quality/kover-excludes.txt
+
+      - name: Install managed device and smoke emulator images
+        run: |
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" \
+            "platform-tools" \
+            "emulator" \
+            "system-images;android-26;google_apis;x86_64" \
+            "system-images;android-35;google_apis;x86_64"
+
+      - name: Run API 26 managed device tests
+        run: |
+          ./gradlew :app:pixel2Api26GkdDebugAndroidTest \
+            -Pandroid.testoptions.manageddevices.emulator.gpu=swiftshader_indirect \
+            -Pandroid.experimental.testOptions.managedDevices.maxConcurrentDevices=1 \
+            -Pandroid.experimental.testOptions.managedDevices.setupTimeoutMinutes=30
+
+      - name: Run API 35 managed device tests
+        run: |
+          ./gradlew \
+            :app:pixel6Api35GkdDebugAndroidTest \
+            :app:pixel6Api35PlayDebugAndroidTest \
+            -Pandroid.testoptions.manageddevices.emulator.gpu=swiftshader_indirect \
+            -Pandroid.experimental.testOptions.managedDevices.maxConcurrentDevices=1 \
+            -Pandroid.experimental.testOptions.managedDevices.setupTimeoutMinutes=30
+
+      - name: Generate baseline profile and run macrobenchmarks
+        run: |
+          ./gradlew :app:generateGkdReleaseBaselineProfile \
+            -Pandroid.testInstrumentationRunnerArguments.androidx.benchmark.enabledRules=BaselineProfile \
+            -Pandroid.testoptions.manageddevices.emulator.gpu=swiftshader_indirect \
+            -Pandroid.experimental.testOptions.managedDevices.maxConcurrentDevices=1 \
+            -Pandroid.experimental.testOptions.managedDevices.setupTimeoutMinutes=30
+          ./gradlew :baselineprofile:pixel6Api35GkdNonMinifiedReleaseAndroidTest \
+            -Pandroid.testInstrumentationRunnerArguments.androidx.benchmark.enabledRules=Macrobenchmark \
+            -Pandroid.testoptions.manageddevices.emulator.gpu=swiftshader_indirect \
+            -Pandroid.experimental.testOptions.managedDevices.maxConcurrentDevices=1 \
+            -Pandroid.experimental.testOptions.managedDevices.setupTimeoutMinutes=30
+
+      - name: Build all variants and verify performance policy
+        run: |
+          ./gradlew \
+            :app:assembleGkdDebug \
+            :app:assemblePlayDebug \
+            :app:assembleGkdRelease \
+            :app:assemblePlayRelease
+          bash scripts/run-release-apk-smoke-emulator.sh \
+            --api 26 \
+            --apk app/build/outputs/apk/gkd/release/app-gkd-release.apk \
+            --apk app/build/outputs/apk/play/release/app-play-release.apk
+          bash scripts/run-release-apk-smoke-emulator.sh \
+            --api 35 \
+            --apk app/build/outputs/apk/gkd/release/app-gkd-release.apk \
+            --apk app/build/outputs/apk/play/release/app-play-release.apk
+          mkdir -p .worktrees
+          git worktree add --detach .worktrees/performance-baseline v2.1.0
+          ./gradlew -p .worktrees/performance-baseline :app:assembleGkdRelease
+          python3 scripts/verify-performance-reports.py \
+            --thresholds config/quality/performance-thresholds.json \
+            --current-apk app/build/outputs/apk/gkd/release/app-gkd-release.apk \
+            --baseline-apk .worktrees/performance-baseline/app/build/outputs/apk/gkd/release/app-gkd-release.apk \
+            --compose-report app/build/compose_compiler \
+            --compose-baseline config/quality/compose-stability-baseline.json
 
       - name: Upload Nightly APK
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
@@ -53,3 +158,16 @@ jobs:
           retention-days: 7
           if-no-files-found: error
           path: app/build/outputs/apk/gkd/debug/app-gkd-debug.apk
+
+      - name: Upload quality reports
+        if: ${{ always() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: nightly-reports-${{ github.run_id }}
+          retention-days: 7
+          if-no-files-found: ignore
+          path: |
+            build/reports/
+            app/build/reports/
+            app/build/outputs/managed_device_android_test_additional_output/
+            baselineprofile/build/outputs/managed_device_android_test_additional_output/

@@ -281,6 +281,8 @@ def main(argv: list[str] | None = None) -> int:
     profile = args.root / "app/src/gkdRelease/generated/baselineProfiles/baseline-prof.txt"
     if not profile.is_file():
         failures.append("missing generated baseline profile")
+    elif profile.stat().st_size <= 0:
+        failures.append("generated baseline profile is empty")
     benchmark_data = find_benchmark_data(args.root, failures)
     for path in benchmark_data:
         check_benchmark_data(path, thresholds, failures)

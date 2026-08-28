@@ -23,6 +23,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.core.view.WindowInsetsControllerCompat
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.debounce
@@ -42,6 +43,10 @@ fun AppTheme(
     invertedTheme: Boolean = false,
     content: @Composable () -> Unit,
 ) {
+    if (LocalInspectionMode.current) {
+        MaterialTheme(content = content)
+        return
+    }
     val scope = rememberCoroutineScope()
     val enableDarkThemeFlow = remember {
         storeFlow.map { it.enableDarkTheme }.debounce(300).stateIn(

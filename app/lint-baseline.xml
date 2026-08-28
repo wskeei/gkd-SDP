@@ -6361,6 +6361,28 @@
 
     <issue
         id="HardcodedText"
+        message="Hardcoded user-visible text; move it to a string resource: &quot;无法启动该应用&quot;"
+        errorLine1="                                    Toast.makeText(this@FocusOverlayService, &quot;无法启动该应用&quot;, Toast.LENGTH_SHORT).show()"
+        errorLine2="                                                                             ~~~~~~~~~">
+        <location
+            file="src/main/kotlin/li/songe/gkd/sdp/service/FocusOverlayService.kt"
+            line="128"
+            column="78"/>
+    </issue>
+
+    <issue
+        id="HardcodedText"
+        message="Hardcoded user-visible text; move it to a string resource: &quot;启动失败：${e.message}&quot;"
+        errorLine1="                                Toast.makeText(this@FocusOverlayService, &quot;启动失败：${e.message}&quot;, Toast.LENGTH_SHORT).show()"
+        errorLine2="                                                                         ~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/li/songe/gkd/sdp/service/FocusOverlayService.kt"
+            line="131"
+            column="74"/>
+    </issue>
+
+    <issue
+        id="HardcodedText"
         message="Hardcoded user-visible text; move it to a string resource: &quot;（已锁定，无法提前结束）&quot;"
         errorLine1="                text = &quot;（已锁定，无法提前结束）&quot;,"
         errorLine2="                       ~~~~~~~~~~~~~~">
@@ -11564,72 +11586,6 @@
 
     <issue
         id="HardcodedText"
-        message="Hardcoded user-visible text; move it to a string resource: &quot;使用控制&quot;"
-        errorLine1="                    text = &quot;使用控制&quot;,"
-        errorLine2="                           ~~~~~~">
-        <location
-            file="src/main/kotlin/li/songe/gkd/sdp/service/UsageGuardCountdownOverlayService.kt"
-            line="536"
-            column="28"/>
-    </issue>
-
-    <issue
-        id="HardcodedText"
-        message="Hardcoded user-visible text; move it to a string resource: &quot;隐藏悬浮条不会暂停本次使用；提前终止会将倒计时归零并立即回到桌面。&quot;"
-        errorLine1="                    text = &quot;隐藏悬浮条不会暂停本次使用；提前终止会将倒计时归零并立即回到桌面。&quot;,"
-        errorLine2="                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/li/songe/gkd/sdp/service/UsageGuardCountdownOverlayService.kt"
-            line="540"
-            column="28"/>
-    </issue>
-
-    <issue
-        id="HardcodedText"
-        message="Hardcoded user-visible text; move it to a string resource: &quot;隐藏 10 秒用于截图&quot;"
-        errorLine1="                    Text(&quot;隐藏 10 秒用于截图&quot;)"
-        errorLine2="                         ~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/li/songe/gkd/sdp/service/UsageGuardCountdownOverlayService.kt"
-            line="550"
-            column="26"/>
-    </issue>
-
-    <issue
-        id="HardcodedText"
-        message="Hardcoded user-visible text; move it to a string resource: &quot;隐藏期间倒计时继续，之后自动恢复。&quot;"
-        errorLine1="                    text = &quot;隐藏期间倒计时继续，之后自动恢复。&quot;,"
-        errorLine2="                           ~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/li/songe/gkd/sdp/service/UsageGuardCountdownOverlayService.kt"
-            line="553"
-            column="28"/>
-    </issue>
-
-    <issue
-        id="HardcodedText"
-        message="Hardcoded user-visible text; move it to a string resource: &quot;返回&quot;"
-        errorLine1="                        Text(&quot;返回&quot;)"
-        errorLine2="                             ~~~~">
-        <location
-            file="src/main/kotlin/li/songe/gkd/sdp/service/UsageGuardCountdownOverlayService.kt"
-            line="563"
-            column="30"/>
-    </issue>
-
-    <issue
-        id="HardcodedText"
-        message="Hardcoded user-visible text; move it to a string resource: &quot;终止使用&quot;"
-        errorLine1="                        Text(&quot;终止使用&quot;)"
-        errorLine2="                             ~~~~~~">
-        <location
-            file="src/main/kotlin/li/songe/gkd/sdp/service/UsageGuardCountdownOverlayService.kt"
-            line="566"
-            column="30"/>
-    </issue>
-
-    <issue
-        id="HardcodedText"
         message="Hardcoded user-visible text; move it to a string resource: &quot;使用申请&quot;"
         errorLine1="                title = { Text(&quot;使用申请&quot;) },"
         errorLine2="                               ~~~~~~">
@@ -12988,7 +12944,7 @@
         errorLine2="                                  ~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/li/songe/gkd/sdp/service/UsageGuardCountdownOverlayService.kt"
-            line="93"
+            line="95"
             column="35"/>
     </issue>
 

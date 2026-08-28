@@ -40,6 +40,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.lifecycle.LifecycleService
@@ -51,6 +52,7 @@ import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import li.songe.gkd.sdp.R
 import li.songe.gkd.sdp.a11y.UsageGuardEngine
 import li.songe.gkd.sdp.ui.style.AppTheme
 import li.songe.gkd.sdp.util.BarUtils
@@ -412,6 +414,8 @@ internal fun UsageGuardCountdownOverlayContent(
     reasonText: String,
     maxPillWidthPx: Int,
     showTerminateConfirm: Boolean,
+    initialNow: Long? = null,
+    enableTicker: Boolean = true,
     onPillTap: () -> Unit,
     onDrag: (Float, Float) -> Unit,
     onExpired: () -> Unit,
@@ -430,6 +434,8 @@ internal fun UsageGuardCountdownOverlayContent(
             expiresAt = expiresAt,
             reasonText = reasonText,
             maxPillWidthPx = maxPillWidthPx,
+            initialNow = initialNow,
+            enableTicker = enableTicker,
             onTap = onPillTap,
             onDrag = onDrag,
             onExpired = onExpired,
@@ -442,19 +448,25 @@ private fun UsageGuardCountdownPill(
     expiresAt: Long,
     reasonText: String,
     maxPillWidthPx: Int,
+    initialNow: Long?,
+    enableTicker: Boolean,
     onTap: () -> Unit,
     onDrag: (Float, Float) -> Unit,
     onExpired: () -> Unit,
 ) {
-    var now by remember(expiresAt) { mutableLongStateOf(System.currentTimeMillis()) }
-    LaunchedEffect(expiresAt) {
-        while (true) {
-            now = System.currentTimeMillis()
-            if (now >= expiresAt) {
-                onExpired()
-                break
+    var now by remember(expiresAt, initialNow) {
+        mutableLongStateOf(initialNow ?: System.currentTimeMillis())
+    }
+    if (enableTicker) {
+        LaunchedEffect(expiresAt) {
+            while (true) {
+                now = System.currentTimeMillis()
+                if (now >= expiresAt) {
+                    onExpired()
+                    break
+                }
+                delay(1_000L)
             }
-            delay(1_000L)
         }
     }
     val remainingText = UsageGuardCountdownOverlayPolicy.formatRemainingText(expiresAt, now)
@@ -533,11 +545,11 @@ private fun UsageGuardTerminateConfirmScreen(
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
                 Text(
-                    text = "使用控制",
+                    text = stringResource(R.string.usage_guard_control_title),
                     style = MaterialTheme.typography.titleLarge,
                 )
                 Text(
-                    text = "隐藏悬浮条不会暂停本次使用；提前终止会将倒计时归零并立即回到桌面。",
+                    text = stringResource(R.string.usage_guard_screenshot_explanation),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -547,10 +559,10 @@ private fun UsageGuardTerminateConfirmScreen(
                         .fillMaxWidth()
                         .heightIn(min = 48.dp),
                 ) {
-                    Text("隐藏 10 秒用于截图")
+                    Text(stringResource(R.string.usage_guard_hide_for_screenshot))
                 }
                 Text(
-                    text = "隐藏期间倒计时继续，之后自动恢复。",
+                    text = stringResource(R.string.usage_guard_screenshot_restore),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -560,10 +572,10 @@ private fun UsageGuardTerminateConfirmScreen(
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     TextButton(onClick = onDismiss) {
-                        Text("返回")
+                        Text(stringResource(R.string.usage_guard_back))
                     }
                     Button(onClick = onConfirm) {
-                        Text("终止使用")
+                        Text(stringResource(R.string.usage_guard_terminate))
                     }
                 }
             }

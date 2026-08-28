@@ -1,11 +1,12 @@
 package li.songe.gkd.sdp
 
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
 import com.android.tools.screenshot.PreviewTest
 import li.songe.gkd.sdp.service.UsageGuardCountdownOverlayContent
+import li.songe.gkd.sdp.ui.style.AppTheme
 
+private const val PREVIEW_NOW = 0L
 private const val PREVIEW_EXPIRES_AT = 60_000L
 private const val PREVIEW_MAX_PILL_WIDTH_PX = 720
 
@@ -13,12 +14,14 @@ private const val PREVIEW_MAX_PILL_WIDTH_PX = 720
 @Preview(name = "Countdown pill compact", showBackground = true, widthDp = 360)
 @Composable
 fun ScreenshotUsageGuardCountdownPillCompact() {
-    MaterialTheme {
+    AppTheme {
         UsageGuardCountdownOverlayContent(
             expiresAt = PREVIEW_EXPIRES_AT,
             reasonText = "完成工作后使用阅读应用",
             maxPillWidthPx = PREVIEW_MAX_PILL_WIDTH_PX,
             showTerminateConfirm = false,
+            initialNow = PREVIEW_NOW,
+            enableTicker = false,
             onPillTap = {},
             onDrag = { _, _ -> },
             onExpired = {},
@@ -38,12 +41,14 @@ fun ScreenshotUsageGuardCountdownPillCompact() {
 )
 @Composable
 fun ScreenshotUsageGuardCountdownControlScreen() {
-    MaterialTheme {
+    AppTheme {
         UsageGuardCountdownOverlayContent(
             expiresAt = PREVIEW_EXPIRES_AT,
             reasonText = "完成工作后使用阅读应用",
             maxPillWidthPx = PREVIEW_MAX_PILL_WIDTH_PX,
             showTerminateConfirm = true,
+            initialNow = PREVIEW_NOW,
+            enableTicker = false,
             onPillTap = {},
             onDrag = { _, _ -> },
             onExpired = {},
@@ -66,12 +71,14 @@ fun ScreenshotUsageGuardCountdownControlScreen() {
 )
 @Composable
 fun ScreenshotUsageGuardCountdownControlDarkLargeText() {
-    MaterialTheme {
+    AppTheme {
         UsageGuardCountdownOverlayContent(
             expiresAt = PREVIEW_EXPIRES_AT,
             reasonText = "Complete the task before opening the reader",
             maxPillWidthPx = PREVIEW_MAX_PILL_WIDTH_PX,
             showTerminateConfirm = true,
+            initialNow = PREVIEW_NOW,
+            enableTicker = false,
             onPillTap = {},
             onDrag = { _, _ -> },
             onExpired = {},

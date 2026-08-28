@@ -20,6 +20,9 @@ All notable GKD-SDP changes are documented here. The format follows
 - Restore v2.1.0-compatible coverage, screenshot, managed-device, release-smoke,
   and startup-performance quality gates without reintroducing later product
   modules or database changes.
+- Restore v2.1.0-specific static policy tools for sensitive output, lifecycle,
+  UI boundaries, behavioral tests, and localization, with legacy debt kept as
+  an explicit baseline and new violations rejected.
 - Enforce the restored hardcoded-text Lint detector with an explicit baseline
   for legacy v2.1.0 findings.
 
