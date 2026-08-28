@@ -76,7 +76,7 @@ class UsageGuardCountdownOverlayScreenshotModeContractTest {
     }
 
     private fun sourceFile(relativePath: String): File {
-        var directory = File(System.getProperty("user.dir"))
+        var directory = File(System.getProperty("user.dir").orEmpty())
         repeat(8) {
             val candidate = File(directory, relativePath)
             if (candidate.isFile) return candidate
