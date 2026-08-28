@@ -48,13 +48,10 @@ import li.songe.gkd.sdp.ui.component.InterceptionSourceCard
 import li.songe.gkd.sdp.ui.component.InterceptionSourcePresentation
 import li.songe.gkd.sdp.ui.component.SelfControlElapsedCard
 import li.songe.gkd.sdp.ui.component.SelfControlInsightCurrentReference
-import li.songe.gkd.sdp.ui.share.ServiceOverlayLifecycleOwner
 import li.songe.gkd.sdp.ui.style.AppTheme
 import li.songe.gkd.sdp.util.SelfControlElapsedPolicy
 import li.songe.gkd.sdp.util.SelfControlInsightWindowPolicy
 import li.songe.gkd.sdp.util.AppBlockerDecisionPolicy
-import androidx.compose.ui.res.stringResource
-import li.songe.gkd.sdp.R
 
 class AppBlockerOverlayService : LifecycleService(), SavedStateRegistryOwner {
 
@@ -76,7 +73,6 @@ class AppBlockerOverlayService : LifecycleService(), SavedStateRegistryOwner {
 
     private val windowManager by lazy { getSystemService(WINDOW_SERVICE) as WindowManager }
     private var view: ComposeView? = null
-    private var overlayLifecycleOwner: ServiceOverlayLifecycleOwner? = null
     private var elapsedState by mutableStateOf<SelfControlElapsedPolicy.ElapsedState>(
         SelfControlElapsedPolicy.ElapsedState.Loading,
     )
@@ -99,8 +95,7 @@ class AppBlockerOverlayService : LifecycleService(), SavedStateRegistryOwner {
         super.onStartCommand(intent, flags, startId)
         if (view != null) return START_NOT_STICKY
 
-        val message = intent?.getStringExtra(EXTRA_MESSAGE)
-            ?: getString(R.string.common_default_intercept_message)
+        val message = intent?.getStringExtra(EXTRA_MESSAGE) ?: "这真的重要吗？"
         val blockedApp = intent?.getStringExtra(EXTRA_BLOCKED_APP).orEmpty()
         val eventKey = intent?.getStringExtra(EXTRA_EVENT_KEY).orEmpty()
         val eventKind = intent?.getIntExtra(
@@ -109,8 +104,7 @@ class AppBlockerOverlayService : LifecycleService(), SavedStateRegistryOwner {
         ) ?: SelfControlAttempt.KIND_APP_BLOCKER
         val subjectId = intent?.getStringExtra(EXTRA_SUBJECT_ID).orEmpty().ifBlank { blockedApp }
         val subjectLabel = intent?.getStringExtra(EXTRA_SUBJECT_LABEL).orEmpty().ifBlank { blockedApp }
-        val source = intent?.blockerSource(applicationContext)
-            ?: InterceptionSourcePresentation.unknown()
+        val source = intent?.blockerSource() ?: InterceptionSourcePresentation.unknown()
         if (eventKind != SelfControlAttempt.KIND_APP_BLOCKER ||
             blockedApp.isBlank() ||
             eventKey.isBlank() ||
@@ -194,10 +188,8 @@ class AppBlockerOverlayService : LifecycleService(), SavedStateRegistryOwner {
     ): Boolean {
         if (view != null) return false
 
-        val lifecycleOwner = ServiceOverlayLifecycleOwner()
-        overlayLifecycleOwner = lifecycleOwner
         view = ComposeView(this).apply {
-            setViewTreeLifecycleOwner(lifecycleOwner)
+            setViewTreeLifecycleOwner(this@AppBlockerOverlayService)
             setViewTreeSavedStateRegistryOwner(this@AppBlockerOverlayService)
             setContent {
                 AppTheme {
@@ -234,12 +226,9 @@ class AppBlockerOverlayService : LifecycleService(), SavedStateRegistryOwner {
         var mounted = false
         runCatching {
             windowManager.addView(view, params)
-            lifecycleOwner.onViewAdded()
             mounted = true
         }.onFailure { error ->
             view?.let { runCatching { windowManager.removeViewImmediate(it) } }
-            lifecycleOwner.onViewRemoved()
-            overlayLifecycleOwner = null
             view = null
             LogUtils.d("app blocker overlay mount rejected", error::class.java.simpleName)
             AppBlockerEngine.clearCooldown()
@@ -249,14 +238,12 @@ class AppBlockerOverlayService : LifecycleService(), SavedStateRegistryOwner {
     }
 
     override fun onDestroy() {
-        overlayLifecycleOwner?.onViewRemoved()
-        overlayLifecycleOwner = null
         super.onDestroy()
         view?.let { runCatching { windowManager.removeView(it) } }
         view = null
     }
 
-    private fun Intent.blockerSource(context: android.content.Context): InterceptionSourcePresentation? {
+    private fun Intent.blockerSource(): InterceptionSourcePresentation? {
         if (!hasExtra(EXTRA_RULE_ID)) return null
         val ruleId = getLongExtra(EXTRA_RULE_ID, -1L)
         val targetType = getIntExtra(EXTRA_RULE_TARGET_TYPE, -1)
@@ -283,7 +270,7 @@ class AppBlockerOverlayService : LifecycleService(), SavedStateRegistryOwner {
             daysOfWeek = daysOfWeek,
             isAllowMode = getBooleanExtra(EXTRA_RULE_ALLOW_MODE, false),
         )
-        return InterceptionSourcePresentation.appBlocker(rule, context)
+        return InterceptionSourcePresentation.appBlocker(rule)
     }
 }
 
@@ -353,7 +340,7 @@ fun AppBlockerInterceptScreen(
                 onClick = onExit,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text(stringResource(R.string.s_c2768060ab, (timeLeft).toString()))
+                Text("算了（退出）${timeLeft}s")
             }
         }
     }

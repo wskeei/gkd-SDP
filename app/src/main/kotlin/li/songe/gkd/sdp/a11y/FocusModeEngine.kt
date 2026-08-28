@@ -1,7 +1,9 @@
 ﻿package li.songe.gkd.sdp.a11y
 
 import android.content.Intent
+import android.util.Log
 import android.view.accessibility.AccessibilityNodeInfo
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -9,10 +11,9 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import li.songe.gkd.sdp.META
 import li.songe.gkd.sdp.app
 import li.songe.gkd.sdp.appScope
-import li.songe.gkd.sdp.R
-import li.songe.gkd.sdp.runtime.appDependencies
 import li.songe.gkd.sdp.data.FocusRule
 import li.songe.gkd.sdp.data.FocusSession
 import li.songe.gkd.sdp.db.DbSet
@@ -101,11 +102,11 @@ object FocusModeEngine {
     // 褰撳墠鐢熸晥鐨勬嫤鎴秷鎭?
     val currentMessageFlow = combine(activeSessionFlow, enabledRulesFlow) { session, rules ->
         getEffectiveMessage(session, rules)
-    }.stateIn(appScope, SharingStarted.Eagerly, li.songe.gkd.sdp.app.getString(R.string.common_default_focus_message))
+    }.stateIn(appScope, SharingStarted.Eagerly, "涓撴敞褰撲笅")
 
     init {
         // 鐩戝惉瑙勫垯鍜屼細璇濆彉鍖?
-        appScope.launch(appDependencies.dispatchers.io) {
+        appScope.launch(Dispatchers.IO) {
             combine(
                 DbSet.focusRuleDao.queryEnabled(),
                 DbSet.focusSessionDao.getSession()
@@ -114,12 +115,14 @@ object FocusModeEngine {
             }.collect { (rules, session) ->
                 cachedRules = rules
                 cachedSession = session
-                LogUtils.d("focus configuration updated", rules.size, session != null)
+                if (META.debuggable) {
+                    Log.d(TAG, "Rules updated: ${rules.size}, Session: $session")
+                }
             }
         }
 
         // 鐩戝惉浼氳瘽杩囨湡骞惰嚜鍔ㄧ粨鏉?
-        appScope.launch(appDependencies.dispatchers.io) {
+        appScope.launch(Dispatchers.IO) {
             while (true) {
                 delay(30_000L)  // 姣?30 绉掓鏌ヤ竴娆?
 
@@ -173,8 +176,7 @@ object FocusModeEngine {
             return session.interceptMessage
         }
         val activeRule = rules.firstOrNull { it.isActiveNow() }
-        return activeRule?.interceptMessage
-            ?: li.songe.gkd.sdp.app.getString(R.string.common_default_focus_message)
+        return activeRule?.interceptMessage ?: "涓撴敞褰撲笅"
     }
 
     /**
@@ -194,15 +196,17 @@ object FocusModeEngine {
             return
         }
 
-        val now = appDependencies.clock.elapsedRealtimeMillis()
+        val now = System.currentTimeMillis()
         val lastTriggerTime = cooldownMap[packageName] ?: 0L
-        if (cooldownMap.containsKey(packageName) && now - lastTriggerTime < COOLDOWN_MS) {
+        if (now - lastTriggerTime < COOLDOWN_MS) {
             return
         }
 
         if (isWhitelisted(packageName)) {
             sdpRuntimeFeatureCoordinator.recordDecision(owner, "focus", packageName, "whitelisted")
-            LogUtils.d("focus decision allowed")
+            if (META.debuggable) {
+                Log.d(TAG, "App $packageName is whitelisted, allowing")
+            }
             return
         }
 
@@ -271,11 +275,11 @@ object FocusModeEngine {
     suspend fun startManualSession(
         durationMinutes: Int,
         whitelistApps: List<String>,
-        interceptMessage: String = li.songe.gkd.sdp.app.getString(R.string.common_default_focus_message),
+        interceptMessage: String = "涓撴敞褰撲笅",
         isLocked: Boolean = false,
         lockDurationMinutes: Int = 0
     ) {
-        val now = appDependencies.clock.nowEpochMillis()
+        val now = System.currentTimeMillis()
         val endTime = now + durationMinutes * 60 * 1000L
         val lockEndTime = if (isLocked) now + lockDurationMinutes * 60 * 1000L else 0L
 

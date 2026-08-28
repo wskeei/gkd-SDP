@@ -16,7 +16,6 @@ shizuku = "13.1.5"
 loc = "0.6.2"
 vico = "2.0.0-alpha.28"
 lint = "32.3.0"
-adaptive = "1.2.0"
 kover = "0.9.9"
 screenshot = "0.0.1-alpha15"
 benchmark = "1.5.0-beta01"
@@ -53,7 +52,6 @@ compose-activity = "androidx.activity:activity-compose:1.13.0"
 androidx-appcompat = "androidx.appcompat:appcompat:1.7.1"
 androidx-core-ktx = "androidx.core:core-ktx:1.18.0"
 androidx-lifecycle-runtime-ktx = "androidx.lifecycle:lifecycle-runtime-ktx:2.10.0"
-androidx-lifecycle-runtime-compose = "androidx.lifecycle:lifecycle-runtime-compose:2.10.0"
 androidx-lifecycle-service = "androidx.lifecycle:lifecycle-service:2.10.0"
 androidx-navigation3-runtime = { module = "androidx.navigation3:navigation3-runtime", version.ref = "nav3" }
 androidx-navigation3-ui = { module = "androidx.navigation3:navigation3-ui", version.ref = "nav3" }
@@ -70,7 +68,6 @@ androidx-room-runtime = { module = "androidx.room:room-runtime", version.ref = "
 androidx-room-compiler = { module = "androidx.room:room-compiler", version.ref = "room" }
 androidx-room-ktx = { module = "androidx.room:room-ktx", version.ref = "room" }
 androidx-room-paging = { module = "androidx.room:room-paging", version.ref = "room" }
-androidx-room-testing = { module = "androidx.room:room-testing", version.ref = "room" }
 androidx-splashscreen = "androidx.core:core-splashscreen:1.2.0"
 androidx-paging-runtime = { module = "androidx.paging:paging-runtime", version.ref = "paging" }
 androidx-paging-compose = { module = "androidx.paging:paging-compose", version.ref = "paging" }
@@ -93,14 +90,14 @@ permissions = "com.github.getActivity:XXPermissions:28.2"
 device = "com.github.getActivity:DeviceCompat:2.6"
 json5 = "li.songe:json5:0.5.0"
 activityResultLauncher = "com.github.DylanCaiCoding:ActivityResultLauncher:1.1.2"
+kevinnzouWebview = "io.github.kevinnzou:compose-webview:0.33.6"
 lint-api = { module = "com.android.tools.lint:lint-api", version.ref = "lint" }
 lint-tests = { module = "com.android.tools.lint:lint-tests", version.ref = "lint" }
-compose-adaptive = { module = "androidx.compose.material3.adaptive:adaptive", version.ref = "adaptive" }
 
 [plugins]
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
-kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
+kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 kotlin-parcelize = { id = "org.jetbrains.kotlin.plugin.parcelize", version.ref = "kotlin" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 kotlinx-atomicfu = { id = "org.jetbrains.kotlinx.atomicfu", version.ref = "atomicfu" }

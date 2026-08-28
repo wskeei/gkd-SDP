@@ -23,8 +23,6 @@ import li.songe.gkd.sdp.util.SelfControlIntervalPolicy
 import li.songe.gkd.sdp.util.SelfControlInsightWindowPolicy
 import li.songe.gkd.sdp.util.UsageRequestRhythmPolicy
 import li.songe.gkd.sdp.util.LogUtils
-import li.songe.gkd.sdp.R
-import li.songe.gkd.sdp.app
 
 /** Dataset-backed chart used by request and interception overlays. */
 @Composable
@@ -83,21 +81,12 @@ fun SelfControlWindowChart(
             startAxis = rememberStartAxis(
                 valueFormatter = { value, _, _ ->
                     if (metric == SelfControlInsightWindowPolicy.Metric.INTERVAL) {
-                        val raw = (value.toDouble() * intervalUnit.divisorMs.toDouble()).toLong()
-                        val number = if (raw >= intervalUnit.divisorMs * 10L ||
-                            raw % intervalUnit.divisorMs == 0L
-                        ) {
-                            (raw / intervalUnit.divisorMs).toString()
-                        } else {
-                            String.format(
-                                java.util.Locale.ROOT,
-                                "%.1f",
-                                raw.toDouble() / intervalUnit.divisorMs,
-                            )
-                        }
-                        "$number${app.getString(intervalUnit.labelRes())}"
+                        SelfControlIntervalPolicy.formatAxisValue(
+                            (value.toDouble() * intervalUnit.divisorMs.toDouble()).toLong(),
+                            intervalUnit,
+                        )
                     } else {
-                        UsageRequestRhythmPolicy.formatRatio(value.toDouble())?.let { "${it}×" } ?: "—"
+                        "${UsageRequestRhythmPolicy.formatRatio(value.toDouble()) ?: "—"}×"
                     }
                 },
             ),
@@ -117,22 +106,10 @@ fun SelfControlWindowChart(
             .semantics {
                 contentDescription = listOfNotNull(
                     semanticSummary,
-                    currentPointLabel?.let {
-                        app.getString(R.string.insight_chart_current_point, it)
-                    },
-                    currentPointValue?.let {
-                        app.getString(R.string.insight_chart_current_value, it)
-                    },
-                    aggregationLabel ?: app.getString(R.string.insight_chart_no_aggregation),
+                    currentPointLabel?.let { "本次所在时段：$it" },
+                    currentPointValue?.let { "本次值：$it" },
+                    aggregationLabel ?: "图表逐条显示有效样本",
                 ).joinToString("；")
             },
     )
-}
-
-@androidx.annotation.StringRes
-private fun SelfControlIntervalPolicy.AxisUnit.labelRes(): Int = when (this) {
-    SelfControlIntervalPolicy.AxisUnit.Seconds -> R.string.axis_unit_seconds
-    SelfControlIntervalPolicy.AxisUnit.Minutes -> R.string.axis_unit_minutes
-    SelfControlIntervalPolicy.AxisUnit.Hours -> R.string.axis_unit_hours
-    SelfControlIntervalPolicy.AxisUnit.Days -> R.string.axis_unit_days
 }

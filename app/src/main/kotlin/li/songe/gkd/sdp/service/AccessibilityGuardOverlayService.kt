@@ -34,12 +34,10 @@ import kotlinx.coroutines.flow.asStateFlow
 import li.songe.gkd.sdp.R
 import li.songe.gkd.sdp.app
 import li.songe.gkd.sdp.ui.component.AppIcon
-import li.songe.gkd.sdp.ui.share.ServiceOverlayLifecycleOwner
 import li.songe.gkd.sdp.ui.style.AppTheme
 import li.songe.gkd.sdp.util.LogUtils
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicLong
-import androidx.compose.ui.res.stringResource
 
 /**
  * Full-screen accessibility permission reminder.
@@ -51,7 +49,6 @@ import androidx.compose.ui.res.stringResource
 class AccessibilityGuardOverlayService : LifecycleService(), SavedStateRegistryOwner {
     private val windowManager by lazy { getSystemService(WINDOW_SERVICE) as WindowManager }
     private var view: ComposeView? = null
-    private var overlayLifecycleOwner: ServiceOverlayLifecycleOwner? = null
     private var activeRequestToken = Long.MIN_VALUE
     private val homeClickHandled = AtomicBoolean(false)
 
@@ -95,9 +92,8 @@ class AccessibilityGuardOverlayService : LifecycleService(), SavedStateRegistryO
             return
         }
 
-        val lifecycleOwner = ServiceOverlayLifecycleOwner()
         val overlayView = ComposeView(this).apply {
-            setViewTreeLifecycleOwner(lifecycleOwner)
+            setViewTreeLifecycleOwner(this@AccessibilityGuardOverlayService)
             setViewTreeSavedStateRegistryOwner(this@AccessibilityGuardOverlayService)
             setContent {
                 AppTheme {
@@ -122,23 +118,18 @@ class AccessibilityGuardOverlayService : LifecycleService(), SavedStateRegistryO
         // being started; it must not leave a view behind after a reset.
         synchronized(requestLock) {
             if (!requested || requestSequence.get() != token || view != null) {
-                lifecycleOwner.onViewRemoved()
                 overlayView.disposeComposition()
                 return
             }
             try {
                 windowManager.addView(overlayView, params)
-                lifecycleOwner.onViewAdded()
-                overlayLifecycleOwner = lifecycleOwner
                 view = overlayView
                 _isRunning.value = true
             } catch (e: WindowManager.BadTokenException) {
-                lifecycleOwner.onViewRemoved()
                 overlayView.disposeComposition()
                 LogUtils.d("AccessibilityGuard overlay rejected by WindowManager", e)
                 stopSelf()
             } catch (e: SecurityException) {
-                lifecycleOwner.onViewRemoved()
                 overlayView.disposeComposition()
                 LogUtils.d("AccessibilityGuard overlay denied by WindowManager", e)
                 stopSelf()
@@ -146,7 +137,6 @@ class AccessibilityGuardOverlayService : LifecycleService(), SavedStateRegistryO
                 // OEM WindowManager implementations sometimes report a revoked
                 // overlay permission as IllegalArgumentException. Keep the
                 // guard coordinator alive even in that case.
-                lifecycleOwner.onViewRemoved()
                 overlayView.disposeComposition()
                 LogUtils.d("AccessibilityGuard overlay could not be attached", e)
                 stopSelf()
@@ -195,8 +185,6 @@ class AccessibilityGuardOverlayService : LifecycleService(), SavedStateRegistryO
         } catch (e: RuntimeException) {
             LogUtils.d("AccessibilityGuard overlay removal failed", e)
         } finally {
-            overlayLifecycleOwner?.onViewRemoved()
-            overlayLifecycleOwner = null
             currentView.disposeComposition()
         }
     }
@@ -291,13 +279,13 @@ private fun AccessibilityGuardOverlayContent(
                 modifier = Modifier.padding(top = 16.dp),
             )
             Text(
-                text = stringResource(R.string.s_6439fc3f5f),
+                text = "无障碍权限已关闭",
                 style = MaterialTheme.typography.headlineSmall,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.padding(top = 24.dp),
             )
             Text(
-                text = stringResource(R.string.s_b213d3a099),
+                text = "为保证已启用的自动化功能正常工作，请返回应用重新开启无障碍权限。",
                 style = MaterialTheme.typography.bodyLarge,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.padding(top = 16.dp, bottom = 32.dp),
@@ -306,7 +294,7 @@ private fun AccessibilityGuardOverlayContent(
                 onClick = onGoHome,
                 modifier = Modifier.fillMaxWidth(),
             ) {
-                Text(stringResource(R.string.s_23926d6146))
+                Text("前往")
             }
         }
     }

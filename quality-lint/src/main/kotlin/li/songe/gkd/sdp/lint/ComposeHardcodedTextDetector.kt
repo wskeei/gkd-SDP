@@ -91,6 +91,7 @@ class ComposeHardcodedTextDetector : Detector(), SourceCodeScanner {
             "setContentTitle",
             "setContentText",
             "AlertDialog",
+            "makeText",
         )
 
         private val UI_CALLS = setOf(

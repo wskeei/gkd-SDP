@@ -5,8 +5,6 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapLatest
 import li.songe.gkd.sdp.db.DbSet
-import li.songe.gkd.sdp.runtime.SdpClock
-import li.songe.gkd.sdp.runtime.appDependencies
 import li.songe.gkd.sdp.util.SelfControlInsightWindowPolicy
 import li.songe.gkd.sdp.util.SelfControlIntervalPolicy
 
@@ -16,7 +14,6 @@ import li.songe.gkd.sdp.util.SelfControlIntervalPolicy
 class SelfControlIntervalRepository(
     private val usageRecords: UsageRecordSource,
     private val attemptEvents: AttemptEventSource,
-    private val clock: SdpClock = appDependencies.clock,
 ) {
     interface UsageRecordSource {
         suspend fun queryRecentRecords(appId: String, limit: Int): List<UsageGuardRecord>
@@ -43,9 +40,31 @@ class SelfControlIntervalRepository(
             appId: String,
             startAt: Long,
             endAt: Long,
-        ): List<UsageRequestInsightRow>
+        ): List<UsageRequestInsightRow> = queryRecentRecords(appId, 10_000)
+            .filter { it.requestedAt in startAt..endAt }
+            .sortedWith(compareBy<UsageGuardRecord> { it.requestedAt }.thenBy { it.id })
+            .map {
+                UsageRequestInsightRow(
+                    id = it.id,
+                    requestedAt = it.requestedAt,
+                    requestedDurationMinutes = it.requestedDurationMinutes,
+                    lastUsageEndedAt = it.lastUsageEndedAt,
+                    requestGapMs = it.requestGapMs,
+                )
+            }
 
-        suspend fun getLatestInsightRow(appId: String): UsageRequestInsightRow?
+        suspend fun getLatestInsightRow(appId: String): UsageRequestInsightRow? =
+            queryRecentRecords(appId, 10_000)
+                .maxWithOrNull(compareBy<UsageGuardRecord> { it.requestedAt }.thenBy { it.id })
+                ?.let {
+                    UsageRequestInsightRow(
+                        id = it.id,
+                        requestedAt = it.requestedAt,
+                        requestedDurationMinutes = it.requestedDurationMinutes,
+                        lastUsageEndedAt = it.lastUsageEndedAt,
+                        requestGapMs = it.requestGapMs,
+                    )
+                }
     }
 
     interface AttemptEventSource {
@@ -105,7 +124,7 @@ class SelfControlIntervalRepository(
     suspend fun loadUsageRequestOverlay(appId: String): UsageRequestOverlay {
         val data = loadUsageRequestOverlayData(
             appId = appId,
-            insightAnchorAt = clock.nowEpochMillis(),
+            insightAnchorAt = System.currentTimeMillis(),
         )
         return UsageRequestOverlay(
             latestRequestedAt = data.latestRequestedAt,

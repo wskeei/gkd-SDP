@@ -1,14 +1,8 @@
 {
-  "unstableClassCount": 399,
+  "unstableClassCount": 326,
   "coreStableTypes": [
-    "UsageRequestUiState",
-    "SelfControlInsightWindowPolicy.ChartPoint",
-    "SettingsEntry",
-    "CapabilityNode",
-    "AppBackupRepository",
-    "CleartextOriginPolicy",
-    "CleartextOriginInterceptor",
-    "SelfControlEntryUi",
-    "FixedWindowInsets"
+    "UsageGuardCountdownOverlaySession",
+    "UsageGuardCountdownOverlayCapturePolicy",
+    "UsageGuardPolicy"
   ]
 }

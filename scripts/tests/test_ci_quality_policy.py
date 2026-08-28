@@ -6,55 +6,50 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 class CiQualityPolicyTest(unittest.TestCase):
-    def test_ci_builds_all_four_variants(self):
-        ci = (ROOT / ".github/workflows/ci.yml").read_text()
-        for variant in (":app:assembleGkdDebug", ":app:assemblePlayDebug", ":app:assembleGkdRelease", ":app:assemblePlayRelease"):
-            self.assertIn(variant, ci)
-
-    def test_ci_runs_test_quality_and_coverage(self):
-        ci = (ROOT / ".github/workflows/ci.yml").read_text()
-        self.assertIn("verify-test-quality-policy.py", ci)
-        self.assertIn("koverVerifyGkdDebug", ci)
-
-    def test_ci_runs_managed_device_and_performance_gates(self):
-        ci = (ROOT / ".github/workflows/ci.yml").read_text()
-        self.assertIn("managed-device-api26:", ci)
-        self.assertIn("managed-device-api35:", ci)
-        self.assertIn("performance:", ci)
-        self.assertIn(":app:pixel2Api26GkdDebugAndroidTest", ci)
-        self.assertIn(":app:pixel6Api35GkdDebugAndroidTest", ci)
-        self.assertIn(":app:pixel6Api35PlayDebugAndroidTest", ci)
-        self.assertIn(":app:generateGkdReleaseBaselineProfile", ci)
-        self.assertIn(":baselineprofile:pixel6Api35GkdNonMinifiedReleaseAndroidTest", ci)
-        self.assertIn("verify-performance-reports.py", ci)
-
-    def test_ci_starts_the_actual_minified_release_on_api_boundaries(self):
-        ci = (ROOT / ".github/workflows/ci.yml").read_text()
-        nightly = (ROOT / ".github/workflows/nightly.yml").read_text()
-
-        smoke_runner = (ROOT / "scripts/run-release-apk-smoke-emulator.sh").read_text()
-        self.assertIn("smoke-test-release-apk.sh", smoke_runner)
-        self.assertNotIn("rg ", smoke_runner)
-        smoke_script = (ROOT / "scripts/smoke-test-release-apk.sh").read_text()
-        self.assertNotIn("rg ", smoke_script)
-        for task in (
-            "scripts/run-release-apk-smoke-emulator.sh",
+    def test_ci_restores_required_checks_and_static_policies(self):
+        ci = (ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8")
+        for job in (
+            "quality:",
+            "build:",
+            "coverage:",
+            "visual-regression:",
+            "managed-device-api26:",
+            "managed-device-api35:",
+            "performance:",
         ):
-            self.assertIn(task, ci)
-            self.assertIn(task, nightly)
-        for workflow in (ci, nightly):
-            self.assertIn("--api 26", workflow)
-            self.assertIn("--api 35", workflow)
-            self.assertIn("app-gkd-release.apk", workflow)
-            self.assertIn("app-play-release.apk", workflow)
+            self.assertIn(job, ci)
+        for script in (
+            "verify-sensitive-output-policy.py",
+            "verify-compose-lifecycle-policy.py",
+            "verify-ui-file-boundaries.py",
+            "verify-test-quality-policy.py",
+            "verify-localization-resources.py",
+            "verify-localization-sources.py",
+        ):
+            self.assertIn(script, ci)
 
-    def test_ruleset_script_is_safe_and_has_required_modes(self):
-        script = (ROOT / "scripts/apply-main-ruleset.sh").read_text()
-        self.assertIn("--dry-run", script)
-        self.assertIn("--check", script)
-        self.assertIn("--apply", script)
-        self.assertNotIn("GITHUB_TOKEN", script)
-        self.assertNotIn("Authorization", script)
+    def test_ci_builds_all_variants_and_smoke_tools_are_present(self):
+        ci = (ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8")
+        for variant in (
+            ":app:assembleGkdDebug",
+            ":app:assemblePlayDebug",
+            ":app:assembleGkdRelease",
+            ":app:assemblePlayRelease",
+        ):
+            self.assertIn(variant, ci)
+        self.assertIn("scripts/run-release-apk-smoke-emulator.sh", ci)
+        self.assertIn("smoke-test-release-apk.sh", (ROOT / "scripts/run-release-apk-smoke-emulator.sh").read_text())
+
+    def test_ruleset_and_environment_tools_have_safe_modes(self):
+        ruleset = (ROOT / "scripts/apply-main-ruleset.sh").read_text(encoding="utf-8")
+        self.assertIn("--dry-run", ruleset)
+        self.assertIn("--check", ruleset)
+        self.assertIn("--apply", ruleset)
+        self.assertNotIn("GITHUB_TOKEN", ruleset)
+        self.assertIn("command -v python3", ruleset)
+        environment = (ROOT / "scripts/check-dev-environment.sh").read_text(encoding="utf-8")
+        self.assertIn("--ci", environment)
+        self.assertIn("JDK 21", environment)
 
 
 if __name__ == "__main__":

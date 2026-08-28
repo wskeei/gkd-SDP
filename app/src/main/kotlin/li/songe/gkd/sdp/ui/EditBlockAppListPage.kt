@@ -6,7 +6,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -24,7 +24,6 @@ import li.songe.gkd.sdp.ui.style.scaffoldPadding
 import li.songe.gkd.sdp.util.launchAsFn
 import li.songe.gkd.sdp.util.throttle
 import li.songe.gkd.sdp.util.toast
-import li.songe.gkd.sdp.R
 
 @Serializable
 data object EditBlockAppListRoute : NavKey
@@ -38,8 +37,8 @@ fun EditBlockAppListPage() {
         if (vm.getChangedSet() != null) {
             context.justHideSoftInput()
             mainVm.dialogFlow.waitResult(
-                title = li.songe.gkd.sdp.app.getString(R.string.s_ab3656a956),
-                text = li.songe.gkd.sdp.app.getString(R.string.s_aebc195621),
+                title = "提示",
+                text = "当前内容未保存，是否放弃编辑？",
             )
         } else {
             context.hideSoftInput()
@@ -56,7 +55,7 @@ fun EditBlockAppListPage() {
                     onClick = onBack,
                 )
             },
-            title = { Text(text = li.songe.gkd.sdp.app.getString(R.string.s_7395ba05d0)) },
+            title = { Text(text = "应用白名单") },
             actions = {
                 PerfIconButton(
                     imageVector = PerfIcon.Save,
@@ -64,9 +63,9 @@ fun EditBlockAppListPage() {
                         val newSet = vm.getChangedSet()
                         if (newSet != null) {
                             blockMatchAppListFlow.value = newSet
-                            toast(li.songe.gkd.sdp.app.getString(R.string.s_e2cff77372))
+                            toast("更新成功")
                         } else {
-                            toast(li.songe.gkd.sdp.app.getString(R.string.s_fff8cc4d94))
+                            toast("未修改")
                         }
                         context.hideSoftInput()
                         mainVm.popPage()
@@ -78,7 +77,7 @@ fun EditBlockAppListPage() {
         MultiTextField(
             modifier = Modifier.scaffoldPadding(contentPadding),
             textFlow = vm.textFlow,
-            indicatorSize = vm.indicatorSizeFlow.collectAsStateWithLifecycle().value
+            indicatorSize = vm.indicatorSizeFlow.collectAsState().value
         )
     }
 }

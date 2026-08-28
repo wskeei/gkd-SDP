@@ -27,7 +27,6 @@ import li.songe.gkd.sdp.util.launchTry
 import li.songe.gkd.sdp.util.ruleSummaryFlow
 import li.songe.gkd.sdp.util.toast
 import kotlinx.coroutines.flow.update
-import li.songe.gkd.sdp.R
 
 data class RuleState(
     val group: ResolvedGroup,
@@ -228,7 +227,7 @@ class FocusLockVm : BaseViewModel() {
         }
 
         if (durationMinutes <= 0) {
-            toast(li.songe.gkd.sdp.app.getString(R.string.s_40d80a0879))
+            toast("请输入有效的锁定时长")
             return@launchTry
         }
 
@@ -258,12 +257,12 @@ class FocusLockVm : BaseViewModel() {
         )
         
         DbSet.constraintConfigDao.insert(config)
-        toast(li.songe.gkd.sdp.app.getString(R.string.s_5dffc801c0))
+        toast("锁定设置已更新")
     }
 
     fun updateInterceptConfig(subsId: Long, appId: String?, groupKey: Int, enabled: Boolean, cooldown: Int, message: String) = viewModelScope.launch(Dispatchers.IO) {
         if (!enabled && FocusLockUtils.isRuleLocked(subsId, appId, groupKey)) {
-            toast(li.songe.gkd.sdp.app.getString(R.string.s_919924d7fe))
+            toast("当前规则已锁定，无法关闭自律模式")
             return@launch
         }
         val currentEnabled = resolveCurrentInterceptEnabled(subsId, appId, groupKey)
@@ -337,9 +336,9 @@ class FocusLockVm : BaseViewModel() {
             updatedCount++
         }
         if (skippedCount > 0) {
-            toast(li.songe.gkd.sdp.app.getString(R.string.s_db9c6063a5, (updatedCount).toString(), (skippedCount).toString()))
+            toast("更新 $updatedCount 条，跳过 $skippedCount 条(已锁定)")
         } else {
-            toast(li.songe.gkd.sdp.app.getString(R.string.s_58aafa922e))
+            toast("已批量更新配置")
         }
     }
 
@@ -362,7 +361,7 @@ class FocusLockVm : BaseViewModel() {
                 autoReenableDailyDisableDayStartAt = currentDayStartAt
             )
         }
-        toast(li.songe.gkd.sdp.app.getString(R.string.s_6e166bc0d5, (normalizedLimit).toString()))
+        toast("已更新每日关闭限额：$normalizedLimit 次")
     }
 
     private fun resolveCurrentInterceptEnabled(subsId: Long, appId: String?, groupKey: Int): Boolean {
@@ -389,7 +388,7 @@ class FocusLockVm : BaseViewModel() {
         )
 
         if (!result.accepted) {
-            toast(li.songe.gkd.sdp.app.getString(R.string.s_078163778f, (formatCooldown(result.remainingCooldownMs)).toString()))
+            toast("间隔冷却中，还需${formatCooldown(result.remainingCooldownMs)}后可修改")
             return
         }
 
@@ -399,7 +398,7 @@ class FocusLockVm : BaseViewModel() {
                 autoReenableIntervalChangedAt = result.changedAt
             )
         }
-        toast(li.songe.gkd.sdp.app.getString(R.string.s_0c3d6aa510, (result.intervalMinutes).toString()))
+        toast("已更新自动重开间隔：${result.intervalMinutes} 分钟")
     }
 
     companion object {
@@ -408,7 +407,7 @@ class FocusLockVm : BaseViewModel() {
         }
 
         fun quotaBlockedToast(limit: Int): String {
-            return li.songe.gkd.sdp.app.getString(R.string.s_b0bb6964b5, limit.toString())
+            return "今日关闭次数已用完（$limit 次），将于明日 00:00 重置"
         }
 
         fun latestInterceptConfigByKey(interceptConfigs: List<InterceptConfig>): Map<Triple<Long, String, Int>, InterceptConfig> {
@@ -486,11 +485,7 @@ class FocusLockVm : BaseViewModel() {
             val minutes = (ms / 60_000L).coerceAtLeast(0L)
             val hours = minutes / 60
             val remainMinutes = minutes % 60
-            return if (hours > 0) {
-                li.songe.gkd.sdp.app.getString(R.string.focus_lock_hours_minutes, hours, remainMinutes)
-            } else {
-                li.songe.gkd.sdp.app.getString(R.string.focus_lock_minutes, remainMinutes)
-            }
+            return if (hours > 0) "${hours}小时${remainMinutes}分钟" else "${remainMinutes}分钟"
         }
     }
 }

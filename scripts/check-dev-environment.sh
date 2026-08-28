@@ -24,15 +24,13 @@ require_command() {
 }
 
 require_command java java
+require_command python3 python3
+require_command git git
 
 java_binary=""
 if [[ -n "${JAVA_HOME:-}" && -x "${JAVA_HOME}/bin/java" ]]; then
   java_binary="${JAVA_HOME}/bin/java"
-else
-  missing+=("JAVA_HOME")
-fi
-
-if [[ -z "$java_binary" ]] && command -v java >/dev/null 2>&1; then
+elif command -v java >/dev/null 2>&1; then
   java_binary="$(command -v java)"
 fi
 
@@ -42,9 +40,6 @@ if [[ -n "$java_binary" ]]; then
     missing+=("JDK 21")
   fi
 fi
-
-require_command python3 python3
-require_command git git
 
 if [[ ! -x "$repo_root/gradlew" ]]; then
   missing+=("gradlew executable")

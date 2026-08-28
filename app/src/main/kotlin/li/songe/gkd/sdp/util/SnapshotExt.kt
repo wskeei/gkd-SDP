@@ -5,7 +5,6 @@ import androidx.core.graphics.createBitmap
 import androidx.core.graphics.scale
 import androidx.core.graphics.set
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
@@ -16,10 +15,8 @@ import kotlinx.serialization.json.JsonObject
 import li.songe.gkd.sdp.a11y.A11yRuleEngine
 import li.songe.gkd.sdp.a11y.TopActivity
 import li.songe.gkd.sdp.a11y.topActivityFlow
-import li.songe.gkd.sdp.backup.BackupDataMutationBarrier
 import li.songe.gkd.sdp.data.ComplexSnapshot
 import li.songe.gkd.sdp.data.RpcError
-import li.songe.gkd.sdp.data.Snapshot
 import li.songe.gkd.sdp.data.info2nodeList
 import li.songe.gkd.sdp.db.DbSet
 import li.songe.gkd.sdp.notif.snapshotNotif
@@ -27,26 +24,17 @@ import li.songe.gkd.sdp.service.ScreenshotService
 import li.songe.gkd.sdp.shizuku.shizukuContextFlow
 import li.songe.gkd.sdp.store.storeFlow
 import java.io.File
-import java.nio.file.AtomicMoveNotSupportedException
-import java.nio.file.Files
-import java.nio.file.StandardCopyOption
-import java.util.UUID
 import kotlin.math.min
-import li.songe.gkd.sdp.R
 
 object SnapshotExt {
 
     private fun snapshotParentPath(id: Long) = snapshotFolder.resolve(id.toString())
-    fun snapshotFile(id: Long): File {
-        requirePendingDataRecoveryComplete()
-        return snapshotParentPath(id).resolve("${id}.json")
-    }
+    fun snapshotFile(id: Long) = snapshotParentPath(id).resolve("${id}.json")
     private fun minSnapshotFile(id: Long): File {
         return snapshotParentPath(id).resolve("${id}.min.json")
     }
 
     suspend fun getMinSnapshot(id: Long): JsonObject {
-        requirePendingDataRecoveryComplete()
         val f = minSnapshotFile(id)
         if (!f.exists()) {
             val text = withContext(Dispatchers.IO) { snapshotFile(id).readText() }
@@ -57,10 +45,8 @@ object SnapshotExt {
             val minSnapshot = JsonObject(snapshotJson.toMutableMap().apply {
                 this["nodes"] = JsonArray(emptyList())
             })
-            BackupDataMutationBarrier.withMutation {
-                withContext(Dispatchers.IO) {
-                    f.writeText(keepNullJson.encodeToString(minSnapshot))
-                }
+            withContext(Dispatchers.IO) {
+                f.writeText(keepNullJson.encodeToString(minSnapshot))
             }
             return minSnapshot
         }
@@ -70,17 +56,13 @@ object SnapshotExt {
         }
     }
 
-    fun screenshotFile(id: Long): File {
-        requirePendingDataRecoveryComplete()
-        return snapshotParentPath(id).resolve("${id}.png")
-    }
+    fun screenshotFile(id: Long) = snapshotParentPath(id).resolve("${id}.png")
 
     suspend fun snapshotZipFile(
         snapshotId: Long,
         appId: String? = null,
         activityId: String? = null
     ): File {
-        requirePendingDataRecoveryComplete()
         val filename = if (appId != null) {
             val name =
                 appInfoMapFlow.value[appId]?.name?.filterNot { c -> c in "\\/:*?\"<>|" || c <= ' ' }
@@ -110,98 +92,11 @@ object SnapshotExt {
         return file
     }
 
-    suspend fun deleteSnapshot(snapshot: Snapshot): Int = deleteSnapshots(listOf(snapshot))
-
-    suspend fun deleteSnapshots(snapshots: Collection<Snapshot>): Int {
-        if (snapshots.isEmpty()) return 0
-        val uniqueSnapshots = snapshots.distinctBy(Snapshot::id)
-        return BackupDataMutationBarrier.withMutation {
-            requirePendingDataRecoveryComplete()
-            val stagingFolder = requireNotNull(snapshotFolder.parentFile).resolve(
-                "$SNAPSHOT_DELETE_STAGING_PREFIX${UUID.randomUUID()}",
-            )
-            var transactionCommitted = false
-            var manifest: PendingDataMutationManifest? = null
-            try {
-                val deleted = withContext(NonCancellable) {
-                    val result = DbSet.withTransaction {
-                        val actualSnapshots = uniqueSnapshots.mapNotNull { snapshot ->
-                            DbSet.snapshotDao.queryById(snapshot.id)
-                        }
-                        if (actualSnapshots.isEmpty()) {
-                            0
-                        } else {
-                            val currentManifest = PendingDataMutationManifest(
-                                kind = PENDING_KIND_SNAPSHOT_DELETE,
-                                ids = actualSnapshots.map(Snapshot::id),
-                                requiredPreviousSnapshotTokens = actualSnapshots.associate {
-                                    it.id to snapshotRecoveryToken(it)
-                                },
-                            )
-                            manifest = currentManifest
-                            withContext(Dispatchers.IO) {
-                                stagingFolder.mkdirs()
-                                writePendingDataMutationManifest(stagingFolder, currentManifest)
-                                actualSnapshots.forEach { snapshot ->
-                                    val source = snapshotParentPath(snapshot.id)
-                                    if (source.exists()) {
-                                        moveSnapshotDirectory(
-                                            source,
-                                            stagingFolder.resolve(snapshot.id.toString()),
-                                        )
-                                    }
-                                }
-                            }
-                            DbSet.snapshotDao.delete(*actualSnapshots.toTypedArray())
-                        }
-                    }
-                    transactionCommitted = true
-                    manifest?.let { currentManifest ->
-                        withContext(Dispatchers.IO) {
-                            writePendingDataMutationManifest(
-                                stagingFolder,
-                                currentManifest.copy(phase = PENDING_PHASE_COMMITTED),
-                            )
-                        }
-                    }
-                    result
-                }
-                withContext(Dispatchers.IO) {
-                    requirePendingDataCleanup(stagingFolder)
-                }
-                deleted
-            } catch (error: Throwable) {
-                if (transactionCommitted) {
-                    blockPendingDataRecovery()
-                } else {
-                    val recoveryCompleted = runCatching {
-                        withContext(NonCancellable + Dispatchers.IO) {
-                            uniqueSnapshots.forEach { snapshot ->
-                                val staged = stagingFolder.resolve(snapshot.id.toString())
-                                if (staged.exists()) {
-                                    moveSnapshotDirectory(staged, snapshotParentPath(snapshot.id))
-                                }
-                            }
-                            requirePendingDataCleanup(stagingFolder)
-                        }
-                    }.isSuccess
-                    if (!recoveryCompleted) blockPendingDataRecovery()
-                }
-                throw error
+    fun removeSnapshot(id: Long) {
+        snapshotParentPath(id).apply {
+            if (exists()) {
+                deleteRecursively()
             }
-        }
-    }
-
-    private fun moveSnapshotDirectory(source: File, target: File) {
-        target.parentFile?.mkdirs()
-        try {
-            Files.move(
-                source.toPath(),
-                target.toPath(),
-                StandardCopyOption.ATOMIC_MOVE,
-            )
-        } catch (_: AtomicMoveNotSupportedException) {
-            Files.move(source.toPath(), target.toPath())
         }
     }
 
@@ -297,20 +192,19 @@ object SnapshotExt {
     }
     private val captureLoading = MutableStateFlow(false)
     suspend fun captureSnapshot(forcedCropStatusBar: Boolean = false): ComplexSnapshot {
-        requirePendingDataRecoveryComplete()
         if (A11yRuleEngine.instance == null) {
-            throw RpcError(li.songe.gkd.sdp.app.getString(R.string.snapshot_error_service_unavailable))
+            throw RpcError("服务不可用，请先授权")
         }
         if (captureLoading.value) {
-            throw RpcError(li.songe.gkd.sdp.app.getString(R.string.snapshot_error_saving_in_progress))
+            throw RpcError("正在保存快照，不可重复操作")
         }
         captureLoading.value = true
         try {
             val rootNode =
                 A11yRuleEngine.instance?.safeActiveWindow
-                    ?: throw RpcError(li.songe.gkd.sdp.app.getString(R.string.snapshot_error_no_a11y_info))
+                    ?: throw RpcError("当前应用没有无障碍信息，捕获失败")
             if (storeFlow.value.showSaveSnapshotToast) {
-                toast(li.songe.gkd.sdp.app.getString(R.string.s_cf174a6fa9), forced = true)
+                toast("正在保存快照...", forced = true)
             }
             val (snapshot, screenResult) = coroutineScope {  // 快照数据+截图(图片 && 状态)
                 val d1 = async(Dispatchers.IO) {
@@ -347,9 +241,7 @@ object SnapshotExt {
 
                     val (finalBitmap, status) = when {
                         rawPicture == null -> {
-                            emptyScreenBitmap(
-                                li.songe.gkd.sdp.app.getString(R.string.snapshot_empty_screen),
-                            ) to ScreenWhy.NotHave
+                            emptyScreenBitmap("无截图权限\n请自行替换") to ScreenWhy.NotHave
                         }
                         isAppProtected(rawPicture) -> {
                             rawPicture to ScreenWhy.Block
@@ -371,43 +263,29 @@ object SnapshotExt {
             }
 
             val (bitmap, currentStatus) = screenResult // 拆开(图片+状态)
-            BackupDataMutationBarrier.withMutation {
-                requirePendingDataRecoveryComplete()
-                try {
-                    DbSet.withTransaction {
-                        withContext(Dispatchers.IO) {
-                            snapshotParentPath(snapshot.id).autoMk()
-                            screenshotFile(snapshot.id).outputStream().use { stream ->
-                                bitmap.compress(Bitmap.CompressFormat.PNG, 100, stream)
-                            }
-                            snapshotFile(snapshot.id).writeText(keepNullJson.encodeToString(snapshot))
-                            minSnapshotFile(snapshot.id).writeText(
-                                keepNullJson.encodeToString(
-                                    snapshot.copy(
-                                        nodes = emptyList()
-                                    )
-                                )
-                            )
-                        }
-                        DbSet.snapshotDao.insert(snapshot.toSnapshot())
-                    }
-                } catch (error: Throwable) {
-                    withContext(NonCancellable + Dispatchers.IO) {
-                        snapshotParentPath(snapshot.id).deleteRecursively()
-                    }
-                    throw error
+            withContext(Dispatchers.IO) {
+                snapshotParentPath(snapshot.id).autoMk()
+                screenshotFile(snapshot.id).outputStream().use { stream ->
+                    bitmap.compress(Bitmap.CompressFormat.PNG, 100, stream)
                 }
+                snapshotFile(snapshot.id).writeText(keepNullJson.encodeToString(snapshot))
+                minSnapshotFile(snapshot.id).writeText(
+                    keepNullJson.encodeToString(
+                        snapshot.copy(
+                            nodes = emptyList()
+                        )
+                    )
+                )
+                DbSet.snapshotDao.insert(snapshot.toSnapshot())
             }
             val tip = when (currentStatus) {
-                ScreenWhy.NotHave -> li.songe.gkd.sdp.app.getString(R.string.snapshot_success_no_screen)
-                ScreenWhy.Block -> li.songe.gkd.sdp.app.getString(R.string.snapshot_success_blocked)
-                ScreenWhy.Pass -> li.songe.gkd.sdp.app.getString(R.string.snapshot_success)
+                ScreenWhy.NotHave -> "快照成功 (无截图)"
+                ScreenWhy.Block -> "快照成功 (应用可能禁止截图)"
+                ScreenWhy.Pass -> "快照成功"
             }
             toast(tip, forced = true)
             val desc = snapshot.appInfo?.name ?: snapshot.appId
-            snapshotNotif.copy(
-                text = li.songe.gkd.sdp.app.getString(R.string.snapshot_saved_notification, desc),
-            ).notifySelf()
+            snapshotNotif.copy(text = "快照「$desc」已保存至记录").notifySelf()
             return snapshot
         } finally {
             captureLoading.value = false

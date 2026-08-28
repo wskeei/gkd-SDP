@@ -3,7 +3,6 @@ package li.songe.gkd.sdp.util
 import li.songe.gkd.sdp.data.SelfControlAttempt
 import li.songe.gkd.sdp.data.SelfControlAttemptEvent
 import li.songe.gkd.sdp.data.UsageReviewRow
-import li.songe.gkd.sdp.runtime.SdpClock
 import java.math.BigDecimal
 import java.math.RoundingMode
 import java.time.Instant
@@ -12,27 +11,14 @@ import java.time.ZoneId
 
 /** Pure aggregation rules for the Digital Self-Discipline review page. */
 object DigitalSelfDisciplineReviewPolicy {
-    private const val MINUTE_MS = 60_000L
-    private const val HOUR_MS = 60L * MINUTE_MS
-
-    enum class Range(
-        val label: String,
-        val durationMs: Long,
-        val bucketMs: Long,
-        val maxChartPoints: Int,
-    ) {
-        // i18n-ignore: legacy fallback or non-display heuristic data
-        LAST_24_HOURS("近 24 小时", 24L * HOUR_MS, HOUR_MS, 24),
-        // i18n-ignore: legacy fallback or non-display heuristic data
-        LAST_7_DAYS("近 7 天", 7L * 24L * HOUR_MS, 6L * HOUR_MS, 28),
-        // i18n-ignore: legacy fallback or non-display heuristic data
-        LAST_30_DAYS("近 30 天", 30L * 24L * HOUR_MS, 24L * HOUR_MS, 30),
+    enum class Range(val label: String, val days: Long) {
+        Today("今日", 1L),
+        SevenDays("近 7 天", 7L),
+        ThirtyDays("近 30 天", 30L),
     }
 
     enum class ReviewType(val label: String) {
-        // i18n-ignore: legacy fallback or non-display heuristic data
         UsageRequest("使用申请"),
-        // i18n-ignore: legacy fallback or non-display heuristic data
         InterceptAttempt("拦截"),
     }
 
@@ -43,13 +29,9 @@ object DigitalSelfDisciplineReviewPolicy {
     }
 
     enum class InterceptKindFilter(val label: String, val eventKind: Int? = null) {
-        // i18n-ignore: legacy fallback or non-display heuristic data
         All("全部"),
-        // i18n-ignore: legacy fallback or non-display heuristic data
         AppBlocker("应用拦截", SelfControlAttempt.KIND_APP_BLOCKER),
-        // i18n-ignore: legacy fallback or non-display heuristic data
         Selector("选择器拦截", SelfControlAttempt.KIND_SELECTOR_INTERCEPT),
-        // i18n-ignore: legacy fallback or non-display heuristic data
         Url("网址拦截", SelfControlAttempt.KIND_URL_INTERCEPT),
     }
 
@@ -64,8 +46,6 @@ object DigitalSelfDisciplineReviewPolicy {
         val previousEndDateExclusive: LocalDate,
         val previousStartAt: Long,
         val previousEndAt: Long,
-        val bucketMs: Long,
-        val maxChartPoints: Int,
     ) {
         fun contains(timestamp: Long): Boolean = timestamp >= startAt && timestamp < endAt
     }
@@ -104,7 +84,6 @@ object DigitalSelfDisciplineReviewPolicy {
 
     data class DailyIntervalBucket(
         val date: LocalDate,
-        val bucketStartAt: Long,
         val eventCount: Int,
         val validIntervalCount: Int,
         val validRatioCount: Int,
@@ -177,37 +156,34 @@ object DigitalSelfDisciplineReviewPolicy {
 
     fun rangeBounds(
         range: Range,
-        nowEpochMs: Long,
+        today: LocalDate = LocalDate.now(),
         zoneId: ZoneId = ZoneId.systemDefault(),
     ): RangeBounds {
-        val safeNow = nowEpochMs.coerceAtLeast(0L)
-        val startAt = (safeNow - range.durationMs).coerceAtLeast(0L)
-        val previousStartAt = (startAt - range.durationMs).coerceAtLeast(0L)
-        fun dateAt(epochMs: Long): LocalDate =
-            Instant.ofEpochMilli(epochMs).atZone(zoneId).toLocalDate()
+        val startDate = today.minusDays(range.days - 1L)
+        val endDateExclusive = today.plusDays(1L)
+        val previousStartDate = startDate.minusDays(range.days)
+        val previousEndDateExclusive = startDate
         return RangeBounds(
             range = range,
             zoneId = zoneId,
-            startDate = dateAt(startAt),
-            endDateExclusive = dateAt(safeNow),
-            startAt = startAt,
-            endAt = safeNow,
-            previousStartDate = dateAt(previousStartAt),
-            previousEndDateExclusive = dateAt(startAt),
-            previousStartAt = previousStartAt,
-            previousEndAt = startAt,
-            bucketMs = range.bucketMs,
-            maxChartPoints = range.maxChartPoints,
+            startDate = startDate,
+            endDateExclusive = endDateExclusive,
+            previousStartDate = previousStartDate,
+            previousEndDateExclusive = previousEndDateExclusive,
+            startAt = startDate.atStartOfDay(zoneId).toInstant().toEpochMilli(),
+            endAt = endDateExclusive.atStartOfDay(zoneId).toInstant().toEpochMilli(),
+            previousStartAt = previousStartDate.atStartOfDay(zoneId).toInstant().toEpochMilli(),
+            previousEndAt = previousEndDateExclusive.atStartOfDay(zoneId).toInstant().toEpochMilli(),
         )
     }
 
     fun rangeBounds(
         range: Range,
-        clock: SdpClock,
+        nowEpochMs: Long,
         zoneId: ZoneId = ZoneId.systemDefault(),
     ): RangeBounds = rangeBounds(
         range = range,
-        nowEpochMs = clock.nowEpochMillis(),
+        today = Instant.ofEpochMilli(nowEpochMs).atZone(zoneId).toLocalDate(),
         zoneId = zoneId,
     )
 
@@ -273,15 +249,10 @@ object DigitalSelfDisciplineReviewPolicy {
             excludedIntervalCount = eventCount - intervals.size,
             excludedRatioCount = eventCount - ratioValues.size,
         )
-        val dailyBuckets = dailyBuckets(
-            samples = samples,
-            eventCountRows = when (reviewType) {
-                ReviewType.UsageRequest -> currentRows.map { it.requestedAt }
-                ReviewType.InterceptAttempt -> currentEvents.map { it.occurredAt }
-            },
-            zoneId = zoneId,
-            bounds = bounds,
-        )
+        val dailyBuckets = dailyBuckets(samples, eventCountRows = when (reviewType) {
+            ReviewType.UsageRequest -> currentRows.map { it.requestedAt }
+            ReviewType.InterceptAttempt -> currentEvents.map { it.occurredAt }
+        }, zoneId = zoneId)
         val recentIntervals = samples.asReversed().take(10).map { sample ->
             sample.toRecentItem()
         }
@@ -389,7 +360,6 @@ object DigitalSelfDisciplineReviewPolicy {
             deltaAverageMs = null,
             currentIntervalAverageMs = metrics.intervalAverageMs,
             currentRatioAverage = metrics.ratioAverage,
-            // i18n-ignore: legacy fallback or non-display heuristic data
             message = "上一周期暂无有效样本",
         )
     }
@@ -424,13 +394,9 @@ object DigitalSelfDisciplineReviewPolicy {
             null
         }
         val message = when {
-            // i18n-ignore: legacy fallback or non-display heuristic data
             delta == null -> "上一周期暂无有效样本"
-            // i18n-ignore: legacy fallback or non-display heuristic data
             delta > 0.0 -> "本期平均比上一周期高 ${formatMetricDelta(delta, reviewType)}"
-            // i18n-ignore: legacy fallback or non-display heuristic data
             delta < 0.0 -> "本期平均比上一周期低 ${formatMetricDelta(-delta, reviewType)}"
-            // i18n-ignore: legacy fallback or non-display heuristic data
             else -> "本期平均与上一周期相同"
         }
         return PeriodComparison(
@@ -464,25 +430,19 @@ object DigitalSelfDisciplineReviewPolicy {
         samples: List<MetricSample>,
         eventCountRows: List<Long>,
         zoneId: ZoneId,
-        bounds: RangeBounds,
     ): List<DailyIntervalBucket> {
-        val bucketIndex = { timestamp: Long ->
-            ((timestamp - bounds.startAt).coerceAtLeast(0L) / bounds.bucketMs)
-                .coerceAtMost((bounds.maxChartPoints - 1).coerceAtLeast(0).toLong())
-        }
-        val counts = eventCountRows.groupingBy(bucketIndex).eachCount()
-        val samplesByBucket = samples.groupBy { bucketIndex(it.occurredAt) }
-        return counts.keys.sorted().map { index ->
-            val bucketStartAt = bounds.startAt + index * bounds.bucketMs
-            val bucketSamples = samplesByBucket[index].orEmpty()
-            val intervals = bucketSamples.mapNotNull { it.intervalMs }
+        val dates = eventCountRows.groupingBy { Instant.ofEpochMilli(it).atZone(zoneId).toLocalDate() }
+            .eachCount()
+        val samplesByDate = samples.groupBy { Instant.ofEpochMilli(it.occurredAt).atZone(zoneId).toLocalDate() }
+        return dates.keys.sorted().map { date ->
+            val daySamples = samplesByDate[date].orEmpty()
+            val intervals = daySamples.mapNotNull { it.intervalMs }
             val intervalStats = SelfControlIntervalPolicy.statsFor(intervals)
-            val ratios = bucketSamples.mapNotNull { it.ratio }
+            val ratios = daySamples.mapNotNull { it.ratio }
             val dayRatioStats = ratioStats(ratios)
             DailyIntervalBucket(
-                date = Instant.ofEpochMilli(bucketStartAt).atZone(zoneId).toLocalDate(),
-                bucketStartAt = bucketStartAt,
-                eventCount = counts[index] ?: 0,
+                date = date,
+                eventCount = dates[date] ?: 0,
                 validIntervalCount = intervals.size,
                 validRatioCount = ratios.size,
                 averageMs = intervalStats.averageMs,
@@ -562,32 +522,20 @@ object DigitalSelfDisciplineReviewPolicy {
     }
 
     private fun endReasonLabel(reason: Int): String = when (reason) {
-        // i18n-ignore: legacy fallback or non-display heuristic data
         0 -> "进行中"
-        // i18n-ignore: legacy fallback or non-display heuristic data
         1 -> "到期"
-        // i18n-ignore: legacy fallback or non-display heuristic data
         2 -> "离开应用"
-        // i18n-ignore: legacy fallback or non-display heuristic data
         3 -> "被替换"
-        // i18n-ignore: legacy fallback or non-display heuristic data
         4 -> "返回桌面"
-        // i18n-ignore: legacy fallback or non-display heuristic data
         5 -> "主动结束"
-        // i18n-ignore: legacy fallback or non-display heuristic data
         else -> "其他结束状态"
     }
 
     private fun periodLabel(hour: Int): String = when (hour) {
-        // i18n-ignore: legacy fallback or non-display heuristic data
         in 6..10 -> "上午"
-        // i18n-ignore: legacy fallback or non-display heuristic data
         in 11..13 -> "午间"
-        // i18n-ignore: legacy fallback or non-display heuristic data
         in 14..17 -> "下午"
-        // i18n-ignore: legacy fallback or non-display heuristic data
         in 18..21 -> "晚间"
-        // i18n-ignore: legacy fallback or non-display heuristic data
         else -> "夜间"
     }
 

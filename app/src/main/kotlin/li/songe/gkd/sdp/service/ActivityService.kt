@@ -15,7 +15,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.contentColorFor
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -41,7 +41,6 @@ import li.songe.gkd.sdp.ui.style.iconTextSize
 import li.songe.gkd.sdp.util.copyText
 import li.songe.gkd.sdp.util.startForegroundServiceByClass
 import li.songe.gkd.sdp.util.stopServiceByClass
-import li.songe.gkd.sdp.R
 
 
 class ActivityService : OverlayWindowService(
@@ -64,10 +63,10 @@ class ActivityService : OverlayWindowService(
                 .padding(4.dp)
         ) {
             CompositionLocalProvider(LocalContentColor provides contentColorFor(bgColor)) {
-                val topActivity by topActivityFlow.collectAsStateWithLifecycle()
-                val hasAuth by activityOkFlow.collectAsStateWithLifecycle()
+                val topActivity by topActivityFlow.collectAsState()
+                val hasAuth by activityOkFlow.collectAsState()
                 ClosableTitle(
-                    title = if (hasAuth) li.songe.gkd.sdp.app.getString(R.string.s_14b8a7bf3c) else li.songe.gkd.sdp.app.getString(R.string.s_7a1cbaff45)
+                    title = if (hasAuth) "记录服务" else "记录服务(无权限)"
                 )
                 if (hasAuth) {
                     Box {
@@ -101,7 +100,7 @@ class ActivityService : OverlayWindowService(
     init {
         useLogLifecycle()
         useAliveFlow(isRunning)
-        useAliveToast(getString(R.string.s_14b8a7bf3c))
+        useAliveToast("记录服务")
         StopServiceReceiver.autoRegister()
         onCreated { recordNotif.notifyService() }
         onCreated {
@@ -138,7 +137,7 @@ class ActivityService : OverlayWindowService(
 @Composable
 private fun RowText(text: String?, color: Color = Color.Unspecified) {
     Row {
-        Text(text = text ?: li.songe.gkd.sdp.app.getString(R.string.s_2be88ca424), color = color, modifier = Modifier.weight(1f, false))
+        Text(text = text ?: "null", color = color, modifier = Modifier.weight(1f, false))
         if (text != null) {
             Spacer(modifier = Modifier.width(4.dp))
             PerfIcon(

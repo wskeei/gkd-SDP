@@ -21,7 +21,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
@@ -31,7 +31,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.style.TextOverflow
@@ -75,7 +74,6 @@ import li.songe.gkd.sdp.util.launchAsFn
 import li.songe.gkd.sdp.util.switchItem
 import li.songe.gkd.sdp.util.throttle
 import li.songe.gkd.sdp.util.toJson5String
-import li.songe.gkd.sdp.R
 
 @Serializable
 data class AppConfigRoute(
@@ -90,9 +88,9 @@ fun AppConfigPage(route: AppConfigRoute) {
     val mainVm = LocalMainViewModel.current
     val vm = viewModel { AppConfigVm(route) }
 
-    val ruleSortType by vm.ruleSortTypeFlow.collectAsStateWithLifecycle()
-    val groupSize by vm.groupSizeFlow.collectAsStateWithLifecycle()
-    val firstLoading by vm.firstLoadingFlow.collectAsStateWithLifecycle()
+    val ruleSortType by vm.ruleSortTypeFlow.collectAsState()
+    val groupSize by vm.groupSizeFlow.collectAsState()
+    val firstLoading by vm.firstLoadingFlow.collectAsState()
     val resetKey = rememberSaveable { mutableIntStateOf(0) }
     val (scrollBehavior, listState) = useListScrollState(
         resetKey,
@@ -121,8 +119,8 @@ fun AppConfigPage(route: AppConfigRoute) {
         }
     }
 
-    val isSelectedMode = vm.isSelectedModeFlow.collectAsStateWithLifecycle().value
-    val selectedDataSet = vm.selectedDataSetFlow.collectAsStateWithLifecycle().value
+    val isSelectedMode = vm.isSelectedModeFlow.collectAsState().value
+    val selectedDataSet = vm.selectedDataSetFlow.collectAsState().value
     LaunchedEffect(key1 = isSelectedMode) {
         if (!isSelectedMode) {
             vm.selectedDataSetFlow.value = emptySet()
@@ -219,7 +217,7 @@ fun AppConfigPage(route: AppConfigRoute) {
                             if (isSelectedMode) {
                                 DropdownMenuItem(
                                     text = {
-                                        Text(text = li.songe.gkd.sdp.app.getString(R.string.s_3e44b2a933))
+                                        Text(text = "全选")
                                     },
                                     onClick = {
                                         expanded = false
@@ -228,7 +226,7 @@ fun AppConfigPage(route: AppConfigRoute) {
                                 )
                                 DropdownMenuItem(
                                     text = {
-                                        Text(text = li.songe.gkd.sdp.app.getString(R.string.s_ae05880411))
+                                        Text(text = "反选")
                                     },
                                     onClick = {
                                         expanded = false
@@ -236,13 +234,13 @@ fun AppConfigPage(route: AppConfigRoute) {
                                     }
                                 )
                             } else {
-                                MenuGroupCard(inTop = true, title = stringResource(R.string.app_list_sort_title)) {
+                                MenuGroupCard(inTop = true, title = "排序") {
                                     val handleItem: (RuleSortOption) -> Unit = throttle { v ->
                                         storeFlow.update { s -> s.copy(appRuleSort = v.value) }
                                     }
                                     RuleSortOption.objects.forEach { s ->
                                         MenuItemRadioButton(
-                                            text = stringResource(s.labelRes),
+                                            text = s.label,
                                             selected = ruleSortType == s,
                                             onClick = {
                                                 handleItem(s)
@@ -250,9 +248,9 @@ fun AppConfigPage(route: AppConfigRoute) {
                                         )
                                     }
                                 }
-                                MenuGroupCard(title = stringResource(R.string.app_list_filter_title)) {
+                                MenuGroupCard(title = "筛选") {
                                     MenuItemCheckbox(
-                                        text = stringResource(R.string.common_disabled_state),
+                                        text = "未启用",
                                         stateFlow = vm.showDisabledRuleFlow,
                                     )
                                 }
@@ -275,14 +273,14 @@ fun AppConfigPage(route: AppConfigRoute) {
                     )
                 },
                 imageVector = PerfIcon.Add,
-                contentDescription = li.songe.gkd.sdp.app.getString(R.string.rule_add_rule)
+                contentDescription = "添加规则"
             )
         },
     ) { contentPadding ->
-        val globalSubsConfigs by vm.globalSubsConfigsFlow.collectAsStateWithLifecycle()
-        val categoryConfigs by vm.categoryConfigsFlow.collectAsStateWithLifecycle()
-        val appSubsConfigs by vm.appSubsConfigsFlow.collectAsStateWithLifecycle()
-        val subsPairs by vm.subsPairsFlow.collectAsStateWithLifecycle()
+        val globalSubsConfigs by vm.globalSubsConfigsFlow.collectAsState()
+        val categoryConfigs by vm.categoryConfigsFlow.collectAsState()
+        val appSubsConfigs by vm.appSubsConfigsFlow.collectAsState()
+        val subsPairs by vm.subsPairsFlow.collectAsState()
         LazyColumn(
             modifier = Modifier.scaffoldPadding(contentPadding),
             state = listState,
@@ -380,7 +378,7 @@ fun AppConfigPage(route: AppConfigRoute) {
             item(ListPlaceholder.KEY, ListPlaceholder.TYPE) {
                 Spacer(modifier = Modifier.height(EmptyHeight))
                 if (groupSize == 0 && !firstLoading) {
-                    EmptyText(text = if (vm.showDisabledRuleFlow.collectAsStateWithLifecycle().value) li.songe.gkd.sdp.app.getString(R.string.s_b246458f20) else li.songe.gkd.sdp.app.getString(R.string.s_53e5dc587c))
+                    EmptyText(text = if (vm.showDisabledRuleFlow.collectAsState().value) "暂无数据" else "暂无数据，或修改筛选")
                 }
             }
         }

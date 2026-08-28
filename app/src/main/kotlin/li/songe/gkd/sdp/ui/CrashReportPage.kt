@@ -16,7 +16,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -31,10 +30,10 @@ import li.songe.gkd.sdp.ui.component.useScrollBehaviorState
 import li.songe.gkd.sdp.ui.share.LocalMainViewModel
 import li.songe.gkd.sdp.ui.share.noRippleClickable
 import li.songe.gkd.sdp.ui.style.EmptyHeight
+import li.songe.gkd.sdp.ui.style.itemHorizontalPadding
+import li.songe.gkd.sdp.ui.style.itemVerticalPadding
 import li.songe.gkd.sdp.util.ISSUES_URL
 import li.songe.gkd.sdp.util.throttle
-import li.songe.gkd.sdp.R
-import li.songe.gkd.sdp.ui.style.DimensionTokens
 
 
 @Serializable
@@ -59,7 +58,7 @@ fun CrashReportPage() {
                 },
                 title = {
                     Text(
-                        text = li.songe.gkd.sdp.app.getString(R.string.s_90d5529440),
+                        text = "崩溃记录",
                         modifier = Modifier.noRippleClickable(onClick = throttle { scrollKey.intValue++ })
                     )
                 },
@@ -72,15 +71,15 @@ fun CrashReportPage() {
                     TextButton(
                         onClick = throttle { mainVm.openUrl(ISSUES_URL) },
                     ) {
-                        Text(text = li.songe.gkd.sdp.app.getString(R.string.s_8d263a68b8))
+                        Text(text = "问题反馈")
                     }
-                    Spacer(modifier = Modifier.width(DimensionTokens.SpacingBase))
+                    Spacer(modifier = Modifier.width(itemHorizontalPadding))
                     TextButton(
                         onClick = { mainVm.showShareLogDlgFlow.value = true },
                     ) {
-                        Text(text = li.songe.gkd.sdp.app.getString(R.string.s_252fed9478))
+                        Text(text = "导出日志")
                     }
-                    Spacer(modifier = Modifier.width(DimensionTokens.SpacingBase))
+                    Spacer(modifier = Modifier.width(itemHorizontalPadding))
                 }
             }
         },
@@ -90,12 +89,12 @@ fun CrashReportPage() {
                 .verticalScroll(scrollState)
                 .fillMaxSize()
                 .padding(contentPadding),
-            verticalArrangement = Arrangement.spacedBy(DimensionTokens.SpacingMd)
+            verticalArrangement = Arrangement.spacedBy(itemVerticalPadding)
         ) {
             if (vm.crashDataList.isNotEmpty()) {
-                vm.crashDataList.forEach { crash ->
+                vm.crashDataList.forEach { crashData ->
                     CopyTextCard(
-                        text = crash.summaryText(LocalContext.current),
+                        text = crashData.stackTrace,
                         modifier = Modifier.padding(horizontal = 8.dp),
                     )
                 }

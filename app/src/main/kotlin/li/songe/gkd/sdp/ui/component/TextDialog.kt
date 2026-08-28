@@ -5,19 +5,17 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.remember
 import kotlinx.coroutines.flow.MutableStateFlow
 import li.songe.gkd.sdp.util.openUri
 import li.songe.gkd.sdp.util.throttle
-import androidx.compose.ui.res.stringResource
-import li.songe.gkd.sdp.R
 
 @Composable
 fun TextDialog(
     textFlow: MutableStateFlow<String?>
 ) {
-    val text = textFlow.collectAsStateWithLifecycle().value
+    val text = textFlow.collectAsState().value
     if (text != null) {
         val isUri = remember(text) { URLUtil.isNetworkUrl(text) }
         val onDismissRequest = {
@@ -26,7 +24,7 @@ fun TextDialog(
         AlertDialog(
             onDismissRequest = onDismissRequest,
             title = {
-                Text(text = if (isUri) stringResource(R.string.s_a8d5390010) else stringResource(R.string.s_cd05c7b50f))
+                Text(text = if (isUri) "查看链接" else "查看文本")
             },
             text = {
                 CopyTextCard(text = text)
@@ -37,11 +35,11 @@ fun TextDialog(
                         onDismissRequest()
                         openUri(text)
                     }) {
-                        Text(text = stringResource(R.string.s_65fc81e161))
+                        Text(text = "打开")
                     }
                 } else {
                     TextButton(onClick = onDismissRequest) {
-                        Text(text = stringResource(R.string.s_6c14bd7f6f))
+                        Text(text = "关闭")
                     }
                 }
             },

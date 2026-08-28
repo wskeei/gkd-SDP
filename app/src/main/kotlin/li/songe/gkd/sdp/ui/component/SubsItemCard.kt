@@ -18,15 +18,13 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.onClick
@@ -48,7 +46,6 @@ import li.songe.gkd.sdp.util.subsLoadErrorsFlow
 import li.songe.gkd.sdp.util.subsRefreshErrorsFlow
 import li.songe.gkd.sdp.util.throttle
 import li.songe.gkd.sdp.util.updateSubsMutex
-import li.songe.gkd.sdp.R
 
 
 @Composable
@@ -68,11 +65,11 @@ fun SubsItemCard(
     val vm = viewModel<HomeVm>()
     val subsLoadError by remember(subsItem.id) {
         subsLoadErrorsFlow.mapState(vm.viewModelScope) { it[subsItem.id] }
-    }.collectAsStateWithLifecycle()
+    }.collectAsState()
     val subsRefreshError by remember(subsItem.id) {
         subsRefreshErrorsFlow.mapState(vm.viewModelScope) { it[subsItem.id] }
-    }.collectAsStateWithLifecycle()
-    val subsRefreshing by updateSubsMutex.state.collectAsStateWithLifecycle()
+    }.collectAsState()
+    val subsRefreshing by updateSubsMutex.state.collectAsState()
     val dragged by interactionSource.collectIsDraggedAsState()
     val onClick = {
         if (!dragged) {
@@ -91,29 +88,18 @@ fun SubsItemCard(
         },
         tween()
     )
-    val selectedStateDescription = if (isSelectedMode) {
-        stringResource(
-            if (isSelected) R.string.subs_item_selected else R.string.subs_item_not_selected,
-        )
-    } else {
-        stringResource(
-            if (subsItem.enable) R.string.subs_item_enabled else R.string.subs_item_disabled,
-        )
-    }
     Card(
         onClick = onClick,
         modifier = modifier
             .padding(16.dp, 4.dp)
             .semantics {
-                stateDescription = selectedStateDescription
-                this.onClick(
-                    label = li.songe.gkd.sdp.app.getString(R.string.subs_view_detail_label),
-                    action = null,
-                )
-                this.onLongClick(
-                    label = li.songe.gkd.sdp.app.getString(R.string.subs_enter_multi_select_label),
-                    action = null,
-                )
+                stateDescription = if (isSelectedMode) {
+                    if (isSelected) "已选中" else "未选中"
+                } else {
+                    if (subsItem.enable) "已启用" else "已禁用"
+                }
+                this.onClick(label = "查看订阅详情", action = null)
+                this.onLongClick(label = "进入多选模式", action = null)
             },
         shape = MaterialTheme.shapes.small,
         interactionSource = interactionSource,
@@ -132,16 +118,16 @@ fun SubsItemCard(
                 if (subscription != null) {
                     Text(
                         modifier = Modifier.semantics {
-                            contentDescription = li.songe.gkd.sdp.app.getString(R.string.s_0f40d8d7de, (index).toString(), (subscription.name).toString())
+                            contentDescription = "订阅顺序：$index, 订阅名称 ${subscription.name}"
                         },
-                        text = li.songe.gkd.sdp.app.getString(R.string.s_dc9c537d48, (index).toString(), (subscription.name).toString()),
+                        text = "$index. ${subscription.name}",
                         maxLines = 1,
                         softWrap = false,
                         overflow = TextOverflow.Ellipsis,
                         style = MaterialTheme.typography.bodyLarge,
                     )
                     Text(
-                        text = subscription.numText(LocalContext.current),
+                        text = subscription.numText,
                         style = MaterialTheme.typography.bodyMedium,
                         color = if (subscription.groupsSize == 0) {
                             LocalContentColor.current.copy(alpha = 0.5f)
@@ -156,7 +142,7 @@ fun SubsItemCard(
                             if (subscription.author != null) {
                                 Text(
                                     modifier = Modifier.semantics {
-                                        contentDescription = li.songe.gkd.sdp.app.getString(R.string.s_44d89b8e5a, (subscription.author).toString())
+                                        contentDescription = "作者 ${subscription.author}"
                                     },
                                     text = subscription.author,
                                     style = MaterialTheme.typography.labelSmall,
@@ -164,9 +150,9 @@ fun SubsItemCard(
                             }
                             Text(
                                 modifier = Modifier.semantics {
-                                    contentDescription = li.songe.gkd.sdp.app.getString(R.string.s_213bcdc0f2, (subscription.version).toString())
+                                    contentDescription = "订阅版本号 ${subscription.version}"
                                 },
-                                text = li.songe.gkd.sdp.app.getString(R.string.s_7a38d8cbd2) + (subscription.version.toString()),
+                                text = "v" + (subscription.version.toString()),
                                 style = MaterialTheme.typography.labelSmall,
                             )
                         } else {
@@ -177,10 +163,10 @@ fun SubsItemCard(
                                 color = MaterialTheme.colorScheme.secondary,
                             )
                         }
-                        val timeStr = formatTimeAgo(subsItem.mtime, LocalContext.current)
+                        val timeStr = formatTimeAgo(subsItem.mtime)
                         Text(
                             modifier = Modifier.semantics {
-                                contentDescription = li.songe.gkd.sdp.app.getString(R.string.s_203d809fb1, (timeStr).toString())
+                                contentDescription = "更新时间 $timeStr"
                             },
                             text = timeStr,
                             style = MaterialTheme.typography.labelSmall,
@@ -188,7 +174,7 @@ fun SubsItemCard(
                     }
                 } else {
                     Text(
-                        text = li.songe.gkd.sdp.app.getString(R.string.s_c8b05a26f8, (subsItem.id).toString()),
+                        text = "id=${subsItem.id}",
                         maxLines = 1,
                         softWrap = false,
                         overflow = TextOverflow.Ellipsis,
@@ -201,14 +187,14 @@ fun SubsItemCard(
                     }
                     Text(
                         text = subsLoadError?.message
-                            ?: if (subsRefreshing) li.songe.gkd.sdp.app.getString(R.string.s_514c33af5c) else li.songe.gkd.sdp.app.getString(R.string.s_ffcf0a1eb0),
+                            ?: if (subsRefreshing) "加载中..." else "文件不存在",
                         style = MaterialTheme.typography.bodyMedium,
                         color = color
                     )
                 }
                 if (subsRefreshError != null) {
                     Text(
-                        text = li.songe.gkd.sdp.app.getString(R.string.s_7d38b53290, (subsRefreshError?.message).toString()),
+                        text = "更新错误: ${subsRefreshError?.message}",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.error
                     )
@@ -241,6 +227,12 @@ fun SubsItemCard(
         }
     }
 }
+
+
+
+
+
+
 
 
 

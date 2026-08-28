@@ -17,8 +17,6 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
 import li.songe.gkd.sdp.util.SelfControlElapsedPolicy
 import li.songe.gkd.sdp.util.SelfControlInsightWindowPolicy
-import androidx.compose.ui.res.stringResource
-import li.songe.gkd.sdp.R
 
 @Composable
 fun SelfControlElapsedCard(
@@ -44,25 +42,25 @@ fun SelfControlElapsedCard(
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
-                text = stringResource(copy.titleRes),
+                text = copy.title,
                 style = MaterialTheme.typography.titleMedium,
             )
             when (state) {
                 SelfControlElapsedPolicy.ElapsedState.Loading -> {
                     Text(
-                        text = stringResource(R.string.s_5bf8fdca8e),
+                        text = "正在读取上次记录…",
                         style = MaterialTheme.typography.bodyMedium,
                     )
                 }
 
                 SelfControlElapsedPolicy.ElapsedState.NoHistory -> {
                     Text(
-                        text = stringResource(copy.noHistoryTextRes),
+                        text = copy.noHistoryText,
                         style = MaterialTheme.typography.bodyLarge,
                         modifier = Modifier.padding(top = 8.dp),
                     )
                     Text(
-                        text = stringResource(copy.firstSupportingTextRes),
+                        text = copy.firstSupportingText,
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(top = 4.dp),
@@ -71,7 +69,7 @@ fun SelfControlElapsedCard(
 
                 SelfControlElapsedPolicy.ElapsedState.Unavailable -> {
                     Text(
-                        text = stringResource(R.string.s_9e99477b43),
+                        text = "暂时无法读取上次记录",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(top = 8.dp),
@@ -80,7 +78,7 @@ fun SelfControlElapsedCard(
 
                 SelfControlElapsedPolicy.ElapsedState.MissingActualEnd -> {
                     Text(
-                        text = stringResource(R.string.s_196c9660e0),
+                        text = "暂无可确认的上次结束时间",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(top = 8.dp),
@@ -147,32 +145,23 @@ private fun RunningElapsedContent(
     }
     val nowEpochMs = nowEpochMsOverride ?: tickerNowEpochMs
 
-    val (days, clock) = remember(state.anchorAtEpochMs, nowEpochMs) {
-        SelfControlElapsedPolicy.elapsedParts(state.anchorAtEpochMs, nowEpochMs)
-    }
     Text(
-        text = if (days > 0L) {
-            stringResource(R.string.elapsed_days_clock, days, clock)
-        } else {
-            clock
-        },
+        text = SelfControlElapsedPolicy.formatElapsed(
+            anchorAtEpochMs = state.anchorAtEpochMs,
+            nowEpochMs = nowEpochMs,
+        ),
         style = MaterialTheme.typography.headlineSmall,
         modifier = Modifier.padding(top = 4.dp),
     )
     Text(
-        text = stringResource(
-            R.string.s_de27714146,
-            stringResource(if (state.firstOccurrence) copy.firstTimeLabelRes else copy.previousTimeLabelRes),
-        ) +
+        text = "${if (state.firstOccurrence) copy.firstTimeLabel else copy.previousTimeLabel}：" +
             SelfControlElapsedPolicy.formatAbsolute(state.anchorAtEpochMs),
         style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         modifier = Modifier.padding(top = 2.dp),
     )
     Text(
-        text = stringResource(
-            if (state.firstOccurrence) copy.firstSupportingTextRes else copy.supportingTextRes,
-        ),
+        text = if (state.firstOccurrence) copy.firstSupportingText else copy.supportingText,
         style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         modifier = Modifier.padding(top = 4.dp),

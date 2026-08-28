@@ -18,7 +18,6 @@ import li.songe.gkd.sdp.util.UsageGuardHistoryPolicy
 import li.songe.gkd.sdp.util.UsageGuardPolicy
 import li.songe.gkd.sdp.util.UsageGuardUiStatePolicy
 import li.songe.gkd.sdp.util.toast
-import li.songe.gkd.sdp.R
 
 class UsageGuardVm : BaseViewModel() {
     val appProfilesFlow = DbSet.usageGuardAppProfileDao.queryAll().stateInit(emptyList())
@@ -46,7 +45,7 @@ class UsageGuardVm : BaseViewModel() {
     init {
         viewModelScope.launch(Dispatchers.IO) {
             if (DbSet.usageGuardTagDao.count() > 0) return@launch
-            localizedPresetTags().forEach { name ->
+            presetTags.forEach { name ->
                 DbSet.usageGuardTagDao.insert(
                     UsageGuardTag(name = name, isPreset = true),
                 )
@@ -71,13 +70,13 @@ class UsageGuardVm : BaseViewModel() {
 
     fun updateMinReasonLength(minLength: Int) {
         storeFlow.update { it.copy(usageGuardMinReasonLength = minLength.coerceAtLeast(1)) }
-        toast(li.songe.gkd.sdp.app.getString(R.string.s_c487de4445))
+        toast("最少理由字数已保存")
     }
 
     fun updateDurationOptions(raw: List<Int>) {
         val normalized = UsageGuardUiStatePolicy.normalizeDurationOptions(raw)
         storeFlow.update { it.copy(usageGuardDurationOptionsMinutes = normalized) }
-        toast(li.songe.gkd.sdp.app.getString(R.string.s_9de6b27eca))
+        toast("申请时长选项已保存")
     }
 
     fun saveSelectedTargets(appIds: List<String>) = viewModelScope.launch(Dispatchers.IO) {
@@ -97,7 +96,7 @@ class UsageGuardVm : BaseViewModel() {
                 )
             },
         )
-        toast(li.songe.gkd.sdp.app.getString(R.string.s_e1f202e22a))
+        toast("受控应用已保存")
     }
 
     fun saveWhitelist(appIds: List<String>) = viewModelScope.launch(Dispatchers.IO) {
@@ -117,7 +116,7 @@ class UsageGuardVm : BaseViewModel() {
                 )
             },
         )
-        toast(li.songe.gkd.sdp.app.getString(R.string.s_288d57a99d))
+        toast("白名单已保存")
     }
 
     fun saveAppGrantMode(appId: String, grantMode: Int) = viewModelScope.launch(Dispatchers.IO) {
@@ -132,7 +131,7 @@ class UsageGuardVm : BaseViewModel() {
             )
         )
         DbSet.usageGuardAppProfileDao.deleteUnusedProfiles(storeFlow.value.usageGuardDefaultGrantMode)
-        toast(li.songe.gkd.sdp.app.getString(R.string.s_27e042df94))
+        toast("应用模式已保存")
     }
 
     fun moveSelectedAppToGrantMode(appId: String, grantMode: Int) {
@@ -216,13 +215,7 @@ class UsageGuardVm : BaseViewModel() {
     }
 
     companion object {
-        fun localizedPresetTags(): List<String> = listOf(
-            li.songe.gkd.sdp.app.getString(R.string.usage_guard_preset_tag_work),
-            li.songe.gkd.sdp.app.getString(R.string.usage_guard_preset_tag_reply),
-            li.songe.gkd.sdp.app.getString(R.string.usage_guard_preset_tag_research),
-            li.songe.gkd.sdp.app.getString(R.string.usage_guard_preset_tag_payment),
-            li.songe.gkd.sdp.app.getString(R.string.usage_guard_preset_tag_other),
-        )
+        val presetTags = listOf("联系工作", "回复消息", "查资料", "支付", "其他")
 
         fun shouldRetainProfile(profile: UsageGuardAppProfile, defaultGrantMode: Int): Boolean {
             return profile.selectedTarget ||

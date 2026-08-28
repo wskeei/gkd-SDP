@@ -10,13 +10,11 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import li.songe.gkd.sdp.R
 import li.songe.gkd.sdp.store.blockMatchAppListFlow
 import li.songe.gkd.sdp.ui.SubsAppInfoItem
 import li.songe.gkd.sdp.ui.style.appItemPadding
@@ -46,21 +44,9 @@ fun SubsAppCard(
             AppNameText(appInfo = data.appInfo, fallbackName = data.rawApp.name)
             if (rawApp.groups.isNotEmpty()) {
                 val enableDesc = when (data.enableSize) {
-                    0 -> stringResource(
-                        R.string.app_list_group_count_disabled,
-                        rawApp.groups.size,
-                        rawApp.groups.size,
-                    )
-                    rawApp.groups.size -> stringResource(
-                        R.string.app_list_group_count,
-                        rawApp.groups.size,
-                    )
-                    else -> stringResource(
-                        R.string.app_list_group_count_enabled_disabled,
-                        rawApp.groups.size,
-                        data.enableSize,
-                        rawApp.groups.size - data.enableSize,
-                    )
+                    0 -> "${rawApp.groups.size}组规则/${rawApp.groups.size}关闭"
+                    rawApp.groups.size -> "${rawApp.groups.size}组规则"
+                    else -> "${rawApp.groups.size}组规则/${data.enableSize}启用/${rawApp.groups.size - data.enableSize}关闭"
                 }
                 Text(
                     text = enableDesc,
@@ -73,7 +59,7 @@ fun SubsAppCard(
                 )
             }
         }
-        if (blockMatchAppListFlow.collectAsStateWithLifecycle().value.contains(data.id)) {
+        if (blockMatchAppListFlow.collectAsState().value.contains(data.id)) {
             PerfIcon(
                 modifier = Modifier
                     .padding(2.dp)
@@ -96,3 +82,5 @@ fun SubsAppCard(
         )
     }
 }
+
+

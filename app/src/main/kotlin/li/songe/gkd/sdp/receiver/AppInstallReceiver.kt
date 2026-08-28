@@ -20,11 +20,11 @@ import java.util.Locale
 class AppInstallReceiver : BroadcastReceiver() {
     
     companion object {
+        private const val TAG = "AppInstallReceiver"
         private val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
     }
     
     override fun onReceive(context: Context, intent: Intent) {
-        if (intent.data?.scheme != "package") return
         val packageName = intent.data?.schemeSpecificPart ?: return
         
         // 忽略自己的包名
@@ -37,12 +37,15 @@ class AppInstallReceiver : BroadcastReceiver() {
             else -> return
         }
         
+        LogUtils.d("$TAG: $action - $packageName")
+        
         val pendingResult = goAsync()
         CoroutineScope(Dispatchers.IO).launch {
             try {
                 // 检查是否在监控列表中
                 val enabledPackages = DbSet.monitoredAppDao.getEnabledPackageNames()
                 if (!enabledPackages.contains(packageName)) {
+                    LogUtils.d("$TAG: $packageName not in monitored list, skipping")
                     return@launch
                 }
                 
@@ -66,8 +69,11 @@ class AppInstallReceiver : BroadcastReceiver() {
                     installed = action == AppInstallLog.ACTION_INSTALL
                 )
                 
+                LogUtils.d("$TAG: Logged $action for $appName ($packageName)")
+                
             } catch (e: Exception) {
-                LogUtils.d("app install event persistence failed", e)
+                LogUtils.d("$TAG: Error logging install: ${e.message}")
+                e.printStackTrace()
             } finally {
                 pendingResult.finish()
             }

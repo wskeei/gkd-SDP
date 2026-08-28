@@ -42,7 +42,6 @@ import li.songe.gkd.sdp.permission.canDrawOverlaysState
 import li.songe.gkd.sdp.store.createAnyFlow
 import li.songe.gkd.sdp.ui.component.PerfIcon
 import li.songe.gkd.sdp.ui.icon.DragPan
-import li.songe.gkd.sdp.ui.share.ServiceOverlayLifecycleOwner
 import li.songe.gkd.sdp.ui.style.AppTheme
 import li.songe.gkd.sdp.ui.style.iconTextSize
 import li.songe.gkd.sdp.util.BarUtils
@@ -55,7 +54,6 @@ import li.songe.gkd.sdp.util.runMainPost
 import li.songe.gkd.sdp.util.throttle
 import li.songe.gkd.sdp.util.toast
 import kotlin.math.abs
-import li.songe.gkd.sdp.R
 
 private var tempShareContext: ShareContext? = null
 private fun OverlayWindowService.useShareContext(): ShareContext {
@@ -92,7 +90,7 @@ private class ShareContext {
                         val newV = canDrawOverlaysState.updateAndGet()
                         canDrawOverlays = newV
                         if (!newV && oldV) {
-                            toast(li.songe.gkd.sdp.app.getString(R.string.s_812f4a9e8a))
+                            toast("当前界面拒绝显示悬浮窗")
                             break
                         }
                         delay(500)
@@ -137,7 +135,6 @@ abstract class OverlayWindowService(
     override val savedStateRegistry = registryController.savedStateRegistry
 
     private val windowManager by lazy { getSystemService(WINDOW_SERVICE) as WindowManager }
-    private val overlayLifecycleOwner = ServiceOverlayLifecycleOwner()
 
     @Composable
     abstract fun ComposeContent()
@@ -168,7 +165,7 @@ abstract class OverlayWindowService(
     val view by lazy {
         ComposeView(this).apply {
             setViewTreeSavedStateRegistryOwner(this@OverlayWindowService)
-            setViewTreeLifecycleOwner(overlayLifecycleOwner)
+            setViewTreeLifecycleOwner(this@OverlayWindowService)
             setContent {
                 AppTheme(invertedTheme = true) {
                     ComposeContent()
@@ -325,11 +322,7 @@ abstract class OverlayWindowService(
                 }
             }
             windowManager.addView(view, layoutParams)
-            overlayLifecycleOwner.onViewAdded()
         }
-        onDestroyed {
-            overlayLifecycleOwner.onViewRemoved()
-            runCatching { windowManager.removeView(view) }
-        }
+        onDestroyed { windowManager.removeView(view) }
     }
 }

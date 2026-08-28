@@ -1,5 +1,6 @@
 package li.songe.gkd.sdp.service
 
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
@@ -8,7 +9,6 @@ import li.songe.gkd.sdp.appScope
 import li.songe.gkd.sdp.db.DbSet
 import li.songe.gkd.sdp.store.storeFlow
 import kotlinx.coroutines.flow.update
-import li.songe.gkd.sdp.runtime.appDependencies
 import li.songe.gkd.sdp.util.AutoReenablePolicy
 import li.songe.gkd.sdp.util.LogUtils
 
@@ -18,7 +18,7 @@ object AutoReenableEnforcer {
     @Synchronized
     fun start() {
         if (loopJob?.isActive == true) return
-        loopJob = appScope.launch(appDependencies.dispatchers.io) {
+        loopJob = appScope.launch(Dispatchers.IO) {
             while (isActive) {
                 try {
                     enforceAll()
@@ -26,7 +26,7 @@ object AutoReenableEnforcer {
                     LogUtils.d(e)
                 }
                 val delayMs = computeDelayMs(storeFlow.value.autoReenableIntervalMinutes)
-                persistNextEnforceAt(computeNextEnforceAt(appDependencies.clock.nowEpochMillis(), delayMs))
+                persistNextEnforceAt(computeNextEnforceAt(System.currentTimeMillis(), delayMs))
                 delay(delayMs)
             }
         }

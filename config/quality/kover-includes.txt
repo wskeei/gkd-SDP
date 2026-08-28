@@ -1,11 +1,6 @@
-li.songe.gkd.sdp.capability.*
-li.songe.gkd.sdp.settings.*
-li.songe.gkd.sdp.usage.*
-li.songe.gkd.sdp.runtime.*
-li.songe.gkd.sdp.backup.*
-li.songe.gkd.sdp.remote.*
-li.songe.gkd.sdp.privacy.*
-li.songe.gkd.sdp.*.*Policy*
-li.songe.gkd.sdp.*.*Repository*
-li.songe.gkd.sdp.*.*UiState*
-li.songe.gkd.sdp.*.*Presenter*
+# v2.1.0 keeps coverage focused on deterministic policy/controller code. UI and
+# Android lifecycle classes remain covered by lint and managed-device tests.
+li.songe.gkd.sdp.util.*Policy*
+li.songe.gkd.sdp.util.*Controller*
+li.songe.gkd.sdp.util.*Formatter*
+li.songe.gkd.sdp.util.*Guard*

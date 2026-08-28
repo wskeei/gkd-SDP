@@ -33,7 +33,7 @@ class SelfControlIntervalRepositoryTest {
             endAt: Long,
         ): List<UsageRequestInsightRow> {
             insightQueries++
-            return insightRows.filter { it.requestedAt >= startAt && it.requestedAt < endAt }
+            return insightRows.filter { it.requestedAt in startAt..endAt }
         }
 
         override suspend fun getLatestInsightRow(appId: String): UsageRequestInsightRow? = latestInsight
@@ -92,7 +92,7 @@ class SelfControlIntervalRepositoryTest {
             attemptEvents = FakeAttemptSource(),
         )
 
-        val result = repository.loadUsageRequestOverlayData("target", 8_000L)
+        val result = repository.loadUsageRequestOverlayData("target", 7_000L)
 
         assertEquals(7_000L, result.latestRequestedAt)
         assertEquals(listOf(4_000L), result.samples.mapNotNull { it.gapMs })
@@ -223,7 +223,7 @@ class SelfControlIntervalRepositoryTest {
 
         val data = repository.loadUsageRequestOverlayData(
             appId = "target",
-            insightAnchorAt = 7_000L,
+            insightAnchorAt = 6_000L,
         )
 
         assertEquals(6, data.samples.size)

@@ -11,15 +11,10 @@ import java.time.ZoneId
 
 class DigitalSelfDisciplineReviewPresentationTest {
     private val zone = ZoneId.of("Asia/Shanghai")
-    private val testNow = LocalDate.of(2026, 8, 4)
-        .atStartOfDay(zone)
-        .plusHours(12)
-        .toInstant()
-        .toEpochMilli()
 
     @Test
     fun usageTrendDefaultsToRatioAndCanSwitchToGapWithoutChangingCoverage() {
-        val summary = summary(DigitalSelfDisciplineReviewPolicy.Range.LAST_24_HOURS)
+        val summary = summary(DigitalSelfDisciplineReviewPolicy.Range.Today)
         val ratio = DigitalSelfDisciplineReviewPresentation.trend(summary)
         val gap = DigitalSelfDisciplineReviewPresentation.trend(
             summary,
@@ -46,13 +41,13 @@ class DigitalSelfDisciplineReviewPresentationTest {
     @Test
     fun gapTrendUsesGapComparisonInsteadOfRatioComparison() {
         val currentBounds = DigitalSelfDisciplineReviewPolicy.rangeBounds(
-            DigitalSelfDisciplineReviewPolicy.Range.LAST_24_HOURS,
-            testNow,
+            DigitalSelfDisciplineReviewPolicy.Range.Today,
+            LocalDate.of(2026, 8, 4),
             zone,
         )
         val previousBounds = DigitalSelfDisciplineReviewPolicy.rangeBounds(
-            DigitalSelfDisciplineReviewPolicy.Range.LAST_24_HOURS,
-            testNow - 24L * 60L * 60L * 1_000L,
+            DigitalSelfDisciplineReviewPolicy.Range.Today,
+            LocalDate.of(2026, 8, 3),
             zone,
         )
         val previous = DigitalSelfDisciplineReviewPolicy.summarize(
@@ -90,13 +85,13 @@ class DigitalSelfDisciplineReviewPresentationTest {
     }
 
     @Test
-    fun trendKeepsSinglePointsForSmallRollingDataAndAggregatesAfterTwentyFour() {
-        val small = summary(DigitalSelfDisciplineReviewPolicy.Range.LAST_24_HOURS)
+    fun trendKeepsSinglePointsForSmallTodayDataAndAggregatesAfterTwentyFour() {
+        val small = summary(DigitalSelfDisciplineReviewPolicy.Range.Today)
         assertEquals(2, DigitalSelfDisciplineReviewPresentation.trend(small).points.size)
 
         val bounds = DigitalSelfDisciplineReviewPolicy.rangeBounds(
-            DigitalSelfDisciplineReviewPolicy.Range.LAST_24_HOURS,
-            testNow,
+            DigitalSelfDisciplineReviewPolicy.Range.Today,
+            LocalDate.of(2026, 8, 4),
             zone,
         )
         val rows = (0 until 25).map { index ->
@@ -126,7 +121,7 @@ class DigitalSelfDisciplineReviewPresentationTest {
 
     @Test
     fun pagePresentationContainsCoverageAndDoesNotExposeSensitiveFields() {
-        val page = DigitalSelfDisciplineReviewPresentation.page(summary(DigitalSelfDisciplineReviewPolicy.Range.LAST_7_DAYS))
+        val page = DigitalSelfDisciplineReviewPresentation.page(summary(DigitalSelfDisciplineReviewPolicy.Range.SevenDays))
 
         assertTrue(page.coverage.text.contains("总申请"))
         assertTrue(page.trend.semanticSummary.contains("总记录"))
@@ -157,7 +152,7 @@ class DigitalSelfDisciplineReviewPresentationTest {
     private fun summary(range: DigitalSelfDisciplineReviewPolicy.Range): DigitalSelfDisciplineReviewPolicy.ReviewSummary {
         val bounds = DigitalSelfDisciplineReviewPolicy.rangeBounds(
             range,
-            testNow,
+            LocalDate.of(2026, 8, 4),
             zone,
         )
         val rows = listOf(
@@ -176,8 +171,8 @@ class DigitalSelfDisciplineReviewPresentationTest {
 
     private fun interceptSummary(): DigitalSelfDisciplineReviewPolicy.ReviewSummary {
         val bounds = DigitalSelfDisciplineReviewPolicy.rangeBounds(
-            DigitalSelfDisciplineReviewPolicy.Range.LAST_24_HOURS,
-            testNow,
+            DigitalSelfDisciplineReviewPolicy.Range.Today,
+            LocalDate.of(2026, 8, 4),
             zone,
         )
         val event = li.songe.gkd.sdp.data.SelfControlAttemptEvent(

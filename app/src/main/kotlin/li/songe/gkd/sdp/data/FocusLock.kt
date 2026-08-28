@@ -42,8 +42,5 @@ data class FocusLock(
 
         @Query("DELETE FROM focus_lock WHERE end_time <= :currentTime")
         suspend fun deleteExpired(currentTime: Long = System.currentTimeMillis()): Int
-
-        @Query("DELETE FROM focus_lock")
-        suspend fun deleteAll(): Int
     }
 }

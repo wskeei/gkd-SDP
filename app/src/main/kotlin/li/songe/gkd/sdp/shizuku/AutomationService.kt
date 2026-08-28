@@ -15,14 +15,12 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.withContext
 import li.songe.gkd.sdp.a11y.A11yCommonImpl
 import li.songe.gkd.sdp.a11y.A11yRuleEngine
-import li.songe.gkd.sdp.diagnostics.DiagnosticLogger
 import li.songe.gkd.sdp.service.StatusService
 import li.songe.gkd.sdp.store.updateEnableAutomator
 import li.songe.gkd.sdp.util.AutomatorModeOption
 import li.songe.gkd.sdp.util.LogUtils
 import li.songe.gkd.sdp.util.createGkdTempDir
 import li.songe.gkd.sdp.util.toast
-import li.songe.gkd.sdp.R
 
 class AutomationService private constructor() : A11yCommonImpl {
     override val mode get() = AutomatorModeOption.AutomationMode
@@ -79,7 +77,7 @@ class AutomationService private constructor() : A11yCommonImpl {
         uiAutomation.casted.connect(UiAutomation.FLAG_DONT_SUPPRESS_ACCESSIBILITY_SERVICES)
         uiAutomation.setOnAccessibilityEventListener(listener)
         connected = true
-        toast(li.songe.gkd.sdp.app.getString(R.string.s_42c3637722))
+        toast("自动化已启动")
         updateEnableAutomator(true)
         // Keep the existing foreground notification service lifecycle in place
         // before overlays are launched from a background UiAutomation runtime.
@@ -97,9 +95,9 @@ class AutomationService private constructor() : A11yCommonImpl {
             uiAutomation.casted.disconnect()
         }
         if (tempShutdownFlag) {
-            toast(li.songe.gkd.sdp.app.getString(R.string.s_544facd553))
+            toast("自动化局部关闭")
         } else {
-            toast(li.songe.gkd.sdp.app.getString(R.string.s_a8ece9678b))
+            toast("自动化已关闭")
             updateEnableAutomator(false)
         }
     }
@@ -133,13 +131,13 @@ class AutomationService private constructor() : A11yCommonImpl {
                     uiAutomationFlow.value = null
                     // https://github.com/android-cs/16/blob/main/services/accessibility/java/com/android/server/accessibility/UiAutomationManager.java#L110
                     if (e is IllegalStateException && e.message?.contains("already registered") == true) {
-                        toast(li.songe.gkd.sdp.app.getString(R.string.s_53836c4482))
+                        toast("自动化启动失败，被其他应用占用")
                         if (!silent) {
                             automationRegisteredExceptionFlow.value = e
                         }
-                        LogUtils.d("automation already registered", e)
+                        LogUtils.d(e.message)
                     } else {
-                        toast(li.songe.gkd.sdp.app.getString(R.string.s_3685fc478e, (DiagnosticLogger.userMessage(e)).toString()))
+                        toast("自动化启动失败：${e.message}")
                         LogUtils.d(e)
                     }
                 }

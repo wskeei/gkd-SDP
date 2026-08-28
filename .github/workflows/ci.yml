@@ -25,6 +25,8 @@ jobs:
     steps:
       - name: Check out source
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          fetch-depth: 0
 
       - name: Set up Java
         uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
@@ -36,6 +38,9 @@ jobs:
         uses: gradle/actions/setup-gradle@90ddb51e90a5fd9ba75f40cf85156b7b41bf76a3 # v6
         with:
           cache-provider: basic
+
+      - name: Check CI environment
+        run: bash scripts/check-dev-environment.sh --ci
 
       - name: Test security dependency audit
         run: python3 -m unittest discover -s scripts/tests -p 'test_*.py' -v
@@ -54,7 +59,8 @@ jobs:
 
       - name: Verify localization resources
         run: python3 scripts/verify-localization-resources.py
-      - name: Verify localization source exemptions
+
+      - name: Verify localization source additions
         run: python3 scripts/verify-localization-sources.py
 
       - name: Test release tooling contracts
@@ -67,6 +73,7 @@ jobs:
 
       - name: Run unit tests and lint
         run: |
+          chmod +x ./gradlew
           ./gradlew \
             :quality-lint:test \
             :selector:jvmTest \
@@ -116,6 +123,7 @@ jobs:
 
       - name: Build debug and release variants
         run: |
+          chmod +x ./gradlew
           ./gradlew \
             :app:assembleGkdDebug \
             :app:assemblePlayDebug \
@@ -153,6 +161,7 @@ jobs:
 
       - name: Verify and report coverage
         run: |
+          chmod +x ./gradlew
           ./gradlew \
             :app:koverVerifyGkdDebug \
             :app:koverXmlReportGkdDebug \
@@ -192,7 +201,9 @@ jobs:
           cache-provider: basic
 
       - name: Validate screenshot references
-        run: ./gradlew :app:validateGkdDebugScreenshotTest
+        run: |
+          chmod +x ./gradlew
+          ./gradlew :app:validateGkdDebugScreenshotTest
 
       - name: Upload screenshot reports
         if: ${{ always() }}
@@ -230,8 +241,16 @@ jobs:
         with:
           cache-provider: basic
 
+      - name: Install API 26 managed device image
+        run: |
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" \
+            "platform-tools" \
+            "emulator" \
+            "system-images;android-26;google_apis;x86_64"
+
       - name: Run API 26 managed device tests
         run: |
+          chmod +x ./gradlew
           ./gradlew :app:pixel2Api26GkdDebugAndroidTest \
             -Pandroid.testoptions.manageddevices.emulator.gpu=swiftshader_indirect \
             -Pandroid.experimental.testOptions.managedDevices.maxConcurrentDevices=1 \
@@ -273,8 +292,16 @@ jobs:
         with:
           cache-provider: basic
 
+      - name: Install API 35 managed device image
+        run: |
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" \
+            "platform-tools" \
+            "emulator" \
+            "system-images;android-35;google_apis;x86_64"
+
       - name: Run API 35 managed device tests
         run: |
+          chmod +x ./gradlew
           ./gradlew \
             :app:pixel6Api35GkdDebugAndroidTest \
             :app:pixel6Api35PlayDebugAndroidTest \
@@ -322,15 +349,22 @@ jobs:
 
       - name: Prepare performance baseline
         run: |
-          if [ "$GITHUB_EVENT_NAME" = "pull_request" ]; then
-            baseline_ref="$(git merge-base HEAD origin/main)"
-          else
-            baseline_ref="$(git rev-parse HEAD~1)"
-          fi
-          git worktree add --detach .worktrees/performance-baseline "$baseline_ref"
+          git fetch --no-tags origin refs/tags/v2.1.0:refs/tags/v2.1.0
+          mkdir -p .worktrees
+          git worktree add --detach .worktrees/performance-baseline v2.1.0
+          chmod +x ./gradlew .worktrees/performance-baseline/gradlew
+
+      - name: Install performance emulator images
+        run: |
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" \
+            "platform-tools" \
+            "emulator" \
+            "system-images;android-26;google_apis;x86_64" \
+            "system-images;android-35;google_apis;x86_64"
 
       - name: Generate Baseline Profile
         run: |
+          chmod +x ./gradlew
           ./gradlew :app:generateGkdReleaseBaselineProfile \
             -Pandroid.testInstrumentationRunnerArguments.androidx.benchmark.enabledRules=BaselineProfile \
             -Pandroid.testoptions.manageddevices.emulator.gpu=swiftshader_indirect \
@@ -339,22 +373,16 @@ jobs:
 
       - name: Run startup macrobenchmarks
         run: |
+          chmod +x ./gradlew
           ./gradlew :baselineprofile:pixel6Api35GkdNonMinifiedReleaseAndroidTest \
             -Pandroid.testInstrumentationRunnerArguments.androidx.benchmark.enabledRules=Macrobenchmark \
             -Pandroid.testoptions.manageddevices.emulator.gpu=swiftshader_indirect \
             -Pandroid.experimental.testOptions.managedDevices.maxConcurrentDevices=1 \
             -Pandroid.experimental.testOptions.managedDevices.setupTimeoutMinutes=30
 
-      - name: Install release smoke emulator images
-        run: |
-          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" \
-            "platform-tools" \
-            "emulator" \
-            "system-images;android-26;google_apis;x86_64" \
-            "system-images;android-35;google_apis;x86_64"
-
       - name: Assemble release and verify performance policy
         run: |
+          chmod +x ./gradlew
           ./gradlew :app:assembleGkdRelease
           ./gradlew :app:assemblePlayRelease
           bash scripts/run-release-apk-smoke-emulator.sh \
@@ -384,6 +412,7 @@ jobs:
             app/build/outputs/managed_device_android_test_additional_output/
             app/build/reports/
             baselineprofile/build/outputs/managed_device_android_test_additional_output/
+
 
   dependency-review:
     name: dependency-review

@@ -23,7 +23,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
@@ -73,7 +73,6 @@ import li.songe.gkd.sdp.util.launchAsFn
 import li.songe.gkd.sdp.util.throttle
 import li.songe.gkd.sdp.util.toJson5String
 import li.songe.gkd.sdp.util.toast
-import li.songe.gkd.sdp.R
 
 @Serializable
 data object A11yEventLogRoute : NavKey
@@ -84,7 +83,7 @@ fun A11yEventLogPage() {
     val mainVm = context.mainVm
     val vm = viewModel<A11yEventLogVm>()
 
-    val logCount by vm.logCountFlow.collectAsStateWithLifecycle()
+    val logCount by vm.logCountFlow.collectAsState()
     val list = vm.pagingDataFlow.collectAsLazyPagingItems()
     val (scrollBehavior, listState) = useListScrollState(vm.resetKey, list.itemCount > 0)
 
@@ -98,7 +97,7 @@ fun A11yEventLogPage() {
             },
             title = {
                 Text(
-                    text = li.songe.gkd.sdp.app.getString(R.string.s_12b64fb2df),
+                    text = "事件日志",
                     modifier = Modifier.noRippleClickable { vm.resetKey.intValue++ },
                 )
             },
@@ -108,12 +107,12 @@ fun A11yEventLogPage() {
                         imageVector = PerfIcon.Delete,
                         onClick = throttle(fn = vm.viewModelScope.launchAsFn {
                             mainVm.dialogFlow.waitResult(
-                                title = li.songe.gkd.sdp.app.getString(R.string.s_0c42f43e47),
-                                text = li.songe.gkd.sdp.app.getString(R.string.s_b13a1d7e01),
+                                title = "删除日志",
+                                text = "确定删除所有事件日志?",
                                 error = true,
                             )
                             DbSet.a11yEventLogDao.deleteAll()
-                            toast(li.songe.gkd.sdp.app.getString(R.string.s_86e8d12a79))
+                            toast("删除成功")
                         })
                     )
                 }
@@ -145,14 +144,14 @@ fun A11yEventLogPage() {
                 item(ListPlaceholder.KEY, ListPlaceholder.TYPE) {
                     Spacer(modifier = Modifier.height(EmptyHeight))
                     if (logCount == 0 && list.loadState.refresh !is LoadState.Loading) {
-                        EmptyText(text = li.songe.gkd.sdp.app.getString(R.string.s_b246458f20))
+                        EmptyText(text = "暂无数据")
                     }
                 }
             }
         }
     }
 
-    vm.showEventLogFlow.collectAsStateWithLifecycle().value?.let { eventLog ->
+    vm.showEventLogFlow.collectAsState().value?.let { eventLog ->
         val onDismissRequest = { vm.showEventLogFlow.value = null }
         val dark = LocalDarkTheme.current
         val eventText = remember(dark) {
@@ -171,7 +170,7 @@ fun A11yEventLogPage() {
         }
         AlertDialog(
             onDismissRequest = onDismissRequest,
-            title = { Text(text = li.songe.gkd.sdp.app.getString(R.string.s_60f0ae8cbf)) },
+            title = { Text(text = "事件详情") },
             text = {
                 val textModifier = Modifier
                     .background(
@@ -180,9 +179,9 @@ fun A11yEventLogPage() {
                     )
                     .padding(horizontal = 4.dp)
                 Column {
-                    Text(text = li.songe.gkd.sdp.app.getString(R.string.s_cd42ed46a6) + if (eventLog.isStateChanged) li.songe.gkd.sdp.app.getString(R.string.s_c5277e6e6f) else li.songe.gkd.sdp.app.getString(R.string.s_458dd653a4))
+                    Text(text = "类型: " + if (eventLog.isStateChanged) "状态变化" else "内容变化")
                     Spacer(modifier = Modifier.height(12.dp))
-                    Text(text = li.songe.gkd.sdp.app.getString(R.string.s_be8af550f3))
+                    Text(text = "应用ID")
                     Row {
                         Text(
                             text = eventLog.appId,
@@ -194,7 +193,7 @@ fun A11yEventLogPage() {
                         })
                     }
                     Spacer(modifier = Modifier.height(12.dp))
-                    Text(text = li.songe.gkd.sdp.app.getString(R.string.s_ef3d433a35))
+                    Text(text = "事件数据")
                     Box(
                         modifier = Modifier.fillMaxWidth()
                     ) {
@@ -227,7 +226,7 @@ fun A11yEventLogPage() {
                                 "[${key}=${v}]"
                             }
                         }
-                        Text(text = li.songe.gkd.sdp.app.getString(R.string.s_17f4155b4b))
+                        Text(text = "特征选择器")
                         Row(
                             modifier = Modifier.fillMaxWidth()
                         ) {
@@ -245,7 +244,7 @@ fun A11yEventLogPage() {
             },
             confirmButton = {
                 TextButton(onClick = onDismissRequest) {
-                    Text(text = li.songe.gkd.sdp.app.getString(R.string.s_6c14bd7f6f))
+                    Text(text = "关闭")
                 }
             },
         )

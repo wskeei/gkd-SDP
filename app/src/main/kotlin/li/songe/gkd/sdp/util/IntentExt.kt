@@ -18,7 +18,6 @@ import li.songe.gkd.sdp.META
 import li.songe.gkd.sdp.MainActivity
 import li.songe.gkd.sdp.app
 import li.songe.gkd.sdp.isActivityVisible
-import li.songe.gkd.sdp.diagnostics.DiagnosticLogger
 import li.songe.gkd.sdp.permission.canWriteExternalStorage
 import li.songe.gkd.sdp.permission.foregroundServiceSpecialUseState
 import li.songe.gkd.sdp.permission.notificationState
@@ -26,7 +25,6 @@ import li.songe.gkd.sdp.permission.requiredPermission
 import li.songe.gkd.sdp.service.AccessibilityGuardRuntime
 import java.io.File
 import kotlin.reflect.KClass
-import li.songe.gkd.sdp.R
 
 fun MainActivity.shareFile(file: File, title: String) {
     val uri = FileProvider.getUriForFile(
@@ -54,7 +52,7 @@ suspend fun MainActivity.saveFileToDownloads(file: File) {
         }
         withContext(Dispatchers.IO) {
             val uri = contentResolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values)
-                ?: error(app.getString(R.string.intent_create_uri_failed))
+                ?: error("创建URI失败")
             contentResolver.openOutputStream(uri)?.use { outputStream ->
                 outputStream.write(file.readBytes())
                 outputStream.flush()
@@ -68,7 +66,7 @@ suspend fun MainActivity.saveFileToDownloads(file: File) {
         )
         targetFile.writeBytes(file.readBytes())
     }
-    toast(li.songe.gkd.sdp.app.getString(R.string.s_9376a4238e, (file.name).toString()))
+    toast("已保存 ${file.name} 到下载")
 }
 
 fun Context.tryStartActivity(intent: Intent): Boolean {
@@ -76,8 +74,9 @@ fun Context.tryStartActivity(intent: Intent): Boolean {
         startActivity(intent)
         return true
     } catch (e: Exception) {
+        e.printStackTrace()
         LogUtils.d("tryStartActivity", e)
-        toast(li.songe.gkd.sdp.app.getString(R.string.s_475787d680, (DiagnosticLogger.userMessage(e)).toString()))
+        toast("跳转失败\n" + (e.message ?: e.stackTraceToString()))
         return false
     }
 }
@@ -87,7 +86,7 @@ fun openWeChatScaner() {
         putExtra("LauncherUI.From.Scaner.Shortcut", true)
     }
     if (intent == null) {
-        toast(li.songe.gkd.sdp.app.getString(R.string.s_60d171dc16))
+        toast("请检查微信是否安装或禁用")
         return
     }
     app.tryStartActivity(intent)
@@ -102,30 +101,6 @@ fun openA11ySettings() {
     }
 }
 
-fun openOverlaySettings() {
-    val intent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION).apply {
-        data = "package:${app.packageName}".toUri()
-        flags = Intent.FLAG_ACTIVITY_NEW_TASK
-    }
-    app.tryStartActivity(intent)
-}
-
-fun openNotificationSettings() {
-    val intent = Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
-        putExtra(Settings.EXTRA_APP_PACKAGE, app.packageName)
-        flags = Intent.FLAG_ACTIVITY_NEW_TASK
-    }
-    app.tryStartActivity(intent)
-}
-
-fun openBatterySettings() {
-    val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
-        data = "package:${app.packageName}".toUri()
-        flags = Intent.FLAG_ACTIVITY_NEW_TASK
-    }
-    app.tryStartActivity(intent)
-}
-
 fun openAppDetailsSettings() {
     val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
         data = "package:${app.packageName}".toUri()
@@ -138,8 +113,8 @@ fun openUri(uri: String) {
     val u = try {
         uri.toUri()
     } catch (e: Exception) {
-        LogUtils.d("invalid URI", e)
-        toast(li.songe.gkd.sdp.app.getString(R.string.s_e7e0ffcd50))
+        e.printStackTrace()
+        toast("非法链接")
         return
     }
     openUri(u)
@@ -157,7 +132,7 @@ fun openApp(appId: String) {
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         app.tryStartActivity(intent)
     } else {
-        toast(li.songe.gkd.sdp.app.getString(R.string.s_a7e6272535))
+        toast("请检查此应用是否安装或禁用")
     }
 }
 
@@ -176,7 +151,7 @@ fun <T : Service> startForegroundServiceByClass(clazz: KClass<T>): Boolean {
     } catch (e: Throwable) {
         LogUtils.d(e)
         val prefix = if (isActivityVisible) "" else "${META.appName}: "
-        toast(li.songe.gkd.sdp.app.getString(R.string.s_73e7e97c6d, (prefix).toString(), (DiagnosticLogger.userMessage(e)).toString()), forced = true)
+        toast("${prefix}启动服务失败: ${e.message}", forced = true)
         return false
     }
 }

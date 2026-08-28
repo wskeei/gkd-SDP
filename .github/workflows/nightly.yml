@@ -9,11 +9,11 @@ permissions:
   contents: read
 
 concurrency:
-  group: nightly
+  group: nightly-${{ github.ref }}
   cancel-in-progress: true
 
 env:
-  JAVA_VERSION: "21"
+  JAVA_VERSION: '21'
 
 jobs:
   nightly:
@@ -44,17 +44,33 @@ jobs:
         with:
           cache-provider: basic
 
-      - name: Verify release metadata and Python contracts
+      - name: Check CI environment
+        run: bash scripts/check-dev-environment.sh --ci
+
+      - name: Verify static quality policies and release metadata
         run: |
           python3 -m unittest discover -s scripts/tests -p 'test_*.py' -v
+          python3 scripts/verify-sensitive-output-policy.py
+          python3 scripts/verify-compose-lifecycle-policy.py
+          python3 scripts/verify-ui-file-boundaries.py
+          python3 scripts/verify-test-quality-policy.py
           python3 scripts/verify-localization-resources.py
           python3 scripts/verify-localization-sources.py
           bash scripts/test-verify-release-metadata.sh
           bash scripts/test-generate-update-manifest.sh
           bash scripts/verify-release-metadata.sh --no-tag
 
+      - name: Generate security dependency report
+        run: bash scripts/generate-security-dependency-report.sh
+
+      - name: Verify security dependency floors
+        run: |
+          python3 scripts/verify-security-dependency-report.py \
+            --report build/reports/security-dependencies.txt
+
       - name: Run unit tests and lint
         run: |
+          chmod +x ./gradlew
           ./gradlew \
             :quality-lint:test \
             :selector:jvmTest \
@@ -64,13 +80,22 @@ jobs:
 
       - name: Verify coverage and screenshots
         run: |
-          ./gradlew :app:koverVerifyGkdDebug
-          ./gradlew :app:koverXmlReportGkdDebug
+          ./gradlew \
+            :app:koverVerifyGkdDebug \
+            :app:koverXmlReportGkdDebug \
+            :app:validateGkdDebugScreenshotTest
           python3 scripts/verify-kover-report.py \
             --xml app/build/reports/kover/reportGkdDebug.xml \
             --includes config/quality/kover-includes.txt \
             --excludes config/quality/kover-excludes.txt
-          ./gradlew :app:validateGkdDebugScreenshotTest
+
+      - name: Install managed device and smoke emulator images
+        run: |
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" \
+            "platform-tools" \
+            "emulator" \
+            "system-images;android-26;google_apis;x86_64" \
+            "system-images;android-35;google_apis;x86_64"
 
       - name: Run API 26 managed device tests
         run: |
@@ -88,7 +113,7 @@ jobs:
             -Pandroid.experimental.testOptions.managedDevices.maxConcurrentDevices=1 \
             -Pandroid.experimental.testOptions.managedDevices.setupTimeoutMinutes=30
 
-      - name: Generate Baseline Profile and run macrobenchmarks
+      - name: Generate baseline profile and run macrobenchmarks
         run: |
           ./gradlew :app:generateGkdReleaseBaselineProfile \
             -Pandroid.testInstrumentationRunnerArguments.androidx.benchmark.enabledRules=BaselineProfile \
@@ -100,14 +125,6 @@ jobs:
             -Pandroid.testoptions.manageddevices.emulator.gpu=swiftshader_indirect \
             -Pandroid.experimental.testOptions.managedDevices.maxConcurrentDevices=1 \
             -Pandroid.experimental.testOptions.managedDevices.setupTimeoutMinutes=30
-
-      - name: Install release smoke emulator images
-        run: |
-          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" \
-            "platform-tools" \
-            "emulator" \
-            "system-images;android-26;google_apis;x86_64" \
-            "system-images;android-35;google_apis;x86_64"
 
       - name: Build all variants and verify performance policy
         run: |
@@ -124,7 +141,8 @@ jobs:
             --api 35 \
             --apk app/build/outputs/apk/gkd/release/app-gkd-release.apk \
             --apk app/build/outputs/apk/play/release/app-play-release.apk
-          git worktree add --detach .worktrees/performance-baseline v2.2.1
+          mkdir -p .worktrees
+          git worktree add --detach .worktrees/performance-baseline v2.1.0
           ./gradlew -p .worktrees/performance-baseline :app:assembleGkdRelease
           python3 scripts/verify-performance-reports.py \
             --thresholds config/quality/performance-thresholds.json \

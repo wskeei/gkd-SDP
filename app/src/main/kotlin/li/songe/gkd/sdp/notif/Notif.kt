@@ -87,7 +87,7 @@ data class Notif(
             )
             notification
                 .setDeleteIntent(deleteIntent)
-                .addAction(0, app.getString(R.string.notif_stop_action), deleteIntent)
+                .addAction(0, "停止", deleteIntent)
         }
         return notification.build()
     }
@@ -115,74 +115,74 @@ val abNotif by lazy {
     Notif(
         id = 100,
         title = META.appName,
-        text = app.getString(R.string.notif_accessibility_running),
+        text = "无障碍正在运行",
     )
 }
 
 val screenshotNotif = Notif(
     id = 101,
-    title = app.getString(R.string.notif_screenshot_service_running),
-    text = app.getString(R.string.notif_screenshot_service_capture),
-    uri = "gkd://settings/privacy-data",
+    title = "截屏服务正在运行",
+    text = "保存快照时截取屏幕",
+    uri = "gkd://page/1",
     stopService = ScreenshotService::class,
 )
 
 val buttonNotif = Notif(
     id = 102,
-    title = app.getString(R.string.notif_button_service_running),
-    text = app.getString(R.string.notif_button_service_capture),
-    uri = "gkd://settings/privacy-data",
+    title = "快照按钮服务正在运行",
+    text = "点击按钮捕获快照",
+    uri = "gkd://page/1",
     stopService = ButtonService::class,
 )
 
 val httpNotif = Notif(
     id = 103,
-    title = app.getString(R.string.notif_http_service_running),
-    uri = "gkd://settings/privacy-data",
+    title = "HTTP服务正在运行",
+    uri = "gkd://page/1",
     stopService = HttpService::class,
 )
 
 val exposeNotif = Notif(
     id = 104,
-    title = app.getString(R.string.notif_expose_service_running),
-    text = app.getString(R.string.notif_expose_service_complete),
+    title = "运行外部调用任务中",
+    text = "任务完成后自动关闭",
 )
 
 val snapshotNotif = Notif(
     channel = NotifChannel.Snapshot,
     id = 105,
-    title = app.getString(R.string.notif_snapshot_saved),
+    title = "快照已保存",
     ongoing = false,
     autoCancel = true,
-    uri = "gkd://snapshots",
+    uri = "gkd://page/2",
 )
 
 val recordNotif = Notif(
     id = 106,
-    title = app.getString(R.string.notif_record_service_running),
-    uri = "gkd://settings/privacy-data",
+    title = "记录服务正在运行",
+    uri = "gkd://page/1",
     stopService = ActivityService::class,
 )
 
 val eventNotif = Notif(
     id = 107,
-    title = app.getString(R.string.notif_event_service_running),
-    uri = "gkd://settings/privacy-data",
+    title = "事件服务正在运行",
+    uri = "gkd://page/1",
     stopService = EventService::class,
 )
 
 val trackNotif = Notif(
     id = 108,
-    title = app.getString(R.string.notif_track_service_running),
-    uri = "gkd://settings",
+    title = "轨迹服务正在运行",
+    uri = "gkd://page?tab=3",
     stopService = TrackService::class,
 )
 
 val focusEndNotif = Notif(
     channel = NotifChannel.FocusMode,
     id = 109,
-    title = app.getString(R.string.notif_focus_end_title),
-    text = app.getString(R.string.notif_focus_end_text),
+    title = "专注结束",
+    text = "专注时间已结束，做得很好！",
     ongoing = false,
     autoCancel = true,
 )
@@ -196,14 +196,11 @@ fun accessibilityGuardNotif(index: Int): Notif {
     return Notif(
         channel = NotifChannel.AccessibilityGuard,
         id = ACCESSIBILITY_GUARD_NOTIF_ID_START + index,
-        title = app.getString(AccessibilityGuardNotificationPolicy.TITLE_RES),
-        text = app.getString(
-            AccessibilityGuardNotificationPolicy.textRes(index),
-            *AccessibilityGuardNotificationPolicy.textArgs(index).toTypedArray(),
-        ),
+        title = AccessibilityGuardNotificationPolicy.TITLE,
+        text = AccessibilityGuardNotificationPolicy.text(index),
         ongoing = false,
         autoCancel = true,
-        uri = "gkd://overview",
+        uri = "gkd://page?tab=0",
         priority = NotificationCompat.PRIORITY_HIGH,
         category = NotificationCompat.CATEGORY_ERROR,
     )
@@ -216,13 +213,13 @@ private fun accessibilityGuardStatusNotif(
     return Notif(
         channel = NotifChannel.AccessibilityGuard,
         id = ACCESSIBILITY_GUARD_STATUS_NOTIF_ID,
-        title = app.getString(AccessibilityGuardNotificationPolicy.TITLE_RES),
-        text = app.getString(status.textRes, *status.textArgs.toTypedArray()),
+        title = AccessibilityGuardNotificationPolicy.TITLE,
+        text = status.text,
         ongoing = true,
         autoCancel = false,
         priority = NotificationCompat.PRIORITY_HIGH,
         category = NotificationCompat.CATEGORY_ERROR,
-        uri = "gkd://self-control",
+        uri = "gkd://page/4",
         whenEpochMs = status.targetEpochMs,
         usesChronometer = hasCountdown,
         chronometerCountDown = hasCountdown,

@@ -19,7 +19,6 @@ data class AppGroup(
     @PrimaryKey(autoGenerate = true)
     @ColumnInfo(name = "id") val id: Long = 0,
 
-    // i18n-ignore: legacy fallback or non-display heuristic data
     @ColumnInfo(name = "name") val name: String,  // 组名，如"短视频"
 
     @ColumnInfo(name = "app_ids") val appIds: String = "[]",  // JSON: List<String> 包名列表
@@ -94,8 +93,5 @@ data class AppGroup(
 
         @Query("UPDATE app_group SET enabled = 1 WHERE enabled = 0")
         suspend fun enableAllDisabled(): Int
-
-        @Query("DELETE FROM app_group")
-        suspend fun deleteAll(): Int
     }
 }

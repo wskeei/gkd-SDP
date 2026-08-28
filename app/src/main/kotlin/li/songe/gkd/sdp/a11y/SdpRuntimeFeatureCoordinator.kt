@@ -3,6 +3,7 @@ package li.songe.gkd.sdp.a11y
 import android.view.accessibility.AccessibilityEvent
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -10,8 +11,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import li.songe.gkd.sdp.appScope
-import li.songe.gkd.sdp.runtime.SdpClock
-import li.songe.gkd.sdp.runtime.appDependencies
 import li.songe.gkd.sdp.util.AutomatorModeOption
 import li.songe.gkd.sdp.util.LogUtils
 
@@ -27,8 +26,7 @@ class SdpRuntimeFeatureCoordinator<T>(
     private val appIdOf: (T) -> String = { it as String },
     private val scope: CoroutineScope,
     private val handlers: List<Handler>,
-    private val foregroundDispatcher: CoroutineDispatcher = appDependencies.dispatchers.default,
-    private val clock: SdpClock = appDependencies.clock,
+    private val foregroundDispatcher: CoroutineDispatcher = Dispatchers.Default,
     private val onHandlerFailure: (handlerName: String, error: Throwable) -> Unit = { name, error ->
         runCatching { LogUtils.d("self-control handler failed", name, error::class.java.simpleName) }
     },
@@ -189,7 +187,7 @@ class SdpRuntimeFeatureCoordinator<T>(
                     feature = feature,
                     packageName = packageName,
                     decision = decision,
-                    atEpochMs = clock.nowEpochMillis(),
+                    atEpochMs = System.currentTimeMillis(),
                 )
             )
         }

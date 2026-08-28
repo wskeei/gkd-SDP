@@ -6,7 +6,7 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.runtime.collectAsState
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -21,8 +21,6 @@ import li.songe.gkd.sdp.util.launchTry
 import li.songe.gkd.sdp.util.toast
 import li.songe.gkd.sdp.util.uploadFileToGithub
 import java.io.File
-import androidx.compose.ui.res.stringResource
-import li.songe.gkd.sdp.R
 
 class UploadOptions(
     private val mainVm: MainViewModel,
@@ -60,7 +58,7 @@ class UploadOptions(
     ) {
         val cookie = mainVm.githubCookieFlow.value
         if (cookie.isEmpty()) {
-            toast(li.songe.gkd.sdp.app.getString(R.string.s_7f96c93415))
+            toast("请先设置 cookie 后再上传")
             mainVm.showEditCookieDlgFlow.value = true
             return
         }
@@ -73,7 +71,6 @@ class UploadOptions(
 
     private fun stopTask() {
         if (statusFlow.value is LoadStatus.Loading && job != null) {
-            // i18n-ignore: legacy fallback or non-display heuristic data
             job?.cancel("上传已取消")
             job = null
         }
@@ -82,11 +79,11 @@ class UploadOptions(
 
     @Composable
     fun ShowDialog() {
-        when (val status = statusFlow.collectAsStateWithLifecycle().value) {
+        when (val status = statusFlow.collectAsState().value) {
             null -> {}
             is LoadStatus.Loading -> {
                 AlertDialog(
-                    title = { Text(text = li.songe.gkd.sdp.app.getString(R.string.s_3219dbb398)) },
+                    title = { Text(text = "上传文件中") },
                     text = {
                         val showExactProgress = 0f < status.progress && status.progress < 1f
                         AnimatedContent(showExactProgress) { showExact ->
@@ -104,7 +101,7 @@ class UploadOptions(
                         TextButton(onClick = {
                             stopTask()
                         }) {
-                            Text(text = li.songe.gkd.sdp.app.getString(R.string.s_b387756d31))
+                            Text(text = "终止上传")
                         }
                     },
                 )
@@ -113,14 +110,14 @@ class UploadOptions(
             is LoadStatus.Success -> {
                 val href = showHref(status.result)
                 AlertDialog(
-                    title = { Text(text = stringResource(R.string.s_95bb0f726c)) },
+                    title = { Text(text = "上传完成") },
                     text = { CopyTextCard(text = href) },
                     onDismissRequest = {},
                     confirmButton = {
                         TextButton(onClick = {
                             statusFlow.value = null
                         }) {
-                            Text(text = stringResource(R.string.s_6c14bd7f6f))
+                            Text(text = "关闭")
                         }
                     }
                 )
@@ -128,7 +125,7 @@ class UploadOptions(
 
             is LoadStatus.Failure -> {
                 AlertDialog(
-                    title = { Text(text = stringResource(R.string.s_a6f805694b)) },
+                    title = { Text(text = "上传失败") },
                     text = {
                         Text(text = status.exception.let {
                             it.message ?: it.toString()
@@ -140,7 +137,7 @@ class UploadOptions(
                             statusFlow.value = null
                             mainVm.showEditCookieDlgFlow.value = true
                         }) {
-                            Text(text = stringResource(R.string.s_f5d0d9c7f0))
+                            Text(text = "更换 Cookie")
                         }
                     }) else {
                         null
@@ -149,7 +146,7 @@ class UploadOptions(
                         TextButton(onClick = {
                             statusFlow.value = null
                         }) {
-                            Text(text = stringResource(R.string.s_6c14bd7f6f))
+                            Text(text = "关闭")
                         }
                     },
                 )

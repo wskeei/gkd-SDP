@@ -9,7 +9,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import li.songe.gkd.sdp.util.AutomatorModeOption
-import li.songe.gkd.sdp.runtime.FakeSdpClock
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -57,7 +56,7 @@ class SdpRuntimeFeatureCoordinatorTest {
         val foreground = MutableStateFlow("com.example.reader")
         val seen = mutableListOf<String>()
         val coordinator = coordinator(foreground) {
-            onAppChanged = { appId, owner -> seen += "${owner.mode.labelRes}:$appId" }
+            onAppChanged = { appId, owner -> seen += "${owner.mode.label}:$appId" }
         }
 
         val a11y = coordinator.attach("a11y", AutomatorModeOption.A11yMode)
@@ -68,9 +67,9 @@ class SdpRuntimeFeatureCoordinatorTest {
         assertEquals(
             "seen=$seen",
             listOf(
-                "${AutomatorModeOption.A11yMode.labelRes}:com.example.reader",
-                "${AutomatorModeOption.AutomationMode.labelRes}:com.example.reader",
-                "${AutomatorModeOption.AutomationMode.labelRes}:com.example.video",
+                "${AutomatorModeOption.A11yMode.label}:com.example.reader",
+                "${AutomatorModeOption.AutomationMode.label}:com.example.reader",
+                "${AutomatorModeOption.AutomationMode.label}:com.example.video",
             ),
             seen,
         )
@@ -100,19 +99,19 @@ class SdpRuntimeFeatureCoordinatorTest {
         val foreground = MutableStateFlow("com.example.reader")
         val seen = mutableListOf<String>()
         val coordinator = coordinator(foreground) {
-            onAppChanged = { appId, owner -> seen += "${owner.mode.labelRes}:$appId" }
+            onAppChanged = { appId, owner -> seen += "${owner.mode.label}:$appId" }
         }
 
         val oldOwner = coordinator.attach("a11y", AutomatorModeOption.A11yMode)
         val newOwner = coordinator.attach("automation", AutomatorModeOption.AutomationMode)
         coordinator.detach(oldOwner)
         coordinator.onForegroundAppChanged("com.example.video")
-        awaitCondition { seen.contains("${AutomatorModeOption.AutomationMode.labelRes}:com.example.video") }
+        awaitCondition { seen.contains("${AutomatorModeOption.AutomationMode.label}:com.example.video") }
 
         assertTrue(coordinator.isCurrent(newOwner))
         assertEquals(
             "seen=$seen",
-            "${AutomatorModeOption.AutomationMode.labelRes}:com.example.video",
+            "${AutomatorModeOption.AutomationMode.label}:com.example.video",
             seen.last(),
         )
     }
@@ -122,7 +121,7 @@ class SdpRuntimeFeatureCoordinatorTest {
         val foreground = MutableStateFlow("com.example.reader")
         val seen = mutableListOf<String>()
         val coordinator = coordinator(foreground) {
-            onAppChanged = { appId, owner -> seen += "${owner.mode.labelRes}:$appId" }
+            onAppChanged = { appId, owner -> seen += "${owner.mode.label}:$appId" }
         }
 
         coordinator.attach("a11y", AutomatorModeOption.A11yMode)
@@ -132,7 +131,7 @@ class SdpRuntimeFeatureCoordinatorTest {
         assertEquals("seen=$seen", 2, seen.size)
         assertEquals(
             "seen=$seen",
-            "${AutomatorModeOption.AutomationMode.labelRes}:com.example.reader",
+            "${AutomatorModeOption.AutomationMode.label}:com.example.reader",
             seen.last(),
         )
     }
@@ -185,24 +184,6 @@ class SdpRuntimeFeatureCoordinatorTest {
 
         assertEquals(listOf("com.example.reader", "com.example.video"), healthy)
         assertEquals(2, failures.get())
-    }
-
-    @Test
-    fun decisionTimestampUsesInjectedClock() = runBlocking {
-        val clock = FakeSdpClock(epochMillis = 123_456L)
-        val foreground = MutableStateFlow("com.example.reader")
-        val coordinator = SdpRuntimeFeatureCoordinator(
-            foregroundApps = foreground,
-            scope = CoroutineScope(Dispatchers.Unconfined + Job()).also { jobs += it.coroutineContext[Job]!! },
-            handlers = emptyList(),
-            foregroundDispatcher = Dispatchers.Unconfined,
-            clock = clock,
-        )
-        val owner = coordinator.attach("a11y", AutomatorModeOption.A11yMode)
-
-        coordinator.recordDecision(owner, "test", "com.example.reader", "allowed")
-
-        assertEquals(123_456L, coordinator.statusFlow.value.lastDecision?.atEpochMs)
     }
 
     private fun coordinator(

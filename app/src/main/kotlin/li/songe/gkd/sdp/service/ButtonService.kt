@@ -1,6 +1,5 @@
 package li.songe.gkd.sdp.service
 
-import li.songe.gkd.sdp.R
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.MaterialTheme
@@ -43,7 +42,7 @@ class ButtonService : OverlayWindowService(
 
     init {
         useAliveFlow(isRunning)
-        useAliveToast(getString(R.string.snapshot_button))
+        useAliveToast("快照按钮服务")
         onCreated { buttonNotif.notifyService() }
         StopServiceReceiver.autoRegister()
     }

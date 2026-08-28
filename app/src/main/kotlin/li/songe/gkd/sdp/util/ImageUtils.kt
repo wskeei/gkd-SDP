@@ -74,13 +74,13 @@ object ImageUtils {
                 return true
             } catch (e: Exception) {
                 app.contentResolver.delete(uri, null, null)
-                LogUtils.d("image export failed", e)
+                e.printStackTrace()
                 return false
             } finally {
                 try {
                     os?.close()
                 } catch (e: IOException) {
-                    LogUtils.d("image stream close failed", e)
+                    e.printStackTrace()
                 }
             }
         }

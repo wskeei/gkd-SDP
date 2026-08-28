@@ -24,7 +24,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -62,6 +62,8 @@ import li.songe.gkd.sdp.ui.share.ListPlaceholder
 import li.songe.gkd.sdp.ui.share.LocalMainViewModel
 import li.songe.gkd.sdp.ui.share.noRippleClickable
 import li.songe.gkd.sdp.ui.style.EmptyHeight
+import li.songe.gkd.sdp.ui.style.itemHorizontalPadding
+import li.songe.gkd.sdp.ui.style.itemVerticalPadding
 import li.songe.gkd.sdp.ui.style.scaffoldPadding
 import li.songe.gkd.sdp.util.IMPORT_SHORT_URL
 import li.songe.gkd.sdp.util.ImageUtils
@@ -69,14 +71,11 @@ import li.songe.gkd.sdp.util.SnapshotExt
 import li.songe.gkd.sdp.util.UriUtils
 import li.songe.gkd.sdp.util.appInfoMapFlow
 import li.songe.gkd.sdp.util.copyText
-import li.songe.gkd.sdp.util.createGkdTempDir
 import li.songe.gkd.sdp.util.launchAsFn
 import li.songe.gkd.sdp.util.saveFileToDownloads
 import li.songe.gkd.sdp.util.shareFile
 import li.songe.gkd.sdp.util.throttle
 import li.songe.gkd.sdp.util.toast
-import li.songe.gkd.sdp.R
-import li.songe.gkd.sdp.ui.style.DimensionTokens
 
 @Serializable
 data object SnapshotPageRoute : NavKey
@@ -88,8 +87,8 @@ fun SnapshotPage() {
     val colorScheme = MaterialTheme.colorScheme
     val vm = viewModel<SnapshotVm>()
 
-    val firstLoading by vm.firstLoadingFlow.collectAsStateWithLifecycle()
-    val snapshots by vm.snapshotsState.collectAsStateWithLifecycle()
+    val firstLoading by vm.firstLoadingFlow.collectAsState()
+    val snapshots by vm.snapshotsState.collectAsState()
     var selectedSnapshot by remember { mutableStateOf<Snapshot?>(null) }
     val resetKey = rememberSaveable { mutableIntStateOf(0) }
     val (scrollBehavior, listState) = useListScrollState(
@@ -109,7 +108,7 @@ fun SnapshotPage() {
             },
             title = {
                 Text(
-                    text = li.songe.gkd.sdp.app.getString(R.string.s_26c9e586fc),
+                    text = "快照记录",
                     modifier = Modifier.noRippleClickable { resetKey.intValue++ },
                 )
             },
@@ -119,11 +118,14 @@ fun SnapshotPage() {
                         imageVector = PerfIcon.Delete,
                         onClick = throttle(fn = vm.viewModelScope.launchAsFn(Dispatchers.IO) {
                             mainVm.dialogFlow.waitResult(
-                                title = li.songe.gkd.sdp.app.getString(R.string.s_5b62e0a895),
-                                text = li.songe.gkd.sdp.app.getString(R.string.s_561d9917c6),
+                                title = "删除快照",
+                                text = "确定删除所有快照记录?",
                                 error = true,
                             )
-                            SnapshotExt.deleteSnapshots(snapshots)
+                            snapshots.forEach { s ->
+                                SnapshotExt.removeSnapshot(s.id)
+                            }
+                            DbSet.snapshotDao.deleteAll()
                         })
                     )
                 }
@@ -148,7 +150,7 @@ fun SnapshotPage() {
                 item(ListPlaceholder.KEY, ListPlaceholder.TYPE) {
                     Spacer(modifier = Modifier.height(EmptyHeight))
                     if (snapshots.isEmpty() && !firstLoading) {
-                        EmptyText(text = li.songe.gkd.sdp.app.getString(R.string.s_b246458f20))
+                        EmptyText(text = "暂无数据")
                     }
                 }
             }
@@ -167,7 +169,7 @@ fun SnapshotPage() {
                     .fillMaxWidth()
                     .padding(16.dp)
                 Text(
-                    text = li.songe.gkd.sdp.app.getString(R.string.s_f7acefd2d4), modifier = Modifier
+                    text = "查看", modifier = Modifier
                         .clickable(onClick = throttle(fn = vm.viewModelScope.launchAsFn {
                             selectedSnapshot = null
                             mainVm.navigatePage(
@@ -182,7 +184,7 @@ fun SnapshotPage() {
                 )
                 HorizontalDivider()
                 Text(
-                    text = li.songe.gkd.sdp.app.getString(R.string.s_ad1a01b57a),
+                    text = "分享到其他应用",
                     modifier = Modifier
                         .clickable(onClick = throttle(fn = vm.viewModelScope.launchAsFn {
                             selectedSnapshot = null
@@ -191,20 +193,17 @@ fun SnapshotPage() {
                                 snapshotVal.appId,
                                 snapshotVal.activityId
                             )
-                            context.shareFile(
-                                zipFile,
-                                context.getString(R.string.share_snapshot_file),
-                            )
+                            context.shareFile(zipFile, "分享快照文件")
                         }))
                         .then(modifier)
                 )
                 HorizontalDivider()
                 Text(
-                    text = li.songe.gkd.sdp.app.getString(R.string.s_973f07187d),
+                    text = "保存到下载",
                     modifier = Modifier
                         .clickable(onClick = throttle(fn = vm.viewModelScope.launchAsFn(Dispatchers.IO) {
                             selectedSnapshot = null
-                            toast(li.songe.gkd.sdp.app.getString(R.string.s_d8d9e2143a))
+                            toast("正在保存...")
                             val zipFile = SnapshotExt.snapshotZipFile(
                                 snapshotVal.id,
                                 snapshotVal.appId,
@@ -217,7 +216,7 @@ fun SnapshotPage() {
                 HorizontalDivider()
                 if (snapshotVal.githubAssetId != null) {
                     Text(
-                        text = li.songe.gkd.sdp.app.getString(R.string.s_abb22bd95c), modifier = Modifier
+                        text = "复制链接", modifier = Modifier
                             .clickable(onClick = throttle {
                                 selectedSnapshot = null
                                 copyText(IMPORT_SHORT_URL + snapshotVal.githubAssetId)
@@ -226,7 +225,7 @@ fun SnapshotPage() {
                     )
                 } else {
                     Text(
-                        text = li.songe.gkd.sdp.app.getString(R.string.s_b9304f6294), modifier = Modifier
+                        text = "生成链接(需科学上网)", modifier = Modifier
                             .clickable(onClick = throttle {
                                 selectedSnapshot = null
                                 mainVm.uploadOptions.startTask(
@@ -243,69 +242,57 @@ fun SnapshotPage() {
                 HorizontalDivider()
 
                 Text(
-                    text = li.songe.gkd.sdp.app.getString(R.string.s_1f3c14ed9e),
+                    text = "保存截图到相册",
                     modifier = Modifier
                         .clickable(onClick = throttle(fn = vm.viewModelScope.launchAsFn(Dispatchers.IO) {
-                            toast(li.songe.gkd.sdp.app.getString(R.string.s_d8d9e2143a))
+                            toast("正在保存...")
                             selectedSnapshot = null
                             requiredPermission(context, canWriteExternalStorage)
                             ImageUtils.save2Album(BitmapFactory.decodeFile(snapshotVal.screenshotFile.absolutePath))
-                            toast(li.songe.gkd.sdp.app.getString(R.string.s_7e68eb622d))
+                            toast("保存成功")
                         }))
                         .then(modifier)
                 )
                 HorizontalDivider()
                 Text(
-                    text = li.songe.gkd.sdp.app.getString(R.string.s_93cac1f331),
+                    text = "替换截图(去除隐私)",
                     modifier = Modifier
                         .clickable(onClick = throttle(fn = vm.viewModelScope.launchAsFn(Dispatchers.IO) {
                             val uri = context.pickContentLauncher.launchForImageResult()
                             val oldBitmap =
                                 BitmapFactory.decodeFile(snapshotVal.screenshotFile.absolutePath)
-                            val replacementDir = createGkdTempDir()
-                            try {
-                                val replacementFile = replacementDir.resolve("replacement-image")
-                                UriUtils.copyUriToFile(
-                                    uri = uri,
-                                    target = replacementFile,
-                                    maxBytes = 32L * 1024L * 1024L,
-                                )
-                                val newBitmap = BitmapFactory.decodeFile(replacementFile.absolutePath)
-                                if (oldBitmap != null && newBitmap != null &&
-                                    oldBitmap.width == newBitmap.width &&
-                                    oldBitmap.height == newBitmap.height
-                                ) {
-                                    replacementFile.copyTo(
-                                        target = snapshotVal.screenshotFile,
-                                        overwrite = true,
-                                    )
-                                    if (snapshotVal.githubAssetId != null) {
-                                        // 当本地快照变更时, 移除快照链接
-                                        DbSet.snapshotDao.deleteGithubAssetId(snapshotVal.id)
-                                    }
-                                    toast(li.songe.gkd.sdp.app.getString(R.string.s_34e1511e3b))
-                                    selectedSnapshot = null
-                                } else {
-                                    toast(li.songe.gkd.sdp.app.getString(R.string.s_6ca959f5b2))
+                            val newBytes = UriUtils.uri2Bytes(uri)
+                            val newBitmap =
+                                BitmapFactory.decodeByteArray(newBytes, 0, newBytes.size)
+                            if (oldBitmap.width == newBitmap.width && oldBitmap.height == newBitmap.height) {
+                                snapshotVal.screenshotFile.writeBytes(newBytes)
+                                if (snapshotVal.githubAssetId != null) {
+                                    // 当本地快照变更时, 移除快照链接
+                                    DbSet.snapshotDao.deleteGithubAssetId(snapshotVal.id)
                                 }
-                            } finally {
-                                replacementDir.deleteRecursively()
+                                toast("替换成功")
+                                selectedSnapshot = null
+                            } else {
+                                toast("截图尺寸不一致, 无法替换")
                             }
                         }))
                         .then(modifier)
                 )
                 HorizontalDivider()
                 Text(
-                    text = li.songe.gkd.sdp.app.getString(R.string.s_3755f56f2f), modifier = Modifier
+                    text = "删除", modifier = Modifier
                         .clickable(onClick = throttle(fn = vm.viewModelScope.launchAsFn {
                             selectedSnapshot = null
                             mainVm.dialogFlow.waitResult(
-                                title = li.songe.gkd.sdp.app.getString(R.string.s_5b62e0a895),
-                                text = li.songe.gkd.sdp.app.getString(R.string.s_632e6dd2c1),
+                                title = "删除快照",
+                                text = "确定删除当前快照吗?",
                                 error = true,
                             )
-                            SnapshotExt.deleteSnapshot(snapshotVal)
-                            toast(li.songe.gkd.sdp.app.getString(R.string.s_86e8d12a79))
+                            DbSet.snapshotDao.delete(snapshotVal)
+                            withContext(Dispatchers.IO) {
+                                SnapshotExt.removeSnapshot(snapshotVal.id)
+                            }
+                            toast("删除成功")
                         }))
                         .then(modifier), color = colorScheme.error
                 )
@@ -325,7 +312,7 @@ private fun SnapshotCard(
             .clickable(onClick = onClick)
             .fillMaxWidth()
             .height(IntrinsicSize.Min)
-            .padding(horizontal = DimensionTokens.SpacingBase, vertical = DimensionTokens.SpacingMd / 2)
+            .padding(horizontal = itemHorizontalPadding, vertical = itemVerticalPadding / 2)
     ) {
         Spacer(
             modifier = Modifier
@@ -342,7 +329,7 @@ private fun SnapshotCard(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
-                val appInfo = appInfoMapFlow.collectAsStateWithLifecycle().value[snapshot.appId]
+                val appInfo = appInfoMapFlow.collectAsState().value[snapshot.appId]
                 val showAppName = appInfo?.name ?: snapshot.appId
                 Text(
                     text = showAppName,
@@ -375,7 +362,7 @@ private fun SnapshotCard(
                 )
             } else {
                 Text(
-                    text = li.songe.gkd.sdp.app.getString(R.string.s_2be88ca424),
+                    text = "null",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.typography.bodyMedium.color.copy(alpha = 0.5f)
                 )

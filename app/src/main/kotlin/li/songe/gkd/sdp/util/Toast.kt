@@ -30,7 +30,6 @@ import li.songe.gkd.sdp.service.OverlayWindowService
 import li.songe.gkd.sdp.store.actionCountFlow
 import li.songe.gkd.sdp.store.storeFlow
 import li.songe.loc.Loc
-import li.songe.gkd.sdp.R
 
 fun toast(
     text: CharSequence,
@@ -194,7 +193,7 @@ private fun showA11yToast(message: CharSequence) {
 
 fun copyText(text: String) {
     app.clipboardManager.setPrimaryClip(ClipData.newPlainText(app.packageName, text))
-    toast(li.songe.gkd.sdp.app.getString(R.string.s_c1ef062e06))
+    toast("复制成功")
 }
 
 fun initToast() {

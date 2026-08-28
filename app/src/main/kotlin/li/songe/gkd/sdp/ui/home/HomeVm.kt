@@ -15,11 +15,11 @@ import li.songe.gkd.sdp.data.SelfControlIntervalRepository
 import li.songe.gkd.sdp.store.actionCountFlow
 import li.songe.gkd.sdp.store.blockMatchAppListFlow
 import li.songe.gkd.sdp.store.storeFlow
-import li.songe.gkd.sdp.R
 import li.songe.gkd.sdp.ui.share.BaseViewModel
 import li.songe.gkd.sdp.ui.share.asMutableStateFlow
 import li.songe.gkd.sdp.ui.share.useAppFilter
 import li.songe.gkd.sdp.util.AppSortOption
+import li.songe.gkd.sdp.util.EMPTY_RULE_TIP
 import li.songe.gkd.sdp.util.UsageGuardHistoryPolicy
 import li.songe.gkd.sdp.util.UsageGuardReviewPolicy
 import li.songe.gkd.sdp.util.findOption
@@ -38,8 +38,8 @@ class HomeVm : BaseViewModel() {
 
     val subsStatusFlow by lazy {
         combine(ruleSummaryFlow, actionCountFlow) { ruleSummary, count ->
-            getSubsStatus(ruleSummary, count, li.songe.gkd.sdp.app)
-        }.stateInit(li.songe.gkd.sdp.app.getString(R.string.subs_no_rules))
+            getSubsStatus(ruleSummary, count)
+        }.stateInit(EMPTY_RULE_TIP)
     }
 
     val usedSubsItemCountFlow = usedSubsEntriesFlow.mapNew { it.size }
@@ -133,6 +133,7 @@ class HomeVm : BaseViewModel() {
     val showToastSettingsDlgFlow = MutableStateFlow(false)
     val showA11yBlockDlgFlow = MutableStateFlow(false)
     val showBackupDlgFlow = MutableStateFlow(false)
+    val showExportBackupDlgFlow = MutableStateFlow(false)
 
     private fun homeClock() = HomeClock(
         date = LocalDate.now(),

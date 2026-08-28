@@ -23,8 +23,6 @@ import li.songe.gkd.sdp.MainActivity
 import li.songe.gkd.sdp.ui.share.LocalMainViewModel
 import li.songe.gkd.sdp.util.ShortUrlSet
 import li.songe.gkd.sdp.util.throttle
-import androidx.compose.ui.res.stringResource
-import li.songe.gkd.sdp.R
 
 
 @Composable
@@ -32,16 +30,9 @@ fun TermsAcceptDialog() {
     val mainVm = LocalMainViewModel.current
     val context = LocalActivity.current as MainActivity
     val modifier = Modifier.fillMaxWidth()
-    val usageTitle = stringResource(R.string.terms_usage_title)
-    val a11yTitle = stringResource(R.string.terms_a11y_title)
-    val usageIntro = stringResource(R.string.terms_usage_intro)
-    val userAgreement = stringResource(R.string.terms_user_agreement)
-    val termsAnd = stringResource(R.string.terms_and)
-    val privacyPolicy = stringResource(R.string.terms_privacy_policy)
-    val usageSuffix = stringResource(R.string.terms_usage_suffix)
     val stepDataList = remember {
         arrayOf(
-            usageTitle to @Composable {
+            "使用声明" to @Composable {
                 val linkStyles = TextLinkStyles(
                     style = SpanStyle(
                         fontWeight = FontWeight.Bold,
@@ -51,32 +42,32 @@ fun TermsAcceptDialog() {
                 Text(
                     modifier = modifier,
                     text = buildAnnotatedString {
-                        append(usageIntro)
+                        append("感谢使用 GKD！您需要阅读并同意「")
                         withLink(
                             LinkAnnotation.Url(
                                 ShortUrlSet.URL12,
                                 linkStyles
                             )
                         ) {
-                            append(userAgreement)
+                            append("用户协议")
                         }
-                        append(termsAnd)
+                        append("」和「")
                         withLink(
                             LinkAnnotation.Url(
                                 ShortUrlSet.URL11,
                                 linkStyles
                             )
                         ) {
-                            append(privacyPolicy)
+                            append("隐私政策")
                         }
-                        append(usageSuffix)
+                        append("」才能继续使用, 请仔细阅读相关内容")
                     },
                 )
             },
-            a11yTitle to @Composable {
+            "关于无障碍" to @Composable {
                 Text(
                     modifier = modifier,
-                    text = li.songe.gkd.sdp.app.getString(R.string.s_37c53d9dc0),
+                    text = "GKD 请求使用系统「无障碍 API」获取屏幕信息, 以此基于用户自定义订阅规则执行自动化操作",
                 )
             }
         )
@@ -97,14 +88,14 @@ fun TermsAcceptDialog() {
                     mainVm.termsAcceptedFlow.value = true
                 }
             }) {
-                Text(text = stringResource(R.string.s_d5f0847ff2))
+                Text(text = "同意")
             }
         },
         dismissButton = {
             TextButton(onClick = throttle {
                 context.finish()
             }) {
-                Text(text = stringResource(R.string.s_befce4eeb3))
+                Text(text = "不同意")
             }
         }
     )

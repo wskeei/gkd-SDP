@@ -26,14 +26,11 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation3.runtime.NavKey
 import kotlinx.serialization.Serializable
 import li.songe.gkd.sdp.ui.share.LocalMainViewModel
 import java.text.SimpleDateFormat
 import java.util.*
-import androidx.compose.ui.res.stringResource
-import li.songe.gkd.sdp.R
 
 @Serializable
 data object AppInstallMonitorRoute : NavKey
@@ -44,10 +41,10 @@ fun AppInstallMonitorPage() {
     val mainVm = LocalMainViewModel.current
     val vm: AppInstallMonitorVm = viewModel()
     
-    val monitoredApps by vm.monitoredAppsFlow.collectAsStateWithLifecycle()
-    val heatmapData by vm.heatmapDataFlow.collectAsStateWithLifecycle()
-    val selectedDateLogs by vm.selectedDateLogs.collectAsStateWithLifecycle()
-    val presentApps by vm.presentAppsOnDate.collectAsStateWithLifecycle()
+    val monitoredApps by vm.monitoredAppsFlow.collectAsState()
+    val heatmapData by vm.heatmapDataFlow.collectAsState()
+    val selectedDateLogs by vm.selectedDateLogs.collectAsState()
+    val presentApps by vm.presentAppsOnDate.collectAsState()
     
     var showAddDialog by remember { mutableStateOf(false) }
     var selectedDate by remember { mutableStateOf<String?>(null) }
@@ -55,18 +52,18 @@ fun AppInstallMonitorPage() {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(li.songe.gkd.sdp.app.getString(R.string.s_c27031c740)) },
+                title = { Text("软件安装监测") },
                 navigationIcon = {
                     IconButton(onClick = { mainVm.popPage() }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = li.songe.gkd.sdp.app.getString(R.string.s_11d0241540))
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回")
                     }
                 },
                 actions = {
                     IconButton(onClick = { vm.exportToCsv() }) {
-                        Icon(Icons.Default.Share, contentDescription = li.songe.gkd.sdp.app.getString(R.string.s_188896795f))
+                        Icon(Icons.Default.Share, contentDescription = "导出")
                     }
                     IconButton(onClick = { showAddDialog = true }) {
-                        Icon(Icons.Default.Add, contentDescription = li.songe.gkd.sdp.app.getString(R.string.s_ed773d5b65))
+                        Icon(Icons.Default.Add, contentDescription = "添加监控")
                     }
                 }
             )
@@ -82,7 +79,7 @@ fun AppInstallMonitorPage() {
             // 热力图区域
             item {
                 Text(
-                    li.songe.gkd.sdp.app.getString(R.string.s_7e8190abeb),
+                    "安装记录热力图",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )
@@ -112,20 +109,20 @@ fun AppInstallMonitorPage() {
                                 modifier = Modifier.fillMaxWidth()
                             ) {
                                 Text(
-                                    li.songe.gkd.sdp.app.getString(R.string.s_867057108e, (selectedDate).toString()),
+                                    "$selectedDate 当日存在应用",
                                     style = MaterialTheme.typography.titleSmall,
                                     fontWeight = FontWeight.Bold,
                                     modifier = Modifier.weight(1f)
                                 )
                                 TextButton(onClick = { selectedDate = null }) {
-                                    Text(li.songe.gkd.sdp.app.getString(R.string.s_6c14bd7f6f))
+                                    Text("关闭")
                                 }
                             }
                             
                             Spacer(modifier = Modifier.height(8.dp))
                             
                             if (presentApps.isEmpty()) {
-                                Text(li.songe.gkd.sdp.app.getString(R.string.s_0bdb9d76df))
+                                Text("当日无监控应用")
                             } else {
                                 presentApps.forEach { app ->
                                     Row(
@@ -150,7 +147,7 @@ fun AppInstallMonitorPage() {
                                             )
                                             val installWaitDays = (System.currentTimeMillis() - app.installTime) / (1000 * 60 * 60 * 24)
                                             Text(
-                                                li.songe.gkd.sdp.app.getString(R.string.s_ca924a6012, (formatTime(app.installTime)).toString(), (installWaitDays).toString()),
+                                                "安装于: ${formatTime(app.installTime)} (已安装 ${installWaitDays}天)",
                                                 style = MaterialTheme.typography.bodySmall,
                                                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                                             )
@@ -158,7 +155,7 @@ fun AppInstallMonitorPage() {
                                                 val uninstallDate = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()).format(Date(app.uninstallTime))
                                                 val durationDays = (app.uninstallTime - app.installTime) / (1000 * 60 * 60 * 24)
                                                 Text(
-                                                    li.songe.gkd.sdp.app.getString(R.string.s_6eaf52dd96, (uninstallDate).toString(), (durationDays).toString()),
+                                                    "卸载于: $uninstallDate (共存活 ${durationDays}天)",
                                                     style = MaterialTheme.typography.bodySmall,
                                                     color = MaterialTheme.colorScheme.error.copy(alpha = 0.8f)
                                                 )
@@ -167,7 +164,7 @@ fun AppInstallMonitorPage() {
                                         
                                         // 是否现在仍存在
                                         Text(
-                                            if (app.isStillInstalledNow) li.songe.gkd.sdp.app.getString(R.string.s_9dd4b09b8d) else li.songe.gkd.sdp.app.getString(R.string.s_2ad07a9506),
+                                            if (app.isStillInstalledNow) "✓ 存在" else "✗ 已删",
                                             style = MaterialTheme.typography.bodySmall,
                                             color = if (app.isStillInstalledNow) Color(0xFF4CAF50) else Color(0xFFF44336)
                                         )
@@ -187,13 +184,13 @@ fun AppInstallMonitorPage() {
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Text(
-                        li.songe.gkd.sdp.app.getString(R.string.s_a837990204),
+                        "监控列表",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold
                     )
                     Icon(
                         if (vm.isListExpanded) Icons.Filled.KeyboardArrowUp else Icons.Filled.KeyboardArrowDown,
-                        contentDescription = li.songe.gkd.sdp.app.getString(R.string.s_f9c5942b1f)
+                        contentDescription = "toggle"
                     )
                 }
             }
@@ -222,7 +219,7 @@ fun AppInstallMonitorPage() {
                                 )
                                 if (app.isCurrentlyInstalled) {
                                     Text(
-                                        li.songe.gkd.sdp.app.getString(R.string.s_0b97786e44),
+                                        "⚠️ 当前已安装",
                                         style = MaterialTheme.typography.bodySmall,
                                         color = MaterialTheme.colorScheme.error
                                     )
@@ -237,7 +234,7 @@ fun AppInstallMonitorPage() {
                             IconButton(onClick = { vm.deleteMonitoredApp(app) }) {
                                 Icon(
                                     Icons.Default.Delete,
-                                    contentDescription = li.songe.gkd.sdp.app.getString(R.string.s_3755f56f2f),
+                                    contentDescription = "删除",
                                     tint = MaterialTheme.colorScheme.error
                                 )
                             }
@@ -323,7 +320,7 @@ private fun HeatmapGrid(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(4.dp)
     ) {
-        Text(stringResource(R.string.s_fa495b65bd), style = MaterialTheme.typography.labelSmall)
+        Text("少", style = MaterialTheme.typography.labelSmall)
         listOf(
             MaterialTheme.colorScheme.surfaceVariant,
             Color(0xFFB9F6CA),
@@ -338,7 +335,7 @@ private fun HeatmapGrid(
                     .background(color)
             )
         }
-        Text(stringResource(R.string.s_451b1366af), style = MaterialTheme.typography.labelSmall)
+        Text("多", style = MaterialTheme.typography.labelSmall)
     }
 }
 
@@ -348,11 +345,11 @@ private fun AddMonitoredAppDialog(
     onAdd: (packageName: String, displayName: String) -> Unit
 ) {
     val vm: AppInstallMonitorVm = viewModel()
-    val installedApps by vm.installedAppsFlow.collectAsStateWithLifecycle()
-    val appIcons by vm.appIconsFlow.collectAsStateWithLifecycle() // 获取图标 Map
-    val searchKeyword by vm.searchKeyword.collectAsStateWithLifecycle()
-    val showSystemApps by vm.showSystemApps.collectAsStateWithLifecycle()
-    val monitoredApps by vm.monitoredAppsFlow.collectAsStateWithLifecycle()
+    val installedApps by vm.installedAppsFlow.collectAsState()
+    val appIcons by vm.appIconsFlow.collectAsState() // 获取图标 Map
+    val searchKeyword by vm.searchKeyword.collectAsState()
+    val showSystemApps by vm.showSystemApps.collectAsState()
+    val monitoredApps by vm.monitoredAppsFlow.collectAsState()
     
     var selectedTab by remember { mutableIntStateOf(0) }
     
@@ -364,17 +361,17 @@ private fun AddMonitoredAppDialog(
         onDismissRequest = onDismiss,
         title = {
             Column {
-                Text(stringResource(R.string.s_4c7baac83b))
+                Text("添加监控应用")
                 PrimaryTabRow(selectedTabIndex = selectedTab) {
                     Tab(
                         selected = selectedTab == 0,
                         onClick = { selectedTab = 0 },
-                        text = { Text(li.songe.gkd.sdp.app.getString(R.string.s_081a44d5f5)) }
+                        text = { Text("列表选择") }
                     )
                     Tab(
                         selected = selectedTab == 1,
                         onClick = { selectedTab = 1 },
-                        text = { Text(li.songe.gkd.sdp.app.getString(R.string.s_58dc64c81a)) }
+                        text = { Text("手动输入") }
                     )
                 }
             }
@@ -387,7 +384,7 @@ private fun AddMonitoredAppDialog(
                         value = searchKeyword,
                         onValueChange = { vm.searchKeyword.value = it },
                         modifier = Modifier.fillMaxWidth(),
-                        placeholder = { Text(li.songe.gkd.sdp.app.getString(R.string.s_5a73d0b9c6)) },
+                        placeholder = { Text("搜索应用名或包名") },
                         leadingIcon = { Icon(androidx.compose.material.icons.Icons.Default.Search, null) },
                         singleLine = true
                     )
@@ -397,12 +394,12 @@ private fun AddMonitoredAppDialog(
                             checked = showSystemApps,
                             onCheckedChange = { vm.showSystemApps.value = it }
                         )
-                        Text(stringResource(R.string.s_52c2b4e02d), style = MaterialTheme.typography.bodySmall)
+                        Text("显示系统应用", style = MaterialTheme.typography.bodySmall)
                     }
                     
                     if (installedApps.isEmpty()) {
                         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            Text(stringResource(R.string.s_687f626d74), color = Color.Gray)
+                            Text("未找到应用", color = Color.Gray)
                         }
                     } else {
                         LazyColumn {
@@ -439,7 +436,7 @@ private fun AddMonitoredAppDialog(
                                     }
                                     
                                     if (isAdded) {
-                                        Text(li.songe.gkd.sdp.app.getString(R.string.s_57828673c0), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
+                                        Text("已添加", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
                                     }
                                 }
                             }
@@ -452,16 +449,16 @@ private fun AddMonitoredAppDialog(
                     OutlinedTextField(
                         value = inputPackageName,
                         onValueChange = { inputPackageName = it },
-                        label = { Text(stringResource(R.string.s_03c2d07a24)) },
-                        placeholder = { Text(li.songe.gkd.sdp.app.getString(R.string.s_a003f1da17)) },
+                        label = { Text("包名") },
+                        placeholder = { Text("com.example.app") },
                         modifier = Modifier.fillMaxWidth()
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     OutlinedTextField(
                         value = inputDisplayName,
                         onValueChange = { inputDisplayName = it },
-                        label = { Text(stringResource(R.string.s_75ae6a8a7d)) },
-                        placeholder = { Text(li.songe.gkd.sdp.app.getString(R.string.s_6c19fe0177)) },
+                        label = { Text("显示名称") },
+                        placeholder = { Text("应用名") },
                         modifier = Modifier.fillMaxWidth()
                     )
                 }
@@ -473,11 +470,11 @@ private fun AddMonitoredAppDialog(
                     onClick = { onAdd(inputPackageName.trim(), inputDisplayName.trim()) },
                     enabled = inputPackageName.isNotBlank() && inputDisplayName.isNotBlank()
                 ) {
-                    Text(stringResource(R.string.s_94191ce210))
+                    Text("添加")
                 }
             } else {
                 TextButton(onClick = onDismiss) {
-                    Text(stringResource(R.string.s_6c14bd7f6f))
+                    Text("关闭")
                 }
             }
         },

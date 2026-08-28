@@ -2,15 +2,15 @@ package li.songe.gkd.sdp.a11y
 
 import android.content.Intent
 import android.net.Uri
+import android.util.Log
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
+import li.songe.gkd.sdp.META
 import li.songe.gkd.sdp.appScope
-import li.songe.gkd.sdp.R
-import li.songe.gkd.sdp.runtime.appDependencies
 import li.songe.gkd.sdp.data.BrowserConfig
 import li.songe.gkd.sdp.data.SelfControlAttempt
 import li.songe.gkd.sdp.data.UrlBlockRule
@@ -42,7 +42,7 @@ object UrlBlockerEngine {
 
     init {
         // 监听规则和浏览器配置变化
-        appScope.launch(appDependencies.dispatchers.io) {
+        appScope.launch(Dispatchers.IO) {
             combine(
                 DbSet.urlBlockRuleDao.queryEnabled(),
                 DbSet.browserConfigDao.queryEnabled(),
@@ -55,15 +55,14 @@ object UrlBlockerEngine {
                 cachedBrowsers = browsers.associateBy { it.packageName }
                 cachedGroups = groups
                 cachedTimeRules = timeRules
-                LogUtils.d(
-                    "url blocker configuration updated",
-                    rules.size + browsers.size + groups.size + timeRules.size,
-                )
+                if (META.debuggable) {
+                    Log.d(TAG, "Rules updated: ${rules.size}, Browsers: ${browsers.size}, Groups: ${groups.size}, TimeRules: ${timeRules.size}")
+                }
             }
         }
 
         // 初始化内置浏览器配置
-        appScope.launch(appDependencies.dispatchers.io) {
+        appScope.launch(Dispatchers.IO) {
             DbSet.browserConfigDao.insertIgnore(BrowserConfig.BUILTIN_BROWSERS)
         }
     }
@@ -96,23 +95,27 @@ object UrlBlockerEngine {
         }
 
         // 检查冷却时间
-        val now = appDependencies.clock.elapsedRealtimeMillis()
+        val now = System.currentTimeMillis()
         val lastTriggerTime = cooldownMap[packageName] ?: 0L
-        if (cooldownMap.containsKey(packageName) && now - lastTriggerTime < COOLDOWN_MS) {
+        if (now - lastTriggerTime < COOLDOWN_MS) {
             return
         }
 
         // 尝试读取 URL
         val url = tryReadUrl(ruleEngine, browserConfig) ?: return
 
-        LogUtils.d("browser URL observed")
+        if (META.debuggable) {
+            Log.d(TAG, "Detected URL in $packageName")
+        }
 
         // 检查是否匹配任何规则
         val matchedRule = cachedRules.firstOrNull { it.matches(url) }
         if (matchedRule != null) {
             // 检查时间规则
             if (!shouldBlockRule(matchedRule)) {
-                LogUtils.d("URL rule outside active schedule")
+                if (META.debuggable) {
+                    Log.d(TAG, "Matched URL rule is outside its active schedule")
+                }
                 return
             }
             
@@ -173,8 +176,10 @@ object UrlBlockerEngine {
         return try {
             val rootNode = ruleEngine.safeActiveWindow ?: return null
             findUrlBarText(rootNode, browserConfig.urlBarId)
-        } catch (error: Exception) {
-            LogUtils.d("URL read failed", error)
+        } catch (_: Exception) {
+            if (META.debuggable) {
+                Log.e(TAG, "Failed to read URL")
+            }
             null
         }
     }
@@ -234,7 +239,7 @@ object UrlBlockerEngine {
         packageName: String,
         owner: SdpRuntimeFeatureCoordinator.RuntimeOwner?,
     ) {
-        appScope.launch(appDependencies.dispatchers.main) {
+        appScope.launch(Dispatchers.Main) {
             try {
                 if (!isOwnerCurrent(owner)) return@launch
                 // 1. 先跳转到安全页面
@@ -272,7 +277,7 @@ object UrlBlockerEngine {
                     redirectAccepted
                 }
                 if (accepted && isOwnerCurrent(owner)) {
-                    cooldownMap[packageName] = appDependencies.clock.elapsedRealtimeMillis()
+                    cooldownMap[packageName] = System.currentTimeMillis()
                     sdpRuntimeFeatureCoordinator.recordDecision(owner, "url-blocker", packageName, "overlay_accepted")
                 } else if (!accepted) {
                     sdpRuntimeFeatureCoordinator.recordDecision(owner, "url-blocker", packageName, "overlay_rejected")
@@ -307,9 +312,7 @@ object UrlBlockerEngine {
             putExtra(InterceptOverlayService.EXTRA_SUBJECT_ID, rule.id.toString())
             putExtra(
                 InterceptOverlayService.EXTRA_SUBJECT_LABEL,
-                rule.name.ifBlank {
-                    li.songe.gkd.sdp.app.getString(R.string.url_rule_fallback, rule.id)
-                },
+                rule.name.ifBlank { "网址规则 #${rule.id}" },
             )
             putExtra(InterceptOverlayService.EXTRA_URL_RULE_ID, rule.id)
             putExtra(InterceptOverlayService.EXTRA_URL_RULE_NAME, rule.name)

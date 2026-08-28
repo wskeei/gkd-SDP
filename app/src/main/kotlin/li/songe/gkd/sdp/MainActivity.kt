@@ -16,6 +16,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
@@ -32,9 +33,9 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -49,7 +50,6 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.entryProvider
-import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import com.dylanc.activityresult.launcher.PickContentLauncher
@@ -67,11 +67,9 @@ import kotlinx.coroutines.sync.withLock
 import li.songe.gkd.sdp.a11y.topActivityFlow
 import li.songe.gkd.sdp.a11y.updateSystemDefaultAppId
 import li.songe.gkd.sdp.a11y.updateTopActivity
-import li.songe.gkd.sdp.diagnostics.DiagnosticLogger
 import li.songe.gkd.sdp.permission.AuthDialog
 import li.songe.gkd.sdp.permission.canDrawOverlaysState
 import li.songe.gkd.sdp.permission.updatePermissionState
-import li.songe.gkd.sdp.performance.AppDrawReporter
 import li.songe.gkd.sdp.service.A11yService
 import li.songe.gkd.sdp.service.AccessibilityGuardRuntime
 import li.songe.gkd.sdp.service.StatusService
@@ -100,8 +98,6 @@ import li.songe.gkd.sdp.ui.AppInstallMonitorPage
 import li.songe.gkd.sdp.ui.AppInstallMonitorRoute
 import li.songe.gkd.sdp.ui.AppOpsAllowPage
 import li.songe.gkd.sdp.ui.AppOpsAllowRoute
-import li.songe.gkd.sdp.ui.capability.CapabilityCenterRoute
-import li.songe.gkd.sdp.ui.capability.CapabilityCenterScreen
 import li.songe.gkd.sdp.ui.AuthA11yPage
 import li.songe.gkd.sdp.ui.AuthA11yRoute
 import li.songe.gkd.sdp.ui.BlockA11yAppListPage
@@ -134,14 +130,12 @@ import li.songe.gkd.sdp.ui.SubsGlobalGroupListPage
 import li.songe.gkd.sdp.ui.SubsGlobalGroupListRoute
 import li.songe.gkd.sdp.ui.UpsertRuleGroupPage
 import li.songe.gkd.sdp.ui.UpsertRuleGroupRoute
-import li.songe.gkd.sdp.ui.UrlBlockerRoute
+import li.songe.gkd.sdp.ui.UrlBlockPage
 import li.songe.gkd.sdp.ui.UrlBlockRoute
 import li.songe.gkd.sdp.ui.UsageGuardPage
 import li.songe.gkd.sdp.ui.UsageGuardRoute
 import li.songe.gkd.sdp.ui.UsageGuardReviewPage
 import li.songe.gkd.sdp.ui.UsageGuardReviewRoute
-import li.songe.gkd.sdp.ui.privacy.PrivacyDataScreen
-import li.songe.gkd.sdp.ui.privacy.PrivacyDataRoute
 import li.songe.gkd.sdp.ui.WebViewPage
 import li.songe.gkd.sdp.ui.WebViewRoute
 import li.songe.gkd.sdp.ui.component.BuildDialog
@@ -153,11 +147,10 @@ import li.songe.gkd.sdp.ui.component.TextDialog
 import li.songe.gkd.sdp.ui.home.HomePage
 import li.songe.gkd.sdp.ui.home.HomeRoute
 import li.songe.gkd.sdp.ui.share.FixedWindowInsets
-import li.songe.gkd.sdp.ui.share.appTopBarWindowInsets
-import li.songe.gkd.sdp.ui.share.LocalDrawReporter
 import li.songe.gkd.sdp.ui.share.LocalMainViewModel
 import li.songe.gkd.sdp.ui.style.AppTheme
 import li.songe.gkd.sdp.util.AndroidTarget
+import li.songe.gkd.sdp.util.BarUtils
 import li.songe.gkd.sdp.util.EditGithubCookieDlg
 import li.songe.gkd.sdp.util.KeyboardUtils
 import li.songe.gkd.sdp.util.LogUtils
@@ -175,13 +168,10 @@ import li.songe.gkd.sdp.util.throttle
 import li.songe.gkd.sdp.util.toast
 import kotlin.concurrent.Volatile
 import kotlin.reflect.jvm.jvmName
-import androidx.compose.ui.res.stringResource
-import li.songe.gkd.sdp.R
 
 class MainActivity : ComponentActivity() {
     val startTime = System.currentTimeMillis()
     val mainVm by viewModels<MainViewModel>()
-    private val drawReporter = AppDrawReporter { reportFullyDrawn() }
     val launcher by lazy { StartActivityLauncher(this) }
     val pickContentLauncher by lazy { PickContentLauncher(this) }
 
@@ -191,6 +181,8 @@ class MainActivity : ComponentActivity() {
     private val imeVisible: Boolean
         get() = ViewCompat.getRootWindowInsets(window.decorView)
             ?.isVisible(WindowInsetsCompat.Type.ime()) == true  // fix #1315
+
+    var topBarWindowInsets by mutableStateOf(WindowInsets(top = BarUtils.getStatusBarHeight()))
 
     private fun watchKeyboardVisible() {
         if (AndroidTarget.R) {
@@ -249,17 +241,10 @@ class MainActivity : ComponentActivity() {
             type = contentType
         }).data?.data
         if (u == null) {
-            toast(li.songe.gkd.sdp.app.getString(R.string.s_dbb4430dc0))
+            toast("未选择文件")
         }
         return u
     }
-
-    suspend fun createFile(contentType: String, filename: String): Uri? =
-        launcher.launchForResult(Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
-            addCategory(Intent.CATEGORY_OPENABLE)
-            type = contentType
-            putExtra(Intent.EXTRA_TITLE, filename)
-        }).data?.data
 
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
@@ -287,36 +272,28 @@ class MainActivity : ComponentActivity() {
             updateTopTaskAppId(META.appId)
         }
         setContent {
-            val saveableBackStack = rememberNavBackStack(HomeRoute())
-            mainVm.bindBackStack(saveableBackStack)
             val latestInsets = TopAppBarDefaults.windowInsets
             val density = LocalDensity.current
-            if (latestInsets.getTop(density) > appTopBarWindowInsets.getTop(density)) {
-                appTopBarWindowInsets = FixedWindowInsets(latestInsets)
+            if (latestInsets.getTop(density) > topBarWindowInsets.getTop(density)) {
+                topBarWindowInsets = FixedWindowInsets(latestInsets)
             }
             CompositionLocalProvider(
-                LocalMainViewModel provides mainVm,
-                LocalDrawReporter provides drawReporter,
+                LocalMainViewModel provides mainVm
             ) {
                 AppTheme {
-                    SideEffect {
-                        drawReporter.reportInteractiveContent()
-                    }
                     NavDisplay(
                         entryDecorators = listOf(
                             rememberSaveableStateHolderNavEntryDecorator(),
                             rememberViewModelStoreNavEntryDecorator(),
                         ),
-                        backStack = saveableBackStack,
+                        backStack = mainVm.backStack,
                         onBack = mainVm::popPage,
                         entryProvider = entryProvider {
-                            entry<HomeRoute> { HomePage(it) }
+                            entry<HomeRoute> { HomePage() }
                             entry<AuthA11yRoute> { AuthA11yPage() }
-                            entry<CapabilityCenterRoute> { CapabilityCenterScreen(mainVm) }
                             entry<AboutRoute> { AboutPage() }
                             entry<BlockA11yAppListRoute> { BlockA11yAppListPage() }
                             entry<AdvancedPageRoute> { AdvancedPage() }
-                            entry<PrivacyDataRoute> { PrivacyDataScreen() }
                             entry<SnapshotPageRoute> { SnapshotPage() }
                             entry<AppOpsAllowRoute> { AppOpsAllowPage() }
                             entry<A11YScopeAppListRoute> { A11yScopeAppListPage() }
@@ -338,7 +315,7 @@ class MainActivity : ComponentActivity() {
                             entry<SubsCategoryGroupRoute> { SubsCategoryGroupPage(it) }
                             entry<FocusLockRoute> { FocusLockPage() }
                             entry<FocusModeRoute> { FocusModePage() }
-                            entry<UrlBlockRoute> { UrlBlockerRoute() }
+                            entry<UrlBlockRoute> { UrlBlockPage() }
                             entry<AppBlockerRoute> { AppBlockerPage() }
                             entry<UsageGuardRoute> { UsageGuardPage() }
                             entry<UsageGuardReviewRoute> { UsageGuardReviewPage() }
@@ -357,7 +334,7 @@ class MainActivity : ComponentActivity() {
                                     slideOutHorizontally(targetOffsetX = { it })
                         },
                     )
-                    if (!mainVm.termsAcceptedFlow.collectAsStateWithLifecycle().value) {
+                    if (!mainVm.termsAcceptedFlow.collectAsState().value) {
                         TermsAcceptDialog()
                     } else {
                         UiAutomationAlreadyRegisteredDlg()
@@ -393,7 +370,7 @@ class MainActivity : ComponentActivity() {
         if (META.isGkdChannel && storeFlow.value.accessibilityGuardEnabled &&
             !canDrawOverlaysState.updateAndGet()
         ) {
-            toast(li.songe.gkd.sdp.app.getString(R.string.s_4a6c3f7937))
+            toast("无障碍权限守护需要悬浮窗权限，请重新授权")
         }
         if (topActivityFlow.value.appId != META.appId) {
             synchronized(topActivityFlow) {
@@ -461,21 +438,21 @@ fun syncFixState() {
 
 @Composable
 private fun ShizukuErrorDialog(stateFlow: MutableStateFlow<Throwable?>) {
-    val state = stateFlow.collectAsStateWithLifecycle().value
+    val state = stateFlow.collectAsState().value
     if (state != null) {
-        val errorText = remember(state) { DiagnosticLogger.userMessage(state) }
-        val appInfoCache = appInfoMapFlow.collectAsStateWithLifecycle().value
+        val errorText = remember { state.stackTraceToString() }
+        val appInfoCache = appInfoMapFlow.collectAsState().value
         val installed = appInfoCache.contains(shizukuAppId)
         AlertDialog(
             onDismissRequest = { stateFlow.value = null },
-            title = { Text(text = stringResource(R.string.s_9c8db95f12)) },
+            title = { Text(text = "授权错误") },
             text = {
                 Column {
                     Text(
                         text = if (installed) {
-                            stringResource(R.string.s_f08db2ab6e)
+                            "Shizuku 授权失败，请检查是否运行"
                         } else {
-                            stringResource(R.string.s_6dc32911b1)
+                            "Shizuku 授权失败，检测到 Shizuku 未安装，请先下载后安装，如果你是通过其它方式授权，请忽略此提示自行查找原因"
                         }
                     )
                     Spacer(modifier = Modifier.height(8.dp))
@@ -518,20 +495,20 @@ private fun ShizukuErrorDialog(stateFlow: MutableStateFlow<Throwable?>) {
                         stateFlow.value = null
                         openApp(shizukuAppId)
                     }) {
-                        Text(text = stringResource(R.string.s_894a72442f))
+                        Text(text = "打开 Shizuku")
                     }
                 } else {
                     TextButton(onClick = {
                         stateFlow.value = null
                         openUri(ShortUrlSet.URL4)
                     }) {
-                        Text(text = stringResource(R.string.s_21654037e2))
+                        Text(text = "去下载")
                     }
                 }
             },
             dismissButton = {
                 TextButton(onClick = { stateFlow.value = null }) {
-                    Text(text = stringResource(R.string.s_dd3760c80a))
+                    Text(text = "我知道了")
                 }
             }
         )
@@ -543,28 +520,28 @@ val accessRestrictedSettingsShowFlow = MutableStateFlow(false)
 
 @Composable
 fun AccessRestrictedSettingsDlg() {
-    val a11yRunning by A11yService.isRunning.collectAsStateWithLifecycle()
+    val a11yRunning by A11yService.isRunning.collectAsState()
     LaunchedEffect(a11yRunning) {
         if (a11yRunning) {
             accessRestrictedSettingsShowFlow.value = false
         }
     }
-    val accessRestrictedSettingsShow by accessRestrictedSettingsShowFlow.collectAsStateWithLifecycle()
+    val accessRestrictedSettingsShow by accessRestrictedSettingsShowFlow.collectAsState()
     val mainVm = LocalMainViewModel.current
     val isA11yPage = mainVm.topRoute is AuthA11yRoute
     LaunchedEffect(isA11yPage, accessRestrictedSettingsShow) {
         if (isA11yPage && accessRestrictedSettingsShow && !a11yRunning) {
-            toast(li.songe.gkd.sdp.app.getString(R.string.s_a0995a1cf8))
+            toast("请重新授权以解除限制")
             accessRestrictedSettingsShowFlow.value = false
         }
     }
     if (accessRestrictedSettingsShow && !isA11yPage && !a11yRunning) {
         AlertDialog(
             title = {
-                Text(text = stringResource(R.string.s_17bfc950b7))
+                Text(text = "权限受限")
             },
             text = {
-                Text(text = stringResource(R.string.s_1262ae439f))
+                Text(text = "当前操作权限「访问受限设置」已被限制, 请先解除限制")
             },
             onDismissRequest = {
                 accessRestrictedSettingsShowFlow.value = false
@@ -574,14 +551,14 @@ fun AccessRestrictedSettingsDlg() {
                     accessRestrictedSettingsShowFlow.value = false
                     mainVm.navigateWebPage(ShortUrlSet.URL2)
                 }) {
-                    Text(text = stringResource(R.string.s_ec7ae06b09))
+                    Text(text = "解除")
                 }
             },
             dismissButton = {
                 TextButton({
                     accessRestrictedSettingsShowFlow.value = false
                 }) {
-                    Text(text = stringResource(R.string.s_6c14bd7f6f))
+                    Text(text = "关闭")
                 }
             },
         )
@@ -590,20 +567,20 @@ fun AccessRestrictedSettingsDlg() {
 
 @Composable
 fun UiAutomationAlreadyRegisteredDlg() {
-    if (automationRegisteredExceptionFlow.collectAsStateWithLifecycle().value != null) {
+    if (automationRegisteredExceptionFlow.collectAsState().value != null) {
         AlertDialog(
             onDismissRequest = {
                 automationRegisteredExceptionFlow.value = null
             },
-            title = { Text(text = stringResource(R.string.s_65525f0f44)) },
+            title = { Text(text = "启动失败") },
             text = {
-                Text(text = stringResource(R.string.s_914a3f7e15))
+                Text(text = "自动化服务启动失败，检测到自动化服务已被其他应用占用，请先关闭已有服务后重试\n\n注：自动化服务只能同时运行一个，请确保没有其他应用或测试框架占用后再启动")
             },
             confirmButton = {
                 TextButton(onClick = {
                     automationRegisteredExceptionFlow.value = null
                 }) {
-                    Text(text = stringResource(R.string.s_dd3760c80a))
+                    Text(text = "我知道了")
                 }
             }
         )

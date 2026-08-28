@@ -14,7 +14,6 @@ import li.songe.gkd.sdp.db.DbSet
 import li.songe.gkd.sdp.ui.share.BaseViewModel
 import li.songe.gkd.sdp.util.json
 import li.songe.gkd.sdp.util.toast
-import li.songe.gkd.sdp.R
 
 class FocusModeVm : BaseViewModel() {
     companion object {
@@ -42,9 +41,7 @@ class FocusModeVm : BaseViewModel() {
     var ruleDurationHours by mutableIntStateOf(0)
     var ruleDurationMinutes by mutableIntStateOf(30)
     var ruleWhitelistApps by mutableStateOf(ensureSelfWhitelisted(emptyList()))
-    var ruleInterceptMessage by mutableStateOf(
-        li.songe.gkd.sdp.app.getString(R.string.common_default_focus_message),
-    )
+    var ruleInterceptMessage by mutableStateOf("专注当下")
     var ruleIsLocked by mutableStateOf(false)
     var ruleLockDurationMinutes by mutableIntStateOf(30)
 
@@ -58,9 +55,7 @@ class FocusModeVm : BaseViewModel() {
         get() = manualHours * 60 + manualMinutes
 
     var manualWhitelistApps by mutableStateOf(ensureSelfWhitelisted(emptyList()))
-    var manualMessage by mutableStateOf(
-        li.songe.gkd.sdp.app.getString(R.string.common_default_focus_message),
-    )
+    var manualMessage by mutableStateOf("专注当下")
     var manualIsLocked by mutableStateOf(false)
     var manualLockDurationMinutes by mutableIntStateOf(30)
 
@@ -84,7 +79,7 @@ class FocusModeVm : BaseViewModel() {
         ruleDurationHours = 0
         ruleDurationMinutes = 30
         ruleWhitelistApps = ensureSelfWhitelisted(emptyList())
-        ruleInterceptMessage = li.songe.gkd.sdp.app.getString(R.string.common_default_focus_message)
+        ruleInterceptMessage = "专注当下"
         ruleIsLocked = false
         ruleLockDurationMinutes = 30
         showRuleEditor = false
@@ -108,13 +103,13 @@ class FocusModeVm : BaseViewModel() {
 
     fun saveRule() = viewModelScope.launch(Dispatchers.IO) {
         if (ruleName.isBlank()) {
-            toast(li.songe.gkd.sdp.app.getString(R.string.s_d4d9c40dc4))
+            toast("请输入规则名称")
             return@launch
         }
 
         // 快速启动模板验证时长
         if (ruleType == FocusRule.RULE_TYPE_QUICK_START && ruleTotalDurationMinutes < 5) {
-            toast(li.songe.gkd.sdp.app.getString(R.string.s_637cf2032c))
+            toast("专注时长至少为 5 分钟")
             return@launch
         }
 
@@ -128,9 +123,7 @@ class FocusModeVm : BaseViewModel() {
             daysOfWeek = ruleDaysOfWeek.joinToString(","),
             enabled = editingRule?.enabled ?: true,
             whitelistApps = json.encodeToString(ruleWhitelistApps),
-            interceptMessage = ruleInterceptMessage.ifBlank {
-                li.songe.gkd.sdp.app.getString(R.string.common_default_focus_message)
-            },
+            interceptMessage = ruleInterceptMessage.ifBlank { "专注当下" },
             isLocked = editingRule?.isLocked ?: false,
             lockEndTime = editingRule?.lockEndTime ?: 0,
             lockDurationMinutes = ruleLockDurationMinutes,
@@ -138,23 +131,23 @@ class FocusModeVm : BaseViewModel() {
         )
 
         DbSet.focusRuleDao.insert(rule)
-        toast(if (editingRule != null) li.songe.gkd.sdp.app.getString(R.string.s_fccd13d79e) else li.songe.gkd.sdp.app.getString(R.string.s_4a96cba3d5))
+        toast(if (editingRule != null) "规则已更新" else "规则已添加")
         resetRuleForm()
     }
 
     fun deleteRule(rule: FocusRule) = viewModelScope.launch(Dispatchers.IO) {
         if (rule.isCurrentlyLocked) {
-            toast(li.songe.gkd.sdp.app.getString(R.string.s_7e2a3403ff))
+            toast("规则已锁定，无法删除")
             return@launch
         }
         DbSet.focusRuleDao.delete(rule)
-        toast(li.songe.gkd.sdp.app.getString(R.string.s_91ba569081))
+        toast("规则已删除")
     }
 
     fun toggleRuleEnabled(rule: FocusRule) = viewModelScope.launch(Dispatchers.IO) {
         // 锁定状态下不允许关闭规则
         if (rule.enabled && rule.isCurrentlyLocked) {
-            toast(li.songe.gkd.sdp.app.getString(R.string.s_e27c087656))
+            toast("规则已锁定，无法关闭")
             return@launch
         }
         DbSet.focusRuleDao.update(rule.copy(enabled = !rule.enabled))
@@ -162,30 +155,28 @@ class FocusModeVm : BaseViewModel() {
 
     fun startManualSession() = viewModelScope.launch(Dispatchers.IO) {
         if (totalDurationMinutes < 5) {
-            toast(li.songe.gkd.sdp.app.getString(R.string.s_637cf2032c))
+            toast("专注时长至少为 5 分钟")
             return@launch
         }
 
         FocusModeEngine.startManualSession(
             durationMinutes = totalDurationMinutes,
             whitelistApps = manualWhitelistApps,
-            interceptMessage = manualMessage.ifBlank {
-                li.songe.gkd.sdp.app.getString(R.string.common_default_focus_message)
-            },
+            interceptMessage = manualMessage.ifBlank { "专注当下" },
             isLocked = manualIsLocked,
             lockDurationMinutes = if (manualIsLocked) manualLockDurationMinutes else 0
         )
-        toast(li.songe.gkd.sdp.app.getString(R.string.s_6905b9f1f9))
+        toast("专注模式已开始")
     }
 
     fun stopManualSession() = viewModelScope.launch(Dispatchers.IO) {
         val session = activeSessionFlow.value
         if (session?.isCurrentlyLocked == true) {
-            toast(li.songe.gkd.sdp.app.getString(R.string.s_5291c7544f))
+            toast("专注模式已锁定，无法提前结束")
             return@launch
         }
         FocusModeEngine.stopManualSession()
-        toast(li.songe.gkd.sdp.app.getString(R.string.s_c754ba8092))
+        toast("专注模式已结束")
     }
 
     fun lockRule(rule: FocusRule) = viewModelScope.launch(Dispatchers.IO) {
@@ -198,7 +189,7 @@ class FocusModeVm : BaseViewModel() {
         }
 
         if (durationMinutes <= 0) {
-            toast(li.songe.gkd.sdp.app.getString(R.string.s_40d80a0879))
+            toast("请输入有效的锁定时长")
             return@launch
         }
 
@@ -219,7 +210,7 @@ class FocusModeVm : BaseViewModel() {
         )
 
         DbSet.focusRuleDao.update(updatedRule)
-        toast(li.songe.gkd.sdp.app.getString(R.string.s_7aa6790ed4))
+        toast("规则已锁定")
     }
 
     fun addToRuleWhitelist(packageName: String) {
@@ -254,12 +245,12 @@ class FocusModeVm : BaseViewModel() {
      */
     fun startQuickRule(rule: FocusRule) = viewModelScope.launch(Dispatchers.IO) {
         if (!rule.isQuickStart) {
-            toast(li.songe.gkd.sdp.app.getString(R.string.s_2e4c2a37c1))
+            toast("这不是快速启动模板")
             return@launch
         }
 
         if (rule.durationMinutes < 5) {
-            toast(li.songe.gkd.sdp.app.getString(R.string.s_637cf2032c))
+            toast("专注时长至少为 5 分钟")
             return@launch
         }
 
@@ -270,6 +261,6 @@ class FocusModeVm : BaseViewModel() {
             isLocked = rule.isLocked,
             lockDurationMinutes = rule.lockDurationMinutes
         )
-        toast(li.songe.gkd.sdp.app.getString(R.string.s_6905b9f1f9))
+        toast("专注模式已开始")
     }
 }

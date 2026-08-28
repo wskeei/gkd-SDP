@@ -292,6 +292,10 @@ android {
             }
         }
     }
+
+    lint {
+        baseline = rootProject.file("app/lint-baseline.xml")
+    }
 }
 
 if (project.hasProperty("GKD_RENAME_APK_FLAG")) {
@@ -350,7 +354,6 @@ dependencies {
     implementation(libs.androidx.appcompat)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
-    implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.lifecycle.service)
 
     implementation(libs.compose.ui)
@@ -364,7 +367,6 @@ dependencies {
 
     implementation(libs.compose.activity)
     implementation(libs.compose.material3)
-    implementation(libs.compose.adaptive)
     screenshotTestImplementation(libs.compose.tooling)
     screenshotTestImplementation(libs.screenshot.validation.api)
     debugImplementation(libs.compose.ui.test.manifest)
@@ -376,9 +378,9 @@ dependencies {
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso)
-    androidTestImplementation(libs.androidx.room.testing)
     androidTestImplementation(libs.androidx.test.rules)
     androidTestImplementation(libs.androidx.test.runner)
+    androidTestImplementation(libs.androidx.uiautomator)
 
     compileOnly(project(":hidden_api"))
     implementation(libs.rikka.shizuku.api)
@@ -431,6 +433,7 @@ dependencies {
     implementation(libs.json5)
     compileOnly(libs.loc.annotation)
 
+    implementation(libs.kevinnzouWebview)
 
     implementation(libs.vico.compose)
     implementation(libs.vico.compose.m3)

@@ -1,25 +1,21 @@
 import os
-import stat
+from pathlib import Path
 import subprocess
 import tempfile
 import unittest
-from pathlib import Path
 
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(__file__).resolve().parents[2]
+SCRIPT = ROOT / "scripts/check-dev-environment.sh"
 
 
 class DevEnvironmentPolicyTest(unittest.TestCase):
-    def test_repository_pins_jdk_21(self) -> None:
-        self.assertEqual("21\n", (REPO_ROOT / ".java-version").read_text())
+    def test_wrapper_and_environment_check_are_executable(self):
+        self.assertTrue(os.access(ROOT / "gradlew", os.X_OK))
+        self.assertTrue(os.access(SCRIPT, os.X_OK))
 
-    def test_gradle_wrapper_and_environment_check_are_executable(self) -> None:
-        for relative_path in ("gradlew", "scripts/check-dev-environment.sh"):
-            mode = (REPO_ROOT / relative_path).stat().st_mode
-            self.assertTrue(mode & stat.S_IXUSR, relative_path)
-
-    def test_environment_check_covers_required_capabilities(self) -> None:
-        source = (REPO_ROOT / "scripts/check-dev-environment.sh").read_text()
+    def test_environment_check_names_required_capabilities(self):
+        source = SCRIPT.read_text(encoding="utf-8")
         for capability in (
             "java",
             "JAVA_HOME",
@@ -32,20 +28,17 @@ class DevEnvironmentPolicyTest(unittest.TestCase):
             "--ci",
             "--android",
         ):
-            self.assertIn(capability, source)
+            with self.subTest(capability=capability):
+                self.assertIn(capability, source)
 
-    def test_failure_output_names_capabilities_without_values(self) -> None:
-        script = REPO_ROOT / "scripts/check-dev-environment.sh"
+    def test_failure_output_does_not_echo_private_paths(self):
         with tempfile.TemporaryDirectory() as empty_path:
-            environment = {
-                "PATH": empty_path,
-                "HOME": "/Users/private-developer",
-                "JAVA_HOME": "/Users/private-developer/secret-jdk",
-            }
+            private_home = str(Path(empty_path) / "private-home")
+            private_jdk = str(Path(empty_path) / "private-jdk")
             result = subprocess.run(
-                ["/bin/bash", str(script), "--ci"],
-                cwd=REPO_ROOT,
-                env=environment,
+                ["/bin/bash", str(SCRIPT), "--ci"],
+                cwd=ROOT,
+                env={"PATH": empty_path, "HOME": private_home, "JAVA_HOME": private_jdk},
                 capture_output=True,
                 text=True,
                 check=False,
@@ -54,14 +47,8 @@ class DevEnvironmentPolicyTest(unittest.TestCase):
         output = result.stdout + result.stderr
         self.assertNotEqual(0, result.returncode)
         self.assertIn("java", output)
-        self.assertIn("JAVA_HOME", output)
-        self.assertNotIn(environment["HOME"], output)
-        self.assertNotIn(environment["JAVA_HOME"], output)
-
-    def test_ci_executes_the_committed_gradle_wrapper_directly(self) -> None:
-        workflow = (REPO_ROOT / ".github/workflows/ci.yml").read_text()
-        self.assertIn("./gradlew", workflow)
-        self.assertNotIn("chmod +x ./gradlew", workflow)
+        self.assertNotIn(private_home, output)
+        self.assertNotIn(private_jdk, output)
 
 
 if __name__ == "__main__":

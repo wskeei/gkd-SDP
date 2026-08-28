@@ -6,13 +6,11 @@ import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import li.songe.gkd.sdp.ui.share.LocalMainViewModel
 import li.songe.gkd.sdp.util.throttle
-import li.songe.gkd.sdp.R
 
 @Composable
 fun InnerDisableSwitch(
@@ -21,17 +19,16 @@ fun InnerDisableSwitch(
     isSelectedMode: Boolean = false,
 ) {
     val mainVm = LocalMainViewModel.current
-    val disabledDescription = stringResource(R.string.common_disabled)
     val onClick = {
         if (valid) {
             mainVm.dialogFlow.updateDialogOptions(
-                title = li.songe.gkd.sdp.app.getString(R.string.s_f10b25a414),
-                text = li.songe.gkd.sdp.app.getString(R.string.s_42e1b49044),
+                title = "内置禁用",
+                text = "此规则已经在内部配置对当前应用的禁用，就算强制开启规则也是无意义或不生效的\n\n提示: 这种情况一般在此全局规则无法适配/跳过适配/单独适配当前应用时出现",
             )
         } else {
             mainVm.dialogFlow.updateDialogOptions(
-                title = li.songe.gkd.sdp.app.getString(R.string.s_5c57086db5),
-                text = li.songe.gkd.sdp.app.getString(R.string.s_ceea8ce8e5),
+                title = "非法规则",
+                text = "规则存在错误, 无法启用",
             )
         }
     }
@@ -40,7 +37,7 @@ fun InnerDisableSwitch(
         enabled = false,
         onCheckedChange = null,
         modifier = modifier.semantics {
-            stateDescription = disabledDescription
+            stateDescription = "已禁用"
         }
             .minimumInteractiveComponentSize().run {
                 if (isSelectedMode) {
@@ -51,7 +48,7 @@ fun InnerDisableSwitch(
                         indication = null,
                         role = Role.Switch,
                         onClick = throttle(onClick),
-                        onClickLabel = li.songe.gkd.sdp.app.getString(R.string.rule_open_disable_help),
+                        onClickLabel = "打开规则禁用说明",
                     )
                 }
             }

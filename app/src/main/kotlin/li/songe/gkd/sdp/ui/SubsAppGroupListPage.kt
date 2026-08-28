@@ -17,7 +17,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -60,7 +60,6 @@ import li.songe.gkd.sdp.util.throttle
 import li.songe.gkd.sdp.util.toJson5String
 import li.songe.gkd.sdp.util.toast
 import li.songe.gkd.sdp.util.updateSubscription
-import li.songe.gkd.sdp.R
 
 @Serializable
 data class SubsAppGroupListRoute(
@@ -77,14 +76,14 @@ fun SubsAppGroupListPage(route: SubsAppGroupListRoute) {
 
     val mainVm = LocalMainViewModel.current
     val vm = viewModel { SubsAppGroupListVm(route) }
-    val subs = vm.subsFlow.collectAsStateWithLifecycle().value
-    val subsConfigs by vm.subsConfigsFlow.collectAsStateWithLifecycle()
-    val categoryConfigs by vm.categoryConfigsFlow.collectAsStateWithLifecycle()
-    val app by vm.subsAppFlow.collectAsStateWithLifecycle()
+    val subs = vm.subsFlow.collectAsState().value
+    val subsConfigs by vm.subsConfigsFlow.collectAsState()
+    val categoryConfigs by vm.categoryConfigsFlow.collectAsState()
+    val app by vm.subsAppFlow.collectAsState()
 
     val editable = subsItemId < 0
-    val isSelectedMode = vm.isSelectedModeFlow.collectAsStateWithLifecycle().value
-    val selectedDataSet = vm.selectedDataSetFlow.collectAsStateWithLifecycle().value
+    val isSelectedMode = vm.isSelectedModeFlow.collectAsState().value
+    val selectedDataSet = vm.selectedDataSetFlow.collectAsState().value
     LaunchedEffect(key1 = isSelectedMode) {
         if (!isSelectedMode) {
             vm.selectedDataSetFlow.value = emptySet()
@@ -162,8 +161,8 @@ fun SubsAppGroupListPage(route: SubsAppGroupListRoute) {
                                 imageVector = PerfIcon.Delete,
                                 onClick = throttle(vm.viewModelScope.launchAsFn {
                                     mainVm.dialogFlow.waitResult(
-                                        title = li.songe.gkd.sdp.app.getString(R.string.s_f9ad34b946),
-                                        text = li.songe.gkd.sdp.app.getString(R.string.s_e0d623ba29),
+                                        title = "删除规则",
+                                        text = "删除当前所选规则?",
                                         error = true,
                                     )
                                     val keys = selectedDataSet.mapNotNull { g -> g.groupKey }
@@ -174,6 +173,7 @@ fun SubsAppGroupListPage(route: SubsAppGroupListRoute) {
                                                 apps = subs.apps.filter { a -> a.id != appId }
                                             )
                                         )
+                                        DbSet.subsConfigDao.deleteAppConfig(subsItemId, appId)
                                     } else {
                                         updateSubscription(
                                             subs.copy(
@@ -195,7 +195,7 @@ fun SubsAppGroupListPage(route: SubsAppGroupListRoute) {
                                             keys
                                         )
                                     }
-                                    toast(li.songe.gkd.sdp.app.getString(R.string.s_86e8d12a79))
+                                    toast("删除成功")
                                 })
                             )
                         }
@@ -216,7 +216,7 @@ fun SubsAppGroupListPage(route: SubsAppGroupListRoute) {
                     ) {
                         DropdownMenuItem(
                             text = {
-                                Text(text = li.songe.gkd.sdp.app.getString(R.string.s_3e44b2a933))
+                                Text(text = "全选")
                             },
                             onClick = {
                                 expanded = false
@@ -230,7 +230,7 @@ fun SubsAppGroupListPage(route: SubsAppGroupListRoute) {
                         )
                         DropdownMenuItem(
                             text = {
-                                Text(text = li.songe.gkd.sdp.app.getString(R.string.s_ae05880411))
+                                Text(text = "反选")
                             },
                             onClick = {
                                 expanded = false
@@ -260,7 +260,7 @@ fun SubsAppGroupListPage(route: SubsAppGroupListRoute) {
                         )
                     )
                 },
-                contentDescription = li.songe.gkd.sdp.app.getString(R.string.rule_add_rule),
+                contentDescription = "添加规则",
                 imageVector = PerfIcon.Add,
             )
         }
@@ -307,7 +307,7 @@ fun SubsAppGroupListPage(route: SubsAppGroupListRoute) {
             item(ListPlaceholder.KEY, ListPlaceholder.TYPE) {
                 Spacer(modifier = Modifier.height(EmptyHeight))
                 if (app.groups.isEmpty()) {
-                    EmptyText(text = li.songe.gkd.sdp.app.getString(R.string.s_cff584d9ab))
+                    EmptyText(text = "暂无规则")
                 }
             }
         }

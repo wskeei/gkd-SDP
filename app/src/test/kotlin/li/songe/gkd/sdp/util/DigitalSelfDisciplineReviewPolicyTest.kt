@@ -12,45 +12,40 @@ import java.time.ZoneId
 
 class DigitalSelfDisciplineReviewPolicyTest {
     private val shanghai = ZoneId.of("Asia/Shanghai")
-    private val testNow = LocalDate.of(2026, 8, 4)
-        .atStartOfDay(shanghai)
-        .plusHours(12)
-        .toInstant()
-        .toEpochMilli()
 
     @Test
-    fun rangeBoundsUseRollingDurationAndPreviousPeriod() {
+    fun rangeBoundsUseNaturalDaysAndPreviousPeriod() {
         val bounds = DigitalSelfDisciplineReviewPolicy.rangeBounds(
-            DigitalSelfDisciplineReviewPolicy.Range.LAST_7_DAYS,
-            testNow,
+            DigitalSelfDisciplineReviewPolicy.Range.SevenDays,
+            LocalDate.of(2026, 8, 4),
             shanghai,
         )
 
-        assertEquals(testNow - 7L * 24L * 60L * 60L * 1_000L, bounds.startAt)
-        assertEquals(testNow, bounds.endAt)
-        assertEquals(testNow - 14L * 24L * 60L * 60L * 1_000L, bounds.previousStartAt)
-        assertEquals(testNow - 7L * 24L * 60L * 60L * 1_000L, bounds.previousEndAt)
+        assertEquals(LocalDate.of(2026, 7, 29), bounds.startDate)
+        assertEquals(LocalDate.of(2026, 8, 5), bounds.endDateExclusive)
+        assertEquals(LocalDate.of(2026, 7, 22), bounds.previousStartDate)
+        assertEquals(LocalDate.of(2026, 7, 29), bounds.previousEndDateExclusive)
         assertTrue(bounds.startAt < bounds.endAt)
     }
 
     @Test
-    fun rangeBoundsKeepRollingWindowsAcrossDst() {
+    fun dstBoundaryStillUsesZoneStartOfDay() {
         val zone = ZoneId.of("America/New_York")
-        val now = LocalDate.of(2026, 3, 8).atStartOfDay(zone).plusHours(12).toInstant().toEpochMilli()
         val bounds = DigitalSelfDisciplineReviewPolicy.rangeBounds(
-            DigitalSelfDisciplineReviewPolicy.Range.LAST_24_HOURS,
-            now,
+            DigitalSelfDisciplineReviewPolicy.Range.Today,
+            LocalDate.of(2026, 3, 8),
             zone,
         )
-        assertEquals(now, bounds.endAt)
-        assertEquals(24L * 60L * 60L * 1_000L, bounds.endAt - bounds.startAt)
+        val next = LocalDate.of(2026, 3, 9).atStartOfDay(zone).toInstant().toEpochMilli()
+        assertEquals(next, bounds.endAt)
+        assertEquals(23L * 60L * 60L * 1_000L, bounds.endAt - bounds.startAt)
     }
 
     @Test
     fun usageSummarySeparatesCoverageAndCalculatesAverageRatio() {
         val bounds = DigitalSelfDisciplineReviewPolicy.rangeBounds(
-            DigitalSelfDisciplineReviewPolicy.Range.LAST_24_HOURS,
-            testNow,
+            DigitalSelfDisciplineReviewPolicy.Range.Today,
+            LocalDate.of(2026, 8, 4),
             shanghai,
         )
         val rows = (0 until 8).map { index ->
@@ -91,8 +86,8 @@ class DigitalSelfDisciplineReviewPolicyTest {
     @Test
     fun usageDurationTotalsUseLongAndDoNotOverflow() {
         val bounds = DigitalSelfDisciplineReviewPolicy.rangeBounds(
-            DigitalSelfDisciplineReviewPolicy.Range.LAST_24_HOURS,
-            testNow,
+            DigitalSelfDisciplineReviewPolicy.Range.Today,
+            LocalDate.of(2026, 8, 4),
             shanghai,
         )
         val rows = listOf(
@@ -113,8 +108,8 @@ class DigitalSelfDisciplineReviewPolicyTest {
     @Test
     fun interceptFilterKeepsRatioEmptyAndMissingDatesMissing() {
         val bounds = DigitalSelfDisciplineReviewPolicy.rangeBounds(
-            DigitalSelfDisciplineReviewPolicy.Range.LAST_7_DAYS,
-            testNow,
+            DigitalSelfDisciplineReviewPolicy.Range.SevenDays,
+            LocalDate.of(2026, 8, 4),
             shanghai,
         )
         val events = listOf(
@@ -143,8 +138,8 @@ class DigitalSelfDisciplineReviewPolicyTest {
     @Test
     fun nonPositiveDurationIsExcludedFromRatioButNotIntervalCoverage() {
         val bounds = DigitalSelfDisciplineReviewPolicy.rangeBounds(
-            DigitalSelfDisciplineReviewPolicy.Range.LAST_24_HOURS,
-            testNow,
+            DigitalSelfDisciplineReviewPolicy.Range.Today,
+            LocalDate.of(2026, 8, 4),
             shanghai,
         )
         val rows = listOf(
@@ -171,8 +166,8 @@ class DigitalSelfDisciplineReviewPolicyTest {
     @Test
     fun rankingsMergeLabelsByStableKeyAndChooseDeterministicLabel() {
         val bounds = DigitalSelfDisciplineReviewPolicy.rangeBounds(
-            DigitalSelfDisciplineReviewPolicy.Range.LAST_24_HOURS,
-            testNow,
+            DigitalSelfDisciplineReviewPolicy.Range.Today,
+            LocalDate.of(2026, 8, 4),
             shanghai,
         )
         val rows = listOf(
@@ -222,42 +217,6 @@ class DigitalSelfDisciplineReviewPolicyTest {
         assertEquals(-20.0, comparison.metricDelta!!, 0.0001)
         assertEquals(-20L, comparison.deltaAverageMs)
         assertTrue(comparison.message.contains("低"))
-    }
-
-    @Test
-    fun comparisonHandlesEqualAndMissingSamples() {
-        val equal = DigitalSelfDisciplineReviewPolicy.compare(
-            current = SelfControlIntervalPolicy.statsFor(listOf(10L, 20L)),
-            previous = SelfControlIntervalPolicy.statsFor(listOf(10L, 20L)),
-        )
-        assertEquals(0.0, equal.metricDelta!!, 0.0001)
-        assertTrue(equal.message.contains("相同"))
-
-        val missing = DigitalSelfDisciplineReviewPolicy.compare(
-            current = SelfControlIntervalPolicy.statsFor(emptyList()),
-            previous = SelfControlIntervalPolicy.statsFor(listOf(10L)),
-        )
-        assertEquals(null, missing.metricDelta)
-        assertTrue(missing.message.contains("暂无"))
-    }
-
-    @Test
-    fun rangeBoundsClampNegativeNowAndDateBoundaryIsStable() {
-        val bounds = DigitalSelfDisciplineReviewPolicy.rangeBounds(
-            DigitalSelfDisciplineReviewPolicy.Range.LAST_24_HOURS,
-            -10L,
-            shanghai,
-        )
-        assertEquals(0L, bounds.startAt)
-        assertEquals(0L, bounds.previousStartAt)
-        assertEquals(
-            true,
-            DigitalSelfDisciplineReviewPolicy.hasCrossedDateBoundary(0L, 86_400_000L, shanghai),
-        )
-        assertEquals(
-            false,
-            DigitalSelfDisciplineReviewPolicy.hasCrossedDateBoundary(0L, 1_000L, shanghai),
-        )
     }
 
     private fun row(

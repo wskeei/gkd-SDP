@@ -48,12 +48,10 @@ import li.songe.gkd.sdp.ui.component.SelfControlElapsedCard
 import li.songe.gkd.sdp.ui.component.SelfControlInsightCurrentReference
 import li.songe.gkd.sdp.ui.component.InterceptionSourceCard
 import li.songe.gkd.sdp.ui.component.InterceptionSourcePresentation
-import li.songe.gkd.sdp.ui.share.ServiceOverlayLifecycleOwner
 import li.songe.gkd.sdp.ui.style.AppTheme
 import li.songe.gkd.sdp.util.InterceptUtils
 import li.songe.gkd.sdp.util.SelfControlElapsedPolicy
 import li.songe.gkd.sdp.util.SelfControlInsightWindowPolicy
-import li.songe.gkd.sdp.R
 
 class InterceptOverlayService : LifecycleService(), SavedStateRegistryOwner {
 
@@ -87,7 +85,6 @@ class InterceptOverlayService : LifecycleService(), SavedStateRegistryOwner {
 
     private val windowManager by lazy { getSystemService(WINDOW_SERVICE) as WindowManager }
     private var view: ComposeView? = null
-    private var overlayLifecycleOwner: ServiceOverlayLifecycleOwner? = null
     private var elapsedState by mutableStateOf<SelfControlElapsedPolicy.ElapsedState>(
         SelfControlElapsedPolicy.ElapsedState.Loading,
     )
@@ -113,8 +110,7 @@ class InterceptOverlayService : LifecycleService(), SavedStateRegistryOwner {
 
         val subsId = intent?.getLongExtra(EXTRA_SUBS_ID, -1) ?: -1
         val groupKey = intent?.getIntExtra(EXTRA_GROUP_KEY, -1) ?: -1
-        val message = intent?.getStringExtra(EXTRA_MESSAGE)
-            ?: getString(R.string.common_default_intercept_message)
+        val message = intent?.getStringExtra(EXTRA_MESSAGE) ?: "这真的重要吗？"
         val cooldown = intent?.getIntExtra(EXTRA_COOLDOWN, 5) ?: 5
         val eventKey = intent?.getStringExtra(EXTRA_EVENT_KEY).orEmpty()
         val eventKind = intent?.getIntExtra(EXTRA_EVENT_KIND, 0) ?: 0
@@ -237,10 +233,8 @@ class InterceptOverlayService : LifecycleService(), SavedStateRegistryOwner {
     ): Boolean {
         if (view != null) return false
 
-        val lifecycleOwner = ServiceOverlayLifecycleOwner()
-        overlayLifecycleOwner = lifecycleOwner
         view = ComposeView(this).apply {
-            setViewTreeLifecycleOwner(lifecycleOwner)
+            setViewTreeLifecycleOwner(this@InterceptOverlayService)
             setViewTreeSavedStateRegistryOwner(this@InterceptOverlayService)
             setContent {
                 AppTheme {
@@ -284,12 +278,9 @@ class InterceptOverlayService : LifecycleService(), SavedStateRegistryOwner {
         var mounted = false
         runCatching {
             windowManager.addView(view, params)
-            lifecycleOwner.onViewAdded()
             mounted = true
         }.onFailure { error ->
             view?.let { runCatching { windowManager.removeViewImmediate(it) } }
-            lifecycleOwner.onViewRemoved()
-            overlayLifecycleOwner = null
             view = null
             LogUtils.d("selector intercept overlay mount rejected", error::class.java.simpleName)
             when (eventKind) {
@@ -303,8 +294,6 @@ class InterceptOverlayService : LifecycleService(), SavedStateRegistryOwner {
     }
 
     override fun onDestroy() {
-        overlayLifecycleOwner?.onViewRemoved()
-        overlayLifecycleOwner = null
         super.onDestroy()
         view?.let { runCatching { windowManager.removeView(it) } }
         view = null
@@ -448,7 +437,7 @@ fun InterceptScreen(
                 onClick = onExit,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text(li.songe.gkd.sdp.app.getString(R.string.s_5013a2206e, (timeLeft).toString()))
+                Text("算了 (退出) ${timeLeft}s")
             }
         }
     }

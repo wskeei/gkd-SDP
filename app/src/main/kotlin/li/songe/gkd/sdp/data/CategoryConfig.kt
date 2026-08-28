@@ -64,7 +64,5 @@ data class CategoryConfig(
         @Query("SELECT * FROM category_config WHERE subs_id IN (:subsItemIds)")
         fun queryBySubsIds(subsItemIds: List<Long>): Flow<List<CategoryConfig>>
 
-        @Query("DELETE FROM category_config")
-        suspend fun deleteAll(): Int
     }
 }

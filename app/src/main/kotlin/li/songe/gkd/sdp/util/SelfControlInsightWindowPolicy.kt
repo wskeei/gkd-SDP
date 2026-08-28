@@ -1,6 +1,5 @@
 package li.songe.gkd.sdp.util
 
-import androidx.compose.runtime.Immutable
 import java.math.BigDecimal
 import java.math.RoundingMode
 import java.time.Instant
@@ -18,11 +17,8 @@ object SelfControlInsightWindowPolicy {
         val bucketMs: Long,
         val maxChartPoints: Int,
     ) {
-        // i18n-ignore: legacy fallback or non-display heuristic data
         LAST_24_HOURS("近 24 小时", 24L * 60L * 60L * 1_000L, 60L * 60L * 1_000L, 24),
-        // i18n-ignore: legacy fallback or non-display heuristic data
         LAST_7_DAYS("近 7 天", 7L * 24L * 60L * 60L * 1_000L, 6L * 60L * 60L * 1_000L, 28),
-        // i18n-ignore: legacy fallback or non-display heuristic data
         LAST_30_DAYS("近 30 天", 30L * 24L * 60L * 60L * 1_000L, 24L * 60L * 60L * 1_000L, 30),
     }
 
@@ -48,7 +44,6 @@ object SelfControlInsightWindowPolicy {
         val maxValue: Double?,
     )
 
-    @Immutable
     data class ChartPoint(
         val bucketStartAt: Long,
         val label: String,
@@ -85,7 +80,7 @@ object SelfControlInsightWindowPolicy {
         val start = windowStartEpochMs(nowEpochMs, window)
         return samples
             .asSequence()
-            .filter { it.occurredAtEpochMs >= start && it.occurredAtEpochMs < nowEpochMs }
+            .filter { it.occurredAtEpochMs in start..nowEpochMs }
             .sortedWith(compareBy<IntervalSample> { it.occurredAtEpochMs }.thenBy { it.id })
             .toList()
     }
@@ -218,11 +213,8 @@ object SelfControlInsightWindowPolicy {
     }
 
     private fun Window.aggregationLabel(): String = when (this) {
-        // i18n-ignore: legacy fallback or non-display heuristic data
         Window.LAST_24_HOURS -> "按 1 小时聚合"
-        // i18n-ignore: legacy fallback or non-display heuristic data
         Window.LAST_7_DAYS -> "按 6 小时聚合"
-        // i18n-ignore: legacy fallback or non-display heuristic data
         Window.LAST_30_DAYS -> "按 1 天聚合"
     }
 }

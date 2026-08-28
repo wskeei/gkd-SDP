@@ -10,7 +10,6 @@ import androidx.compose.material3.LocalContentColor
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.stringResource
 import li.songe.gkd.sdp.R
 
 @Composable
@@ -41,14 +40,9 @@ fun AnimatedIconButton(
     modifier: Modifier = Modifier,
     atEnd: Boolean = false,
     tint: Color = LocalContentColor.current,
-    contentDescription: String? = null,
+    contentDescription: String? = getIconDesc(id, atEnd),
 ) = TooltipIconButtonBox(
-    contentDescription = contentDescription ?: when (id) {
-        R.drawable.ic_anim_search_close -> stringResource(
-            if (atEnd) R.string.app_list_close_search else R.string.app_list_open_search,
-        )
-        else -> null
-    },
+    contentDescription = contentDescription,
 ) {
     IconButton(
         onClick = onClick,
@@ -58,12 +52,12 @@ fun AnimatedIconButton(
             atEnd = atEnd,
             modifier = modifier,
             tint = tint,
-            contentDescription = contentDescription ?: when (id) {
-                R.drawable.ic_anim_search_close -> stringResource(
-                    if (atEnd) R.string.app_list_close_search else R.string.app_list_open_search,
-                )
-                else -> null
-            },
+            contentDescription = contentDescription,
         )
     }
+}
+
+private fun getIconDesc(@DrawableRes id: Int, atEnd: Boolean): String? = when (id) {
+    R.drawable.ic_anim_search_close -> if (atEnd) "关闭搜索" else "打开搜索"
+    else -> null
 }

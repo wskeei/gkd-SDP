@@ -27,7 +27,7 @@ def write_thresholds(root: Path, **overrides) -> Path:
 
 def write_profile(root: Path) -> Path:
     path = root / "app/src/gkdRelease/generated/baselineProfiles/baseline-prof.txt"
-    path.parent.mkdir(parents=True)
+    path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text("Landroidx/activity/ComponentActivity;\n", encoding="utf-8")
     return path
 
@@ -271,6 +271,18 @@ class PerformanceReportPolicyTest(unittest.TestCase):
         self.assertNotEqual(0, result.returncode)
         self.assertIn("missing assets/dexopt/baseline.prof", result.stderr)
         self.assertIn("missing assets/dexopt/baseline.profm", result.stderr)
+
+    def test_rejects_empty_generated_baseline_profile(self):
+        write_profile(self.root).write_text("", encoding="utf-8")
+        result = run_verifier(
+            self.root,
+            self.current,
+            self.baseline,
+            self.compose_report,
+            self.compose_baseline,
+        )
+        self.assertNotEqual(0, result.returncode)
+        self.assertIn("generated baseline profile is empty", result.stderr)
 
     def test_rejects_unstable_class_growth(self):
         write_compose_report(self.root, unstable=1)

@@ -3,7 +3,6 @@ package li.songe.gkd.sdp.widget
 import android.app.Activity
 import android.appwidget.AppWidgetManager
 import android.content.Context
-import android.content.ComponentName
 import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -16,12 +15,10 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import li.songe.gkd.sdp.data.FocusRule
 import li.songe.gkd.sdp.db.DbSet
 import li.songe.gkd.sdp.ui.style.AppTheme
-import li.songe.gkd.sdp.R
 
 class FocusWidgetConfigActivity : ComponentActivity() {
     private var appWidgetId = AppWidgetManager.INVALID_APPWIDGET_ID
@@ -32,10 +29,6 @@ class FocusWidgetConfigActivity : ComponentActivity() {
         setResult(RESULT_CANCELED)
 
         val intent = intent
-        if (intent.action != AppWidgetManager.ACTION_APPWIDGET_CONFIGURE) {
-            finish()
-            return
-        }
         val extras = intent.extras
         if (extras != null) {
             appWidgetId = extras.getInt(
@@ -43,11 +36,7 @@ class FocusWidgetConfigActivity : ComponentActivity() {
             )
         }
 
-        if (
-            appWidgetId == AppWidgetManager.INVALID_APPWIDGET_ID ||
-            AppWidgetManager.getInstance(this).getAppWidgetInfo(appWidgetId)?.provider !=
-            ComponentName(this, FocusQuickStartWidget::class.java)
-        ) {
+        if (appWidgetId == AppWidgetManager.INVALID_APPWIDGET_ID) {
             finish()
             return
         }
@@ -82,7 +71,6 @@ class FocusWidgetConfigActivity : ComponentActivity() {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FocusWidgetConfigScreen(onSave: (Set<Long>) -> Unit) {
-    val context = LocalContext.current
     var rules by remember { mutableStateOf<List<FocusRule>>(emptyList()) }
     var selectedIds by remember { mutableStateOf<Set<Long>>(emptySet()) }
     
@@ -94,7 +82,7 @@ fun FocusWidgetConfigScreen(onSave: (Set<Long>) -> Unit) {
     Scaffold(
         topBar = {
             TopAppBar(
-                 title = { Text(li.songe.gkd.sdp.app.getString(R.string.s_63ef694432)) }
+                 title = { Text("选择专注规则") }
             )
         }
     ) { padding ->
@@ -124,10 +112,7 @@ fun FocusWidgetConfigScreen(onSave: (Set<Long>) -> Unit) {
                         Spacer(modifier = Modifier.width(8.dp))
                         Column {
                             Text(text = rule.name, style = MaterialTheme.typography.bodyLarge)
-                            Text(
-                                text = rule.formatDuration(context),
-                                style = MaterialTheme.typography.bodyMedium,
-                            )
+                            Text(text = rule.formatDuration(), style = MaterialTheme.typography.bodyMedium)
                         }
                     }
                     HorizontalDivider()
@@ -139,7 +124,7 @@ fun FocusWidgetConfigScreen(onSave: (Set<Long>) -> Unit) {
                     .fillMaxWidth()
                     .padding(16.dp)
             ) {
-                Text(li.songe.gkd.sdp.app.getString(R.string.s_fadf24dbc5))
+                Text("保存")
             }
         }
     }

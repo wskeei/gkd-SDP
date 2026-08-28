@@ -19,14 +19,13 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -51,7 +50,6 @@ import li.songe.gkd.sdp.util.launchAsFn
 import li.songe.gkd.sdp.util.throttle
 import li.songe.gkd.sdp.util.toast
 import java.util.Objects
-import li.songe.gkd.sdp.R
 
 
 @Composable
@@ -75,7 +73,7 @@ fun RuleGroupCard(
 
     var highlighted by remember { mutableStateOf(false) }
     if (focusGroupFlow != null) {
-        val focusGroup by focusGroupFlow.collectAsStateWithLifecycle()
+        val focusGroup by focusGroupFlow.collectAsState()
         if (subs.id == focusGroup?.first && group.key == focusGroup?.third && if (group is RawSubscription.RawAppGroup) appId == focusGroup?.second else focusGroup?.second == null) {
             LaunchedEffect(isSelectedMode) {
                 if (isSelectedMode) {
@@ -117,7 +115,7 @@ fun RuleGroupCard(
     val isLocked = FocusLockUtils.isRuleLocked(subs.id, appId, group.key)
     val onCheckedChange = appScope.launchAsFn<Boolean> { newChecked ->
         if (!newChecked && isLocked) {
-            toast(li.songe.gkd.sdp.app.getString(R.string.s_e27c087656))
+            toast("规则已锁定，无法关闭")
             return@launchAsFn
         }
         val newConfig = if (appId != null) {
@@ -182,8 +180,8 @@ fun RuleGroupCard(
             .combinedClickable(
                 onClick = onClick,
                 onLongClick = onLongClick,
-                onClickLabel = li.songe.gkd.sdp.app.getString(R.string.rule_open_detail),
-                onLongClickLabel = stringResource(R.string.subs_enter_multi_select_label)
+                onClickLabel = "打开规则详情弹窗",
+                onLongClickLabel = "进入多选模式"
             ),
         shape = MaterialTheme.shapes.extraSmall,
         colors = CardDefaults.cardColors(
@@ -237,7 +235,7 @@ fun RuleGroupCard(
                         }
                     } else {
                         Text(
-                            text = group.errorDesc ?: li.songe.gkd.sdp.app.getString(R.string.s_5f76edc5de),
+                            text = group.errorDesc ?: "未知错误",
                             modifier = Modifier.fillMaxWidth(),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.error
@@ -283,7 +281,7 @@ fun RuleGroupCard(
             if (hasExcludeActivity) {
                 PerfIcon(
                     imageVector = PerfIcon.Block,
-                    contentDescription = li.songe.gkd.sdp.app.getString(R.string.rule_excluded_pages),
+                    contentDescription = "此规则已排除部分页面",
                     tint = if (isSelectedMode) {
                         LocalContentColor.current.copy(alpha = 0.5f)
                     } else {
@@ -331,49 +329,49 @@ fun BatchActionButtonGroup(vm: ViewModel, selectedDataSet: Set<ShowGroupState>) 
     val mainVm = LocalMainViewModel.current
     PerfIconButton(
         imageVector = PerfIcon.ToggleOff,
-        contentDescription = li.songe.gkd.sdp.app.getString(R.string.rule_batch_disable),
+        contentDescription = "批量关闭规则",
         onClick = throttle(vm.viewModelScope.launchAsFn(Dispatchers.Default) {
             mainVm.dialogFlow.waitResult(
-                title = li.songe.gkd.sdp.app.getString(R.string.s_93564a7ced),
-                text = li.songe.gkd.sdp.app.getString(R.string.s_3d7090e33e)
+                title = "操作提示",
+                text = "是否将所选规则全部关闭?\n\n注: 也可在「订阅-规则类别」操作"
             )
             val list = batchUpdateGroupEnable(selectedDataSet, false)
             if (list.isNotEmpty()) {
-                toast(li.songe.gkd.sdp.app.getString(R.string.s_102626a5cc, (list.size).toString()))
+                toast("已关闭 ${list.size} 条规则")
             } else {
-                toast(li.songe.gkd.sdp.app.getString(R.string.s_1e010b148d))
+                toast("无规则被改变")
             }
         })
     )
     PerfIconButton(
         imageVector = PerfIcon.ToggleOn,
-        contentDescription = li.songe.gkd.sdp.app.getString(R.string.rule_batch_enable),
+        contentDescription = "批量打开规则",
         onClick = throttle(vm.viewModelScope.launchAsFn(Dispatchers.Default) {
             mainVm.dialogFlow.waitResult(
-                title = li.songe.gkd.sdp.app.getString(R.string.s_93564a7ced),
-                text = li.songe.gkd.sdp.app.getString(R.string.s_f68f9ce68b)
+                title = "操作提示",
+                text = "是否将所选规则全部启用?\n\n注: 也可在「订阅-规则类别」操作"
             )
             val list = batchUpdateGroupEnable(selectedDataSet, true)
             if (list.isNotEmpty()) {
-                toast(li.songe.gkd.sdp.app.getString(R.string.s_b8c5d58816, (list.size).toString()))
+                toast("已启用 ${list.size} 条规则")
             } else {
-                toast(li.songe.gkd.sdp.app.getString(R.string.s_1e010b148d))
+                toast("无规则被改变")
             }
         })
     )
     PerfIconButton(
         imageVector = ResetSettings,
-        contentDescription = li.songe.gkd.sdp.app.getString(R.string.rule_batch_reset),
+        contentDescription = "批量重置规则开关",
         onClick = throttle(vm.viewModelScope.launchAsFn(Dispatchers.Default) {
             mainVm.dialogFlow.waitResult(
-                title = li.songe.gkd.sdp.app.getString(R.string.s_93564a7ced),
-                text = li.songe.gkd.sdp.app.getString(R.string.s_1f54fb7d63)
+                title = "操作提示",
+                text = "是否将所选规则重置开关至初始状态?\n\n注: 也可在「订阅-规则类别」操作"
             )
             val list = batchUpdateGroupEnable(selectedDataSet, null)
             if (list.isNotEmpty()) {
-                toast(li.songe.gkd.sdp.app.getString(R.string.s_f988888fa2, (list.size).toString()))
+                toast("已重置 ${list.size} 条规则开关至初始状态")
             } else {
-                toast(li.songe.gkd.sdp.app.getString(R.string.s_1e010b148d))
+                toast("无规则被改变")
             }
         })
     )

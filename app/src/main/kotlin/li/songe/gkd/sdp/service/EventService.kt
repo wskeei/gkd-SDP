@@ -24,7 +24,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
@@ -60,7 +60,6 @@ import li.songe.gkd.sdp.ui.share.ListPlaceholder
 import li.songe.gkd.sdp.util.launchTry
 import li.songe.gkd.sdp.util.startForegroundServiceByClass
 import li.songe.gkd.sdp.util.stopServiceByClass
-import li.songe.gkd.sdp.R
 
 class EventService : OverlayWindowService(positionKey = "event") {
 
@@ -95,7 +94,7 @@ class EventService : OverlayWindowService(positionKey = "event") {
                     .padding(4.dp)
             ) {
                 ClosableTitle(
-                    title = if (A11yService.isRunning.collectAsStateWithLifecycle().value || uiAutomationFlow.collectAsStateWithLifecycle().value != null) li.songe.gkd.sdp.app.getString(R.string.s_25af58e687) else li.songe.gkd.sdp.app.getString(R.string.s_44c31cddda)
+                    title = if (A11yService.isRunning.collectAsState().value || uiAutomationFlow.collectAsState().value != null) "事件服务" else "事件服务(无权限)"
                 )
                 val textStyle = MaterialTheme.typography.labelSmall
                 val numCharWidth = measureNumberTextWidth(textStyle)
@@ -139,7 +138,7 @@ class EventService : OverlayWindowService(positionKey = "event") {
                                 horizontalAlignment = Alignment.CenterHorizontally,
                             ) {
                                 if (count > 0) {
-                                    Text(text = li.songe.gkd.sdp.app.getString(R.string.s_2716b658b8, (count).toString()))
+                                    Text(text = "+$count")
                                 }
                                 PerfIconButton(
                                     imageVector = PerfIcon.ArrowDownward,
@@ -182,7 +181,7 @@ class EventService : OverlayWindowService(positionKey = "event") {
 
         useLogLifecycle()
         useAliveFlow(isRunning)
-        useAliveToast(getString(R.string.record_a11y_event))
+        useAliveToast("事件服务")
         StopServiceReceiver.autoRegister()
         onCreated { eventNotif.notifyService() }
     }
