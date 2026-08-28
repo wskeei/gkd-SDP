@@ -15,6 +15,14 @@ All notable GKD-SDP changes are documented here. The format follows
 - Restore the v2.1.0 development baseline and discard the incompatible later
   development route.
 
+### Maintenance
+
+- Restore v2.1.0-compatible coverage, screenshot, managed-device, release-smoke,
+  and startup-performance quality gates without reintroducing later product
+  modules or database changes.
+- Enforce the restored hardcoded-text Lint detector with an explicit baseline
+  for legacy v2.1.0 findings.
+
 ## [2.1.0] - 2026-08-09
 
 This is the first stable GKD-SDP release. It promotes the tested

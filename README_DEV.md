@@ -36,6 +36,23 @@ Current Android/build settings:
 
 Practical note: Gradle task plans in this repo have been run with JDK 21, while the app itself targets Java 11 bytecode.
 
+### v2.1.0 quality gates
+
+The protected `main` branch expects the `quality`, `build`, `coverage`,
+`visual-regression`, `managed-device-api26`, `managed-device-api35`, and
+`performance` CI jobs, plus dependency review and CodeQL where applicable.
+This restore line keeps those job contracts but points them at the v2.1.0
+application surface: Kover covers deterministic policy/controller classes,
+Compose Screenshot tests cover the usage countdown and its screenshot-control
+surface, managed devices launch both product flavors on API 26/35, and the
+performance job compares release APK size against the immutable `v2.1.0` tag.
+
+The `quality-lint` detector is attached to the app lint run and is also
+covered by its own unit tests. The legacy tree has 1,108 pre-existing
+hardcoded-text findings recorded in [`app/lint-baseline.xml`](app/lint-baseline.xml);
+new findings still fail Lint, so the baseline is an explicit debt boundary
+rather than a disabled check.
+
 ## Repository Shape
 
 - [`app`](app): main Android application
