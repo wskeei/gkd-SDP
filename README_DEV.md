@@ -136,13 +136,18 @@ request input after IME visibility changes.
 
 The countdown service renders remaining time and reason in one movable
 `TYPE_APPLICATION_OVERLAY` window. That window uses `FLAG_SECURE`, so neither
-field should be readable in screenshots, screen recording, or non-secure
-display output. Android/OEM capture behavior may produce a blank or black
-protected region, or reject capture; the app does not promise reconstruction
-of the third-party app pixels behind the secure window.
+field should be readable while the window is mounted. Tapping the countdown
+pill opens `使用控制`, where the user can explicitly choose
+`隐藏 10 秒用于截图`. The service removes the secure window for exactly ten
+seconds while the active record and countdown continue, then restores the
+same unexpired session only if the foreground app and runtime owner still
+match. Android/OEM capture behavior may still produce a blank or black
+protected region, or the target app may independently reject capture; the app
+does not promise reconstruction of third-party app pixels.
 
-Screenshot protection requires physical-device/manual verification; JVM unit
-tests only validate the configured flag contract.
+Screenshot mode and the mounted-window protection require
+physical-device/manual verification; JVM unit tests only validate the policy,
+lifecycle, and configured flag contracts.
 
 #### Interception attribution and rhythm data
 

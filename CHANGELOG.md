@@ -6,6 +6,11 @@ All notable GKD-SDP changes are documented here. The format follows
 
 ## [Unreleased]
 
+### Fixed
+
+- Add an explicit ten-second screenshot mode that temporarily hides the active
+  usage countdown without exposing the countdown or submitted reason.
+
 ## [2.1.0] - 2026-08-09
 
 This is the first stable GKD-SDP release. It promotes the tested
