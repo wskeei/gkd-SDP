@@ -1,0 +1,8 @@
+# Generated Compose/file-facade classes are not useful coverage units.
+androidx.compose.**
+li.songe.gkd.sdp.BuildConfig*
+li.songe.gkd.sdp.*Kt
+li.songe.gkd.sdp.util.LogUtils
+li.songe.gkd.sdp.util.ToastKt
+li.songe.gkd.sdp.util.BarUtils
+li.songe.gkd.sdp.util.ScreenUtils

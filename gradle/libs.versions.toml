@@ -15,6 +15,11 @@ remap = "0.1.1"
 shizuku = "13.1.5"
 loc = "0.6.2"
 vico = "2.0.0-alpha.28"
+lint = "32.3.0"
+kover = "0.9.9"
+screenshot = "0.0.1-alpha15"
+benchmark = "1.5.0-beta01"
+profileinstaller = "1.4.1"
 
 [libraries]
 vico-compose = { module = "com.patrykandpatrick.vico:compose", version.ref = "vico" }
@@ -38,7 +43,9 @@ compose-animation = { module = "androidx.compose.animation:animation", version.r
 compose-animation-graphics = { module = "androidx.compose.animation:animation-graphics", version.ref = "compose" }
 compose-preview = { module = "androidx.compose.ui:ui-tooling-preview", version.ref = "compose" }
 compose-tooling = { module = "androidx.compose.ui:ui-tooling", version.ref = "compose" }
+screenshot-validation-api = { module = "com.android.tools.screenshot:screenshot-validation-api", version.ref = "screenshot" }
 compose-junit4 = { module = "androidx.compose.ui:ui-test-junit4", version.ref = "compose" }
+compose-ui-test-manifest = { module = "androidx.compose.ui:ui-test-manifest", version.ref = "compose" }
 compose-icons = "androidx.compose.material:material-icons-extended:1.7.8"
 compose-material3 = "androidx.compose.material3:material3:1.4.0"
 compose-activity = "androidx.activity:activity-compose:1.13.0"
@@ -52,6 +59,11 @@ androidx-lifecycle-viewmodel-navigation3 = "androidx.lifecycle:lifecycle-viewmod
 androidx-junit = "androidx.test.ext:junit:1.3.0"
 androidx-annotation = "androidx.annotation:annotation:1.10.0"
 androidx-espresso = "androidx.test.espresso:espresso-core:3.7.0"
+androidx-test-rules = "androidx.test:rules:1.7.0"
+androidx-test-runner = "androidx.test:runner:1.7.0"
+androidx-uiautomator = "androidx.test.uiautomator:uiautomator:2.3.0"
+androidx-benchmark-macro = { module = "androidx.benchmark:benchmark-macro-junit4", version.ref = "benchmark" }
+androidx-profileinstaller = { module = "androidx.profileinstaller:profileinstaller", version.ref = "profileinstaller" }
 androidx-room-runtime = { module = "androidx.room:room-runtime", version.ref = "room" }
 androidx-room-compiler = { module = "androidx.room:room-compiler", version.ref = "room" }
 androidx-room-ktx = { module = "androidx.room:room-ktx", version.ref = "room" }
@@ -79,10 +91,13 @@ device = "com.github.getActivity:DeviceCompat:2.6"
 json5 = "li.songe:json5:0.5.0"
 activityResultLauncher = "com.github.DylanCaiCoding:ActivityResultLauncher:1.1.2"
 kevinnzouWebview = "io.github.kevinnzou:compose-webview:0.33.6"
+lint-api = { module = "com.android.tools.lint:lint-api", version.ref = "lint" }
+lint-tests = { module = "com.android.tools.lint:lint-tests", version.ref = "lint" }
 
 [plugins]
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
+kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 kotlin-parcelize = { id = "org.jetbrains.kotlin.plugin.parcelize", version.ref = "kotlin" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 kotlinx-atomicfu = { id = "org.jetbrains.kotlinx.atomicfu", version.ref = "atomicfu" }
@@ -93,3 +108,7 @@ google-ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 remap = { id = "li.songe.remap", version.ref = "remap" }
 loc = { id = "li.songe.loc", version.ref = "loc" }
 littlerobots-version = "nl.littlerobots.version-catalog-update:1.1.0"
+kotlinx-kover = { id = "org.jetbrains.kotlinx.kover", version.ref = "kover" }
+compose-screenshot = { id = "com.android.compose.screenshot", version.ref = "screenshot" }
+android-test = { id = "com.android.test", version.ref = "agp" }
+baselineprofile = { id = "androidx.baselineprofile", version.ref = "benchmark" }

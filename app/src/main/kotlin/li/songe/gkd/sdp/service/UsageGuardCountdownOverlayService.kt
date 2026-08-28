@@ -407,7 +407,7 @@ class UsageGuardCountdownOverlayService : LifecycleService(), SavedStateRegistry
 }
 
 @Composable
-private fun UsageGuardCountdownOverlayContent(
+internal fun UsageGuardCountdownOverlayContent(
     expiresAt: Long,
     reasonText: String,
     maxPillWidthPx: Int,

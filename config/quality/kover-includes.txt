@@ -1,0 +1,6 @@
+# v2.1.0 keeps coverage focused on deterministic policy/controller code. UI and
+# Android lifecycle classes remain covered by lint and managed-device tests.
+li.songe.gkd.sdp.util.*Policy*
+li.songe.gkd.sdp.util.*Controller*
+li.songe.gkd.sdp.util.*Formatter*
+li.songe.gkd.sdp.util.*Guard*

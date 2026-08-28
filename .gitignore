@@ -33,6 +33,7 @@ GEMINI.md
 /更新.md
 
 # Build artifacts
+**/build/
 /app/gkd/
 __pycache__/
 *.py[cod]
