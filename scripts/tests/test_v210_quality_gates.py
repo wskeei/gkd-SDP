@@ -97,6 +97,7 @@ class V210QualityGatesTest(unittest.TestCase):
         wrapper = (ROOT / "scripts/run-release-apk-smoke-emulator.sh").read_text(encoding="utf-8")
 
         self.assertIn('"$adb_bin" -s "$serial" emu kill', wrapper)
+        self.assertIn('timeout --kill-after=5s 10s "$adb_bin" -s "$serial" emu kill', wrapper)
         self.assertIn('wait "$emulator_pid"', wrapper)
         self.assertIn("for _ in {1..10}; do", wrapper)
         self.assertIn('rm -rf -- "$smoke_root"', wrapper)

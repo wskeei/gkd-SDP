@@ -35,10 +35,15 @@ cleanup() {
   local exit_status=$?
   set +e
   if [[ -n "${serial:-}" && -x "${adb_bin:-}" ]]; then
-    "$adb_bin" -s "$serial" emu kill >/dev/null 2>&1 || true
+    timeout --kill-after=5s 10s "$adb_bin" -s "$serial" emu kill >/dev/null 2>&1 || true
   fi
   if [[ -n "${emulator_pid:-}" ]]; then
     kill "$emulator_pid" >/dev/null 2>&1 || true
+    for _ in {1..10}; do
+      kill -0 "$emulator_pid" >/dev/null 2>&1 || break
+      sleep 1
+    done
+    kill -KILL "$emulator_pid" >/dev/null 2>&1 || true
     wait "$emulator_pid" >/dev/null 2>&1 || true
   fi
   for _ in {1..10}; do
