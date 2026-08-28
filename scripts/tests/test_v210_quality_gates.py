@@ -93,6 +93,14 @@ class V210QualityGatesTest(unittest.TestCase):
         self.assertIn('Status: ok', smoke_test)
         self.assertIn('launcher activity was not resumed', smoke_test)
 
+    def test_release_smoke_cleanup_waits_for_emulator_before_removing_avd(self):
+        wrapper = (ROOT / "scripts/run-release-apk-smoke-emulator.sh").read_text(encoding="utf-8")
+
+        self.assertIn('"$adb_bin" -s "$serial" emu kill', wrapper)
+        self.assertIn('wait "$emulator_pid"', wrapper)
+        self.assertIn("for _ in {1..10}; do", wrapper)
+        self.assertIn('rm -rf -- "$smoke_root"', wrapper)
+
     def test_visual_regression_has_v210_usage_overlay_previews(self):
         screenshot_files = list((ROOT / "app/src/screenshotTest").rglob("*.kt"))
         screenshot_source = "\n".join(path.read_text(encoding="utf-8") for path in screenshot_files)

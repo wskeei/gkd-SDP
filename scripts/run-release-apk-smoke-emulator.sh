@@ -31,7 +31,27 @@ smoke_root="$(mktemp -d "${RUNNER_TEMP:-${TMPDIR:-/tmp}}/gkd-release-smoke.XXXXX
 avd_name="gkd_release_smoke_${api}_$$"
 avd_path="$smoke_root/avd"
 port=5560
-cleanup() { if [[ -n "${emulator_pid:-}" ]]; then kill "$emulator_pid" >/dev/null 2>&1 || true; fi; rm -rf "$smoke_root"; }
+cleanup() {
+  local exit_status=$?
+  set +e
+  if [[ -n "${serial:-}" && -x "${adb_bin:-}" ]]; then
+    "$adb_bin" -s "$serial" emu kill >/dev/null 2>&1 || true
+  fi
+  if [[ -n "${emulator_pid:-}" ]]; then
+    kill "$emulator_pid" >/dev/null 2>&1 || true
+    wait "$emulator_pid" >/dev/null 2>&1 || true
+  fi
+  for _ in {1..10}; do
+    [[ ! -e "$smoke_root" ]] && break
+    rm -rf -- "$smoke_root" >/dev/null 2>&1 || true
+    [[ ! -e "$smoke_root" ]] && break
+    sleep 1
+  done
+  if [[ -e "$smoke_root" ]]; then
+    echo "warning: unable to remove temporary smoke directory: $smoke_root" >&2
+  fi
+  return "$exit_status"
+}
 trap cleanup EXIT
 mkdir -p "$avd_path"
 printf 'no\n' | ANDROID_AVD_HOME="$smoke_root" "$avdmanager_bin" create avd --force --name "$avd_name" --package "$image" --device "pixel_6" --path "$avd_path" >/dev/null
