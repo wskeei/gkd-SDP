@@ -10,7 +10,7 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -31,7 +31,6 @@ import li.songe.gkd.sdp.store.storeFlow
 import java.io.File
 import java.security.MessageDigest
 import kotlin.time.Duration.Companion.days
-import li.songe.gkd.sdp.R
 
 private var lastCheckTime = 0L
 
@@ -59,12 +58,12 @@ class UpdateStatus(val scope: CoroutineScope) {
         checkUpdatingMutex.whenUnLock {
             lastCheckTime = System.currentTimeMillis()
             if (!NetworkUtils.isAvailable()) {
-                error(li.songe.gkd.sdp.app.getString(R.string.upgrade_network_unavailable))
+                error("网络不可用")
             }
             val beta = storeFlow.value.updateChannel == UpdateChannelOption.Beta.value
             val newVersion = GitHubReleaseUpdateSource.fetchLatest(client, beta)
             if (newVersion == null || !GitHubReleaseUpdateSource.isNewer(newVersion, META.versionCode)) {
-                if (manual) toast(li.songe.gkd.sdp.app.getString(R.string.s_f0ece473ea))
+                if (manual) toast("暂无更新")
                 return@launchTry
             }
             if (!manual && ignoreVersionListFlow.value.contains(newVersion.versionCode)) return@launchTry
@@ -94,10 +93,7 @@ class UpdateStatus(val scope: CoroutineScope) {
                 val channel = client.get(newVersion.downloadUrl) {
                 }.also { response ->
                     require(response.status.value in 200..299) {
-                        li.songe.gkd.sdp.app.getString(
-                            R.string.upgrade_download_failed_http,
-                            response.status.value,
-                        )
+                        "下载文件请求失败：HTTP ${response.status.value}"
                     }
                 }.bodyAsChannel()
                 try {
@@ -107,7 +103,7 @@ class UpdateStatus(val scope: CoroutineScope) {
                             if (count == -1) break
                             if (count == 0) continue
                             require(bytesReceived + count <= newVersion.fileSize) {
-                                li.songe.gkd.sdp.app.getString(R.string.upgrade_download_too_large)
+                                "下载文件超过 manifest 声明大小"
                             }
                             output.write(buffer, 0, count)
                             digest.update(buffer, 0, count)
@@ -123,18 +119,14 @@ class UpdateStatus(val scope: CoroutineScope) {
                     channel.cancel(null)
                 }
                 require(bytesReceived == newVersion.fileSize) {
-                    li.songe.gkd.sdp.app.getString(
-                        R.string.upgrade_download_size_mismatch,
-                        bytesReceived,
-                        newVersion.fileSize,
-                    )
+                    "下载文件大小校验失败：${bytesReceived} != ${newVersion.fileSize}"
                 }
                 val actualSha256 = digest.digest().joinToString("") { byte -> "%02x".format(byte) }
                 require(actualSha256.equals(newVersion.sha256, ignoreCase = true)) {
-                    li.songe.gkd.sdp.app.getString(R.string.upgrade_download_sha_mismatch)
+                    "下载文件 SHA-256 校验失败"
                 }
                 check(partialFile.renameTo(apkFile)) {
-                    li.songe.gkd.sdp.app.getString(R.string.upgrade_download_save_failed)
+                    "无法保存下载文件"
                 }
                 if (downloadStatusFlow.value is LoadStatus.Loading) {
                     downloadStatusFlow.value = LoadStatus.Success(apkFile)
@@ -154,7 +146,7 @@ class UpdateStatus(val scope: CoroutineScope) {
 
     @Composable
     fun UpgradeDialog() {
-        newVersionFlow.collectAsStateWithLifecycle().value?.let { newVersionVal ->
+        newVersionFlow.collectAsState().value?.let { newVersionVal ->
             val text = remember(newVersionVal) {
                 val logs = newVersionVal.versionLogs.takeWhile { v ->
                     v.code > META.versionCode
@@ -174,7 +166,7 @@ class UpdateStatus(val scope: CoroutineScope) {
             }
             AlertDialog(
                 title = {
-                    Text(text = li.songe.gkd.sdp.app.getString(R.string.s_b0b9270849))
+                    Text(text = "新版本")
                 },
                 text = {
                     Text(
@@ -191,12 +183,12 @@ class UpdateStatus(val scope: CoroutineScope) {
                         newVersionFlow.value = null
                         startDownload(newVersionVal)
                     }) {
-                        Text(text = li.songe.gkd.sdp.app.getString(R.string.s_c1f18f4e0a))
+                        Text(text = "下载更新")
                     }
                 },
                 dismissButton = {
                     TextButton(onClick = { newVersionFlow.value = null }) {
-                        Text(text = li.songe.gkd.sdp.app.getString(R.string.s_4d0b4688c7))
+                        Text(text = "取消")
                     }
                     if (!lastManual) {
                         TextButton(onClick = {
@@ -204,20 +196,20 @@ class UpdateStatus(val scope: CoroutineScope) {
                             ignoreVersionListFlow.update {
                                 it + newVersionVal.versionCode
                             }
-                            toast(li.songe.gkd.sdp.app.getString(R.string.s_d1dcaf9ad6))
+                            toast("已忽略此版本")
                         }) {
-                            Text(text = li.songe.gkd.sdp.app.getString(R.string.s_d84129b8be))
+                            Text(text = "忽略")
                         }
                     }
                 },
             )
         }
 
-        downloadStatusFlow.collectAsStateWithLifecycle().value?.let { downloadStatusVal ->
+        downloadStatusFlow.collectAsState().value?.let { downloadStatusVal ->
             when (downloadStatusVal) {
                 is LoadStatus.Loading -> {
                     AlertDialog(
-                        title = { Text(text = li.songe.gkd.sdp.app.getString(R.string.s_327d59b5bd)) },
+                        title = { Text(text = "下载中") },
                         text = {
                             LinearProgressIndicator(
                                 progress = { downloadStatusVal.progress },
@@ -227,12 +219,11 @@ class UpdateStatus(val scope: CoroutineScope) {
                         confirmButton = {
                             TextButton(onClick = {
                                 downloadStatusFlow.value = LoadStatus.Failure(
-                                    // i18n-ignore: legacy fallback or non-display heuristic data
                                     Exception("终止下载")
                                 )
                                 downloadJob?.cancel()
                             }) {
-                                Text(text = li.songe.gkd.sdp.app.getString(R.string.s_20bf3bc4ef))
+                                Text(text = "终止下载")
                             }
                         },
                     )
@@ -240,7 +231,7 @@ class UpdateStatus(val scope: CoroutineScope) {
 
                 is LoadStatus.Failure -> {
                     AlertDialog(
-                        title = { Text(text = li.songe.gkd.sdp.app.getString(R.string.s_e0dab22b1a)) },
+                        title = { Text(text = "下载失败") },
                         text = {
                             Text(text = downloadStatusVal.exception.let {
                                 it.message ?: it.toString()
@@ -251,7 +242,7 @@ class UpdateStatus(val scope: CoroutineScope) {
                             TextButton(onClick = {
                                 downloadStatusFlow.value = null
                             }) {
-                                Text(text = li.songe.gkd.sdp.app.getString(R.string.s_6c14bd7f6f))
+                                Text(text = "关闭")
                             }
                         },
                     )
@@ -259,23 +250,23 @@ class UpdateStatus(val scope: CoroutineScope) {
 
                 is LoadStatus.Success -> {
                     AlertDialog(
-                        title = { Text(text = li.songe.gkd.sdp.app.getString(R.string.s_9edcdf6586)) },
+                        title = { Text(text = "下载完毕") },
                         text = {
-                            Text(text = li.songe.gkd.sdp.app.getString(R.string.s_12abdcba31))
+                            Text(text = "可继续选择安装新版本")
                         },
                         onDismissRequest = {},
                         dismissButton = {
                             TextButton(onClick = {
                                 downloadStatusFlow.value = null
                             }) {
-                                Text(text = li.songe.gkd.sdp.app.getString(R.string.s_6c14bd7f6f))
+                                Text(text = "关闭")
                             }
                         },
                         confirmButton = {
                             TextButton(onClick = throttle {
                                 installApk(downloadStatusVal.result)
                             }) {
-                                Text(text = li.songe.gkd.sdp.app.getString(R.string.s_087db63ab1))
+                                Text(text = "安装")
                             }
                         })
                 }

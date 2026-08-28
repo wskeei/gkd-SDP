@@ -47,8 +47,5 @@ data class AppBlockerLock(
 
         @Query("UPDATE app_blocker_lock SET is_locked = 0 WHERE id = 1")
         suspend fun unlock()
-
-        @Query("DELETE FROM app_blocker_lock")
-        suspend fun deleteAll(): Int
     }
 }

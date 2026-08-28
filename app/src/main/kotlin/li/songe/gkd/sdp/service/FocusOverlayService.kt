@@ -48,19 +48,15 @@ import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import li.songe.gkd.sdp.app
 import li.songe.gkd.sdp.a11y.FocusModeEngine
 import li.songe.gkd.sdp.ui.component.AppIcon
-import li.songe.gkd.sdp.ui.share.ServiceOverlayLifecycleOwner
 import li.songe.gkd.sdp.ui.style.AppTheme
 import li.songe.gkd.sdp.util.LogUtils
 import li.songe.gkd.sdp.util.FocusTimeFormatter
 import li.songe.gkd.sdp.util.json
-import androidx.compose.ui.res.stringResource
-import li.songe.gkd.sdp.R
 
 class FocusOverlayService : LifecycleService(), SavedStateRegistryOwner {
 
     private val windowManager by lazy { getSystemService(WINDOW_SERVICE) as WindowManager }
     private var view: ComposeView? = null
-    private var overlayLifecycleOwner: ServiceOverlayLifecycleOwner? = null
 
     private val savedStateRegistryController = SavedStateRegistryController.create(this)
     override val savedStateRegistry = savedStateRegistryController.savedStateRegistry
@@ -73,8 +69,7 @@ class FocusOverlayService : LifecycleService(), SavedStateRegistryOwner {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         super.onStartCommand(intent, flags, startId)
-        val message = intent?.getStringExtra("message")
-            ?: getString(R.string.common_default_focus_message)
+        val message = intent?.getStringExtra("message") ?: "专注当下"
         val whitelistJson = intent?.getStringExtra("whitelist") ?: "[]"
         val blockedApp = intent?.getStringExtra("blockedApp") ?: ""
         val isLocked = intent?.getBooleanExtra("isLocked", false) ?: false
@@ -99,10 +94,8 @@ class FocusOverlayService : LifecycleService(), SavedStateRegistryOwner {
     ) {
         if (view != null) return
 
-        val lifecycleOwner = ServiceOverlayLifecycleOwner()
-        overlayLifecycleOwner = lifecycleOwner
         view = ComposeView(this).apply {
-            setViewTreeLifecycleOwner(lifecycleOwner)
+            setViewTreeLifecycleOwner(this@FocusOverlayService)
             setViewTreeSavedStateRegistryOwner(this@FocusOverlayService)
             setContent {
                 AppTheme {
@@ -132,18 +125,10 @@ class FocusOverlayService : LifecycleService(), SavedStateRegistryOwner {
                                         stopSelf()
                                     }, 300)
                                 } else {
-                                    Toast.makeText(
-                                        this@FocusOverlayService,
-                                        getString(R.string.focus_overlay_cannot_launch_app),
-                                        Toast.LENGTH_SHORT,
-                                    ).show()
+                                    Toast.makeText(this@FocusOverlayService, "无法启动该应用", Toast.LENGTH_SHORT).show()
                                 }
                             } catch (e: Exception) {
-                                Toast.makeText(
-                                    this@FocusOverlayService,
-                                    getString(R.string.focus_overlay_launch_failed, e.message.orEmpty()),
-                                    Toast.LENGTH_SHORT,
-                                ).show()
+                                Toast.makeText(this@FocusOverlayService, "启动失败：${e.message}", Toast.LENGTH_SHORT).show()
                             }
                         }
                     )
@@ -160,13 +145,8 @@ class FocusOverlayService : LifecycleService(), SavedStateRegistryOwner {
             PixelFormat.TRANSLUCENT
         )
 
-        runCatching {
-            windowManager.addView(view, params)
-            lifecycleOwner.onViewAdded()
-        }.onFailure { error ->
+        runCatching { windowManager.addView(view, params) }.onFailure { error ->
             view?.let { runCatching { windowManager.removeViewImmediate(it) } }
-            lifecycleOwner.onViewRemoved()
-            overlayLifecycleOwner = null
             view = null
             LogUtils.d("focus overlay mount rejected", error::class.java.simpleName)
             FocusModeEngine.clearCooldown()
@@ -175,8 +155,6 @@ class FocusOverlayService : LifecycleService(), SavedStateRegistryOwner {
     }
 
     override fun onDestroy() {
-        overlayLifecycleOwner?.onViewRemoved()
-        overlayLifecycleOwner = null
         super.onDestroy()
         view?.let { runCatching { windowManager.removeView(it) } }
         view = null
@@ -258,11 +236,7 @@ private fun MainInterceptContent(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        FocusTimeFormatter.formatRemainingText(
-            endTime = endTime,
-            now = now,
-            context = li.songe.gkd.sdp.app,
-        )?.let { remaining ->
+        FocusTimeFormatter.formatRemainingText(endTime = endTime, now = now)?.let { remaining ->
             Text(
                 text = remaining,
                 style = MaterialTheme.typography.bodyMedium,
@@ -273,7 +247,7 @@ private fun MainInterceptContent(
 
         if (isLocked) {
             Text(
-                text = stringResource(R.string.s_62da9fb9ac),
+                text = "（已锁定，无法提前结束）",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.error.copy(alpha = 0.8f)
             )
@@ -286,11 +260,11 @@ private fun MainInterceptContent(
                 onClick = onShowWhitelist,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text(stringResource(R.string.s_1a2443f7d2))
+                Text("打开白名单应用")
             }
         } else {
             Text(
-                text = li.songe.gkd.sdp.app.getString(R.string.s_877a0e2923),
+                text = "暂无白名单应用",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f),
                 textAlign = TextAlign.Center
@@ -315,11 +289,11 @@ private fun WhitelistPickerContent(
             modifier = Modifier.fillMaxWidth()
         ) {
             IconButton(onClick = onBack) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = li.songe.gkd.sdp.app.getString(R.string.s_11d0241540))
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回")
             }
             Spacer(modifier = Modifier.width(8.dp))
             Text(
-                text = li.songe.gkd.sdp.app.getString(R.string.s_a63ec9e8f8),
+                text = "选择白名单应用",
                 style = MaterialTheme.typography.titleLarge
             )
         }
@@ -328,7 +302,7 @@ private fun WhitelistPickerContent(
 
         if (whitelist.isEmpty()) {
             Text(
-                text = stringResource(R.string.s_877a0e2923),
+                text = "暂无白名单应用",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
                 modifier = Modifier.padding(16.dp)
@@ -339,7 +313,7 @@ private fun WhitelistPickerContent(
                 if (whitelist.isNotEmpty()) {
                     item {
                         Text(
-                            text = li.songe.gkd.sdp.app.getString(R.string.s_8a87deaa49),
+                            text = "白名单应用",
                             style = MaterialTheme.typography.titleMedium,
                             modifier = Modifier.padding(vertical = 8.dp)
                         )

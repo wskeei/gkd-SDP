@@ -38,8 +38,6 @@ import li.songe.gkd.sdp.store.storeFlow
 import li.songe.gkd.sdp.util.AccessibilityGuardPolicy
 import li.songe.gkd.sdp.util.AccessibilityGuardNotificationPolicy
 import li.songe.gkd.sdp.util.LogUtils
-import li.songe.gkd.sdp.runtime.SdpClock
-import li.songe.gkd.sdp.runtime.appDependencies
 
 /**
  * Pure reset transition used by the runtime and JVM tests.
@@ -150,7 +148,7 @@ object AccessibilityGuardRuntime {
         wake()
     }
 
-    fun beginGrantFlow(nowEpochMs: Long = appDependencies.clock.nowEpochMillis()) {
+    fun beginGrantFlow(nowEpochMs: Long = System.currentTimeMillis()) {
         accessibilityGuardSessionFlow.update { session ->
             session.copy(grantFlowUntilEpochMs = nowEpochMs + GRANT_FLOW_TIMEOUT_MS)
         }
@@ -202,7 +200,6 @@ class AccessibilityGuardCoordinator(
     private val activityVisibleCountFlow: StateFlow<Int>,
     private val runtimeWakeups: SharedFlow<Unit> = AccessibilityGuardRuntime.wakeups,
     private val overlayRunningFlow: StateFlow<Boolean> = AccessibilityGuardOverlayService.isRunning,
-    private val clock: SdpClock = appDependencies.clock,
 ) {
     companion object {
         private const val APP_EXIT_DEBOUNCE_MS = 750L
@@ -269,7 +266,7 @@ class AccessibilityGuardCoordinator(
             while (isActive) {
                 wakeChannel.receive()
                 reconcileMutex.withLock {
-                    reconcile(clock.nowEpochMillis())
+                    reconcile(System.currentTimeMillis())
                 }
             }
         }
@@ -632,7 +629,7 @@ class AccessibilityGuardCoordinator(
         timerJob?.cancel()
         timerToken = token
         timerJob = scope.launch {
-            delay((targetEpochMs - clock.nowEpochMillis()).coerceAtLeast(0L))
+            delay((targetEpochMs - System.currentTimeMillis()).coerceAtLeast(0L))
             if (timerToken == token) {
                 timerToken = null
                 timerJob = null

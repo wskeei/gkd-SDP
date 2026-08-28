@@ -4,10 +4,10 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.update
 import li.songe.gkd.sdp.appScope
 import li.songe.gkd.sdp.service.ExposeService
+import li.songe.gkd.sdp.ui.gkdStartCommandText
 import li.songe.gkd.sdp.util.AppListString
 import li.songe.gkd.sdp.util.launchTry
 import li.songe.gkd.sdp.util.toast
-import li.songe.gkd.sdp.R
 
 val storeFlow by lazy {
     createAnyFlow(
@@ -75,20 +75,20 @@ fun checkAppBlockMatch(appId: String): Boolean {
 fun initStore() = appScope.launchTry(Dispatchers.IO) {
     // preload
     storeFlow.value
-    initDisplayPreferenceBackup()
     actionCountFlow.value
     blockMatchAppListFlow.value
     blockA11yAppListFlow.value
     a11yScopeAppListFlow.value
     accessibilityGuardSessionFlow.value
-    ExposeService.clearCommandFiles()
+    gkdStartCommandText
+    ExposeService.initCommandFile()
 }
 
 fun switchStoreEnableMatch() {
     if (storeFlow.value.enableMatch) {
-        toast(li.songe.gkd.sdp.app.getString(R.string.s_2bd91e39a7))
+        toast("暂停规则匹配")
     } else {
-        toast(li.songe.gkd.sdp.app.getString(R.string.s_bb9c248fa1))
+        toast("开启规则匹配")
     }
     storeFlow.update { it.copy(enableMatch = !it.enableMatch) }
 }

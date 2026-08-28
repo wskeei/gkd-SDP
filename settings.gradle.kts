@@ -1,10 +1,8 @@
 rootProject.name = "gkd"
 include(
     ":app",
-    ":baselineprofile",
     ":hidden_api",
     ":selector",
-    ":quality-lint",
 )
 
 apply(from = "gradle/security-dependency-policy.settings.gradle.kts")

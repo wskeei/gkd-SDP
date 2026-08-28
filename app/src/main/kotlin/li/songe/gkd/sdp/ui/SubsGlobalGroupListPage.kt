@@ -17,7 +17,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -26,7 +26,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewModelScope
@@ -59,7 +58,6 @@ import li.songe.gkd.sdp.util.switchItem
 import li.songe.gkd.sdp.util.throttle
 import li.songe.gkd.sdp.util.toast
 import li.songe.gkd.sdp.util.updateSubscription
-import li.songe.gkd.sdp.R
 
 
 @Serializable
@@ -72,14 +70,14 @@ fun SubsGlobalGroupListPage(route: SubsGlobalGroupListRoute) {
 
     val mainVm = LocalMainViewModel.current
     val vm = viewModel { SubsGlobalGroupListVm(route) }
-    val subs = vm.subsRawFlow.collectAsStateWithLifecycle().value
-    val subsConfigs by vm.subsConfigsFlow.collectAsStateWithLifecycle()
+    val subs = vm.subsRawFlow.collectAsState().value
+    val subsConfigs by vm.subsConfigsFlow.collectAsState()
 
     val editable = subsItemId < 0
     val globalGroups = subs.globalGroups
 
-    val isSelectedMode = vm.isSelectedModeFlow.collectAsStateWithLifecycle().value
-    val selectedDataSet = vm.selectedDataSetFlow.collectAsStateWithLifecycle().value
+    val isSelectedMode = vm.isSelectedModeFlow.collectAsState().value
+    val selectedDataSet = vm.selectedDataSetFlow.collectAsState().value
     LaunchedEffect(key1 = isSelectedMode) {
         if (!isSelectedMode) {
             vm.selectedDataSetFlow.value = emptySet()
@@ -130,7 +128,7 @@ fun SubsGlobalGroupListPage(route: SubsGlobalGroupListRoute) {
                     TowLineText(
                         modifier = titleModifier,
                         title = subs.name,
-                        subtitle = stringResource(R.string.subs_global_rules)
+                        subtitle = "全局规则"
                     )
                 }
             }, actions = {
@@ -151,8 +149,8 @@ fun SubsGlobalGroupListPage(route: SubsGlobalGroupListRoute) {
                                             Dispatchers.Default
                                         ) {
                                             mainVm.dialogFlow.waitResult(
-                                                title = li.songe.gkd.sdp.app.getString(R.string.s_f9ad34b946),
-                                                text = li.songe.gkd.sdp.app.getString(R.string.s_e0d623ba29),
+                                                title = "删除规则",
+                                                text = "删除当前所选规则?",
                                                 error = true,
                                             )
                                             val keys = selectedDataSet.mapNotNull { g ->
@@ -170,7 +168,7 @@ fun SubsGlobalGroupListPage(route: SubsGlobalGroupListRoute) {
                                                 subsItemId,
                                                 keys
                                             )
-                                            toast(li.songe.gkd.sdp.app.getString(R.string.s_86e8d12a79))
+                                            toast("删除成功")
                                         })
                                 )
                             }
@@ -193,7 +191,7 @@ fun SubsGlobalGroupListPage(route: SubsGlobalGroupListRoute) {
                         ) {
                             DropdownMenuItem(
                                 text = {
-                                    Text(text = li.songe.gkd.sdp.app.getString(R.string.s_3e44b2a933))
+                                    Text(text = "全选")
                                 },
                                 onClick = {
                                     expanded = false
@@ -206,7 +204,7 @@ fun SubsGlobalGroupListPage(route: SubsGlobalGroupListRoute) {
                             )
                             DropdownMenuItem(
                                 text = {
-                                    Text(text = li.songe.gkd.sdp.app.getString(R.string.s_ae05880411))
+                                    Text(text = "反选")
                                 },
                                 onClick = {
                                     expanded = false
@@ -237,7 +235,7 @@ fun SubsGlobalGroupListPage(route: SubsGlobalGroupListRoute) {
                         )
                     },
                     imageVector = PerfIcon.Add,
-                    contentDescription = li.songe.gkd.sdp.app.getString(R.string.rule_add_rule)
+                    contentDescription = "添加规则"
                 )
             }
         },
@@ -277,7 +275,7 @@ fun SubsGlobalGroupListPage(route: SubsGlobalGroupListRoute) {
             item(ListPlaceholder.KEY, ListPlaceholder.TYPE) {
                 Spacer(modifier = Modifier.height(EmptyHeight))
                 if (globalGroups.isEmpty()) {
-                    EmptyText(text = li.songe.gkd.sdp.app.getString(R.string.s_cff584d9ab))
+                    EmptyText(text = "暂无规则")
                 }
             }
         }

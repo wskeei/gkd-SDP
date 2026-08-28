@@ -2,7 +2,6 @@ package li.songe.gkd.sdp.data
 
 import androidx.room.ColumnInfo
 import androidx.room.Dao
-import androidx.room.Delete
 import androidx.room.Entity
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
@@ -45,19 +44,10 @@ data class AppConfig(
         @Insert(onConflict = OnConflictStrategy.IGNORE)
         suspend fun insertOrIgnore(vararg objects: AppConfig): List<Long>
 
-        @Delete
-        suspend fun delete(vararg objects: AppConfig): Int
-
-        @Query("DELETE FROM app_config WHERE subs_id IN (:subsIds)")
-        suspend fun deleteBySubsId(vararg subsIds: Long): Int
-
         @Query("SELECT * FROM app_config WHERE subs_id IN (:subsItemIds)")
         suspend fun querySubsItemConfig(subsItemIds: List<Long>): List<AppConfig>
 
         @Query("UPDATE app_config SET enable = 1 WHERE enable = 0")
         suspend fun enableAllDisabled(): Int
-
-        @Query("DELETE FROM app_config")
-        suspend fun deleteAll(): Int
     }
 }

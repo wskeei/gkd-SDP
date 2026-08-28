@@ -8,7 +8,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -42,9 +42,6 @@ import li.songe.gkd.sdp.ui.component.autoFocus
 import li.songe.gkd.sdp.ui.share.LocalMainViewModel
 import li.songe.json5.Json5
 import java.io.File
-import androidx.compose.ui.res.stringResource
-import li.songe.gkd.sdp.R
-import li.songe.gkd.sdp.app
 
 private fun HttpMessageBuilder.setCommonHeaders(cookie: String) {
     header("Cookie", cookie)
@@ -104,7 +101,7 @@ suspend fun uploadFileToGithub(
         }))
     }
     if (policiesRawResp.status == HttpStatusCode.Unauthorized) {
-        throw GithubCookieException(app.getString(R.string.github_cookie_expired))
+        throw GithubCookieException("检测到 cookie 失效, 请更换")
     }
     val policiesResp = policiesRawResp.body<UploadPoliciesAssetsResponse>()
 
@@ -203,7 +200,7 @@ suspend fun uploadFileToGithub(
 @Composable
 fun EditGithubCookieDlg() {
     val mainVm = LocalMainViewModel.current
-    val showEditCookieDlg by mainVm.showEditCookieDlgFlow.collectAsStateWithLifecycle()
+    val showEditCookieDlg by mainVm.showEditCookieDlgFlow.collectAsState()
     if (showEditCookieDlg) {
         var value by remember {
             mutableStateOf(mainVm.githubCookieFlow.value)
@@ -219,7 +216,7 @@ fun EditGithubCookieDlg() {
                     horizontalArrangement = Arrangement.SpaceBetween,
                     modifier = Modifier.fillMaxWidth(),
                 ) {
-                    Text(text = stringResource(R.string.s_ac245bfc80))
+                    Text(text = "Github Cookie")
                     PerfIconButton(
                         imageVector = PerfIcon.HelpOutline,
                         onClick = throttle {
@@ -234,7 +231,7 @@ fun EditGithubCookieDlg() {
                     onValueChange = {
                         value = it.filter { c -> c != '\n' && c != '\r' }
                     },
-                    placeholder = { Text(text = li.songe.gkd.sdp.app.getString(R.string.s_46de88b050)) },
+                    placeholder = { Text(text = "请输入 Github Cookie") },
                     modifier = Modifier
                         .fillMaxWidth()
                         .autoFocus(),
@@ -245,16 +242,17 @@ fun EditGithubCookieDlg() {
                 TextButton(onClick = {
                     mainVm.showEditCookieDlgFlow.value = false
                     mainVm.githubCookieFlow.value = value.trim()
-                    toast(li.songe.gkd.sdp.app.getString(R.string.s_e2cff77372))
+                    toast("更新成功")
                 }) {
-                    Text(text = stringResource(R.string.s_b56d9ac6c5))
+                    Text(text = "确认")
                 }
             },
             dismissButton = {
                 TextButton(onClick = { mainVm.showEditCookieDlgFlow.value = false }) {
-                    Text(text = stringResource(R.string.s_4d0b4688c7))
+                    Text(text = "取消")
                 }
             }
         )
     }
 }
+

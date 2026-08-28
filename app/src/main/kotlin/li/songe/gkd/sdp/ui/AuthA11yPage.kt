@@ -25,8 +25,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -39,14 +38,11 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation3.runtime.NavKey
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 import li.songe.gkd.sdp.META
 import li.songe.gkd.sdp.permission.Manifest_permission_GET_APP_OPS_STATS
 import li.songe.gkd.sdp.permission.writeSecureSettingsState
 import li.songe.gkd.sdp.service.A11yService
-import li.songe.gkd.sdp.service.ExposeService
 import li.songe.gkd.sdp.service.fixRestartAutomatorService
 import li.songe.gkd.sdp.shizuku.SafeAppOpsService
 import li.songe.gkd.sdp.shizuku.shizukuUsedFlow
@@ -59,6 +55,8 @@ import li.songe.gkd.sdp.ui.component.PerfTopAppBar
 import li.songe.gkd.sdp.ui.component.updateDialogOptions
 import li.songe.gkd.sdp.ui.share.LocalMainViewModel
 import li.songe.gkd.sdp.ui.style.EmptyHeight
+import li.songe.gkd.sdp.ui.style.cardHorizontalPadding
+import li.songe.gkd.sdp.ui.style.itemHorizontalPadding
 import li.songe.gkd.sdp.ui.style.surfaceCardColors
 import li.songe.gkd.sdp.util.AndroidTarget
 import li.songe.gkd.sdp.util.AutomatorModeOption
@@ -68,10 +66,6 @@ import li.songe.gkd.sdp.util.openA11ySettings
 import li.songe.gkd.sdp.util.shFolder
 import li.songe.gkd.sdp.util.throttle
 import li.songe.gkd.sdp.util.toast
-import li.songe.gkd.sdp.store.writeTextAtomically
-import androidx.compose.ui.res.stringResource
-import li.songe.gkd.sdp.R
-import li.songe.gkd.sdp.ui.style.DimensionTokens
 
 @Serializable
 data object AuthA11yRoute : NavKey
@@ -80,14 +74,10 @@ data object AuthA11yRoute : NavKey
 fun AuthA11yPage() {
     val mainVm = LocalMainViewModel.current
     val vm = viewModel<AuthA11yVm>()
-    val showCopyDlg by vm.showCopyDlgFlow.collectAsStateWithLifecycle()
-    val commandText by gkdStartCommandTextFlow.collectAsStateWithLifecycle()
-    LaunchedEffect(showCopyDlg) {
-        if (showCopyDlg) refreshGkdStartCommandText()
-    }
-    val writeSecureSettings by writeSecureSettingsState.stateFlow.collectAsStateWithLifecycle()
-    val a11yRunning by A11yService.isRunning.collectAsStateWithLifecycle()
-    val automatorMode by mainVm.automatorModeFlow.collectAsStateWithLifecycle()
+    val showCopyDlg by vm.showCopyDlgFlow.collectAsState()
+    val writeSecureSettings by writeSecureSettingsState.stateFlow.collectAsState()
+    val a11yRunning by A11yService.isRunning.collectAsState()
+    val automatorMode by mainVm.automatorModeFlow.collectAsState()
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
     Scaffold(modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection), topBar = {
         PerfTopAppBar(scrollBehavior = scrollBehavior, navigationIcon = {
@@ -97,7 +87,7 @@ fun AuthA11yPage() {
                     mainVm.popPage()
                 })
         }, title = {
-            Text(text = li.songe.gkd.sdp.app.getString(R.string.s_f8b4c14ff9))
+            Text(text = "工作模式")
         })
     }) { contentPadding ->
         Column(
@@ -108,7 +98,7 @@ fun AuthA11yPage() {
         ) {
             Card(
                 modifier = Modifier
-                    .padding(horizontal = DimensionTokens.SpacingBase)
+                    .padding(horizontal = itemHorizontalPadding)
                     .fillMaxWidth(),
                 onClick = throttle { mainVm.updateAutomatorMode(AutomatorModeOption.A11yMode) },
                 colors = surfaceCardColors,
@@ -123,25 +113,25 @@ fun AuthA11yPage() {
                     )
                     Text(
                         modifier = Modifier.padding(start = 12.dp),
-                        text = stringResource(AutomatorModeOption.A11yMode.labelRes),
+                        text = AutomatorModeOption.A11yMode.label,
                         style = MaterialTheme.typography.titleMedium,
                     )
                 }
                 Text(
                     modifier = Modifier
-                        .padding(horizontal = DimensionTokens.SpacingMd)
+                        .padding(horizontal = cardHorizontalPadding)
                         .padding(start = 4.dp),
-                    text = stringResource(R.string.s_5f83e7f6a1),
+                    text = "基础",
                     style = MaterialTheme.typography.titleSmall
                 )
                 TextListItem(
                     modifier = Modifier
-                        .padding(horizontal = DimensionTokens.SpacingMd)
+                        .padding(horizontal = cardHorizontalPadding)
                         .padding(start = 8.dp, top = 4.dp),
                     style = MaterialTheme.typography.bodyMedium,
                     list = listOf(
-                        stringResource(R.string.auth_grant_accessibility),
-                        stringResource(R.string.auth_a11y_reauthorize),
+                        "授予「无障碍权限」",
+                        "无障碍关闭后需重新授权"
                     ),
                 )
                 AnimatedBooleanContent(
@@ -149,9 +139,9 @@ fun AuthA11yPage() {
                     contentTrue = {
                         Text(
                             modifier = Modifier
-                                .padding(horizontal = DimensionTokens.SpacingMd)
+                                .padding(horizontal = cardHorizontalPadding)
                                 .padding(start = 8.dp, top = 4.dp),
-                            text = li.songe.gkd.sdp.app.getString(R.string.s_3075b35472),
+                            text = "已持有「无障碍权限」可继续使用",
                             style = MaterialTheme.typography.bodySmall,
                         )
                     },
@@ -159,7 +149,7 @@ fun AuthA11yPage() {
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(horizontal = DimensionTokens.SpacingMd),
+                                .padding(horizontal = cardHorizontalPadding),
                             verticalAlignment = Alignment.Bottom,
                             horizontalArrangement = Arrangement.SpaceBetween,
                         ) {
@@ -167,7 +157,7 @@ fun AuthA11yPage() {
                                 onClick = throttle { openA11ySettings() },
                             ) {
                                 Text(
-                                    text = li.songe.gkd.sdp.app.getString(R.string.s_34fd164246),
+                                    text = "手动授权",
                                     style = MaterialTheme.typography.bodyLarge,
                                 )
                             }
@@ -179,7 +169,7 @@ fun AuthA11yPage() {
                                         mainVm.navigateWebPage(ShortUrlSet.URL2)
                                     })
                                     .padding(horizontal = 4.dp),
-                                text = li.songe.gkd.sdp.app.getString(R.string.s_2735ce6e46),
+                                text = "无法开启无障碍?",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.primary,
                             )
@@ -188,19 +178,19 @@ fun AuthA11yPage() {
                 )
                 Text(
                     modifier = Modifier
-                        .padding(horizontal = DimensionTokens.SpacingMd)
+                        .padding(horizontal = cardHorizontalPadding)
                         .padding(start = 4.dp, top = 8.dp),
-                    text = stringResource(R.string.s_1dd014a84e),
+                    text = "增强",
                     style = MaterialTheme.typography.titleSmall,
                 )
                 TextListItem(
                     modifier = Modifier
-                        .padding(horizontal = DimensionTokens.SpacingMd)
+                        .padding(horizontal = cardHorizontalPadding)
                         .padding(start = 8.dp, top = 4.dp),
                     style = MaterialTheme.typography.bodyMedium,
                     list = listOf(
-                        stringResource(R.string.auth_grant_write_secure),
-                        stringResource(R.string.auth_can_control_a11y),
+                        "授予「写入安全设置权限」",
+                        "应用可自行控制开关无障碍",
                     ),
                 )
                 AnimatedBooleanContent(
@@ -208,22 +198,22 @@ fun AuthA11yPage() {
                     contentTrue = {
                         Text(
                             modifier = Modifier
-                                .padding(horizontal = DimensionTokens.SpacingMd)
+                                .padding(horizontal = cardHorizontalPadding)
                                 .padding(start = 8.dp, top = 4.dp),
-                            text = li.songe.gkd.sdp.app.getString(R.string.s_5ae6bc88fe),
+                            text = "已持有「写入安全设置权限」 优先使用此项",
                             style = MaterialTheme.typography.bodySmall,
                         )
                     },
                     contentFalse = {
                         Row(
                             modifier = Modifier
-                                .padding(horizontal = DimensionTokens.SpacingMd),
+                                .padding(horizontal = cardHorizontalPadding),
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
                         ) {
                             ShizukuAuthButton()
                             TextButton(onClick = { vm.showCopyDlgFlow.value = true }) {
                                 Text(
-                                    text = li.songe.gkd.sdp.app.getString(R.string.s_92cab38651),
+                                    text = "命令授权",
                                     style = MaterialTheme.typography.bodyLarge,
                                 )
                             }
@@ -232,19 +222,19 @@ fun AuthA11yPage() {
                 )
                 TextButton(
                     modifier = Modifier
-                        .padding(horizontal = DimensionTokens.SpacingMd),
+                        .padding(horizontal = cardHorizontalPadding),
                     onClick = throttle {
                         if (!writeSecureSettings) {
-                            toast(li.songe.gkd.sdp.app.getString(R.string.s_45d0618f98, (writeSecureSettingsState.name).toString()))
+                            toast("请先授予「${writeSecureSettingsState.name}」")
                         }
                         mainVm.dialogFlow.updateDialogOptions(
-                            title = li.songe.gkd.sdp.app.getString(R.string.s_ad2ea87ca3),
-                            text = li.songe.gkd.sdp.app.getString(R.string.s_cd7a98be77, (META.appName).toString())
+                            title = "无感保活",
+                            text = "添加通知栏快捷开关\n\n1. 下拉通知栏至「快捷开关」标界面\n2. 找到名称为 ${META.appName} 的快捷开关\n3. 添加此开关到通知面板 \n\n只要此快捷开关在通知面板可见\n无论是系统杀后台还是自身崩溃\n简单下拉打开通知即可重启"
                         )
                     }
                 ) {
                     Text(
-                        text = stringResource(R.string.s_ad2ea87ca3),
+                        text = "无感保活",
                         style = MaterialTheme.typography.bodyLarge,
                     )
                 }
@@ -253,7 +243,7 @@ fun AuthA11yPage() {
             Spacer(modifier = Modifier.height(12.dp))
             Card(
                 modifier = Modifier
-                    .padding(horizontal = DimensionTokens.SpacingBase)
+                    .padding(horizontal = itemHorizontalPadding)
                     .fillMaxWidth(),
                 onClick = throttle { mainVm.updateAutomatorMode(AutomatorModeOption.AutomationMode) },
                 colors = surfaceCardColors,
@@ -268,49 +258,49 @@ fun AuthA11yPage() {
                     )
                     Text(
                         modifier = Modifier.padding(start = 12.dp),
-                        text = stringResource(AutomatorModeOption.AutomationMode.labelRes),
+                        text = AutomatorModeOption.AutomationMode.label,
                         style = MaterialTheme.typography.titleMedium,
                     )
                 }
                 TextListItem(
                     modifier = Modifier
-                        .padding(horizontal = DimensionTokens.SpacingMd)
+                        .padding(horizontal = cardHorizontalPadding)
                         .padding(start = 8.dp),
                     style = MaterialTheme.typography.bodyMedium,
                     list = listOf(
-                        stringResource(R.string.auth_automation_a11y),
-                        stringResource(R.string.auth_automation_no_ui_issue),
-                        stringResource(R.string.auth_automation_not_detected),
-                        stringResource(R.string.auth_some_apps_need_a11y),
+                        "自动化驱动的无障碍",
+                        "不会导致界面显示异常",
+                        "不会被其它应用检测为无障碍",
+                        "部分应用仍需切换至无障碍模式",
                     ),
                 )
                 AnimatedBooleanContent(
-                    targetState = shizukuUsedFlow.collectAsStateWithLifecycle().value,
+                    targetState = shizukuUsedFlow.collectAsState().value,
                     contentTrue = {
                         Text(
                             modifier = Modifier
-                                .padding(horizontal = DimensionTokens.SpacingMd)
+                                .padding(horizontal = cardHorizontalPadding)
                                 .padding(start = 8.dp, top = 8.dp),
-                            text = li.songe.gkd.sdp.app.getString(R.string.s_787a6e40ac),
+                            text = "已连接 Shizuku 服务，可继续使用",
                             style = MaterialTheme.typography.bodySmall,
                         )
                     },
                     contentFalse = {
                         ShizukuAuthButton(
                             modifier = Modifier.padding(
-                                start = DimensionTokens.SpacingMd
+                                start = cardHorizontalPadding
                             )
                         )
                     }
                 )
                 TextButton(
-                    modifier = Modifier.padding(start = DimensionTokens.SpacingMd),
+                    modifier = Modifier.padding(start = cardHorizontalPadding),
                     onClick = throttle {
                         mainVm.navigatePage(A11YScopeAppListRoute)
                     },
                 ) {
                     Text(
-                        text = stringResource(R.string.s_3721fe11a2),
+                        text = "局部无障碍",
                         style = MaterialTheme.typography.bodyLarge,
                     )
                 }
@@ -321,7 +311,7 @@ fun AuthA11yPage() {
     }
 
     ManualAuthDialog(
-        commandText = commandText,
+        commandText = gkdStartCommandText,
         show = showCopyDlg,
         onUpdateShow = {
             vm.showCopyDlgFlow.value = it
@@ -340,14 +330,14 @@ private fun ShizukuAuthButton(
         onClick = throttle(vm.viewModelScope.launchAsFn(Dispatchers.IO) {
             mainVm.guardShizukuContext()
             if (writeSecureSettingsState.value) {
-                toast(li.songe.gkd.sdp.app.getString(R.string.s_027b905228))
+                toast("授权成功")
                 updateEnableAutomator(true)
                 fixRestartAutomatorService()
             }
         })
     ) {
         Text(
-            text = stringResource(R.string.s_0f0c48af67),
+            text = "Shizuku 授权",
             style = MaterialTheme.typography.bodyLarge,
         )
     }
@@ -356,34 +346,25 @@ private fun ShizukuAuthButton(
 private val Int.appopsAllow get() = "appops set ${META.appId} ${AppOpsManagerHidden.opToName(this)} allow"
 private val String.pmGrant get() = "pm grant ${META.appId} $this"
 
-val gkdStartCommandTextFlow = MutableStateFlow(
-    li.songe.gkd.sdp.app.getString(R.string.auth_generating_command),
-)
-
-suspend fun refreshGkdStartCommandText() {
-    gkdStartCommandTextFlow.value = li.songe.gkd.sdp.app.getString(R.string.auth_generating_command)
-    gkdStartCommandTextFlow.value = runCatching {
-        withContext(Dispatchers.IO) {
-            val exposeFile = ExposeService.refreshExternalCommandFile()
-            val commandText = listOfNotNull(
-                "set -euo pipefail",
-                Manifest.permission.WRITE_SECURE_SETTINGS.pmGrant,
-                Manifest_permission_GET_APP_OPS_STATS.pmGrant,
-                if (AndroidTarget.TIRAMISU) Manifest.permission.POST_NOTIFICATIONS.pmGrant else null,
-                AppOpsManagerHidden.OP_POST_NOTIFICATION.appopsAllow,
-                AppOpsManagerHidden.OP_SYSTEM_ALERT_WINDOW.appopsAllow,
-                if (AndroidTarget.Q) AppOpsManagerHidden.OP_ACCESS_ACCESSIBILITY.appopsAllow else null,
-                if (AndroidTarget.TIRAMISU) AppOpsManagerHidden.OP_ACCESS_RESTRICTED_SETTINGS.appopsAllow else null,
-                if (AndroidTarget.UPSIDE_DOWN_CAKE) AppOpsManagerHidden.OP_FOREGROUND_SERVICE_SPECIAL_USE.appopsAllow else null,
-                if (SafeAppOpsService.supportCreateA11yOverlay) AppOpsManagerHidden.OP_CREATE_ACCESSIBILITY_OVERLAY.appopsAllow else null,
-                "sh ${exposeFile.absolutePath}",
-            ).joinToString("\n")
-            val file = shFolder.resolve("start.sh")
-            writeTextAtomically(file, commandText)
-            ExposeService.restrictToOwner(file)
-            "adb shell sh ${file.absolutePath}"
-        }
-    }.getOrElse { li.songe.gkd.sdp.app.getString(R.string.auth_command_generation_failed) }
+val gkdStartCommandText by lazy {
+    val commandText = listOfNotNull(
+        "set -euo pipefail",
+        "echo '> start start.sh'",
+        Manifest.permission.WRITE_SECURE_SETTINGS.pmGrant,
+        Manifest_permission_GET_APP_OPS_STATS.pmGrant,
+        if (AndroidTarget.TIRAMISU) Manifest.permission.POST_NOTIFICATIONS.pmGrant else null,
+        AppOpsManagerHidden.OP_POST_NOTIFICATION.appopsAllow,
+        AppOpsManagerHidden.OP_SYSTEM_ALERT_WINDOW.appopsAllow,
+        if (AndroidTarget.Q) AppOpsManagerHidden.OP_ACCESS_ACCESSIBILITY.appopsAllow else null,
+        if (AndroidTarget.TIRAMISU) AppOpsManagerHidden.OP_ACCESS_RESTRICTED_SETTINGS.appopsAllow else null,
+        if (AndroidTarget.UPSIDE_DOWN_CAKE) AppOpsManagerHidden.OP_FOREGROUND_SERVICE_SPECIAL_USE.appopsAllow else null,
+        if (SafeAppOpsService.supportCreateA11yOverlay) AppOpsManagerHidden.OP_CREATE_ACCESSIBILITY_OVERLAY.appopsAllow else null,
+        "sh ${shFolder.absolutePath}/expose.sh 1",
+        "echo '> start.sh end'",
+    ).joinToString("\n")
+    val file = shFolder.resolve("start.sh")
+    file.writeText(commandText)
+    "adb shell sh ${file.absolutePath}"
 }
 
 @Composable

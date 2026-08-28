@@ -31,36 +31,40 @@ class UsageGuardCountdownOverlayPolicyTest {
     }
 
     @Test
-    fun formatRemainingDurationUsesMinuteSecondLayoutBelowOneHour() {
-        val text = UsageGuardCountdownOverlayPolicy.formatRemainingDuration(
-            remainingMillis = 598_000L,
+    fun formatRemainingTextUsesMinuteSecondLayoutBelowOneHour() {
+        val text = UsageGuardCountdownOverlayPolicy.formatRemainingText(
+            expiresAt = 598_000L,
+            now = 0L,
         )
 
         assertEquals("09:58", text)
     }
 
     @Test
-    fun formatRemainingDurationUsesHourLayoutAtOneHourOrMore() {
-        val text = UsageGuardCountdownOverlayPolicy.formatRemainingDuration(
-            remainingMillis = 3_731_000L,
+    fun formatRemainingTextUsesHourLayoutAtOneHourOrMore() {
+        val text = UsageGuardCountdownOverlayPolicy.formatRemainingText(
+            expiresAt = 3_731_000L,
+            now = 0L,
         )
 
         assertEquals("1:02:11", text)
     }
 
     @Test
-    fun formatRemainingDurationClampsExpiredSessionsToZero() {
-        val text = UsageGuardCountdownOverlayPolicy.formatRemainingDuration(
-            remainingMillis = -500L,
+    fun formatRemainingTextClampsExpiredSessionsToZero() {
+        val text = UsageGuardCountdownOverlayPolicy.formatRemainingText(
+            expiresAt = 1_000L,
+            now = 1_500L,
         )
 
         assertEquals("00:00", text)
     }
 
     @Test
-    fun formatRemainingDurationRoundsUpAtHourBoundary() {
-        val text = UsageGuardCountdownOverlayPolicy.formatRemainingDuration(
-            remainingMillis = 3_599_001L,
+    fun formatRemainingTextRoundsUpAtHourBoundary() {
+        val text = UsageGuardCountdownOverlayPolicy.formatRemainingText(
+            expiresAt = 3_599_001L,
+            now = 0L,
         )
 
         assertEquals("1:00:00", text)

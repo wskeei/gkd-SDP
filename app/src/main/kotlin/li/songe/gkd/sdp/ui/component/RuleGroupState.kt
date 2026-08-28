@@ -3,10 +3,9 @@ package li.songe.gkd.sdp.ui.component
 import androidx.activity.compose.BackHandler
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -35,7 +34,6 @@ import li.songe.gkd.sdp.util.subsMapFlow
 import li.songe.gkd.sdp.util.throttle
 import li.songe.gkd.sdp.util.toast
 import li.songe.gkd.sdp.util.updateSubscription
-import li.songe.gkd.sdp.R
 
 data class ShowGroupState(
     val subsId: Long,
@@ -209,7 +207,7 @@ suspend fun batchUpdateGroupEnable(
     if (enable == false && diffDataList.isNotEmpty()) {
         val attempt = AutoReenableDisableGuard.tryConsumeForDisable()
         if (!attempt.allowed) {
-            toast(li.songe.gkd.sdp.app.getString(R.string.s_b0bb6964b5, (attempt.limit).toString()))
+            toast("今日关闭次数已用完（${attempt.limit} 次），将于明日 00:00 重置")
             return emptyList()
         }
     }
@@ -272,11 +270,11 @@ class RuleGroupState(
 
     @Composable
     fun Render() {
-        val showGroupState = showGroupFlow.collectAsStateWithLifecycle().value
+        val showGroupState = showGroupFlow.collectAsState().value
         val showSubs = useSubs(showGroupState?.subsId)
         val showGroup = useSubsGroup(showSubs, showGroupState?.groupKey, showGroupState?.appId)
         if (showGroupState?.groupKey != null && showSubs != null && showGroup != null) {
-            val subsConfig = showSubsConfigFlow.collectAsStateWithLifecycle().value
+            val subsConfig = showSubsConfigFlow.collectAsState().value
             val excludeData = remember(subsConfig?.exclude) {
                 ExcludeData.parse(subsConfig?.exclude)
             }
@@ -320,7 +318,7 @@ class RuleGroupState(
                                             ).stringify()
                                         )
                                     )
-                                    toast(li.songe.gkd.sdp.app.getString(R.string.s_9f8659b8b5))
+                                    toast("已重置局部开关至初始状态")
                                 }
                             } else {
                                 null
@@ -329,7 +327,7 @@ class RuleGroupState(
                             subsConfig.enable?.let {
                                 mainVm.viewModelScope.launchAsFn {
                                     DbSet.subsConfigDao.update(subsConfig.copy(enable = null))
-                                    toast(li.songe.gkd.sdp.app.getString(R.string.s_59ec2d9a54))
+                                    toast("已重置开关至初始状态")
                                 }
                             }
                         }
@@ -337,7 +335,7 @@ class RuleGroupState(
                         subsConfig.enable?.let {
                             mainVm.viewModelScope.launchAsFn {
                                 DbSet.subsConfigDao.update(subsConfig.copy(enable = null))
-                                toast(li.songe.gkd.sdp.app.getString(R.string.s_59ec2d9a54))
+                                toast("已重置开关至初始状态")
                             }
                         }
                     }
@@ -345,11 +343,8 @@ class RuleGroupState(
                 onClickDelete = mainVm.viewModelScope.launchAsFn {
                     dismissGroupShow()
                     val r = mainVm.dialogFlow.getResult(
-                        title = li.songe.gkd.sdp.app.getString(R.string.rule_delete_group_title),
-                        text = li.songe.gkd.sdp.app.getString(
-                            R.string.rule_delete_group_confirm,
-                            showGroup.name,
-                        ),
+                        title = "删除规则组",
+                        text = "确定删除 ${showGroup.name} ?",
                         error = true,
                     )
                     if (!r) {
@@ -361,6 +356,10 @@ class RuleGroupState(
                             showSubs.copy(
                                 globalGroups = showSubs.globalGroups.filter { g -> g.key != showGroup.key }
                             )
+                        )
+                        DbSet.subsConfigDao.deleteGlobalGroupConfig(
+                            showGroupState.subsId,
+                            showGroupState.groupKey
                         )
                     } else if (showGroupState.appId != null) {
                         updateSubscription(
@@ -380,12 +379,12 @@ class RuleGroupState(
                             showGroupState.groupKey
                         )
                     }
-                    toast(li.songe.gkd.sdp.app.getString(R.string.s_86e8d12a79))
+                    toast("删除成功")
                 }
             )
         }
 
-        val excludeGroupState = editExcludeGroupFlow.collectAsStateWithLifecycle().value
+        val excludeGroupState = editExcludeGroupFlow.collectAsState().value
         val excludeSubs = useSubs(excludeGroupState?.subsId)
         val excludeGroup =
             useSubsGroup(excludeSubs, excludeGroupState?.groupKey, excludeGroupState?.appId)
@@ -397,8 +396,8 @@ class RuleGroupState(
                     val newValue = changedExcludeData
                     if (newValue != null) {
                         mainVm.dialogFlow.waitResult(
-                            title = li.songe.gkd.sdp.app.getString(R.string.s_ab3656a956),
-                            text = li.songe.gkd.sdp.app.getString(R.string.s_aebc195621),
+                            title = "提示",
+                            text = "当前内容未保存，是否放弃编辑？",
                         )
                     }
                     dismissExcludeGroupShow()
@@ -416,14 +415,14 @@ class RuleGroupState(
                             title = {
                                 TowLineText(
                                     title = excludeGroup.name,
-                                    subtitle = stringResource(R.string.subs_edit_disabled),
+                                    subtitle = "编辑禁用",
                                 )
                             },
                             actions = {
                                 PerfIconButton(imageVector = PerfIcon.Save, onClick = throttle {
                                     val newValue = changedExcludeData
                                     if (newValue == null) {
-                                        toast(li.songe.gkd.sdp.app.getString(R.string.s_a2a69342dd))
+                                        toast("无修改")
                                         dismissExcludeGroupShow()
                                     } else {
                                         val newSubsConfig =
@@ -438,7 +437,7 @@ class RuleGroupState(
                                         dismissExcludeGroupShow()
                                         mainVm.viewModelScope.launchTry {
                                             DbSet.subsConfigDao.insert(newSubsConfig)
-                                            toast(li.songe.gkd.sdp.app.getString(R.string.s_e2cff77372))
+                                            toast("更新成功")
                                         }
                                     }
                                 })
@@ -449,7 +448,7 @@ class RuleGroupState(
                     MultiTextField(
                         modifier = Modifier.scaffoldPadding(contentPadding),
                         textFlow = excludeTextFlow,
-                        placeholderText = stringResource(R.string.rule_activity_placeholder),
+                        placeholderText = "请填入需要禁用的 activityId 列表\n每行一个",
                     )
                 }
             }

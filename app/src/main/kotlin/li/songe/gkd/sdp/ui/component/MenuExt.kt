@@ -8,7 +8,7 @@ import androidx.compose.material3.MenuDefaults
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -57,7 +57,7 @@ fun MenuItemCheckbox(
     enabled: Boolean = true,
 ) = MenuItemCheckbox(
     text = text,
-    checked = stateFlow.collectAsStateWithLifecycle().value,
+    checked = stateFlow.collectAsState().value,
     onClick = { stateFlow.update { !it } },
     enabled = enabled,
 )

@@ -18,7 +18,6 @@ import li.songe.gkd.sdp.isActivityVisible
 import li.songe.gkd.sdp.permission.shizukuGrantedState
 import li.songe.gkd.sdp.permission.updatePermissionState
 import li.songe.gkd.sdp.service.ExposeService
-import li.songe.gkd.sdp.remote.ExposeAction
 import li.songe.gkd.sdp.service.StatusService
 import li.songe.gkd.sdp.service.currentAppBlocked
 import li.songe.gkd.sdp.service.currentAppUseA11y
@@ -33,7 +32,6 @@ import rikka.shizuku.Shizuku
 import rikka.shizuku.ShizukuBinderWrapper
 import rikka.shizuku.SystemServiceHelper
 import kotlin.system.exitProcess
-import li.songe.gkd.sdp.R
 
 inline fun <T> safeInvokeShizuku(
     block: () -> T
@@ -182,7 +180,7 @@ val updateBinderMutex = MutexState()
 private fun updateShizukuBinder() = updateBinderMutex.launchTry(appScope, Dispatchers.IO) {
     if (shizukuUsedFlow.value) {
         if (!app.justStarted) {
-            toast(li.songe.gkd.sdp.app.getString(R.string.s_6fc15efa04))
+            toast("正在连接 Shizuku 服务...")
         }
         val shizukuContext = ShizukuContext(
             serviceWrapper = buildServiceWrapper(),
@@ -209,19 +207,17 @@ private fun updateShizukuBinder() = updateBinderMutex.launchTry(appScope, Dispat
         updatePermissionState()
         if (StatusService.needRestart) {
             //
-            shizukuContext.activityManager?.startForegroundService(
-                ExposeService.issueInternalIntent(ExposeAction.STATUS_AUTOSTART),
-            )
+            shizukuContext.activityManager?.startForegroundService(ExposeService.exposeIntent(expose = -1))
         }
         val delayMillis = if (app.justStarted) 1200L else 0L
         if (shizukuContext.serviceWrapper == null) {
             if (shizukuContext.packageManager != null) {
-                toast(li.songe.gkd.sdp.app.getString(R.string.s_b06217b584), delayMillis = delayMillis)
+                toast("Shizuku 服务连接部分失败", delayMillis = delayMillis)
             } else {
-                toast(li.songe.gkd.sdp.app.getString(R.string.s_9b66e8878b), delayMillis = delayMillis)
+                toast("Shizuku 服务连接失败", delayMillis = delayMillis)
             }
         } else {
-            toast(li.songe.gkd.sdp.app.getString(R.string.s_4e700140c6), delayMillis = delayMillis)
+            toast("Shizuku 服务连接成功", delayMillis = delayMillis)
         }
     } else if (shizukuContextFlow.value.ok) {
         val willRelaunch = uiAutomationFlow.value != null && !shizukuGrantedState.updateAndGet()
@@ -232,18 +228,18 @@ private fun updateShizukuBinder() = updateBinderMutex.launchTry(appScope, Dispat
             uiAutomationFlow.value?.shutdown(true)
             shizukuContextFlow.value.destroy()
             shizukuContextFlow.value = defaultShizukuContext
-            toast(li.songe.gkd.sdp.app.getString(R.string.s_0335fe51da))
+            toast("Shizuku 服务已断开")
         }
     }
 }
 
 private suspend fun killRelaunchApp() {
     if (isActivityVisible) {
-        toast(li.songe.gkd.sdp.app.getString(R.string.s_756f3b92c0), forced = true)
+        toast("Shizuku 断开，重启应用以释放自动化服务", forced = true)
         delay(1500)
         app.startLaunchActivity()
     } else {
-        toast(li.songe.gkd.sdp.app.getString(R.string.s_d5650458c9), forced = true)
+        toast("Shizuku 断开，结束应用以释放自动化服务", forced = true)
         delay(1500)
     }
     android.os.Process.killProcess(android.os.Process.myPid())

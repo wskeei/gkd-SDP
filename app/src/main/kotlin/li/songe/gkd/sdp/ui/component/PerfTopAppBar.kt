@@ -1,5 +1,6 @@
 package li.songe.gkd.sdp.ui.component
 
+import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.TopAppBar
@@ -11,7 +12,7 @@ import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.Dp
-import li.songe.gkd.sdp.ui.share.appTopBarWindowInsets
+import li.songe.gkd.sdp.MainActivity
 
 @Composable
 fun PerfTopAppBar(
@@ -44,7 +45,7 @@ fun PerfTopAppBar(
             navigationIcon = navigationIcon,
             actions = actions,
             expandedHeight = expandedHeight,
-            windowInsets = appTopBarWindowInsets,
+            windowInsets = (LocalActivity.current as MainActivity).topBarWindowInsets,
             colors = colors,
             scrollBehavior = actualScrollBehavior,
         )

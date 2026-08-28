@@ -19,7 +19,7 @@ import androidx.compose.material3.MenuDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -28,7 +28,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.unit.dp
@@ -69,7 +68,6 @@ import li.songe.gkd.sdp.util.launchAsFn
 import li.songe.gkd.sdp.util.throttle
 import li.songe.gkd.sdp.util.toast
 import li.songe.gkd.sdp.util.updateSubscription
-import li.songe.gkd.sdp.R
 
 @Serializable
 data class SubsCategoryGroupRoute(val subsId: Long, val categoryKey: Int) : NavKey
@@ -78,11 +76,11 @@ data class SubsCategoryGroupRoute(val subsId: Long, val categoryKey: Int) : NavK
 fun SubsCategoryGroupPage(route: SubsCategoryGroupRoute) {
     val mainVm = LocalMainViewModel.current
     val vm = viewModel { SubsCategoryGroupVm(route) }
-    val subs = vm.subsFlow.collectAsStateWithLifecycle().value
-    val apps = vm.appsFlow.collectAsStateWithLifecycle().value
-    val category = vm.categoryFlow.collectAsStateWithLifecycle().value
-    val subsConfigs = vm.subsConfigsFlow.collectAsStateWithLifecycle().value
-    val categoryConfig = vm.categoryConfigFlow.collectAsStateWithLifecycle().value
+    val subs = vm.subsFlow.collectAsState().value
+    val apps = vm.appsFlow.collectAsState().value
+    val category = vm.categoryFlow.collectAsState().value
+    val subsConfigs = vm.subsConfigsFlow.collectAsState().value
+    val categoryConfig = vm.categoryConfigFlow.collectAsState().value
     val scrollKey = rememberSaveable { mutableIntStateOf(0) }
     val groupSize = apps.sumOf { it.groups.size }
     val (scrollBehavior, listState) = useListScrollState(scrollKey, groupSize)
@@ -130,14 +128,14 @@ fun SubsCategoryGroupPage(route: SubsCategoryGroupRoute) {
                                 categoryKey = category.key
                             )).copy(enable = option.value)
                         )
-                        toast(li.songe.gkd.sdp.app.getString(option.labelRes))
+                        toast(option.label)
                     },
                 ),
             )
             val resetAll = suspend {
                 mainVm.dialogFlow.waitResult(
-                    title = li.songe.gkd.sdp.app.getString(R.string.s_b2f0b173eb),
-                    text = li.songe.gkd.sdp.app.getString(R.string.s_902609e57e),
+                    title = "重置开关",
+                    text = "重置当前类别下所有规则开关为默认值？\n重置后规则可由类别批量控制开关",
                 )
                 val updatedList = DbSet.subsConfigDao.batchResetAppGroupEnable(
                     subs.id,
@@ -145,9 +143,9 @@ fun SubsCategoryGroupPage(route: SubsCategoryGroupRoute) {
                         .map { g -> g to subs.getAppByGroup(g) },
                 )
                 if (updatedList.isNotEmpty()) {
-                    toast(li.songe.gkd.sdp.app.getString(R.string.s_9672b434b8, (updatedList.size).toString()))
+                    toast("重置 ${updatedList.size} 规则")
                 } else {
-                    toast(li.songe.gkd.sdp.app.getString(R.string.s_8e1d999ba4))
+                    toast("无可重置规则")
                 }
             }
             if (subs.isLocal) {
@@ -164,7 +162,7 @@ fun SubsCategoryGroupPage(route: SubsCategoryGroupRoute) {
                         if (groupSize > 0) {
                             DropdownMenuItem(
                                 leadingIcon = { PerfIcon(imageVector = ResetSettings) },
-                                text = { Text(text = li.songe.gkd.sdp.app.getString(R.string.s_3d81345303)) },
+                                text = { Text(text = "重置") },
                                 onClick = throttle(vm.viewModelScope.launchAsFn {
                                     expanded = false
                                     resetAll()
@@ -173,7 +171,7 @@ fun SubsCategoryGroupPage(route: SubsCategoryGroupRoute) {
                         }
                         DropdownMenuItem(
                             leadingIcon = { PerfIcon(imageVector = PerfIcon.Edit) },
-                            text = { Text(text = li.songe.gkd.sdp.app.getString(R.string.s_a7f814c0a4)) },
+                            text = { Text(text = "编辑") },
                             onClick = {
                                 expanded = false
                                 vm.showEditCategoryFlow.value = true
@@ -181,7 +179,7 @@ fun SubsCategoryGroupPage(route: SubsCategoryGroupRoute) {
                         )
                         DropdownMenuItem(
                             leadingIcon = { PerfIcon(imageVector = PerfIcon.Delete) },
-                            text = { Text(text = li.songe.gkd.sdp.app.getString(R.string.s_3755f56f2f)) },
+                            text = { Text(text = "删除") },
                             colors = MenuDefaults.itemColors(
                                 textColor = MaterialTheme.colorScheme.error,
                                 leadingIconColor = MaterialTheme.colorScheme.error,
@@ -189,8 +187,8 @@ fun SubsCategoryGroupPage(route: SubsCategoryGroupRoute) {
                             onClick = throttle(mainVm.viewModelScope.launchAsFn {
                                 expanded = false
                                 mainVm.dialogFlow.waitResult(
-                                    title = li.songe.gkd.sdp.app.getString(R.string.s_0bfb53c9cd),
-                                    text = li.songe.gkd.sdp.app.getString(R.string.s_2b96421a75, (category.name).toString()),
+                                    title = "删除类别",
+                                    text = "确定删除 ${category.name} ?",
                                     error = true,
                                 )
                                 mainVm.popPage()
@@ -200,7 +198,11 @@ fun SubsCategoryGroupPage(route: SubsCategoryGroupRoute) {
                                         removeIf { it.key == category.key }
                                     })
                                 )
-                                toast(li.songe.gkd.sdp.app.getString(R.string.s_86e8d12a79))
+                                DbSet.categoryConfigDao.deleteByCategoryKey(
+                                    subs.id,
+                                    category.key
+                                )
+                                toast("删除成功")
                             })
                         )
                     }
@@ -222,31 +224,31 @@ fun SubsCategoryGroupPage(route: SubsCategoryGroupRoute) {
                 modifier = Modifier.wrapContentSize(Alignment.TopStart)
             ) {
                 DropdownMenu(expanded = sortExpanded, onDismissRequest = { sortExpanded = false }) {
-                    MenuGroupCard(inTop = true, title = stringResource(R.string.app_list_sort_title)) {
+                    MenuGroupCard(inTop = true, title = "排序") {
                         var sortType by vm.sortTypeFlow.asMutableState()
                         AppSortOption.objects.forEach { option ->
                             MenuItemRadioButton(
-                                text = stringResource(option.labelRes),
+                                text = option.label,
                                 selected = sortType == option,
                                 onClick = { sortType = option },
                             )
                         }
                     }
-                    MenuGroupCard(title = stringResource(R.string.app_list_group_title)) {
+                    MenuGroupCard(title = "分组") {
                         var appGroupType by vm.appGroupTypeFlow.asMutableState()
                         AppGroupOption.allObjects.forEach { option ->
                             val newValue = option.invert(appGroupType)
                             MenuItemCheckbox(
                                 enabled = newValue != 0,
-                                text = stringResource(option.labelRes),
+                                text = option.label,
                                 checked = option.include(appGroupType),
                                 onClick = { appGroupType = newValue },
                             )
                         }
                     }
-                    MenuGroupCard(title = stringResource(R.string.app_list_filter_title)) {
+                    MenuGroupCard(title = "筛选") {
                         MenuItemCheckbox(
-                            text = stringResource(R.string.subs_whitelist),
+                            text = "白名单",
                             stateFlow = vm.showBlockAppFlow,
                         )
                     }
@@ -306,14 +308,14 @@ fun SubsCategoryGroupPage(route: SubsCategoryGroupRoute) {
             item(ListPlaceholder.KEY, ListPlaceholder.TYPE) {
                 Spacer(modifier = Modifier.height(EmptyHeight))
                 if (apps.isEmpty()) {
-                    EmptyText(text = if (vm.showAllAppFlow.collectAsStateWithLifecycle().value) li.songe.gkd.sdp.app.getString(R.string.s_b246458f20) else li.songe.gkd.sdp.app.getString(R.string.s_53e5dc587c))
+                    EmptyText(text = if (vm.showAllAppFlow.collectAsState().value) "暂无数据" else "暂无数据，或修改筛选")
                     Spacer(modifier = Modifier.height(EmptyHeight))
                 }
             }
         }
     }
 
-    if (vm.showEditCategoryFlow.collectAsStateWithLifecycle().value) {
+    if (vm.showEditCategoryFlow.collectAsState().value) {
         UpsertCategoryDialog(
             subs = subs,
             category = category,

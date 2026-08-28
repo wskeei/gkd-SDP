@@ -17,7 +17,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -26,7 +26,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -58,7 +57,6 @@ import li.songe.gkd.sdp.util.launchAsFn
 import li.songe.gkd.sdp.util.throttle
 import li.songe.gkd.sdp.util.toast
 import li.songe.gkd.sdp.util.updateSubscription
-import li.songe.gkd.sdp.R
 
 @Serializable
 data class SubsCategoryRoute(val subsItemId: Long) : NavKey
@@ -68,8 +66,8 @@ fun SubsCategoryPage(@Suppress("unused") route: SubsCategoryRoute) {
     val mainVm = LocalMainViewModel.current
 
     val vm = viewModel { SubsCategoryVm(route) }
-    val subs = vm.subsRawFlow.collectAsStateWithLifecycle().value
-    val categoryConfigMap = vm.categoryConfigMapFlow.collectAsStateWithLifecycle().value
+    val subs = vm.subsRawFlow.collectAsState().value
+    val categoryConfigMap = vm.categoryConfigMapFlow.collectAsState().value
 
     val categories = subs.categories
 
@@ -84,17 +82,17 @@ fun SubsCategoryPage(@Suppress("unused") route: SubsCategoryRoute) {
         }, title = {
             TowLineText(
                 title = subs.name,
-                subtitle = stringResource(R.string.subs_rule_category),
+                subtitle = "规则类别",
                 modifier = Modifier.noRippleClickable(onClick = { scrollKey.intValue++ })
             )
         }, actions = {
             PerfIconButton(imageVector = PerfIcon.Info, onClick = throttle {
                 mainVm.dialogFlow.updateDialogOptions(
-                    title = li.songe.gkd.sdp.app.getString(R.string.s_a866534a0d),
+                    title = "类别说明",
                     text = arrayOf(
-                        li.songe.gkd.sdp.app.getString(R.string.subs_category_help_intro),
-                        li.songe.gkd.sdp.app.getString(R.string.subs_category_help_priority),
-                        li.songe.gkd.sdp.app.getString(R.string.subs_category_help_reset),
+                        "类别会捕获以当前类别开头的所有应用规则, 因此可调整类别开关(分类手动配置)来批量开关规则",
+                        "规则开关优先级为:\n规则手动配置 > 分类手动配置 > 分类默认 > 规则默认",
+                        "因此如果手动开关了规则(规则手动配置), 则该规则不会被批量开关, 可通过点击类别-重置规则开关, 来移除类别下所有规则手动配置",
                     ).joinToString("\n\n"),
                 )
             })
@@ -123,13 +121,13 @@ fun SubsCategoryPage(@Suppress("unused") route: SubsCategoryRoute) {
             item(ListPlaceholder.KEY, ListPlaceholder.TYPE) {
                 Spacer(modifier = Modifier.height(EmptyHeight))
                 if (categories.isEmpty()) {
-                    EmptyText(text = li.songe.gkd.sdp.app.getString(R.string.s_90fa56d24c))
+                    EmptyText(text = "暂无类别")
                 }
             }
         }
     }
 
-    if (vm.showAddCategoryFlow.collectAsStateWithLifecycle().value) {
+    if (vm.showAddCategoryFlow.collectAsState().value) {
         UpsertCategoryDialog(
             subs = subs,
             category = null,
@@ -174,10 +172,7 @@ private fun CategoryItemCard(
                     text = category.name,
                     style = MaterialTheme.typography.bodyLarge,
                 )
-                val desc = subs.getCategoryCompatDesc(
-                    category.key,
-                    li.songe.gkd.sdp.app,
-                )
+                val desc = subs.getCategoryCompatDesc(category.key)
                 if (desc != null) {
                     Text(
                         text = desc,
@@ -186,7 +181,7 @@ private fun CategoryItemCard(
                     )
                 } else {
                     Text(
-                        text = li.songe.gkd.sdp.app.getString(R.string.s_cff584d9ab),
+                        text = "暂无规则",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
                     )
@@ -206,7 +201,7 @@ private fun CategoryItemCard(
                             categoryKey = category.key
                         )).copy(enable = option.value)
                     )
-                    toast(li.songe.gkd.sdp.app.getString(option.labelRes))
+                    toast(option.label)
                 })
             )
         }
@@ -224,7 +219,7 @@ fun UpsertCategoryDialog(
     val onClick = appScope.launchAsFn {
         if (category != null) {
             if (subs.categories.any { c -> c.key != category.key && c.name == nameValue }) {
-                error(li.songe.gkd.sdp.app.getString(R.string.subs_category_duplicate))
+                error("不可添加同名类别")
             }
             onDismissRequest()
             val changed = category.name != nameValue || (category.desc ?: "") != descValue
@@ -237,13 +232,13 @@ fun UpsertCategoryDialog(
                         )
                     })
                 )
-                toast(li.songe.gkd.sdp.app.getString(R.string.s_e2cff77372))
+                toast("更新成功")
             } else {
-                toast(li.songe.gkd.sdp.app.getString(R.string.s_fff8cc4d94))
+                toast("未修改")
             }
         } else {
             if (subs.categories.any { c -> c.name == nameValue }) {
-                error(li.songe.gkd.sdp.app.getString(R.string.subs_category_duplicate))
+                error("不可添加同名类别")
             }
             onDismissRequest()
             updateSubscription(
@@ -257,7 +252,7 @@ fun UpsertCategoryDialog(
                     add(c)
                 })
             )
-            toast(li.songe.gkd.sdp.app.getString(R.string.s_6950d05c09))
+            toast("添加成功")
         }
     }
     FullscreenDialog(onDismissRequest = onDismissRequest) {
@@ -270,7 +265,7 @@ fun UpsertCategoryDialog(
                             onClick = throttle(onDismissRequest),
                         )
                     },
-                    title = { Text(text = if (category == null) li.songe.gkd.sdp.app.getString(R.string.s_f0250d57b9) else li.songe.gkd.sdp.app.getString(R.string.s_40635c4228)) },
+                    title = { Text(text = if (category == null) "添加类别" else "编辑类别") },
                     actions = {
                         PerfIconButton(
                             imageVector = PerfIcon.Save,
@@ -287,22 +282,22 @@ fun UpsertCategoryDialog(
                     .padding(horizontal = 16.dp),
             ) {
                 OutlinedTextField(
-                    label = { Text(li.songe.gkd.sdp.app.getString(R.string.s_54900435fc)) },
+                    label = { Text("类别名称") },
                     value = nameValue,
                     onValueChange = { nameValue = it.trim() },
                     modifier = Modifier
                         .fillMaxWidth()
                         .autoFocus(),
-                    placeholder = { Text(text = li.songe.gkd.sdp.app.getString(R.string.s_b4676e2715)) },
+                    placeholder = { Text(text = "请输入类别名称") },
                     singleLine = true,
                 )
                 Spacer(modifier = Modifier.height(12.dp))
                 OutlinedTextField(
-                    label = { Text(li.songe.gkd.sdp.app.getString(R.string.s_3aba810f58)) },
+                    label = { Text("类别描述") },
                     value = descValue,
                     onValueChange = { descValue = it.trim() },
                     modifier = Modifier.fillMaxWidth(),
-                    placeholder = { Text(text = li.songe.gkd.sdp.app.getString(R.string.s_90059a73fc)) },
+                    placeholder = { Text(text = "请输入类别描述") },
                     singleLine = true,
                 )
             }

@@ -12,8 +12,6 @@ import android.widget.Button
 import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.TextView
-import li.songe.gkd.sdp.R
-import li.songe.gkd.sdp.util.LogUtils
 
 object FetchOverlayController {
     private var windowManager: WindowManager? = null
@@ -54,18 +52,18 @@ object FetchOverlayController {
         statusTextView = TextView(context).apply {
             setTextColor(Color.WHITE)
             textSize = 14f
-            text = li.songe.gkd.sdp.app.getString(R.string.contact_fetch_ready)
+            text = "准备抓取..."
         }
 
         countTextView = TextView(context).apply {
             setTextColor(Color.GREEN)
             textSize = 12f
-            text = li.songe.gkd.sdp.app.getString(R.string.contact_fetch_getting_zero)
+            text = "已获取: 0"
             setPadding(0, 8, 0, 8)
         }
 
         val stopButton = Button(context).apply {
-            text = li.songe.gkd.sdp.app.getString(R.string.contact_fetch_stop)
+            text = "停止"
             textSize = 12f
             setPadding(16, 0, 16, 0)
             setBackgroundColor(Color.RED)
@@ -88,7 +86,7 @@ object FetchOverlayController {
         try {
             windowManager?.addView(overlayView, layoutParams)
         } catch (ex: Exception) {
-            LogUtils.d("contact fetch overlay mount failed", ex)
+            ex.printStackTrace()
         }
     }
 
@@ -97,7 +95,7 @@ object FetchOverlayController {
             try {
                 windowManager?.removeView(overlayView)
             } catch (ex: Exception) {
-                LogUtils.d("contact fetch overlay removal failed", ex)
+                ex.printStackTrace()
             }
             overlayView = null
             windowManager = null
@@ -110,17 +108,9 @@ object FetchOverlayController {
         // UI updates must happen on main thread
         overlayView?.post {
             statusTextView?.text = state.statusText
-            countTextView?.text = li.songe.gkd.sdp.app.getString(
-                R.string.contact_fetch_count,
-                state.fetchedCount,
-            )
+            countTextView?.text = "已获取: ${state.fetchedCount} 人"
             if (state.currentTarget != null) {
-                statusTextView?.append(
-                    "\n" + li.songe.gkd.sdp.app.getString(
-                        R.string.contact_fetch_processing,
-                        state.currentTarget,
-                    ),
-                )
+                statusTextView?.append("\n正在处理: ${state.currentTarget}")
             }
         }
     }

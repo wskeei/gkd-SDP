@@ -69,17 +69,11 @@ data class SubsItem(
         @Query("SELECT * FROM subs_item ORDER BY `order`")
         fun query(): Flow<List<SubsItem>>
 
-        @Query("SELECT * FROM subs_item WHERE id=:id")
-        suspend fun queryById(id: Long): SubsItem?
-
         @Query("SELECT * FROM subs_item ORDER BY `order`")
         fun queryAll(): List<SubsItem>
 
         @Query("DELETE FROM subs_item WHERE id IN (:ids)")
         suspend fun deleteById(vararg ids: Long): Int
-
-        @Query("DELETE FROM subs_item")
-        suspend fun deleteAll(): Int
 
         @Query("UPDATE subs_item SET enable = 1 WHERE enable = 0")
         suspend fun enableAllDisabled(): Int

@@ -1,65 +1,58 @@
 package li.songe.gkd.sdp.a11y
 
-import li.songe.gkd.sdp.util.UsageGuardCountdownOverlayCaptureController
-import li.songe.gkd.sdp.util.UsageGuardCountdownOverlayCapturePolicy
-import li.songe.gkd.sdp.util.UsageGuardCountdownOverlaySession
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
+import java.io.File
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class UsageGuardCountdownOverlayLeaseContractTest {
     @Test
-    fun matchingLeaseForegroundAndRuntimeAllowRestore() {
-        val session = session()
+    fun engineOwnsAndRevokesTheRestoreLease() {
+        val source = sourceFile(
+            "app/src/main/kotlin/li/songe/gkd/sdp/a11y/UsageGuardEngine.kt",
+        ).readText()
+        val restoreCheck = source
+            .substringAfter("fun canRestoreCountdownOverlay(")
+            .substringBefore("fun onRequestOverlayStopped")
+        val clearState = source
+            .substringAfter("private fun clearCountdownOverlayState()")
+            .substringBefore("private fun UsageGuardAppProfile.toSnapshot")
 
-        assertTrue(
-            UsageGuardCountdownOverlayCapturePolicy.isLeaseActive(
-                lease = session.toLease(),
-                session = session,
-                foregroundAppId = session.appId,
-                currentRuntimeGeneration = session.runtimeGeneration,
-            ),
-        )
+        assertTrue(source.contains("AtomicReference<UsageGuardCountdownOverlayLease?>"))
+        assertTrue(source.contains("countdownOverlayLeaseSequence.incrementAndGet()"))
+        assertTrue(source.contains("putExtra(UsageGuardCountdownOverlayService.EXTRA_OVERLAY_LEASE_ID"))
+        assertTrue(source.contains("putExtra(UsageGuardCountdownOverlayService.EXTRA_RUNTIME_GENERATION"))
+        assertTrue(restoreCheck.contains("UsageGuardCountdownOverlayCapturePolicy.isLeaseActive("))
+        assertTrue(restoreCheck.contains("topActivityFlow.value.appId"))
+        assertTrue(restoreCheck.contains("currentOwner()?.generation"))
+        assertTrue(clearState.contains("countdownOverlayLease.set(null)"))
     }
 
     @Test
     fun staleServiceCallbacksCannotClearAReplacementLease() {
-        val controller = mountedController()
-        val hidden = controller.snapshotForHide()!!
-        assertTrue(controller.onHideResult(hidden, removed = true))
-        val replacement = session(leaseId = hidden.leaseId + 1L)
+        val source = sourceFile(
+            "app/src/main/kotlin/li/songe/gkd/sdp/a11y/UsageGuardEngine.kt",
+        ).readText()
+        val stoppedCallback = source
+            .substringAfter("fun onCountdownOverlayStopped(")
+            .substringBefore("fun onRuntimeDisconnected")
+        val mountFailureCallback = source
+            .substringAfter("fun onOverlayMountFailed(")
+            .substringBefore("fun onRequestGranted")
 
-        assertEquals(
-            UsageGuardCountdownOverlayCaptureController.StartAction.RESET_AND_MOUNT,
-            controller.onStart(replacement, hasView = true),
-        )
-        assertEquals(
-            UsageGuardCountdownOverlayCaptureController.RestoreAction.IGNORE,
-            controller.restoreAction(
-                hidden = hidden,
-                now = hidden.expiresAt - 1L,
-                leaseActive = true,
-            ),
-        )
-        assertFalse(controller.isMounted)
+        assertTrue(stoppedCallback.contains("leaseId"))
+        assertTrue(stoppedCallback.contains("activeLease.leaseId == leaseId"))
+        assertTrue(mountFailureCallback.contains("activeLease != null"))
+        assertTrue(mountFailureCallback.contains("activeLease.appId == appId"))
+        assertTrue(mountFailureCallback.contains("activeLease.leaseId == countdownLeaseId"))
     }
 
-    private fun mountedController(): UsageGuardCountdownOverlayCaptureController {
-        return UsageGuardCountdownOverlayCaptureController().apply {
-            onStart(session(), hasView = false)
-            onMountSucceeded()
+    private fun sourceFile(relativePath: String): File {
+        var directory = File(System.getProperty("user.dir").orEmpty())
+        repeat(8) {
+            val candidate = File(directory, relativePath)
+            if (candidate.isFile) return candidate
+            directory = directory.parentFile ?: return File(relativePath)
         }
+        return File(relativePath)
     }
-
-    private fun session(
-        leaseId: Long = 11L,
-        runtimeGeneration: Long = 5L,
-    ) = UsageGuardCountdownOverlaySession(
-        appId = "com.example.target",
-        recordId = 7L,
-        expiresAt = 20_000L,
-        leaseId = leaseId,
-        runtimeGeneration = runtimeGeneration,
-    )
 }

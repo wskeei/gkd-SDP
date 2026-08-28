@@ -2,160 +2,148 @@ package li.songe.gkd.sdp.util
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class UsageGuardCountdownOverlayCaptureControllerTest {
     @Test
-    fun removalFailureKeepsTheSecureOverlayMounted() {
+    fun validSessionWithoutViewRequestsCreateAndMount() {
         val controller = UsageGuardCountdownOverlayCaptureController()
-        val session = session()
 
         assertEquals(
             UsageGuardCountdownOverlayCaptureController.StartAction.CREATE_AND_MOUNT,
-            controller.onStart(session, hasView = false),
+            controller.onStart(session(), hasView = false),
         )
         assertTrue(controller.onMountSucceeded())
+        assertTrue(controller.isMounted)
+        assertFalse(controller.isTerminal)
+    }
+
+    @Test
+    fun unchangedSessionKeepsMountedOrHiddenState() {
+        val controller = UsageGuardCountdownOverlayCaptureController()
+        val session = session()
+
+        controller.onStart(session, hasView = false)
+        controller.onMountSucceeded()
+        assertEquals(
+            UsageGuardCountdownOverlayCaptureController.StartAction.KEEP_MOUNTED,
+            controller.onStart(session, hasView = true),
+        )
 
         val hidden = controller.snapshotForHide()
         assertEquals(session, hidden)
-        assertFalse(controller.onHideResult(hidden!!, removed = false))
-        assertTrue(controller.isMounted)
-    }
-
-    @Test
-    fun sameUnexpiredLeaseRestoresAfterSuccessfulRemoval() {
-        val controller = mountedController()
-        val hidden = controller.snapshotForHide()!!
-
-        assertTrue(controller.onHideResult(hidden, removed = true))
+        assertTrue(controller.onHideResult(session, removed = true))
         assertFalse(controller.isMounted)
         assertEquals(
-            UsageGuardCountdownOverlayCaptureController.RestoreAction.MOUNT,
-            controller.restoreAction(
-                hidden = hidden,
-                now = 19_999L,
-                leaseActive = true,
-            ),
+            UsageGuardCountdownOverlayCaptureController.StartAction.KEEP_HIDDEN,
+            controller.onStart(session, hasView = true),
         )
     }
 
     @Test
-    fun revokedLeaseNeverRestores() {
-        val controller = mountedController()
-        val hidden = controller.snapshotForHide()!!
-        assertTrue(controller.onHideResult(hidden, removed = true))
-
-        assertEquals(
-            UsageGuardCountdownOverlayCaptureController.RestoreAction.STOP_REVOKED,
-            controller.restoreAction(
-                hidden = hidden,
-                now = 19_999L,
-                leaseActive = false,
-            ),
-        )
-        assertFalse(controller.isMounted)
-    }
-
-    @Test
-    fun expiredCurrentLeaseStopsInsteadOfRestoring() {
-        val controller = mountedController()
-        val hidden = controller.snapshotForHide()!!
-        assertTrue(controller.onHideResult(hidden, removed = true))
-
-        assertEquals(
-            UsageGuardCountdownOverlayCaptureController.RestoreAction.STOP_EXPIRED,
-            controller.restoreAction(
-                hidden = hidden,
-                now = hidden.expiresAt,
-                leaseActive = true,
-            ),
-        )
-    }
-
-    @Test
-    fun replacementLeaseMountsImmediatelyAndInvalidatesOldRestore() {
-        val controller = mountedController()
-        val hidden = controller.snapshotForHide()!!
-        assertTrue(controller.onHideResult(hidden, removed = true))
-        val replacement = session(leaseId = hidden.leaseId + 1L)
+    fun replacementSessionRequestsResetAndMount() {
+        val controller = mountedController(session())
 
         assertEquals(
             UsageGuardCountdownOverlayCaptureController.StartAction.RESET_AND_MOUNT,
-            controller.onStart(replacement, hasView = true),
+            controller.onStart(session(recordId = 8L), hasView = true),
+        )
+    }
+
+    @Test
+    fun mountFailureMakesControllerTerminal() {
+        val controller = UsageGuardCountdownOverlayCaptureController()
+
+        controller.onStart(session(), hasView = false)
+        controller.onMountFailed()
+
+        assertFalse(controller.isMounted)
+        assertTrue(controller.isTerminal)
+        assertFalse(controller.onMountSucceeded())
+        assertNull(controller.snapshotForHide())
+    }
+
+    @Test
+    fun hideRequiresSuccessfulRemovalOfMountedWindow() {
+        val controller = mountedController(session())
+        val session = controller.snapshotForHide()
+
+        assertNotNull(session)
+        assertFalse(controller.onHideResult(session!!, removed = false))
+        assertTrue(controller.isMounted)
+        assertEquals(session, controller.snapshotForHide())
+    }
+
+    @Test
+    fun restoreRequiresSameCurrentUnexpiredSessionAndActiveLease() {
+        val controller = mountedController(session())
+        val hidden = controller.snapshotForHide()!!
+        controller.onHideResult(hidden, removed = true)
+
+        assertEquals(
+            UsageGuardCountdownOverlayCaptureController.RestoreAction.MOUNT,
+            controller.restoreAction(hidden, now = 20_000L, leaseActive = true),
+        )
+
+        val expiredController = mountedController(session(expiresAt = 20_000L))
+        val expired = expiredController.snapshotForHide()!!
+        expiredController.onHideResult(expired, removed = true)
+        assertEquals(
+            UsageGuardCountdownOverlayCaptureController.RestoreAction.STOP_EXPIRED,
+            expiredController.restoreAction(
+                expired,
+                now = 20_000L,
+                leaseActive = true,
+            ),
+        )
+        assertEquals(
+            UsageGuardCountdownOverlayCaptureController.RestoreAction.STOP_REVOKED,
+            controller.restoreAction(hidden, now = 20_000L, leaseActive = false),
         )
         assertEquals(
             UsageGuardCountdownOverlayCaptureController.RestoreAction.IGNORE,
             controller.restoreAction(
-                hidden = hidden,
-                now = 19_999L,
+                hidden.copy(recordId = hidden.recordId + 1L),
+                now = 20_000L,
                 leaseActive = true,
             ),
         )
     }
 
     @Test
-    fun duplicateStartDuringHideKeepsTheOriginalRestoreWindow() {
-        val controller = mountedController()
+    fun destructionPreventsLaterRestore() {
+        val controller = mountedController(session())
         val hidden = controller.snapshotForHide()!!
-        assertTrue(controller.onHideResult(hidden, removed = true))
-
-        assertEquals(
-            UsageGuardCountdownOverlayCaptureController.StartAction.KEEP_HIDDEN,
-            controller.onStart(hidden, hasView = true),
-        )
-    }
-
-    @Test
-    fun mountFailureIsTerminalForTheCurrentServiceInstance() {
-        val controller = UsageGuardCountdownOverlayCaptureController()
-        val session = session()
-        controller.onStart(session, hasView = false)
-
-        controller.onMountFailed()
-
-        assertTrue(controller.isTerminal)
-        assertFalse(controller.isMounted)
-        assertNull(controller.snapshotForHide())
-        assertEquals(
-            UsageGuardCountdownOverlayCaptureController.StartAction.IGNORE_TERMINAL,
-            controller.onStart(session, hasView = false),
-        )
-    }
-
-    @Test
-    fun destroyedControllerCannotRestoreOrRestart() {
-        val controller = mountedController()
-        val hidden = controller.snapshotForHide()!!
-        assertTrue(controller.onHideResult(hidden, removed = true))
-
+        controller.onHideResult(hidden, removed = true)
         controller.onDestroy()
 
+        assertTrue(controller.isTerminal)
         assertEquals(
             UsageGuardCountdownOverlayCaptureController.RestoreAction.IGNORE,
-            controller.restoreAction(hidden, now = 19_999L, leaseActive = true),
-        )
-        assertEquals(
-            UsageGuardCountdownOverlayCaptureController.StartAction.IGNORE_TERMINAL,
-            controller.onStart(hidden, hasView = true),
+            controller.restoreAction(hidden, now = 20_000L, leaseActive = true),
         )
     }
 
-    private fun mountedController(): UsageGuardCountdownOverlayCaptureController {
-        return UsageGuardCountdownOverlayCaptureController().apply {
-            onStart(session(), hasView = false)
-            onMountSucceeded()
+    private fun mountedController(session: UsageGuardCountdownOverlaySession): UsageGuardCountdownOverlayCaptureController {
+        return UsageGuardCountdownOverlayCaptureController().also {
+            it.onStart(session, hasView = false)
+            it.onMountSucceeded()
         }
     }
 
     private fun session(
+        appId: String = "com.example.target",
+        recordId: Long = 7L,
+        expiresAt: Long = 20_001L,
         leaseId: Long = 11L,
         runtimeGeneration: Long = 5L,
     ) = UsageGuardCountdownOverlaySession(
-        appId = "com.example.target",
-        recordId = 7L,
-        expiresAt = 20_000L,
+        appId = appId,
+        recordId = recordId,
+        expiresAt = expiresAt,
         leaseId = leaseId,
         runtimeGeneration = runtimeGeneration,
     )

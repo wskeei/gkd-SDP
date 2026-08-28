@@ -21,7 +21,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -29,7 +29,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -96,10 +95,10 @@ fun SubsGlobalGroupExcludePage(route: SubsGlobalGroupExcludeRoute) {
     val mainVm = LocalMainViewModel.current
     val context = LocalActivity.current as MainActivity
     val vm = viewModel { SubsGlobalGroupExcludeVm(route) }
-    val subs = vm.subsFlow.collectAsStateWithLifecycle().value
-    val group = vm.groupFlow.collectAsStateWithLifecycle().value ?: return
-    val excludeData = vm.excludeDataFlow.collectAsStateWithLifecycle().value
-    val showAppInfos = vm.showAppInfosFlow.collectAsStateWithLifecycle().value
+    val subs = vm.subsFlow.collectAsState().value
+    val group = vm.groupFlow.collectAsState().value ?: return
+    val excludeData = vm.excludeDataFlow.collectAsState().value
+    val showAppInfos = vm.showAppInfosFlow.collectAsState().value
 
     var searchStr by vm.searchStrFlow.asMutableState()
     var editable by vm.editableFlow.asMutableState()
@@ -121,8 +120,8 @@ fun SubsGlobalGroupExcludePage(route: SubsGlobalGroupExcludeRoute) {
         context.justHideSoftInput()
         if (vm.changedValue != null) {
             mainVm.dialogFlow.waitResult(
-                title = li.songe.gkd.sdp.app.getString(R.string.s_ab3656a956),
-                text = li.songe.gkd.sdp.app.getString(R.string.s_aebc195621),
+                title = "提示",
+                text = "当前内容未保存，是否放弃编辑？",
             )
         }
         editable = false
@@ -159,13 +158,13 @@ fun SubsGlobalGroupExcludePage(route: SubsGlobalGroupExcludeRoute) {
                             onValueChange = { newValue ->
                                 searchStr = newValue.trim()
                             },
-                            hint = stringResource(R.string.app_list_search_hint),
+                            hint = "请输入应用名称/ID",
                             modifier = Modifier.autoFocus(),
                         )
                     } else {
                         TowLineText(
                             title = group.name,
-                            subtitle = stringResource(R.string.subs_edit_disabled),
+                            subtitle = "编辑禁用",
                             modifier = Modifier.noRippleClickable { vm.resetKey.intValue++ }
                         )
                     }
@@ -188,9 +187,9 @@ fun SubsGlobalGroupExcludePage(route: SubsGlobalGroupExcludeRoute) {
                                             exclude = newExclude.stringify()
                                         )
                                         DbSet.subsConfigDao.insert(subsConfig)
-                                        toast(li.songe.gkd.sdp.app.getString(R.string.s_e2cff77372))
+                                        toast("更新成功")
                                     } else {
-                                        toast(li.songe.gkd.sdp.app.getString(R.string.s_fff8cc4d94))
+                                        toast("未修改")
                                     }
                                     context.justHideSoftInput()
                                     editable = false
@@ -229,35 +228,35 @@ fun SubsGlobalGroupExcludePage(route: SubsGlobalGroupExcludeRoute) {
                                         expanded = expanded,
                                         onDismissRequest = { expanded = false }
                                     ) {
-                                        MenuGroupCard(inTop = true, title = stringResource(R.string.app_list_sort_title)) {
+                                        MenuGroupCard(inTop = true, title = "排序") {
                                             var sortType by vm.sortTypeFlow.asMutableState()
                                             AppSortOption.objects.forEach { option ->
                                                 MenuItemRadioButton(
-                                                    text = stringResource(option.labelRes),
+                                                    text = option.label,
                                                     selected = sortType == option,
                                                     onClick = { sortType = option }
                                                 )
                                             }
                                         }
-                                        MenuGroupCard(title = stringResource(R.string.app_list_group_title)) {
+                                        MenuGroupCard(title = "分组") {
                                             var appGroupType by vm.appGroupTypeFlow.asMutableState()
                                             AppGroupOption.normalObjects.forEach { option ->
                                                 val newValue = option.invert(appGroupType)
                                                 MenuItemCheckbox(
                                                     enabled = newValue != 0,
-                                                    text = stringResource(option.labelRes),
+                                                    text = option.label,
                                                     checked = option.include(appGroupType),
                                                     onClick = { appGroupType = newValue },
                                                 )
                                             }
                                         }
-                                        MenuGroupCard(title = stringResource(R.string.app_list_filter_title)) {
+                                        MenuGroupCard(title = "筛选") {
                                             MenuItemCheckbox(
-                                                text = stringResource(R.string.subs_builtin_disabled),
+                                                text = "内置禁用",
                                                 stateFlow = vm.showInnerDisabledAppFlow,
                                             )
                                             MenuItemCheckbox(
-                                                text = stringResource(R.string.subs_whitelist),
+                                                text = "白名单",
                                                 stateFlow = vm.showBlockAppFlow,
                                             )
                                         }
@@ -275,7 +274,7 @@ fun SubsGlobalGroupExcludePage(route: SubsGlobalGroupExcludeRoute) {
                     editable = !editable
                 },
                 imageVector = PerfIcon.Edit,
-                contentDescription = li.songe.gkd.sdp.app.getString(R.string.rule_edit_exclude_list)
+                contentDescription = "编辑禁用名单"
             )
         }
     ) { contentPadding ->
@@ -316,7 +315,7 @@ fun SubsGlobalGroupExcludePage(route: SubsGlobalGroupExcludeRoute) {
                             )
                         }
                         val blockMatch =
-                            blockMatchAppListFlow.collectAsStateWithLifecycle().value.contains(appInfo.id)
+                            blockMatchAppListFlow.collectAsState().value.contains(appInfo.id)
                         if (blockMatch) {
                             PerfIcon(
                                 modifier = Modifier
@@ -366,7 +365,7 @@ fun SubsGlobalGroupExcludePage(route: SubsGlobalGroupExcludeRoute) {
                 item(ListPlaceholder.KEY, ListPlaceholder.TYPE) {
                     Spacer(modifier = Modifier.height(EmptyHeight))
                     if (showAppInfos.isEmpty() && searchStr.isNotEmpty()) {
-                        EmptyText(text = if (vm.appFilter.showAllAppFlow.collectAsStateWithLifecycle().value) li.songe.gkd.sdp.app.getString(R.string.s_8f8274c754) else li.songe.gkd.sdp.app.getString(R.string.s_9e7d3ee61c))
+                        EmptyText(text = if (vm.appFilter.showAllAppFlow.collectAsState().value) "暂无搜索结果" else "暂无搜索结果，或修改筛选")
                         Spacer(modifier = Modifier.height(EmptyHeight / 2))
                     }
                 }

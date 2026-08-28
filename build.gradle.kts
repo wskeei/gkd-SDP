@@ -18,15 +18,12 @@ plugins {
     alias(libs.plugins.androidx.room) apply false
     alias(libs.plugins.kotlin.serialization) apply false
     alias(libs.plugins.kotlin.multiplatform) apply false
-    alias(libs.plugins.kotlin.jvm) apply false
     alias(libs.plugins.kotlin.parcelize) apply false
     alias(libs.plugins.kotlin.compose) apply false
     alias(libs.plugins.kotlinx.atomicfu) apply false
     alias(libs.plugins.remap) apply false
     alias(libs.plugins.loc) apply false
     alias(libs.plugins.littlerobots.version)
-    alias(libs.plugins.kotlinx.kover) apply false
-    alias(libs.plugins.compose.screenshot) apply false
 }
 
 // ./gradlew versionCatalogUpdate --interactive

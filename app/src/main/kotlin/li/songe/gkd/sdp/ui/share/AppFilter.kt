@@ -3,15 +3,13 @@ package li.songe.gkd.sdp.ui.share
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.stateIn
+import li.songe.gkd.sdp.MainViewModel
 import li.songe.gkd.sdp.data.AppInfo
 import li.songe.gkd.sdp.data.RawSubscription
 import li.songe.gkd.sdp.db.DbSet
-import li.songe.gkd.sdp.appScope
 import li.songe.gkd.sdp.store.blockMatchAppListFlow
 import li.songe.gkd.sdp.util.AppGroupOption
 import li.songe.gkd.sdp.util.AppSortOption
@@ -25,17 +23,10 @@ class AppFilter(
     val showAllAppFlow: StateFlow<Boolean>,
 )
 
-/** Shared repository flows; filters no longer reach through a ViewModel singleton. */
-val defaultAppOrderListFlow = DbSet.actionLogDao.queryLatestUniqueAppIds()
-    .stateIn(appScope, SharingStarted.Eagerly, emptyList())
-val defaultAppVisitOrderMapFlow = DbSet.appVisitLogDao.query().map {
-    it.mapIndexed { i, appId -> appId to i }.toMap()
-}.debounce(500).stateIn(appScope, SharingStarted.Eagerly, emptyMap())
-
 fun BaseViewModel.useAppFilter(
     appGroupTypeFlow: StateFlow<Int>,
     sortTypeFlow: StateFlow<AppSortOption>,
-    appOrderListFlow: StateFlow<List<String>> = defaultAppOrderListFlow,
+    appOrderListFlow: StateFlow<List<String>> = MainViewModel.instance.appOrderListFlow,
     showBlockAppFlow: StateFlow<Boolean>? = null,
     blockAppListFlow: StateFlow<Set<String>> = blockMatchAppListFlow,
 ): AppFilter {
@@ -93,7 +84,7 @@ fun BaseViewModel.useAppFilter(
         tempListFlow,
         sortTypeFlow,
         appActionOrderMapFlow,
-        defaultAppVisitOrderMapFlow,
+        MainViewModel.instance.appVisitOrderMapFlow,
     ) { apps, sortType, appActionOrderMap, appVisitOrderMap ->
         when (sortType) {
             AppSortOption.ByActionTime -> {
@@ -158,7 +149,7 @@ fun BaseViewModel.useSubsAppFilter(
         tempListFlow,
         sortTypeFlow,
         appActionOrderMapFlow,
-        defaultAppVisitOrderMapFlow,
+        MainViewModel.instance.appVisitOrderMapFlow,
     ) { apps, sortType, appIdToOrder, appVisitOrderMap ->
         when (sortType) {
             AppSortOption.ByActionTime -> {

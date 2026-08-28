@@ -18,7 +18,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -69,19 +69,18 @@ import li.songe.gkd.sdp.util.launchAsFn
 import li.songe.gkd.sdp.util.switchItem
 import li.songe.gkd.sdp.util.throttle
 import li.songe.gkd.sdp.util.toast
-import androidx.compose.ui.res.stringResource
 
 @Serializable
 data object BlockA11yAppListRoute : NavKey
 
 @Composable
 fun BlockA11yAppListPage() {
-    val store by storeFlow.collectAsStateWithLifecycle()
+    val store by storeFlow.collectAsState()
     val mainVm = LocalMainViewModel.current
     val context = LocalActivity.current as MainActivity
     val vm = viewModel<BlockA11yAppListVm>()
-    val appInfos by vm.appInfosFlow.collectAsStateWithLifecycle()
-    val searchStr by vm.searchStrFlow.collectAsStateWithLifecycle()
+    val appInfos by vm.appInfosFlow.collectAsState()
+    val searchStr by vm.searchStrFlow.collectAsState()
     var showSearchBar by vm.showSearchBarFlow.asMutableState()
     var editable by vm.editableFlow.asMutableState()
     val (scrollBehavior, listState) = useListScrollState(vm.resetKey, canScroll = { !editable })
@@ -89,8 +88,8 @@ fun BlockA11yAppListPage() {
         context.justHideSoftInput()
         if (vm.textChanged) {
             mainVm.dialogFlow.waitResult(
-                title = li.songe.gkd.sdp.app.getString(R.string.s_ab3656a956),
-                text = li.songe.gkd.sdp.app.getString(R.string.s_aebc195621),
+                title = "提示",
+                text = "当前内容未保存，是否放弃编辑？",
             )
         }
         editable = false
@@ -108,8 +107,8 @@ fun BlockA11yAppListPage() {
                                 if (vm.textChanged) {
                                     context.justHideSoftInput()
                                     mainVm.dialogFlow.waitResult(
-                                        title = li.songe.gkd.sdp.app.getString(R.string.s_ab3656a956),
-                                        text = li.songe.gkd.sdp.app.getString(R.string.s_aebc195621),
+                                        title = "提示",
+                                        text = "当前内容未保存，是否放弃编辑？",
                                     )
                                 }
                                 editable = !editable
@@ -135,7 +134,7 @@ fun BlockA11yAppListPage() {
                             onValueChange = { newValue ->
                                 vm.searchStrFlow.value = newValue.trim()
                             },
-                            hint = stringResource(R.string.app_list_search_hint),
+                            hint = "请输入应用名称/ID",
                             modifier = if (firstShowSearchBar) Modifier else Modifier.autoFocus(),
                         )
                     } else {
@@ -147,7 +146,7 @@ fun BlockA11yAppListPage() {
                             )
                         Text(
                             modifier = titleModifier,
-                            text = li.songe.gkd.sdp.app.getString(R.string.s_fb2cc4f730),
+                            text = "无障碍白名单",
                         )
                     }
                 },
@@ -162,9 +161,9 @@ fun BlockA11yAppListPage() {
                                     if (vm.textChanged) {
                                         blockA11yAppListFlow.value =
                                             AppListString.decode(vm.textFlow.value)
-                                        toast(li.songe.gkd.sdp.app.getString(R.string.s_e2cff77372))
+                                        toast("更新成功")
                                     } else {
-                                        toast(li.songe.gkd.sdp.app.getString(R.string.s_fff8cc4d94))
+                                        toast("未修改")
                                     }
                                     context.justHideSoftInput()
                                     editable = false
@@ -175,12 +174,8 @@ fun BlockA11yAppListPage() {
                             Row {
                                 PerfIconButton(
                                     imageVector = if (store.blockA11yAppListFollowMatch) PerfIcon.Lock else LockOpenRight,
-                                    contentDescription = if (store.blockA11yAppListFollowMatch) {
-                                        stringResource(R.string.a11y_block_follow_app_whitelist)
-                                    } else {
-                                        stringResource(R.string.a11y_block_independent_whitelist)
-                                    },
-                                    onClickLabel = stringResource(R.string.a11y_block_toggle_mode),
+                                    contentDescription = if (store.blockA11yAppListFollowMatch) "已设置为跟随应用白名单" else "已设置为独立无障碍白名单",
+                                    onClickLabel = "切换模式",
                                     onClick = throttle {
                                         showSearchBar = false
                                         storeFlow.update { it.copy(blockA11yAppListFollowMatch = !it.blockA11yAppListFollowMatch) }
@@ -219,23 +214,23 @@ fun BlockA11yAppListPage() {
                                         expanded = expanded,
                                         onDismissRequest = { expanded = false }
                                     ) {
-                                        MenuGroupCard(inTop = true, title = stringResource(R.string.app_list_sort_title)) {
+                                        MenuGroupCard(inTop = true, title = "排序") {
                                             var sortType by vm.sortTypeFlow.asMutableState()
                                             AppSortOption.objects.forEach { option ->
                                                 MenuItemRadioButton(
-                                                    text = stringResource(option.labelRes),
+                                                    text = option.label,
                                                     selected = sortType == option,
                                                     onClick = { sortType = option },
                                                 )
                                             }
                                         }
-                                        MenuGroupCard(inTop = true, title = stringResource(R.string.app_list_filter_title)) {
+                                        MenuGroupCard(inTop = true, title = "筛选") {
                                             var appGroupType by vm.appGroupTypeFlow.asMutableState()
                                             AppGroupOption.normalObjects.forEach { option ->
                                                 val newValue = option.invert(appGroupType)
                                                 MenuItemCheckbox(
                                                     enabled = newValue != 0,
-                                                    text = stringResource(option.labelRes),
+                                                    text = option.label,
                                                     checked = option.include(appGroupType),
                                                     onClick = { appGroupType = newValue },
                                                 )
@@ -251,12 +246,12 @@ fun BlockA11yAppListPage() {
         floatingActionButton = {
             AnimationFloatingActionButton(
                 visible = !editable && scrollBehavior.isFullVisible && !store.blockA11yAppListFollowMatch,
-                onClickLabel = stringResource(R.string.a11y_block_edit_whitelist_text_mode),
+                onClickLabel = "进入白名单文本编辑模式",
                 onClick = {
                     editable = !editable
                 },
                 imageVector = PerfIcon.Edit,
-                contentDescription = stringResource(R.string.a11y_block_edit_whitelist_text)
+                contentDescription = "编辑白名单文本"
             )
         },
     ) { contentPadding ->
@@ -266,7 +261,7 @@ fun BlockA11yAppListPage() {
             ) {
                 Spacer(modifier = Modifier.height(EmptyHeight))
                 Text(
-                    text = stringResource(R.string.s_6cbc419758),
+                    text = "已设置为跟随应用白名单",
                     textAlign = TextAlign.Center,
                     modifier = Modifier.fillMaxWidth(),
                     color = MaterialTheme.colorScheme.tertiary,
@@ -277,11 +272,11 @@ fun BlockA11yAppListPage() {
                 modifier = Modifier.scaffoldPadding(contentPadding),
                 textFlow = vm.textFlow,
                 immediateFocus = true,
-                placeholderText = stringResource(R.string.app_list_id_placeholder),
-                indicatorSize = vm.indicatorSizeFlow.collectAsStateWithLifecycle().value,
+                placeholderText = "请输入应用ID列表\n示例:\ncom.android.systemui\ncom.android.settings",
+                indicatorSize = vm.indicatorSizeFlow.collectAsState().value,
             )
         } else {
-            val blockA11yAppList by blockA11yAppListFlow.collectAsStateWithLifecycle()
+            val blockA11yAppList by blockA11yAppListFlow.collectAsState()
             LazyColumn(
                 modifier = Modifier.scaffoldPadding(contentPadding),
                 state = listState,
@@ -300,7 +295,7 @@ fun BlockA11yAppListPage() {
                 item(ListPlaceholder.KEY, ListPlaceholder.TYPE) {
                     Spacer(modifier = Modifier.height(EmptyHeight))
                     if (appInfos.isEmpty() && searchStr.isNotEmpty()) {
-                        EmptyText(text = li.songe.gkd.sdp.app.getString(R.string.s_8f8274c754))
+                        EmptyText(text = "暂无搜索结果")
                         Spacer(modifier = Modifier.height(EmptyHeight / 2))
                     }
                 }

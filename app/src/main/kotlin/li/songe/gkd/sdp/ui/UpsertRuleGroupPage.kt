@@ -16,7 +16,7 @@ import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -42,7 +42,6 @@ import li.songe.gkd.sdp.ui.style.getJson5Transformation
 import li.songe.gkd.sdp.ui.style.scaffoldPadding
 import li.songe.gkd.sdp.util.launchAsFn
 import li.songe.gkd.sdp.util.throttle
-import li.songe.gkd.sdp.R
 
 @Serializable
 data class UpsertRuleGroupRoute(
@@ -61,14 +60,14 @@ fun UpsertRuleGroupPage(route: UpsertRuleGroupRoute) {
     val mainVm = LocalMainViewModel.current
     val context = LocalActivity.current as MainActivity
     val vm = viewModel { UpsertRuleGroupVm(route) }
-    val text by vm.textFlow.collectAsStateWithLifecycle()
+    val text by vm.textFlow.collectAsState()
 
     val checkIfSaveText = throttle(mainVm.viewModelScope.launchAsFn(Dispatchers.Default) {
         if (vm.hasTextChanged()) {
             context.justHideSoftInput()
             mainVm.dialogFlow.waitResult(
-                title = li.songe.gkd.sdp.app.getString(R.string.s_ab3656a956),
-                text = li.songe.gkd.sdp.app.getString(R.string.s_aebc195621),
+                title = "提示",
+                text = "当前内容未保存，是否放弃编辑？",
             )
         } else {
             context.hideSoftInput()
@@ -106,7 +105,7 @@ fun UpsertRuleGroupPage(route: UpsertRuleGroupRoute) {
                 PerfIconButton(imageVector = PerfIcon.ArrowBack, onClick = checkIfSaveText)
             },
             title = {
-                Text(text = if (vm.isEdit) li.songe.gkd.sdp.app.getString(R.string.s_13794d2141) else li.songe.gkd.sdp.app.getString(R.string.s_d2fc32282a))
+                Text(text = if (vm.isEdit) "编辑规则" else "添加规则")
             },
             actions = {
                 PerfIconButton(
@@ -129,7 +128,7 @@ fun UpsertRuleGroupPage(route: UpsertRuleGroupRoute) {
                 .fillMaxSize(),
         ) {
             CompositionLocalProvider(LocalTextStyle provides MaterialTheme.typography.bodyLarge) {
-                val imeShowing by context.imePlayingFlow.collectAsStateWithLifecycle()
+                val imeShowing by context.imePlayingFlow.collectAsState()
                 val modifier = Modifier
                     .autoFocus()
                     .fillMaxSize()
@@ -148,7 +147,7 @@ fun UpsertRuleGroupPage(route: UpsertRuleGroupRoute) {
                     colors = textColors,
                     visualTransformation = getJson5Transformation(LocalDarkTheme.current),
                     placeholder = {
-                        Text(text = if (vm.isApp) li.songe.gkd.sdp.app.getString(R.string.s_2b37101eb6) else li.songe.gkd.sdp.app.getString(R.string.s_f4af79e75c))
+                        Text(text = if (vm.isApp) "请输入应用规则\n" else "请输入全局规则\n")
                     },
                 )
             }

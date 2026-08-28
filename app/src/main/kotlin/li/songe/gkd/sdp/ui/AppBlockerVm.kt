@@ -19,7 +19,6 @@ import li.songe.gkd.sdp.util.AutoReenableDisableGuard
 import li.songe.gkd.sdp.util.AppBlockerDecisionPolicy
 import li.songe.gkd.sdp.util.json
 import li.songe.gkd.sdp.util.toast
-import li.songe.gkd.sdp.R
 
 class AppBlockerVm : BaseViewModel() {
     enum class GroupEditorMode {
@@ -54,9 +53,7 @@ class AppBlockerVm : BaseViewModel() {
     var ruleStartTime by mutableStateOf("22:00")
     var ruleEndTime by mutableStateOf("08:00")
     var ruleDaysOfWeek by mutableStateOf(listOf(1, 2, 3, 4, 5, 6, 7))
-    var ruleInterceptMessage by mutableStateOf(
-        li.songe.gkd.sdp.app.getString(R.string.common_default_intercept_message),
-    )
+    var ruleInterceptMessage by mutableStateOf("这真的重要吗？")
     var ruleIsAllowMode by mutableStateOf(false)  // 是否为允许模式（反选）
 
     // 锁定时长选择
@@ -86,21 +83,21 @@ class AppBlockerVm : BaseViewModel() {
 
     fun saveGroup() = viewModelScope.launch(Dispatchers.IO) {
         if (groupName.isBlank()) {
-            toast(li.songe.gkd.sdp.app.getString(R.string.s_7f9cc8a658))
+            toast("请输入应用组名称")
             return@launch
         }
         if (groupApps.isEmpty()) {
-            toast(li.songe.gkd.sdp.app.getString(R.string.s_53de29c90a))
+            toast("请至少添加一个应用")
             return@launch
         }
 
         val globalLock = globalLockFlow.value
         if (globalLock?.isCurrentlyLocked == true) {
-            toast(li.songe.gkd.sdp.app.getString(R.string.s_b60e11702a))
+            toast("全局锁定中，无法修改")
             return@launch
         }
         if (editingGroup?.isCurrentlyLocked == true) {
-            toast(li.songe.gkd.sdp.app.getString(R.string.s_2d310a6c50))
+            toast("该组已锁定，无法修改")
             return@launch
         }
 
@@ -115,29 +112,29 @@ class AppBlockerVm : BaseViewModel() {
         )
 
         DbSet.appGroupDao.insert(group)
-        toast(if (editingGroup != null) li.songe.gkd.sdp.app.getString(R.string.s_69523749b4) else li.songe.gkd.sdp.app.getString(R.string.s_06802d0346))
+        toast(if (editingGroup != null) "应用组已更新" else "应用组已添加")
         resetGroupForm()
     }
 
     fun deleteGroup(group: AppGroup) = viewModelScope.launch(Dispatchers.IO) {
         val globalLock = globalLockFlow.value
         if (globalLock?.isCurrentlyLocked == true) {
-            toast(li.songe.gkd.sdp.app.getString(R.string.s_f668f3749f))
+            toast("全局锁定中，无法删除")
             return@launch
         }
         if (group.isCurrentlyLocked) {
-            toast(li.songe.gkd.sdp.app.getString(R.string.s_81287b9dd7))
+            toast("应用组已锁定，无法删除")
             return@launch
         }
         DbSet.appGroupDao.delete(group)
         // 同时删除该应用组的所有规则
         DbSet.blockTimeRuleDao.deleteByTarget(BlockTimeRule.TARGET_TYPE_GROUP, group.id.toString())
-        toast(li.songe.gkd.sdp.app.getString(R.string.s_dec1fa77b8))
+        toast("应用组已删除")
     }
 
     fun toggleGroupEnabled(group: AppGroup) = viewModelScope.launch(Dispatchers.IO) {
         if (group.enabled && (group.isCurrentlyLocked || globalLockFlow.value?.isCurrentlyLocked == true)) {
-            toast(li.songe.gkd.sdp.app.getString(R.string.s_19c7b9ed28))
+            toast("应用组已锁定，无法关闭")
             return@launch
         }
         val requestedEnabled = !group.enabled
@@ -170,7 +167,7 @@ class AppBlockerVm : BaseViewModel() {
         ruleStartTime = "22:00"
         ruleEndTime = "08:00"
         ruleDaysOfWeek = listOf(1, 2, 3, 4, 5, 6, 7)
-        ruleInterceptMessage = li.songe.gkd.sdp.app.getString(R.string.common_default_intercept_message)
+        ruleInterceptMessage = "这真的重要吗？"
         ruleIsAllowMode = false
         showRuleEditor = false
     }
@@ -195,33 +192,33 @@ class AppBlockerVm : BaseViewModel() {
 
     fun saveRule() = viewModelScope.launch(Dispatchers.IO) {
         if (ruleTargetId.isBlank()) {
-            toast(li.songe.gkd.sdp.app.getString(R.string.s_bb81e3c8bd))
+            toast("请选择拦截对象")
             return@launch
         }
         if (ruleTargetType != BlockTimeRule.TARGET_TYPE_APP &&
             ruleTargetType != BlockTimeRule.TARGET_TYPE_GROUP
         ) {
-            toast(li.songe.gkd.sdp.app.getString(R.string.s_9d6d4b8017))
+            toast("拦截对象类型无效")
             return@launch
         }
         if (!AppBlockerDecisionPolicy.isValidTime(ruleStartTime) ||
             !AppBlockerDecisionPolicy.isValidTime(ruleEndTime)
         ) {
-            toast(li.songe.gkd.sdp.app.getString(R.string.s_952d0f0784))
+            toast("时间格式必须为 HH:mm（例如 09:00）")
             return@launch
         }
         if (ruleDaysOfWeek.isEmpty() || ruleDaysOfWeek.any { it !in 1..7 }) {
-            toast(li.songe.gkd.sdp.app.getString(R.string.s_97668429f3))
+            toast("请选择至少一个生效日期")
             return@launch
         }
 
         val globalLock = globalLockFlow.value
         if (globalLock?.isCurrentlyLocked == true) {
-            toast(li.songe.gkd.sdp.app.getString(R.string.s_b60e11702a))
+            toast("全局锁定中，无法修改")
             return@launch
         }
         if (editingRule?.isCurrentlyLocked == true) {
-            toast(li.songe.gkd.sdp.app.getString(R.string.s_24250499b8))
+            toast("该规则已锁定，无法修改")
             return@launch
         }
 
@@ -229,16 +226,16 @@ class AppBlockerVm : BaseViewModel() {
         if (ruleTargetType == BlockTimeRule.TARGET_TYPE_GROUP) {
             val groupId = ruleTargetId.toLongOrNull()
             if (groupId == null || groupId <= 0L) {
-                toast(li.songe.gkd.sdp.app.getString(R.string.s_179a65fe24))
+                toast("请选择有效的应用组")
                 return@launch
             }
             val group = DbSet.appGroupDao.getById(groupId)
             if (group == null) {
-                toast(li.songe.gkd.sdp.app.getString(R.string.s_6be293f190))
+                toast("目标应用组不存在")
                 return@launch
             }
             if (group.isCurrentlyLocked) {
-                toast(li.songe.gkd.sdp.app.getString(R.string.s_e8446b01b9))
+                toast("目标应用组已锁定，无法修改其时间规则")
                 return@launch
             }
         }
@@ -254,29 +251,27 @@ class AppBlockerVm : BaseViewModel() {
             isLocked = editingRule?.isLocked ?: false,
             lockEndTime = editingRule?.lockEndTime ?: 0,
             createdAt = editingRule?.createdAt ?: System.currentTimeMillis(),
-            interceptMessage = ruleInterceptMessage.ifBlank {
-                li.songe.gkd.sdp.app.getString(R.string.common_default_intercept_message)
-            },
+            interceptMessage = ruleInterceptMessage.ifBlank { "这真的重要吗？" },
             isAllowMode = ruleIsAllowMode
         )
 
         DbSet.blockTimeRuleDao.insert(rule)
-        toast(if (editingRule != null) li.songe.gkd.sdp.app.getString(R.string.s_fccd13d79e) else li.songe.gkd.sdp.app.getString(R.string.s_4a96cba3d5))
+        toast(if (editingRule != null) "规则已更新" else "规则已添加")
         resetRuleForm()
     }
 
     fun deleteRule(rule: BlockTimeRule) = viewModelScope.launch(Dispatchers.IO) {
         val globalLock = globalLockFlow.value
         if (globalLock?.isCurrentlyLocked == true) {
-            toast(li.songe.gkd.sdp.app.getString(R.string.s_f668f3749f))
+            toast("全局锁定中，无法删除")
             return@launch
         }
         if (rule.isCurrentlyLocked) {
-            toast(li.songe.gkd.sdp.app.getString(R.string.s_7e2a3403ff))
+            toast("规则已锁定，无法删除")
             return@launch
         }
         DbSet.blockTimeRuleDao.delete(rule)
-        toast(li.songe.gkd.sdp.app.getString(R.string.s_91ba569081))
+        toast("规则已删除")
     }
 
     fun toggleRuleEnabled(rule: BlockTimeRule) = viewModelScope.launch(Dispatchers.IO) {
@@ -301,7 +296,7 @@ class AppBlockerVm : BaseViewModel() {
         }
 
         if (durationMinutes <= 0) {
-            toast(li.songe.gkd.sdp.app.getString(R.string.s_40d80a0879))
+            toast("请输入有效的锁定时长")
             return@launch
         }
 
@@ -323,7 +318,7 @@ class AppBlockerVm : BaseViewModel() {
         )
 
         DbSet.appBlockerLockDao.insert(lock)
-        toast(li.songe.gkd.sdp.app.getString(R.string.s_32850ffc30))
+        toast("全局锁定已设置")
     }
 
     fun lockGroup(group: AppGroup) = viewModelScope.launch(Dispatchers.IO) {
@@ -336,7 +331,7 @@ class AppBlockerVm : BaseViewModel() {
         }
 
         if (durationMinutes <= 0) {
-            toast(li.songe.gkd.sdp.app.getString(R.string.s_40d80a0879))
+            toast("请输入有效的锁定时长")
             return@launch
         }
 
@@ -357,7 +352,7 @@ class AppBlockerVm : BaseViewModel() {
         )
 
         DbSet.appGroupDao.update(updatedGroup)
-        toast(li.songe.gkd.sdp.app.getString(R.string.s_cb098574e7))
+        toast("应用组已锁定")
     }
 
     fun lockRule(rule: BlockTimeRule) = viewModelScope.launch(Dispatchers.IO) {
@@ -370,7 +365,7 @@ class AppBlockerVm : BaseViewModel() {
         }
 
         if (durationMinutes <= 0) {
-            toast(li.songe.gkd.sdp.app.getString(R.string.s_40d80a0879))
+            toast("请输入有效的锁定时长")
             return@launch
         }
 
@@ -391,7 +386,7 @@ class AppBlockerVm : BaseViewModel() {
         )
 
         DbSet.blockTimeRuleDao.update(updatedRule)
-        toast(li.songe.gkd.sdp.app.getString(R.string.s_7aa6790ed4))
+        toast("规则已锁定")
     }
 
     companion object {
@@ -417,7 +412,7 @@ class AppBlockerVm : BaseViewModel() {
         }
 
         private fun quotaBlockedToast(limit: Int): String {
-            return li.songe.gkd.sdp.app.getString(R.string.s_ba1f755996, limit.toString())
+            return "今日关闭次数已用完（$limit 次），将于明日 00:00 重置"
         }
     }
 }

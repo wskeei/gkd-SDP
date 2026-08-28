@@ -1,54 +1,78 @@
 package li.songe.gkd.sdp.service
 
-import android.view.WindowManager
-import li.songe.gkd.sdp.usage.UsageRequestValidationPolicy
-import org.junit.Assert.assertEquals
+import java.io.File
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class UsageGuardRequestLayoutContractTest {
     @Test
-    fun requestOverlayIsSecureResizableAndUsesTheSharedFormPolicy() {
-        assertEquals(
-            WindowManager.LayoutParams.FLAG_SECURE,
-            USAGE_GUARD_REQUEST_OVERLAY_FLAGS and WindowManager.LayoutParams.FLAG_SECURE,
-        )
-        assertEquals(
-            WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE,
-            USAGE_GUARD_REQUEST_OVERLAY_SOFT_INPUT_MODE,
-        )
+    fun requestFormKeepsElapsedInsightAboveTagsAndRatioInsideDurationSection() {
+        val source = sourceFile(
+            "app/src/main/kotlin/li/songe/gkd/sdp/service/UsageGuardRequestOverlayService.kt",
+        ).readText()
+        val form = source.substringAfter("private fun UsageGuardRequestContent(")
 
-        val valid = UsageRequestValidationPolicy.validate(
-            selectedTags = listOf("查资料"),
-            reason = "准备今晚的演讲材料",
-            minReasonLength = 6,
-            requestedDurationMinutes = 15,
-        )
-        assertTrue(valid.accepted)
-        assertFalse(
-            UsageRequestValidationPolicy.validate(
-                selectedTags = emptyList(),
-                reason = "准备今晚的演讲材料",
-                minReasonLength = 6,
-                requestedDurationMinutes = 15,
-            ).accepted,
-        )
+        val elapsed = form.indexOf("SelfControlElapsedCard(")
+        val tags = form.indexOf("Text(\"选择标签\"")
+        val reason = form.indexOf("label = { Text(\"申请理由\") }")
+        val duration = form.indexOf("Text(\"申请时长\"")
+        val ratio = form.indexOf("UsageDurationRatioFeedback(")
+        val submit = form.indexOf("Text(\"开始使用\")")
+        val cancel = form.indexOf("Text(\"取消\")")
+
+        assertTrue(elapsed >= 0)
+        assertTrue(elapsed < tags)
+        assertTrue(tags < reason)
+        assertTrue(reason < duration)
+        assertTrue(duration < ratio)
+        assertTrue(ratio < submit)
+        assertTrue(submit < cancel)
+        assertFalse(form.contains("UsageRequestRhythmSummary"))
     }
 
     @Test
-    fun formPolicyKeepsTheOtherTagLastAndRejectsDuplicateNames() {
-        assertFalse(
-            UsageRequestValidationPolicy.hasDuplicateTag(
-                existing = listOf("工作"),
-                candidate = "work",
-            ),
-        )
+    fun requestFormConsumesImeInsetsAndRelocatesEveryInputField() {
+        val source = sourceFile(
+            "app/src/main/kotlin/li/songe/gkd/sdp/service/UsageGuardRequestOverlayService.kt",
+        ).readText()
+        val form = source.substringAfter("private fun UsageGuardRequestContent(")
+        val windowParams = source
+            .substringAfter("val params = WindowManager.LayoutParams(")
+            .substringBefore("runCatching { windowManager.addView")
+
+        val imePadding = form.indexOf(".imePadding()")
+        val verticalScroll = form.indexOf(".verticalScroll(formScrollState)")
+        assertTrue(imePadding >= 0)
+        assertTrue(imePadding < verticalScroll)
+
+        assertTrue(form.contains("val newTagInputModifier = rememberImeAwareBringIntoViewModifier()"))
+        assertTrue(form.contains("val reasonInputModifier = rememberImeAwareBringIntoViewModifier()"))
+        assertTrue(form.contains("val customDurationInputModifier = rememberImeAwareBringIntoViewModifier()"))
+        assertTrue(form.contains(".then(newTagInputModifier)"))
+        assertTrue(form.contains(".then(reasonInputModifier)"))
+        assertTrue(form.contains(".then(customDurationInputModifier)"))
+
+        assertTrue(source.contains("val imeVisible = WindowInsets.isImeVisible"))
+        assertTrue(source.contains("LaunchedEffect(isFocused, imeVisible)"))
+        assertTrue(source.contains("requester.bringIntoView()"))
+
+        assertTrue(windowParams.contains("USAGE_GUARD_REQUEST_OVERLAY_FLAGS"))
         assertTrue(
-            UsageRequestValidationPolicy.hasDuplicateTag(
-                existing = listOf("工作"),
-                candidate = "工作",
+            windowParams.contains(
+                "softInputMode = USAGE_GUARD_REQUEST_OVERLAY_SOFT_INPUT_MODE",
             ),
         )
+        assertFalse(windowParams.contains("FLAG_LAYOUT_NO_LIMITS"))
+    }
+
+    private fun sourceFile(relativePath: String): File {
+        var directory = File(System.getProperty("user.dir"))
+        repeat(6) {
+            val candidate = File(directory, relativePath)
+            if (candidate.isFile) return candidate
+            directory = directory.parentFile ?: return File(relativePath)
+        }
+        return File(relativePath)
     }
 }

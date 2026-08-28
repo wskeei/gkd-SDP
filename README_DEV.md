@@ -73,37 +73,6 @@ The runtime model is easier to reason about if you separate it into four layers.
 
 [`app/src/main/kotlin/li/songe/gkd/sdp/MainActivity.kt`](app/src/main/kotlin/li/songe/gkd/sdp/MainActivity.kt) hosts the Compose app and also calls `syncFixState()`, which refreshes permissions, service state, top-app state, and Shizuku-backed capabilities.
 
-Runtime seams are explicit and injectable:
-
-- `AppDependencies` owns the process clock, dispatcher set, and application scope;
-  self-control engines use these seams instead of reading wall time or selecting a
-  dispatcher at the call site. Tests provide `FakeSdpClock` and deterministic
-  dispatchers for time jumps and cancellation cases.
-- `ServiceOverlayLifecycleOwner` gives Compose views created by a `LifecycleService`
-  a real `INITIALIZED → STARTED → DESTROYED` owner. The owner is advanced only after
-  `WindowManager.addView` succeeds and is destroyed on every removal path.
-- `AppNavigator` is the only navigation boundary. `MainActivity` supplies its
-  `rememberNavBackStack` (which is saveable across recreation), while ViewModels and
-  background entry points send semantic `AppDestination` effects. `DeepLinkParser`
-  converts the 2.2.0 compatibility links immediately and rejects unknown scheme,
-  host, path, query, user-info, port, and fragment values.
-
-Compose pages use the directory contract under `ui/<feature>/`: `Route.kt`,
-`Screen.kt`, `UiState.kt`, `Presenter.kt`, `Sections.kt`, `Dialogs.kt`, and
-`Editor.kt`. Usage overlays use the analogous `ServiceHost.kt`,
-`WindowController.kt`, `Screen.kt`, `UiState.kt`, and `Presenter.kt` contract.
-`scripts/verify-ui-file-boundaries.py` keeps host files below 500 lines and
-guards against oversized Composable entry points.
-
-The top-level shell is `AdaptiveHomeScaffold`: compact windows use a bottom
-`NavigationBar`, medium/expanded windows use a left `NavigationRail`, and
-switching width keeps the current destination and back stack. The four fixed
-top-level destinations are Overview, Self-control, Rules, and Settings.
-`CapabilityCenterScreen` resolves the runtime capability graph and renders the
-single next action. `PrivacyDataScreen` uses `DataInventoryRepository` and the
-shared `ContentState` contract to show local retention summaries and history
-deletion without exposing sensitive payload fields.
-
 ### 2. Accessibility and activity tracking
 
 [`app/src/main/kotlin/li/songe/gkd/sdp/service/A11yService.kt`](app/src/main/kotlin/li/songe/gkd/sdp/service/A11yService.kt) is the main accessibility service base class.
@@ -166,22 +135,19 @@ inset in its single vertical scroll container, and relocates the focused
 request input after IME visibility changes.
 
 The countdown service renders remaining time and reason in one movable
-`TYPE_APPLICATION_OVERLAY` window. Whenever mounted, that window uses
-`FLAG_SECURE`, so neither field should be readable in screenshots, screen
-recording, or non-secure display output. Android/OEM capture behavior may
-produce a blank or black protected region, or reject the entire capture.
+`TYPE_APPLICATION_OVERLAY` window. That window uses `FLAG_SECURE`, so neither
+field should be readable while the window is mounted. Tapping the countdown
+pill opens `使用控制`, where the user can explicitly choose
+`隐藏 10 秒用于截图`. The service removes the secure window for exactly ten
+seconds while the active record and countdown continue, then restores the
+same unexpired session only if the foreground app and runtime owner still
+match. Android/OEM capture behavior may still produce a blank or black
+protected region, or the target app may independently reject capture; the app
+does not promise reconstruction of third-party app pixels.
 
-The full-screen usage control provides `隐藏 10 秒用于截图`. This action removes
-the secure countdown window from `WindowManager` without pausing or ending the
-approved usage record, then restores only the same unexpired record after ten
-seconds when the engine still owns the same overlay lease, the protected app
-is still foreground, and the runtime generation has not changed. It does not
-weaken the independent request-form window, and it cannot override
-`FLAG_SECURE` or a capture policy owned by the foreground third-party app.
-
-Screenshot protection requires physical-device/manual verification; JVM unit
-tests validate the configured flag, temporary-hide state machine, engine lease,
-and service wiring.
+Screenshot mode and the mounted-window protection require
+physical-device/manual verification; JVM unit tests only validate the policy,
+lifecycle, and configured flag contracts.
 
 #### Interception attribution and rhythm data
 
@@ -210,12 +176,10 @@ selected request duration. Overlays load one 30-day raw dataset and switch 24-ho
 historical statistics.
 
 The review repository reads a minimal `UsageReviewRow` projection and keeps every row in
-the selected half-open rolling window, including rows whose frozen `requestGapMs` is null.
-Null or negative gaps count toward total records but never enter interval averages, ratio
-calculations, or chart values. The three fixed review ranges are 24 hours, 7 days, and 30
-days; each range uses its own bucket size and a previous equal-length window for comparison.
-A window with at most 24/28/30 valid samples is rendered point-for-point; only larger
-windows use the existing 1-hour/6-hour/1-day buckets. Each aggregated point
+the selected window, including rows whose frozen `requestGapMs` is null. Null or negative
+gaps count toward total records but never enter interval averages, ratio calculations, or
+chart values. A window with at most 24/28/30 valid samples is rendered point-for-point;
+only larger windows use the existing 1-hour/6-hour/1-day buckets. Each aggregated point
 keeps its `sourceIds`, so a current event is marked by ID rather than by a timestamp bucket.
 Ratio arithmetic remains millisecond-based while visible formulas choose a common
 seconds/minutes/hours unit. The review page derives current and previous periods through one
@@ -316,15 +280,7 @@ Filesystem locations are defined in [`app/src/main/kotlin/li/songe/gkd/sdp/util/
 - `log/`
 - `sh/`
 
-`ExposeService` only writes `sh/expose.sh` while the user is viewing the command-authorization flow. The script and `start.sh` use mode `0600`, expire after five minutes, and carry a single-use action-bound capability. Only the token hash, action, expiry and consumption state are persisted in `private-store`; startup removes stale command files.
-
-### Remote and web security boundaries
-
-`HttpService` listens on `127.0.0.1` by default. Listening on `0.0.0.0` requires the in-app “15-minute LAN debugging” action and automatically returns to loopback on timeout, lock screen, stop or explicit disconnect. Every API route except the local static Inspector and pairing endpoint requires an 8-digit challenge exchange, a 256-bit bearer token bound to one client IP/User-Agent/origin, an enabled `RemoteScope`, the rolling rate limit, and the request/response size limits. Do not add a route without assigning one exact scope in `HttpService`.
-
-The Inspector is bundled under `assets/http-inspector`; it must not load remote executable code. Static and mirrored document responses retain CSP, `nosniff` and `no-store`. `WebViewPage` uses the platform WebView directly: only `https://gkd.li` is a main-frame origin, `gkd://` is restricted to the internal route allowlist, other HTTPS links leave the app, and HTTP/file/content/data/javascript/intent navigation is blocked. File/content access, mixed content, third-party cookies and JavaScript interfaces remain disabled.
-
-Global cleartext transport remains enabled only for user-supplied HTTP subscriptions. `CleartextOriginInterceptor` rejects HTTP before connection unless the user explicitly authorizes its normalized `scheme://host:port`; redirects are evaluated again. Project URLs, WebView and update checks stay HTTPS-only. Do not reuse the subscription authorization list for other network clients.
+`ExposeService` also writes a helper shell script to `sh/expose.sh`.
 
 ## Important Mental Models
 
@@ -359,13 +315,7 @@ Gradle is configured with `-Dfile.encoding=UTF-8` in [`gradle.properties`](gradl
 
 ## Build and Test
 
-The authoritative verification environment is GitHub Actions with JDK 21. Pull requests use `ci.yml`; pushes to `main` produce a short-lived Nightly artifact through `nightly.yml`. Local Android builds use JDK 21 and an Android SDK that contains the configured compile SDK. Validate those prerequisites before running Gradle:
-
-```bash
-bash scripts/check-dev-environment.sh --android
-```
-
-Use `--ci` for a lightweight check of JDK 21, Python, Git, and the committed executable Gradle wrapper. The environment check reports capability names only; it does not print local paths or environment variable values. When the complete Android toolchain is unavailable, run the applicable shell/Python checks and `git diff --check`, then use GitHub Actions as the authoritative Android result.
+The authoritative verification environment is GitHub Actions with JDK 21. Pull requests use `ci.yml`; pushes to `main` produce a short-lived Nightly artifact through `nightly.yml`. This project intentionally does not require Gradle to run locally; local checks can be limited to source inspection, shell tests, and `git diff --check`. Push the branch and inspect the Draft PR checks with `gh pr checks --watch`.
 
 Formal GKD-SDP versions are maintained separately from the upstream GKD base. The source of truth is [`gradle/version.properties`](gradle/version.properties), and [`scripts/verify-release-metadata.sh`](scripts/verify-release-metadata.sh) checks tag, changelog, and `versionCode` rules. Do not add hard-coded version values to workflows or documentation; see [`docs/releasing.md`](docs/releasing.md) for the release procedure.
 

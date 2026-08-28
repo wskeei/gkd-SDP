@@ -3,7 +3,7 @@ package li.songe.gkd.sdp.util
 /**
  * Pure state machine for temporarily removing the secure countdown overlay.
  * Window operations and scheduling stay in the Service; this class fences their
- * results to the exact usage/runtime lease that initiated the hide operation.
+ * results to the exact usage/runtime session that initiated the hide operation.
  */
 class UsageGuardCountdownOverlayCaptureController {
     enum class StartAction {

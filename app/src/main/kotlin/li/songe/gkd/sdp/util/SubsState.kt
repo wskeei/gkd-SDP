@@ -11,7 +11,8 @@ import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 import li.songe.gkd.sdp.appScope
 import li.songe.gkd.sdp.data.AppRule
 import li.songe.gkd.sdp.data.CategoryConfig
@@ -26,7 +27,6 @@ import li.songe.gkd.sdp.data.SubsVersion
 import li.songe.gkd.sdp.db.DbSet
 import li.songe.json5.decodeFromJson5String
 import java.net.URI
-import li.songe.gkd.sdp.R
 
 val subsItemsFlow by lazy {
     DbSet.subsItemDao.query().stateIn(appScope, SharingStarted.Eagerly, emptyList())
@@ -41,7 +41,7 @@ private fun getCheckUpdateUrl(
     try {
         return URI(updateUrl).resolve(checkUpdateUrl).toString()
     } catch (e: Exception) {
-        LogUtils.d("subscription update URL resolution failed", e)
+        e.printStackTrace()
     }
     return null
 }
@@ -125,23 +125,67 @@ val usedSubsEntriesFlow by lazy {
     }.stateIn(appScope, SharingStarted.Eagerly, emptyList())
 }
 
-suspend fun updateSubscription(
-    subscription: RawSubscription,
-    subsItem: SubsItem? = null,
-    expectedCurrentMtime: Long? = null,
-): RawSubscription = SubscriptionMutationRepository.upsert(
-    subscription = subscription,
-    subsItem = subsItem,
-    expectedCurrentMtime = expectedCurrentMtime,
-)
-
-suspend fun deleteSubscription(vararg subsIds: Long): Int =
-    SubscriptionMutationRepository.delete(*subsIds).also { deleteSize ->
-        if (deleteSize > 0) {
-            toast(li.songe.gkd.sdp.app.getString(R.string.s_86e8d12a79))
-            LogUtils.d("deleteSubscription", "count=$deleteSize")
+fun updateSubscription(subscription: RawSubscription) {
+    appScope.launchTry {
+        updateSubsMutex.withStateLock {
+            val subsId = subscription.id
+            val subsName = subscription.name
+            val newMap = subsMapFlow.value.toMutableMap()
+            val nextSubsRaw = if (subsId < 0 && newMap[subsId]?.version == subscription.version) {
+                subscription.run {
+                    copy(
+                        version = version + 1,
+                        apps = apps.filterIfNotAll { it.groups.isNotEmpty() }
+                            .distinctByIfAny { it.id },
+                    )
+                }
+            } else {
+                subscription
+            }
+            newMap[subsId] = nextSubsRaw
+            subsMapFlow.value = newMap
+            if (subsLoadErrorsFlow.value.contains(subsId)) {
+                subsLoadErrorsFlow.update {
+                    it.toMutableMap().apply {
+                        remove(subsId)
+                    }
+                }
+            }
+            withContext(Dispatchers.IO) {
+                cleanupSubsConfig(subsId, nextSubsRaw)
+                DbSet.subsItemDao.updateMtime(subsId, System.currentTimeMillis())
+                subsFolder.resolve("${subsId}.json")
+                    .writeText(json.encodeToString(nextSubsRaw))
+            }
+            LogUtils.d("更新订阅文件:id=${subsId},name=${subsName}")
         }
     }
+}
+
+fun deleteSubscription(vararg subsIds: Long) {
+    appScope.launchTry(Dispatchers.IO) {
+        updateSubsMutex.mutex.withLock {
+            val deleteSize = DbSet.subsItemDao.deleteById(*subsIds)
+            if (deleteSize > 0) {
+                DbSet.subsConfigDao.deleteBySubsId(*subsIds)
+                DbSet.actionLogDao.deleteBySubsId(*subsIds)
+                DbSet.categoryConfigDao.deleteBySubsId(*subsIds)
+                val newMap = subsMapFlow.value.toMutableMap()
+                subsIds.forEach { id ->
+                    newMap.remove(id)
+                    subsFolder.resolve("$id.json").apply {
+                        if (exists()) {
+                            delete()
+                        }
+                    }
+                }
+                subsMapFlow.value = newMap
+                toast("删除成功")
+                LogUtils.d("deleteSubscription", subsIds)
+            }
+        }
+    }
+}
 
 fun getCategoryEnable(
     category: RawSubscription.RawCategory?,
@@ -182,7 +226,6 @@ data class RuleSummary(
 
     val numText = if (globalGroups.size + appGroupSize > 0) {
         if (globalGroups.isNotEmpty()) {
-            // i18n-ignore: legacy fallback or non-display heuristic data
             "${globalGroups.size}全局" + if (appGroupSize > 0) {
                 "/"
             } else {
@@ -191,31 +234,12 @@ data class RuleSummary(
         } else {
             ""
         } + if (appGroupSize > 0) {
-            // i18n-ignore: legacy fallback or non-display heuristic data
             "${appSize}应用/${appGroupSize}规则"
         } else {
             ""
         }
     } else {
         EMPTY_RULE_TIP
-    }
-
-    fun numText(context: android.content.Context): String {
-        val global = if (globalGroups.isNotEmpty()) {
-            context.getString(R.string.app_list_global_count, globalGroups.size)
-        } else {
-            ""
-        }
-        val app = if (appGroupSize > 0) {
-            context.getString(R.string.app_list_app_rules_count, appSize, appGroupSize)
-        } else {
-            ""
-        }
-        return if (global.isEmpty() && app.isEmpty()) {
-            context.getString(R.string.subs_no_rules)
-        } else {
-            listOf(global, app).filter { it.isNotEmpty() }.joinToString("/")
-        }
     }
 
     val slowGlobalGroups =
@@ -350,23 +374,9 @@ val ruleSummaryFlow by lazy {
 
 fun getSubsStatus(ruleSummary: RuleSummary, count: Long): String {
     return if (count > 0) {
-        // i18n-ignore: legacy fallback or non-display heuristic data
         "${ruleSummary.numText}/${count}触发"
     } else {
         ruleSummary.numText
-    }
-}
-
-fun getSubsStatus(
-    ruleSummary: RuleSummary,
-    count: Long,
-    context: android.content.Context,
-): String {
-    val numText = ruleSummary.numText(context)
-    return if (count > 0) {
-        context.getString(R.string.subs_status_trigger, numText, count)
-    } else {
-        numText
     }
 }
 
@@ -377,26 +387,26 @@ private fun loadSubs(id: Long): RawSubscription {
         if (id == LOCAL_SUBS_ID) {
             return RawSubscription(
                 id = LOCAL_SUBS_ID,
-                name = li.songe.gkd.sdp.app.getString(R.string.local_subscription_name),
+                name = "本地订阅",
                 version = 0
             )
         }
         if (id == LOCAL_HTTP_SUBS_ID) {
             return RawSubscription(
                 id = LOCAL_HTTP_SUBS_ID,
-                name = li.songe.gkd.sdp.app.getString(R.string.memory_subscription_name),
+                name = "内存订阅",
                 version = 0
             )
         }
-        error(li.songe.gkd.sdp.app.getString(R.string.subs_file_missing))
+        error("订阅文件不存在")
     }
     val subscription = try {
         RawSubscription.parse(file.readText(), json5 = false)
     } catch (e: Exception) {
-        throw Exception(li.songe.gkd.sdp.app.getString(R.string.subs_file_parse_failed), e)
+        throw Exception("订阅文件解析失败", e)
     }
     if (subscription.id != id) {
-        error(li.songe.gkd.sdp.app.getString(R.string.subs_file_id_mismatch))
+        error("订阅文件id不一致")
     }
     return subscription
 }
@@ -423,7 +433,6 @@ private fun refreshRawSubsList(items: List<SubsItem>): Boolean {
 fun initSubsState() {
     subsItemsFlow.value
     appScope.launchTry(Dispatchers.IO) {
-        requirePendingDataRecoveryComplete()
         updateSubsMutex.withStateLock {
             val items = DbSet.subsItemDao.queryAll()
             refreshRawSubsList(items)
@@ -431,7 +440,7 @@ fun initSubsState() {
     }
 }
 
-internal suspend fun cleanupSubsConfig(subsId: Long, subsRaw: RawSubscription): Int {
+private suspend fun cleanupSubsConfig(subsId: Long, subsRaw: RawSubscription): Int {
     val globalGroupKeys = subsRaw.globalGroups.map { it.key }.toHashSet()
     val appIdToGroupKeys = subsRaw.apps.associate { a ->
         a.id to a.groups.map { g -> g.key }.toHashSet()
@@ -448,33 +457,13 @@ internal suspend fun cleanupSubsConfig(subsId: Long, subsRaw: RawSubscription): 
             else -> false
         }
     }
-    val categoryKeys = subsRaw.categories.mapTo(hashSetOf()) { it.key }
-    val categoryDeleteList = DbSet.categoryConfigDao
-        .querySubsItemConfig(listOf(subsId))
-        .filter { config -> config.categoryKey !in categoryKeys }
-    val appIds = subsRaw.apps.mapTo(hashSetOf()) { it.id }
-    val appDeleteList = DbSet.appConfigDao
-        .querySubsItemConfig(listOf(subsId))
-        .filter { config -> config.appId !in appIds }
-    if (deleteList.isNotEmpty()) {
-        DbSet.subsConfigDao.delete(*deleteList.toTypedArray())
-    }
-    if (categoryDeleteList.isNotEmpty()) {
-        DbSet.categoryConfigDao.delete(*categoryDeleteList.toTypedArray())
-    }
-    if (appDeleteList.isNotEmpty()) {
-        DbSet.appConfigDao.delete(*appDeleteList.toTypedArray())
-    }
-    val deleteCount = deleteList.size + categoryDeleteList.size + appDeleteList.size
-    if (deleteCount > 0) {
-        // i18n-ignore: legacy fallback or non-display heuristic data
-        LogUtils.d("清理已移除规则配置", "subsId=$subsId,delete=$deleteCount")
-    }
-    return deleteCount
+    if (deleteList.isEmpty()) return 0
+    DbSet.subsConfigDao.delete(*deleteList.toTypedArray())
+    LogUtils.d("清理已移除规则配置", "subsId=$subsId, delete=${deleteList.size}")
+    return deleteList.size
 }
 
 val updateSubsMutex = MutexState()
-private val checkSubsUpdateMutex = Mutex()
 
 private suspend fun updateSubs(subsEntry: SubsEntry): RawSubscription? {
     val subsItem = subsEntry.subsItem
@@ -490,7 +479,6 @@ private suspend fun updateSubs(subsEntry: SubsEntry): RawSubscription? {
                 return null
             }
         } catch (e: Exception) {
-            // i18n-ignore: legacy fallback or non-display heuristic data
             LogUtils.d("快速检测更新失败", subsItem, e.message)
         }
     }
@@ -498,25 +486,18 @@ private suspend fun updateSubs(subsEntry: SubsEntry): RawSubscription? {
     val text = try {
         client.get(updateUrl).bodyAsText()
     } catch (e: Exception) {
-        throw Exception(li.songe.gkd.sdp.app.getString(R.string.subs_update_request_failed), e)
+        throw Exception("请求更新链接失败", e)
     }
     val newSubsRaw = try {
         RawSubscription.parse(text)
     } catch (e: Exception) {
-        throw Exception(li.songe.gkd.sdp.app.getString(R.string.subs_parse_text_failed), e)
+        throw Exception("解析文本失败", e)
     }
     if (newSubsRaw.id != subsItem.id) {
-        error(
-            li.songe.gkd.sdp.app.getString(
-                R.string.subs_id_mismatch,
-                newSubsRaw.id.toString(),
-                subsItem.id.toString(),
-            ),
-        )
+        error("新id=${newSubsRaw.id}不匹配旧id=${subsItem.id}")
     }
     if (subsRaw != null && newSubsRaw.version <= subsRaw.version) {
         LogUtils.d(
-            // i18n-ignore: legacy fallback or non-display heuristic data
             "版本号不满足条件:id=${subsItem.id}",
             "${subsRaw.version} -> ${newSubsRaw.version}"
         )
@@ -526,24 +507,20 @@ private suspend fun updateSubs(subsEntry: SubsEntry): RawSubscription? {
 }
 
 fun checkSubsUpdate(showToast: Boolean = false) = appScope.launchTry(Dispatchers.IO) {
-    requirePendingDataRecoveryComplete()
-    if (!checkSubsUpdateMutex.tryLock()) return@launchTry
-    try {
+    if (updateSubsMutex.mutex.isLocked) {
+        return@launchTry
+    }
+    updateSubsMutex.withStateLock {
         if (subsEntriesFlow.value.any { !it.subsItem.isLocal } && !NetworkUtils.isAvailable()) {
             if (showToast) {
-                toast(li.songe.gkd.sdp.app.getString(R.string.s_f1b1586c08))
+                toast("网络不可用")
             }
-            return@launchTry
+            return@withStateLock
         }
-        // i18n-ignore: legacy fallback or non-display heuristic data
         LogUtils.d("开始检测更新")
         // 文件不存在, 重新加载
-        var changed = false
-        updateSubsMutex.withStateLock {
-            changed = refreshRawSubsList(
-                subsEntriesFlow.value.filter { it.subscription == null }.map { it.subsItem },
-            )
-        }
+        val changed = refreshRawSubsList(subsEntriesFlow.value.filter { it.subscription == null }
+            .map { it.subsItem })
         if (changed) {
             delay(500)
         }
@@ -552,10 +529,7 @@ fun checkSubsUpdate(showToast: Boolean = false) = appScope.launchTry(Dispatchers
             try {
                 val newSubsRaw = updateSubs(subsEntry)
                 if (newSubsRaw != null) {
-                    updateSubscription(
-                        subscription = newSubsRaw,
-                        expectedCurrentMtime = subsEntry.subsItem.mtime,
-                    )
+                    updateSubscription(newSubsRaw)
                     successNum++
                 }
                 if (subsRefreshErrorsFlow.value.contains(subsEntry.subsItem.id)) {
@@ -571,21 +545,17 @@ fun checkSubsUpdate(showToast: Boolean = false) = appScope.launchTry(Dispatchers
                         set(subsEntry.subsItem.id, e)
                     }
                 }
-                // i18n-ignore: legacy fallback or non-display heuristic data
                 LogUtils.d("检测更新失败", e.message)
             }
         }
         if (showToast) {
             if (successNum > 0) {
-                toast(li.songe.gkd.sdp.app.getString(R.string.s_6a863491d4, (successNum).toString()))
+                toast("更新 $successNum 条订阅")
             } else {
-                toast(li.songe.gkd.sdp.app.getString(R.string.s_f0ece473ea))
+                toast("暂无更新")
             }
         }
-        // i18n-ignore: legacy fallback or non-display heuristic data
         LogUtils.d("结束检测更新")
         delay(500)
-    } finally {
-        checkSubsUpdateMutex.unlock()
     }
 }

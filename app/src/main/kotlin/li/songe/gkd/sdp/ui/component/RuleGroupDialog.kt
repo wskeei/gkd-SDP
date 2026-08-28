@@ -19,7 +19,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -45,8 +45,6 @@ import li.songe.gkd.sdp.ui.style.getJson5AnnotatedString
 import li.songe.gkd.sdp.util.copyText
 import li.songe.gkd.sdp.util.throttle
 import li.songe.gkd.sdp.util.toast
-import androidx.compose.ui.res.stringResource
-import li.songe.gkd.sdp.R
 
 @Composable
 fun RuleGroupDialog(
@@ -62,12 +60,12 @@ fun RuleGroupDialog(
     val mainVm = LocalMainViewModel.current
     val interceptConfig by remember(subs.id, appId, group.key) {
         DbSet.interceptConfigDao.getFlow(subs.id, appId ?: "", group.key)
-    }.collectAsStateWithLifecycle(initialValue = null)
+    }.collectAsState(initial = null)
     val scope = rememberCoroutineScope()
 
     AlertDialog(
         onDismissRequest = onDismissRequest,
-        title = { Text(text = stringResource(R.string.s_2b5f43357d)) },
+        title = { Text(text = "规则组详情") },
         text = {
             Box(
                 modifier = Modifier.fillMaxWidth()
@@ -82,7 +80,7 @@ fun RuleGroupDialog(
                         .background(MaterialTheme.colorScheme.secondaryContainer)
                         .verticalScroll(rememberScrollState())
                         .clearAndSetSemantics {
-                            contentDescription = li.songe.gkd.sdp.app.getString(R.string.rule_group_content)
+                            contentDescription = "规则组内容"
                         }
                 ) {
                     SelectionContainer {
@@ -174,7 +172,7 @@ fun RuleGroupDialog(
                 }
                 PerfIconButton(
                     imageVector = PerfIcon.Block,
-                    onClickLabel = stringResource(R.string.rule_edit_exclusion),
+                    onClickLabel = "编辑规则排除名单",
                     onClick = throttle(onClickEditExclude),
                 )
                 AnimatedVisibility(
@@ -182,7 +180,7 @@ fun RuleGroupDialog(
                 ) {
                     PerfIconButton(
                         imageVector = ResetSettings,
-                        onClickLabel = stringResource(R.string.rule_reset_switch_state),
+                        onClickLabel = "重置开关状态至默认值",
                         onClick = throttle(onClickResetSwitch ?: {}),
                     )
                 }

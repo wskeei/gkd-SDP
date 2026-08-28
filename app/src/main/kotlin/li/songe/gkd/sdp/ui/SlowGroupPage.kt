@@ -13,7 +13,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -34,7 +34,6 @@ import li.songe.gkd.sdp.ui.style.scaffoldPadding
 import li.songe.gkd.sdp.util.appInfoMapFlow
 import li.songe.gkd.sdp.util.ruleSummaryFlow
 import li.songe.gkd.sdp.util.throttle
-import li.songe.gkd.sdp.R
 
 @Serializable
 data object SlowGroupRoute : NavKey
@@ -42,8 +41,8 @@ data object SlowGroupRoute : NavKey
 @Composable
 fun SlowGroupPage() {
     val mainVm = LocalMainViewModel.current
-    val ruleSummary by ruleSummaryFlow.collectAsStateWithLifecycle()
-    val appInfoCache by appInfoMapFlow.collectAsStateWithLifecycle()
+    val ruleSummary by ruleSummaryFlow.collectAsState()
+    val appInfoCache by appInfoMapFlow.collectAsState()
 
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
     Scaffold(
@@ -56,15 +55,15 @@ fun SlowGroupPage() {
                         mainVm.popPage()
                     })
                 },
-                title = { Text(text = li.songe.gkd.sdp.app.getString(R.string.s_9b30ccd61d)) },
+                title = { Text(text = "缓慢查询") },
                 actions = {
                     PerfIconButton(imageVector = PerfIcon.Info, onClick = throttle {
                         mainVm.dialogFlow.updateDialogOptions(
-                            title = li.songe.gkd.sdp.app.getString(R.string.s_9b30ccd61d),
+                            title = "缓慢查询",
                             text = arrayOf(
-                                li.songe.gkd.sdp.app.getString(R.string.slow_rule_intro),
-                                li.songe.gkd.sdp.app.getString(R.string.slow_rule_conditions),
-                                li.songe.gkd.sdp.app.getString(R.string.slow_rule_suggestions),
+                                "任意单个规则同时满足以下 3 个条件即判定为缓慢查询",
+                                "1. 选择器右侧无法快速查询且不是主动查询, 或内部使用<<且无法快速查询\n2. preKeys 为空\n3. matchTime 为空或大于 10s",
+                                "缓慢查询可能导致触发缓慢或更多耗电, 一些可能优化的建议操作\n1. 降低选择器获取新节点次数\n2. 降低或限制规则查询时间或次数"
                             ).joinToString("\n\n"),
                         )
                     })
@@ -91,10 +90,7 @@ fun SlowGroupPage() {
                         })
                         .itemPadding(),
                     title = group.name,
-                    desc = li.songe.gkd.sdp.app.getString(
-                        R.string.slow_global_rule,
-                        rule.rawSubs.name,
-                    )
+                    desc = "${rule.rawSubs.name}/全局规则"
                 )
             }
             items(
@@ -114,17 +110,13 @@ fun SlowGroupPage() {
                         })
                         .itemPadding(),
                     title = group.name,
-                    desc = li.songe.gkd.sdp.app.getString(
-                        R.string.slow_app_rule,
-                        rule.rawSubs.name,
-                        appInfoCache[rule.app.id]?.name ?: rule.app.name ?: rule.app.id,
-                    )
+                    desc = "${rule.rawSubs.name}/应用规则/${appInfoCache[rule.app.id]?.name ?: rule.app.name ?: rule.app.id}"
                 )
             }
             item(ListPlaceholder.KEY, ListPlaceholder.TYPE) {
                 Spacer(modifier = Modifier.height(EmptyHeight))
                 if (ruleSummary.slowGroupCount == 0) {
-                    EmptyText(text = li.songe.gkd.sdp.app.getString(R.string.s_cff584d9ab))
+                    EmptyText(text = "暂无规则")
                 }
             }
         }

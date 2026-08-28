@@ -6,20 +6,14 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.selection.toggleable
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.res.stringResource
-import li.songe.gkd.sdp.R
 import li.songe.gkd.sdp.ui.style.itemPadding
 import li.songe.gkd.sdp.util.throttle
 
@@ -33,23 +27,14 @@ fun SettingItem(
     imageVector: ImageVector? = PerfIcon.KeyboardArrowRight,
     onClick: (() -> Unit)? = null,
     onClickLabel: String? = null,
-    checked: Boolean? = null,
-    onToggle: ((Boolean) -> Unit)? = null,
 ) {
-    val toggle = checked != null && onToggle != null
     Row(
         modifier = Modifier
             .let {
-                if (toggle) {
-                    it.toggleable(
-                        value = checked,
-                        role = Role.Switch,
-                        onValueChange = onToggle,
-                    )
-                } else if (onClick != null) {
+                if (onClick != null) {
                     it.clickable(
                         onClick = throttle(fn = onClick),
-                        onClickLabel = onClickLabel ?: stringResource(R.string.common_enter_page, title),
+                        onClickLabel = onClickLabel ?: "进入${title}页面"
                     )
                 } else {
                     it
@@ -59,7 +44,7 @@ fun SettingItem(
             .itemPadding(),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Column(modifier = if (imageVector != null || toggle) Modifier.weight(1f) else Modifier.fillMaxWidth()) {
+        Column(modifier = if (imageVector != null) Modifier.weight(1f) else Modifier.fillMaxWidth()) {
             Text(
                 text = title,
                 style = MaterialTheme.typography.bodyLarge,
@@ -97,15 +82,7 @@ fun SettingItem(
                 }
             }
         }
-        if (toggle) {
-            Spacer(modifier = Modifier.width(8.dp))
-            // Visual only: the whole row is the toggleable semantic element.
-            Switch(
-                checked = checked,
-                onCheckedChange = onToggle,
-                modifier = Modifier.clearAndSetSemantics {},
-            )
-        } else if (imageVector != null) {
+        if (imageVector != null) {
             PerfIcon(
                 imageVector = imageVector,
                 contentDescription = null,

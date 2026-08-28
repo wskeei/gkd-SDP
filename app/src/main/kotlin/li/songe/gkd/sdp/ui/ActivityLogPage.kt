@@ -23,7 +23,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -58,13 +58,12 @@ import li.songe.gkd.sdp.ui.share.LocalMainViewModel
 import li.songe.gkd.sdp.ui.share.noRippleClickable
 import li.songe.gkd.sdp.ui.style.EmptyHeight
 import li.songe.gkd.sdp.ui.style.iconTextSize
+import li.songe.gkd.sdp.ui.style.itemHorizontalPadding
 import li.songe.gkd.sdp.ui.style.scaffoldPadding
 import li.songe.gkd.sdp.util.appInfoMapFlow
 import li.songe.gkd.sdp.util.launchAsFn
 import li.songe.gkd.sdp.util.throttle
 import li.songe.gkd.sdp.util.toast
-import li.songe.gkd.sdp.R
-import li.songe.gkd.sdp.ui.style.DimensionTokens
 
 @Serializable
 data object ActivityLogRoute : NavKey
@@ -75,7 +74,7 @@ fun ActivityLogPage() {
     val mainVm = context.mainVm
     val vm = viewModel<ActivityLogVm>()
 
-    val logCount by vm.logCountFlow.collectAsStateWithLifecycle()
+    val logCount by vm.logCountFlow.collectAsState()
     val list = vm.pagingDataFlow.collectAsLazyPagingItems()
     val resetKey = rememberSaveable { mutableIntStateOf(0) }
     val (scrollBehavior, listState) = useListScrollState(resetKey, list.itemCount > 0)
@@ -91,7 +90,7 @@ fun ActivityLogPage() {
             },
             title = {
                 Text(
-                    text = li.songe.gkd.sdp.app.getString(R.string.s_48ff47e21f),
+                    text = "界面日志",
                     modifier = Modifier.noRippleClickable { resetKey.intValue++ },
                 )
             },
@@ -101,12 +100,12 @@ fun ActivityLogPage() {
                         imageVector = PerfIcon.Delete,
                         onClick = throttle(fn = vm.viewModelScope.launchAsFn {
                             mainVm.dialogFlow.waitResult(
-                                title = li.songe.gkd.sdp.app.getString(R.string.s_0c42f43e47),
-                                text = li.songe.gkd.sdp.app.getString(R.string.s_76e76680f1),
+                                title = "删除日志",
+                                text = "确定删除所有界面日志?",
                                 error = true,
                             )
                             DbSet.activityLogDao.deleteAll()
-                            toast(li.songe.gkd.sdp.app.getString(R.string.s_86e8d12a79))
+                            toast("删除成功")
                         })
                     )
                 }
@@ -132,7 +131,7 @@ fun ActivityLogPage() {
             item(ListPlaceholder.KEY, ListPlaceholder.TYPE) {
                 Spacer(modifier = Modifier.height(EmptyHeight))
                 if (logCount == 0 && list.loadState.refresh !is LoadState.Loading) {
-                    EmptyText(text = li.songe.gkd.sdp.app.getString(R.string.s_b246458f20))
+                    EmptyText(text = "暂无数据")
                 }
             }
         }
@@ -153,15 +152,15 @@ private fun ActivityLogCard(
         modifier = Modifier
             .fillMaxWidth()
             .padding(
-                start = DimensionTokens.SpacingBase / 2,
-                end = DimensionTokens.SpacingBase / 2,
+                start = itemHorizontalPadding / 2,
+                end = itemHorizontalPadding / 2,
                 top = verticalPadding
             )
     ) {
         if (isDiffApp) {
             Row(
                 modifier = Modifier
-                    .padding(start = DimensionTokens.SpacingBase / 4)
+                    .padding(start = itemHorizontalPadding / 4)
                     .clip(MaterialTheme.shapes.extraSmall)
                     .clickable(onClick = throttle {
                         mainVm.navigatePage(
@@ -193,7 +192,7 @@ private fun ActivityLogCard(
         }
         Row(
             modifier = Modifier
-                .padding(start = DimensionTokens.SpacingBase / 4)
+                .padding(start = itemHorizontalPadding / 4)
                 .clickable(onClick = {
                     mainVm.textFlow.value = listOfNotNull(
                         appInfoMapFlow.value[activityLog.appId]?.name,
@@ -203,7 +202,7 @@ private fun ActivityLogCard(
                 })
                 .fillMaxWidth()
                 .height(IntrinsicSize.Min)
-                .padding(start = DimensionTokens.SpacingBase / 4)
+                .padding(start = itemHorizontalPadding / 4)
         ) {
             Spacer(modifier = Modifier.width(2.dp))
             Spacer(
@@ -231,7 +230,7 @@ private fun ActivityLogCard(
                         )
                     } else {
                         Text(
-                            text = li.songe.gkd.sdp.app.getString(R.string.s_2be88ca424),
+                            text = "null",
                             color = LocalContentColor.current.copy(alpha = 0.5f),
                         )
                     }

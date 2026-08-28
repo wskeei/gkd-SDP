@@ -21,13 +21,11 @@ import li.songe.gkd.sdp.data.AppInstallLog
 import li.songe.gkd.sdp.data.DateCount
 import li.songe.gkd.sdp.data.MonitoredApp
 import li.songe.gkd.sdp.db.DbSet
-import li.songe.gkd.sdp.diagnostics.DiagnosticLogger
 import li.songe.gkd.sdp.ui.share.BaseViewModel
 import li.songe.gkd.sdp.util.toast
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.*
-import li.songe.gkd.sdp.R
 
 internal fun resolveCurrentInstallState(
     packageName: String,
@@ -313,24 +311,24 @@ class AppInstallMonitorVm : BaseViewModel() {
     
     fun addMonitoredApp(packageName: String, displayName: String) = viewModelScope.launch(Dispatchers.IO) {
         if (packageName.isBlank() || displayName.isBlank()) {
-            toast(li.songe.gkd.sdp.app.getString(R.string.s_3745f91a8c))
+            toast("请填写完整信息")
             return@launch
         }
         
         val existing = DbSet.monitoredAppDao.getByPackageName(packageName)
         if (existing != null) {
-            toast(li.songe.gkd.sdp.app.getString(R.string.s_d8f6d7b5a9))
+            toast("该应用已在监控列表中")
             return@launch
         }
         
         DbSet.monitoredAppDao.insert(MonitoredApp(packageName, displayName))
-        toast(li.songe.gkd.sdp.app.getString(R.string.s_e9e6e68873, (displayName).toString()))
+        toast("已添加: $displayName")
         refreshInstalledStatus()
     }
     
     fun deleteMonitoredApp(app: MonitoredApp) = viewModelScope.launch(Dispatchers.IO) {
         DbSet.monitoredAppDao.delete(app)
-        toast(li.songe.gkd.sdp.app.getString(R.string.s_151577da08, (app.displayName).toString()))
+        toast("已移除: ${app.displayName}")
     }
     
     fun exportToCsv() = viewModelScope.launch(Dispatchers.IO) {
@@ -338,7 +336,7 @@ class AppInstallMonitorVm : BaseViewModel() {
             val logs = DbSet.appInstallLogDao.queryAll().stateIn(viewModelScope, SharingStarted.Eagerly, emptyList()).value
             
             if (logs.isEmpty()) {
-                toast(li.songe.gkd.sdp.app.getString(R.string.s_73fb671025))
+                toast("暂无数据可导出")
                 return@launch
             }
             
@@ -347,24 +345,17 @@ class AppInstallMonitorVm : BaseViewModel() {
             
             val file = File(app.cacheDir, fileName)
             file.bufferedWriter().use { writer ->
-                writer.write(app.getString(R.string.app_install_export_header) + "\n")
+                writer.write("日期,时间,应用名,包名,操作,是否仍存在\n")
                 
                 val timeFormat = SimpleDateFormat("HH:mm:ss", Locale.getDefault())
                 logs.forEach { log ->
                     val stillExists = if (log.action == AppInstallLog.ACTION_INSTALL) {
-                        if (checkIfStillInstalled(log.packageName)) {
-                            app.getString(R.string.common_yes)
-                        } else {
-                            app.getString(R.string.common_no)
-                        }
+                        if (checkIfStillInstalled(log.packageName)) "是" else "否"
                     } else {
                         "-"
                     }
                     
-                    writer.write(
-                        "${log.date},${timeFormat.format(Date(log.timestamp))},${log.appName},${log.packageName}," +
-                            "${if (log.action == "install") app.getString(R.string.app_install_export_install) else app.getString(R.string.app_install_export_uninstall)},$stillExists\n",
-                    )
+                    writer.write("${log.date},${timeFormat.format(Date(log.timestamp))},${log.appName},${log.packageName},${if (log.action == "install") "安装" else "卸载"},$stillExists\n")
                 }
             }
             
@@ -382,12 +373,12 @@ class AppInstallMonitorVm : BaseViewModel() {
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             }
             
-            app.startActivity(Intent.createChooser(shareIntent, app.getString(R.string.export_install_log)).apply {
+            app.startActivity(Intent.createChooser(shareIntent, "导出安装记录").apply {
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             })
             
         } catch (e: Exception) {
-            toast(li.songe.gkd.sdp.app.getString(R.string.s_9839a9c90b, (DiagnosticLogger.userMessage(e)).toString()))
+            toast("导出失败: ${e.message}")
         }
     }
 }

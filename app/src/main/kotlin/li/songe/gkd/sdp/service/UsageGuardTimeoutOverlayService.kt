@@ -28,15 +28,11 @@ import kotlinx.coroutines.launch
 import li.songe.gkd.sdp.a11y.A11yRuleEngine
 import li.songe.gkd.sdp.a11y.UsageGuardEngine
 import li.songe.gkd.sdp.ui.style.AppTheme
-import li.songe.gkd.sdp.ui.share.ServiceOverlayLifecycleOwner
 import li.songe.gkd.sdp.util.LogUtils
-import androidx.compose.ui.res.stringResource
-import li.songe.gkd.sdp.R
 
 class UsageGuardTimeoutOverlayService : LifecycleService(), SavedStateRegistryOwner {
     private val windowManager by lazy { getSystemService(WINDOW_SERVICE) as WindowManager }
     private var view: ComposeView? = null
-    private var overlayLifecycleOwner: ServiceOverlayLifecycleOwner? = null
 
     private val savedStateRegistryController = SavedStateRegistryController.create(this)
     override val savedStateRegistry = savedStateRegistryController.savedStateRegistry
@@ -64,10 +60,8 @@ class UsageGuardTimeoutOverlayService : LifecycleService(), SavedStateRegistryOw
     private fun showOverlay() {
         if (view != null) return
 
-        val lifecycleOwner = ServiceOverlayLifecycleOwner()
-        overlayLifecycleOwner = lifecycleOwner
         view = ComposeView(this).apply {
-            setViewTreeLifecycleOwner(lifecycleOwner)
+            setViewTreeLifecycleOwner(this@UsageGuardTimeoutOverlayService)
             setViewTreeSavedStateRegistryOwner(this@UsageGuardTimeoutOverlayService)
             setContent {
                 AppTheme {
@@ -93,13 +87,8 @@ class UsageGuardTimeoutOverlayService : LifecycleService(), SavedStateRegistryOw
                 WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
             PixelFormat.TRANSLUCENT
         )
-        runCatching {
-            windowManager.addView(view, params)
-            lifecycleOwner.onViewAdded()
-        }.onFailure { error ->
+        runCatching { windowManager.addView(view, params) }.onFailure { error ->
             view?.let { runCatching { windowManager.removeViewImmediate(it) } }
-            lifecycleOwner.onViewRemoved()
-            overlayLifecycleOwner = null
             view = null
             LogUtils.d("usage guard timeout overlay mount rejected", error::class.java.simpleName)
             UsageGuardEngine.onOverlayMountFailed("timeout", appId)
@@ -108,8 +97,6 @@ class UsageGuardTimeoutOverlayService : LifecycleService(), SavedStateRegistryOw
     }
 
     override fun onDestroy() {
-        overlayLifecycleOwner?.onViewRemoved()
-        overlayLifecycleOwner = null
         super.onDestroy()
         view?.let { runCatching { windowManager.removeView(it) } }
         view = null
@@ -134,7 +121,7 @@ private fun UsageGuardTimeoutScreen(
             verticalArrangement = Arrangement.Center,
         ) {
             Text(
-                text = stringResource(R.string.s_367b8716dd),
+                text = "时间已到",
                 style = MaterialTheme.typography.displaySmall,
             )
             Text(
@@ -146,7 +133,7 @@ private fun UsageGuardTimeoutScreen(
                 onClick = onGoHome,
                 modifier = Modifier.fillMaxWidth(),
             ) {
-                Text(stringResource(R.string.s_533bc81708))
+                Text("回到桌面")
             }
         }
     }

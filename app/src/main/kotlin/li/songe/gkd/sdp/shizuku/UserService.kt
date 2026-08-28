@@ -6,6 +6,7 @@ import android.content.ServiceConnection
 import android.graphics.Bitmap
 import android.graphics.Rect
 import android.os.IBinder
+import android.util.Log
 import android.view.SurfaceControlHidden
 import androidx.annotation.Keep
 import kotlinx.coroutines.suspendCancellableCoroutine
@@ -26,11 +27,14 @@ import kotlin.system.exitProcess
 class UserService(val context: Context) : IUserService.Stub() {
 
     init {
-        LogUtils.d("Shizuku user service created")
+        Log.d(
+            "UserService",
+            "constructor(context=${context.packageName},pid=${android.os.Process.myPid()},uid=${android.os.Process.myUid()})"
+        )
     }
 
     override fun destroy() {
-        LogUtils.d("Shizuku user service destroyed")
+        Log.d("UserService", "destroy")
         exitProcess(0)
     }
 
@@ -39,7 +43,7 @@ class UserService(val context: Context) : IUserService.Stub() {
     }
 
     override fun execCommand(command: String): CommandResult {
-        LogUtils.d("Shizuku command started")
+        Log.d("UserService", "execCommand(command=$command)")
         val process = Runtime.getRuntime().exec("sh")
         val outputStream = DataOutputStream(process.outputStream)
         val commandResult = try {
@@ -56,11 +60,21 @@ class UserService(val context: Context) : IUserService.Stub() {
                 error = process.errorStream.bufferedReader().readText(),
             )
         } catch (e: Exception) {
-            LogUtils.d("Shizuku command failed", e)
+            e.printStackTrace()
+            val message = e.message
+            val aimErrStr = "error="
+            val index = message?.indexOf(aimErrStr)
+            val code = if (index != null) {
+                message.substring(index + aimErrStr.length)
+                    .takeWhile { c -> c.isDigit() }
+                    .toIntOrNull()
+            } else {
+                null
+            } ?: 1
             CommandResult(
-                code = 1,
+                code = code,
                 result = "",
-                error = "command_failed",
+                error = e.message,
             )
         } finally {
             outputStream.close()
@@ -118,13 +132,13 @@ private fun unbindUserService(
     reason: String? = null,
 ) {
     if (!shizukuGrantedState.stateFlow.value) return
-    LogUtils.d("Shizuku user service unbind", reason != null)
+    LogUtils.d(serviceArgs, reason)
     // https://github.com/RikkaApps/Shizuku-API/blob/master/server-shared/src/main/java/rikka/shizuku/server/UserServiceManager.java#L62
     try {
         Shizuku.unbindUserService(serviceArgs, connection, false)
         Shizuku.unbindUserService(serviceArgs, connection, true)
     } catch (e: Exception) {
-        LogUtils.d("Shizuku user service unbind failed", e)
+        e.printStackTrace()
     }
 }
 
@@ -138,8 +152,8 @@ data class UserServiceWrapper(
     fun execCommandForResult(command: String): CommandResult = try {
         userService.execCommand(command)
     } catch (e: Throwable) {
-        LogUtils.d("Shizuku command transport failed", e)
-        CommandResult(code = null, result = "", error = "command_transport_failed")
+        e.printStackTrace()
+        CommandResult(code = null, result = "", error = e.message)
     }
 
     fun tap(x: Float, y: Float, duration: Long = 0): Boolean {
@@ -176,11 +190,11 @@ suspend fun buildServiceWrapper(): UserServiceWrapper? {
         .debuggable(META.debuggable)
         .version(META.versionCode)
         .tag("default")
-    LogUtils.d("build Shizuku service wrapper")
+    LogUtils.d("buildServiceWrapper", serviceArgs)
     var resumeCallback: ((UserServiceWrapper) -> Unit)? = null
     val connection = object : ServiceConnection {
         override fun onServiceConnected(componentName: ComponentName, binder: IBinder?) {
-            LogUtils.d("Shizuku service connected")
+            LogUtils.d("onServiceConnected", componentName)
             resumeCallback ?: return
             if (binder?.pingBinder() == true) {
                 resumeCallback?.invoke(
@@ -192,12 +206,12 @@ suspend fun buildServiceWrapper(): UserServiceWrapper? {
                 )
                 resumeCallback = null
             } else {
-                LogUtils.d("invalid Shizuku service binder")
+                LogUtils.d("invalid binder for $componentName received")
             }
         }
 
         override fun onServiceDisconnected(componentName: ComponentName) {
-            LogUtils.d("Shizuku service disconnected")
+            LogUtils.d("onServiceDisconnected", componentName)
         }
     }
     return withTimeoutOrNull(3000) {

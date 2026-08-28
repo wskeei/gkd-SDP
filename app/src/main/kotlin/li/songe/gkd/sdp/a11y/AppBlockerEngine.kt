@@ -1,14 +1,15 @@
 package li.songe.gkd.sdp.a11y
 
+import android.util.Log
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import li.songe.gkd.sdp.META
 import li.songe.gkd.sdp.app
 import li.songe.gkd.sdp.appScope
-import li.songe.gkd.sdp.R
-import li.songe.gkd.sdp.runtime.appDependencies
 import li.songe.gkd.sdp.data.AppGroup
 import li.songe.gkd.sdp.data.BlockTimeRule
 import li.songe.gkd.sdp.db.DbSet
@@ -58,7 +59,7 @@ object AppBlockerEngine {
 
     init {
         // 监听规则和应用组变化
-        appScope.launch(appDependencies.dispatchers.io) {
+        appScope.launch(Dispatchers.IO) {
             combine(
                 DbSet.blockTimeRuleDao.queryAll(),
                 DbSet.appGroupDao.queryAll()
@@ -69,7 +70,9 @@ object AppBlockerEngine {
                     rules = rules.toList(),
                     groups = groups.toList(),
                 )
-                LogUtils.d("app blocker configuration updated", rules.size + groups.size)
+                if (META.debuggable) {
+                    Log.d(TAG, "Rules updated: ${rules.size}, Groups: ${groups.size}")
+                }
                 sdpRuntimeFeatureCoordinator.reconcileCurrentApp("app-blocker-rules-updated")
             }
         }
@@ -155,9 +158,9 @@ object AppBlockerEngine {
         }
 
         // 检查冷却时间
-        val now = appDependencies.clock.elapsedRealtimeMillis()
+        val now = System.currentTimeMillis()
         val lastTriggerTime = cooldownMap[packageName] ?: 0L
-        if (cooldownMap.containsKey(packageName) && now - lastTriggerTime < COOLDOWN_MS) {
+        if (now - lastTriggerTime < COOLDOWN_MS) {
             LogUtils.d("$TAG: Cooldown active for $packageName")
             return
         }
@@ -181,7 +184,7 @@ object AppBlockerEngine {
             if (owner != null && !sdpRuntimeFeatureCoordinator.isCurrent(owner)) return
             val result = showBlockerOverlay(
                 packageName = packageName,
-                message = message ?: li.songe.gkd.sdp.app.getString(R.string.common_default_intercept_message),
+                message = message ?: "这真的重要吗？",
                 rule = blockingRule,
                 owner = owner,
             )

@@ -4,7 +4,6 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import androidx.core.app.NotificationManagerCompat
 import li.songe.gkd.sdp.META
-import li.songe.gkd.sdp.R
 import li.songe.gkd.sdp.app
 
 sealed class NotifChannel(
@@ -19,19 +18,19 @@ sealed class NotifChannel(
 
     data object Snapshot : NotifChannel(
         id = "1",
-        name = app.getString(R.string.notif_channel_snapshot),
+        name = "保存快照通知",
     )
 
     data object FocusMode : NotifChannel(
         id = "2",
-        name = app.getString(R.string.notif_channel_focus),
-        desc = app.getString(R.string.notif_channel_focus_desc),
+        name = "专注模式通知",
+        desc = "专注会话开始和结束通知",
     )
 
     data object AccessibilityGuard : NotifChannel(
         id = "3",
-        name = app.getString(R.string.notif_channel_guard),
-        desc = app.getString(R.string.notif_channel_guard_desc),
+        name = "无障碍权限守护",
+        desc = "无障碍权限关闭后的分阶段提醒",
         importance = NotificationManager.IMPORTANCE_HIGH,
     )
 }

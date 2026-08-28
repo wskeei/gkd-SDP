@@ -18,7 +18,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -29,8 +29,6 @@ import androidx.compose.ui.unit.dp
 import li.songe.gkd.sdp.a11y.WechatContactFetcher
 import li.songe.gkd.sdp.data.WechatContact
 import li.songe.gkd.sdp.service.A11yService
-import androidx.compose.ui.res.stringResource
-import li.songe.gkd.sdp.R
 
 @Composable
 fun WechatContactPicker(
@@ -40,8 +38,8 @@ fun WechatContactPicker(
     modifier: Modifier = Modifier
 ) {
     var searchQuery by remember { mutableStateOf("") }
-    val isFetching by WechatContactFetcher.isFetchingFlow.collectAsStateWithLifecycle()
-    val fetchProgress by WechatContactFetcher.fetchProgressFlow.collectAsStateWithLifecycle()
+    val isFetching by WechatContactFetcher.isFetchingFlow.collectAsState()
+    val fetchProgress by WechatContactFetcher.fetchProgressFlow.collectAsState()
 
     val filteredContacts = remember(allContacts, searchQuery) {
         if (searchQuery.isBlank()) {
@@ -67,7 +65,7 @@ fun WechatContactPicker(
         ) {
             Icon(Icons.Default.Refresh, contentDescription = null)
             Spacer(modifier = Modifier.width(8.dp))
-            Text(if (isFetching) fetchProgress else stringResource(R.string.s_404e6e3b68))
+            Text(if (isFetching) fetchProgress else "更新微信联系人")
         }
 
         Spacer(modifier = Modifier.padding(8.dp))
@@ -76,7 +74,7 @@ fun WechatContactPicker(
         TextField(
             value = searchQuery,
             onValueChange = { searchQuery = it },
-            placeholder = { Text(li.songe.gkd.sdp.app.getString(R.string.s_6600f231be)) },
+            placeholder = { Text("搜索联系人") },
             modifier = Modifier.fillMaxWidth()
         )
 
@@ -85,7 +83,7 @@ fun WechatContactPicker(
         // 联系人列表
         if (filteredContacts.isEmpty()) {
             Text(
-                text = if (allContacts.isEmpty()) stringResource(R.string.s_881d2d1f26) else stringResource(R.string.s_1031d055e8),
+                text = if (allContacts.isEmpty()) "暂无联系人，请点击上方按钮更新" else "未找到匹配的联系人",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(16.dp)
@@ -118,7 +116,7 @@ fun WechatContactPicker(
                                 )
                             }
                             Text(
-                                text = li.songe.gkd.sdp.app.getString(R.string.s_16f957e647, (contact.wechatId).toString()),
+                                text = "微信号: ${contact.wechatId}",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )

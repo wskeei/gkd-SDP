@@ -10,7 +10,6 @@ import li.songe.gkd.sdp.util.LogUtils
 import li.songe.gkd.sdp.util.SnapshotExt
 import li.songe.gkd.sdp.util.launchTry
 import li.songe.gkd.sdp.util.toast
-import li.songe.gkd.sdp.R
 
 class SnapshotTileService() : BaseTileService() {
     override val activeFlow = MutableStateFlow(false)
@@ -25,7 +24,7 @@ private fun execSnapshot() {
     val service = A11yRuleEngine.instance
     if (service == null) {
         A11yRuleEngine.performActionBack()
-        toast(li.songe.gkd.sdp.app.getString(R.string.s_035bb01220), forced = true)
+        toast("服务未连接", forced = true)
         return
     }
     appScope.launchTry(Dispatchers.IO) {
@@ -33,7 +32,7 @@ private fun execSnapshot() {
 
         if (oldAppId == null) {
             A11yRuleEngine.performActionBack()
-            toast(li.songe.gkd.sdp.app.getString(R.string.s_1acf004269), forced = true)
+            toast("获取信息根节点失败", forced = true)
             return@launchTry
         }
 
@@ -49,7 +48,7 @@ private fun execSnapshot() {
                 // https://github.com/gkd-kit/gkd/issues/713
                 delay(250)
                 if (timeout()) {
-                    toast(li.songe.gkd.sdp.app.getString(R.string.s_b4450d038a), forced = true)
+                    toast("当前应用没有无障碍信息，捕获失败", forced = true)
                     break
                 }
             } else if (latestAppId != oldAppId) {
@@ -61,7 +60,7 @@ private fun execSnapshot() {
                 A11yRuleEngine.performActionBack()
                 delay(500)
                 if (timeout()) {
-                    toast(li.songe.gkd.sdp.app.getString(R.string.s_c6d8dd919b), forced = true)
+                    toast("未检测到界面切换，捕获失败", forced = true)
                     break
                 }
             }

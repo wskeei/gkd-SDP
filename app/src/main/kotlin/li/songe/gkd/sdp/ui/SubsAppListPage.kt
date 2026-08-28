@@ -13,7 +13,7 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -21,7 +21,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -69,9 +68,9 @@ fun SubsAppListPage(route: SubsAppListRoute) {
     val context = LocalActivity.current as MainActivity
     val vm = viewModel { SubsAppListVm(route) }
 
-    val appTripleList by vm.appItemListFlow.collectAsStateWithLifecycle()
-    val searchStr by vm.searchStrFlow.collectAsStateWithLifecycle()
-    val constraints by li.songe.gkd.sdp.util.FocusLockUtils.allConstraintsFlow.collectAsStateWithLifecycle()
+    val appTripleList by vm.appItemListFlow.collectAsState()
+    val searchStr by vm.searchStrFlow.collectAsState()
+    val constraints by li.songe.gkd.sdp.util.FocusLockUtils.allConstraintsFlow.collectAsState()
 
     var showSearchBar by rememberSaveable { mutableStateOf(false) }
     LaunchedEffect(key1 = showSearchBar, block = {
@@ -106,13 +105,13 @@ fun SubsAppListPage(route: SubsAppListRoute) {
                     AppBarTextField(
                         value = searchStr,
                         onValueChange = { newValue -> vm.searchStrFlow.value = newValue.trim() },
-                        hint = stringResource(R.string.app_list_search_hint),
+                        hint = "请输入应用名称/ID",
                         modifier = if (firstShowSearchBar) Modifier else Modifier.autoFocus(),
                     )
                 } else {
                     TowLineText(
                         title = useSubs(subsItemId)?.name ?: subsItemId.toString(),
-                        subtitle = stringResource(R.string.subs_app_rules),
+                        subtitle = "应用规则",
                         modifier = Modifier.noRippleClickable {
                             vm.resetKey.intValue++
                         }
@@ -144,31 +143,31 @@ fun SubsAppListPage(route: SubsAppListRoute) {
                     modifier = Modifier.wrapContentSize(Alignment.TopStart)
                 ) {
                     DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-                        MenuGroupCard(inTop = true, title = stringResource(R.string.app_list_sort_title)) {
+                        MenuGroupCard(inTop = true, title = "排序") {
                             var sortType by vm.sortTypeFlow.asMutableState()
                             AppSortOption.objects.forEach { option ->
                                 MenuItemRadioButton(
-                                    text = stringResource(option.labelRes),
+                                    text = option.label,
                                     selected = sortType == option,
                                     onClick = { sortType = option },
                                 )
                             }
                         }
-                        MenuGroupCard(title = stringResource(R.string.app_list_group_title)) {
+                        MenuGroupCard(title = "分组") {
                             var appGroupType by vm.appGroupTypeFlow.asMutableState()
                             AppGroupOption.allObjects.forEach { option ->
                                 val newValue = option.invert(appGroupType)
                                 MenuItemCheckbox(
                                     enabled = newValue != 0,
-                                    text = stringResource(option.labelRes),
+                                    text = option.label,
                                     checked = option.include(appGroupType),
                                     onClick = { appGroupType = newValue },
                                 )
                             }
                         }
-                        MenuGroupCard(title = stringResource(R.string.app_list_filter_title)) {
+                        MenuGroupCard(title = "筛选") {
                             MenuItemCheckbox(
-                                text = stringResource(R.string.subs_whitelist),
+                                text = "白名单",
                                 stateFlow = vm.showBlockAppFlow,
                             )
                         }
@@ -224,13 +223,13 @@ fun SubsAppListPage(route: SubsAppListRoute) {
             }
             item(ListPlaceholder.KEY, ListPlaceholder.TYPE) {
                 Spacer(modifier = Modifier.height(EmptyHeight))
-                val firstLoading by vm.firstLoadingFlow.collectAsStateWithLifecycle()
+                val firstLoading by vm.firstLoadingFlow.collectAsState()
                 if (appTripleList.isEmpty() && !firstLoading) {
                     EmptyText(
                         text = if (searchStr.isNotEmpty()) {
-                            if (vm.showAllAppFlow.collectAsStateWithLifecycle().value) li.songe.gkd.sdp.app.getString(R.string.s_8f8274c754) else li.songe.gkd.sdp.app.getString(R.string.s_9e7d3ee61c)
+                            if (vm.showAllAppFlow.collectAsState().value) "暂无搜索结果" else "暂无搜索结果，或修改筛选"
                         } else {
-                            li.songe.gkd.sdp.app.getString(R.string.s_cff584d9ab)
+                            "暂无规则"
                         }
                     )
                     Spacer(modifier = Modifier.height(EmptyHeight / 2))

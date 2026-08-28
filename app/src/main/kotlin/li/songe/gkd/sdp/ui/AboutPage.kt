@@ -26,7 +26,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -87,7 +87,6 @@ import li.songe.gkd.sdp.util.saveFileToDownloads
 import li.songe.gkd.sdp.util.shareFile
 import li.songe.gkd.sdp.util.throttle
 import li.songe.gkd.sdp.util.toast
-import androidx.compose.ui.res.stringResource
 
 @Serializable
 data object AboutRoute : NavKey
@@ -97,31 +96,31 @@ fun AboutPage() {
     val context = LocalActivity.current as MainActivity
     val mainVm = LocalMainViewModel.current
     val vm = viewModel<AboutVm>()
-    val store by storeFlow.collectAsStateWithLifecycle()
+    val store by storeFlow.collectAsState()
 
     var showInfoDlg by vm.showInfoDlgFlow.asMutableState()
     if (showInfoDlg) {
         AlertDialog(
             onDismissRequest = { showInfoDlg = false },
-            title = { Text(text = stringResource(R.string.s_11740cb0a5)) },
+            title = { Text(text = "版本信息") },
             text = {
                 Column(
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     Column {
-                        Text(text = li.songe.gkd.sdp.app.getString(R.string.s_25d3a49e6c))
+                        Text(text = "构建渠道")
                         Text(text = META.channel)
                     }
                     Column {
-                        Text(text = stringResource(R.string.s_586a91601e))
+                        Text(text = "版本代码")
                         Text(text = META.versionCode.toString())
                     }
                     Column {
-                        Text(text = stringResource(R.string.s_ebb9cdd84c))
+                        Text(text = "版本名称")
                         Text(text = META.versionName)
                     }
                     Column {
-                        Text(text = stringResource(R.string.s_4c28d5df90))
+                        Text(text = "代码记录")
                         Text(
                             modifier = Modifier.clickable { openUri(META.commitUrl) },
                             text = META.tagName ?: META.commitId.substring(0, 16),
@@ -130,7 +129,7 @@ fun AboutPage() {
                         )
                     }
                     Column {
-                        Text(text = li.songe.gkd.sdp.app.getString(R.string.s_e2ecfd6487))
+                        Text(text = "提交时间")
                         Text(text = META.commitTime.format("yyyy-MM-dd HH:mm:ss ZZ"))
                     }
                 }
@@ -139,7 +138,7 @@ fun AboutPage() {
                 TextButton(onClick = {
                     showInfoDlg = false
                 }) {
-                    Text(text = stringResource(R.string.s_6c14bd7f6f))
+                    Text(text = "关闭")
                 }
             },
         )
@@ -159,7 +158,7 @@ fun AboutPage() {
                         },
                     )
                 },
-                title = { Text(text = li.songe.gkd.sdp.app.getString(R.string.s_bed172efc9)) },
+                title = { Text(text = "关于") },
                 actions = {
                     PerfIconButton(
                         imageVector = PerfIcon.Share,
@@ -186,7 +185,7 @@ fun AboutPage() {
                         .clickable(
                             indication = null,
                             interactionSource = remember { MutableInteractionSource() },
-                            onClick = throttle { toast(li.songe.gkd.sdp.app.getString(R.string.s_e60faf5b29)) }
+                            onClick = throttle { toast("你干嘛~ 哎呦~") }
                         )
                         .fillMaxWidth(0.33f)
                         .aspectRatio(1f)
@@ -209,7 +208,7 @@ fun AboutPage() {
 
             SettingItem(
                 imageVector = null,
-                title = stringResource(R.string.s_177a269ee4),
+                title = "开源代码",
                 onClick = {
                     mainVm.openUrl(REPOSITORY_URL)
                 },
@@ -217,7 +216,7 @@ fun AboutPage() {
             if (META.isGkdChannel) {
                 SettingItem(
                     imageVector = null,
-                    title = stringResource(R.string.s_960d7b0923),
+                    title = "捐赠支持",
                     onClick = {
                         mainVm.navigateWebPage(ShortUrlSet.URL10)
                     },
@@ -225,54 +224,49 @@ fun AboutPage() {
             }
             SettingItem(
                 imageVector = null,
-                title = stringResource(R.string.s_104a39b093),
+                title = "使用协议",
                 onClick = {
                     mainVm.navigateWebPage(ShortUrlSet.URL12)
                 },
             )
             SettingItem(
                 imageVector = null,
-                title = stringResource(R.string.s_8c276c1fea),
+                title = "隐私政策",
                 onClick = {
                     mainVm.navigateWebPage(ShortUrlSet.URL11)
                 },
             )
 
             Text(
-                text = stringResource(R.string.s_42a36e9497),
+                text = "反馈",
                 modifier = Modifier.titleItemPadding(),
                 style = MaterialTheme.typography.titleSmall,
                 color = MaterialTheme.colorScheme.primary,
             )
-            val feedbackThanks = stringResource(R.string.about_feedback_thanks)
-            val feedbackScope = stringResource(R.string.about_feedback_scope)
-            val feedbackThirdParty = stringResource(R.string.about_feedback_third_party)
-            val feedbackConfident = stringResource(R.string.about_feedback_confident)
-            val feedbackContinue = stringResource(R.string.about_feedback_continue)
             Column(
                 modifier = Modifier
                     .clickable(onClick = throttle(mainVm.viewModelScope.launchAsFn {
                         mainVm.dialogFlow.waitResult(
-                            title = li.songe.gkd.sdp.app.getString(R.string.s_17068dc79c),
+                            title = "反馈须知",
                             textContent = {
                                 Text(text = buildAnnotatedString {
                                     val highlightStyle = SpanStyle(
                                         fontWeight = FontWeight.Bold,
                                         color = MaterialTheme.colorScheme.primary,
                                     )
-                                    append(feedbackThanks)
+                                    append("感谢您愿意花时间反馈，")
                                     withStyle(style = highlightStyle) {
-                                        append(feedbackScope)
+                                        append("GKD 默认不携带任何规则，只接受应用本体功能相关的反馈")
                                     }
                                     append("\n\n")
-                                    append(feedbackThirdParty)
+                                    append("请先判断是不是第三方规则订阅的问题，如果是，您应该向规则提供者反馈，而不是在此处反馈。")
                                     withStyle(style = highlightStyle) {
-                                        append(feedbackConfident)
+                                        append("如果您已经确信是 GKD 应用本体的问题")
                                     }
-                                    append(feedbackContinue)
+                                    append("，可点击下方继续反馈")
                                 })
                             },
-                            confirmText = li.songe.gkd.sdp.app.getString(R.string.s_1fc1afc5c5),
+                            confirmText = "继续",
                             dismissRequest = true,
                         )
                         mainVm.openUrl(ISSUES_URL)
@@ -281,12 +275,12 @@ fun AboutPage() {
                     .itemPadding()
             ) {
                 Text(
-                    text = stringResource(R.string.s_8d263a68b8),
+                    text = "问题反馈",
                     style = MaterialTheme.typography.bodyLarge,
                 )
             }
             SettingItem(
-                title = stringResource(R.string.s_252fed9478),
+                title = "导出日志",
                 imageVector = PerfIcon.Share,
                 onClick = {
                     mainVm.showShareLogDlgFlow.value = true
@@ -294,21 +288,21 @@ fun AboutPage() {
             )
             if (mainVm.updateStatus != null) {
                 Text(
-                    text = stringResource(R.string.s_d9db02d07a),
+                    text = "更新",
                     modifier = Modifier.titleItemPadding(),
                     style = MaterialTheme.typography.titleSmall,
                     color = MaterialTheme.colorScheme.primary,
                 )
                 TextMenu(
-                    title = stringResource(R.string.s_8af0ad9f92),
+                    title = "更新渠道",
                     option = UpdateChannelOption.objects.findOption(store.updateChannel)
                 ) {
                     if (mainVm.updateStatus.checkUpdatingFlow.value) return@TextMenu
                     if (it.value == UpdateChannelOption.Beta.value) {
                         mainVm.viewModelScope.launchTry {
                             mainVm.dialogFlow.waitResult(
-                                title = li.songe.gkd.sdp.app.getString(R.string.s_f5c895b864),
-                                text = li.songe.gkd.sdp.app.getString(R.string.s_d63a373932),
+                                title = "版本渠道",
+                                text = "测试版本渠道更新快\n但不稳定可能存在较多BUG\n请谨慎使用",
                             )
                             storeFlow.update { s -> s.copy(updateChannel = it.value) }
                         }
@@ -329,10 +323,10 @@ fun AboutPage() {
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(
-                        text = stringResource(R.string.s_a6df38586d),
+                        text = "检查更新",
                         style = MaterialTheme.typography.bodyLarge,
                     )
-                    RotatingLoadingIcon(loading = mainVm.updateStatus.checkUpdatingFlow.collectAsStateWithLifecycle().value)
+                    RotatingLoadingIcon(loading = mainVm.updateStatus.checkUpdatingFlow.collectAsState().value)
                 }
             }
             Spacer(modifier = Modifier.height(EmptyHeight))
@@ -343,22 +337,22 @@ fun AboutPage() {
         TextListDialog(
             onDismiss = { showShareAppDlg = false },
             textList = listOf(
-                li.songe.gkd.sdp.app.getString(R.string.share_to_other_apps) to mainVm.viewModelScope.launchAsFn(Dispatchers.IO) {
+                "分享到其他应用" to mainVm.viewModelScope.launchAsFn(Dispatchers.IO) {
                     if (!META.isGkdChannel) {
                         mainVm.dialogFlow.waitResult(
-                            title = li.songe.gkd.sdp.app.getString(R.string.s_ba964c4042),
+                            title = "分享提示",
                             textContent = { Text(text = exportPlayTipTemplate()) },
-                            confirmText = li.songe.gkd.sdp.app.getString(R.string.s_1fc1afc5c5),
+                            confirmText = "继续",
                         )
                     }
-                    context.shareFile(getShareApkFile(), li.songe.gkd.sdp.app.getString(R.string.share_install_file))
+                    context.shareFile(getShareApkFile(), "分享安装文件")
                 },
-                li.songe.gkd.sdp.app.getString(R.string.save_to_downloads) to mainVm.viewModelScope.launchAsFn(Dispatchers.IO) {
+                "保存到下载" to mainVm.viewModelScope.launchAsFn(Dispatchers.IO) {
                     if (!META.isGkdChannel) {
                         mainVm.dialogFlow.waitResult(
-                            title = li.songe.gkd.sdp.app.getString(R.string.s_108a9199f2),
+                            title = "保存提示",
                             textContent = { Text(text = exportPlayTipTemplate()) },
-                            confirmText = li.songe.gkd.sdp.app.getString(R.string.s_1fc1afc5c5),
+                            confirmText = "继续",
                         )
                     }
                     context.saveFileToDownloads(getShareApkFile())
@@ -373,11 +367,8 @@ fun AboutPage() {
 
 @Composable
 private fun exportPlayTipTemplate(): AnnotatedString {
-    val tip = stringResource(R.string.about_export_play_tip)
-    val downloadLink = stringResource(R.string.about_export_play_download_link)
-    val continueText = stringResource(R.string.about_export_play_continue)
     return buildAnnotatedString {
-        append(tip)
+        append("当前导出的 APK 文件只能在已安装 Google 框架的设备上才能使用，否则安装打开后会提示报错，")
         withLink(
             LinkAnnotation.Url(
                 ShortUrlSet.URL13,
@@ -389,9 +380,9 @@ private fun exportPlayTipTemplate(): AnnotatedString {
                 )
             )
         ) {
-            append(downloadLink)
+            append("建议点此从官网下载")
         }
-        append(continueText)
+        append("，或点击下方继续操作")
     }
 }
 

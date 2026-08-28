@@ -9,7 +9,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -19,15 +19,11 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.suspendCancellableCoroutine
 import li.songe.gkd.sdp.ui.WebViewRoute
 import li.songe.gkd.sdp.ui.share.LocalMainViewModel
-import li.songe.gkd.sdp.remote.CleartextOriginAuthorizations
-import li.songe.gkd.sdp.remote.CleartextOriginPolicy
 import li.songe.gkd.sdp.util.ShortUrlSet
 import li.songe.gkd.sdp.util.subsItemsFlow
 import li.songe.gkd.sdp.util.throttle
 import li.songe.gkd.sdp.util.toast
 import kotlin.coroutines.resume
-import androidx.compose.ui.res.stringResource
-import li.songe.gkd.sdp.R
 
 
 class InputSubsLinkOption {
@@ -46,29 +42,21 @@ class InputSubsLinkOption {
         continuation = null
     }
 
-    private fun submit(authorizeCleartext: Boolean) {
+    private fun submit() {
         val value = valueFlow.value
         if (!URLUtil.isNetworkUrl(value)) {
-            toast(li.songe.gkd.sdp.app.getString(R.string.s_e7e0ffcd50))
+            toast("非法链接")
             return
         }
         val initValue = initValueFlow.value
         if (initValue.isNotEmpty() && initValue == value) {
-            toast(li.songe.gkd.sdp.app.getString(R.string.s_fff8cc4d94))
+            toast("未修改")
             resume(null)
             return
         }
         if (subsItemsFlow.value.any { it.updateUrl == value }) {
-            toast(li.songe.gkd.sdp.app.getString(R.string.s_d41dda6f65))
+            toast("已有相同链接订阅")
             return
-        }
-        val cleartextOrigin = CleartextOriginPolicy.canonicalOrigin(value)
-        if (cleartextOrigin != null && cleartextOrigin !in CleartextOriginAuthorizations.originsFlow.value) {
-            if (!authorizeCleartext) {
-                toast(li.songe.gkd.sdp.app.getString(R.string.s_34ba6b190f))
-                return
-            }
-            CleartextOriginAuthorizations.authorize(value)
         }
         resume(value)
     }
@@ -86,15 +74,11 @@ class InputSubsLinkOption {
 
     @Composable
     fun ContentDialog() {
-        val show by showFlow.collectAsStateWithLifecycle()
+        val show by showFlow.collectAsState()
         if (show) {
             val mainVm = LocalMainViewModel.current
-            val value by valueFlow.collectAsStateWithLifecycle()
-            val initValue by initValueFlow.collectAsStateWithLifecycle()
-            val authorizedOrigins by CleartextOriginAuthorizations.originsFlow.collectAsStateWithLifecycle()
-            val cleartextOrigin = CleartextOriginPolicy.canonicalOrigin(value)
-            val needsCleartextAuthorization = cleartextOrigin != null &&
-                cleartextOrigin !in authorizedOrigins
+            val value by valueFlow.collectAsState()
+            val initValue by initValueFlow.collectAsState()
             AlertDialog(
                 properties = DialogProperties(dismissOnClickOutside = false),
                 title = {
@@ -103,10 +87,10 @@ class InputSubsLinkOption {
                         horizontalArrangement = Arrangement.SpaceBetween,
                         modifier = Modifier.fillMaxWidth(),
                     ) {
-                        Text(text = if (initValue.isNotEmpty()) stringResource(R.string.s_1508e32d35) else stringResource(R.string.s_6debaa8885))
+                        Text(text = if (initValue.isNotEmpty()) "修改订阅" else "添加订阅")
                         PerfIconButton(
                             imageVector = PerfIcon.HelpOutline,
-                            contentDescription = stringResource(R.string.subs_help),
+                            contentDescription = "订阅帮助",
                             onClick = throttle {
                                 cancel()
                                 mainVm.navigatePage(WebViewRoute(initUrl = ShortUrlSet.URL5))
@@ -114,27 +98,20 @@ class InputSubsLinkOption {
                     }
                 },
                 text = {
-                    androidx.compose.foundation.layout.Column {
-                        OutlinedTextField(
-                            value = value,
-                            onValueChange = {
-                                valueFlow.value = it.trim()
-                            },
-                            maxLines = 8,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .autoFocus(),
-                            placeholder = {
-                                Text(text = li.songe.gkd.sdp.app.getString(R.string.s_a00626547a))
-                            },
-                            isError = value.isNotEmpty() && !URLUtil.isNetworkUrl(value),
-                        )
-                        if (needsCleartextAuthorization) {
-                            Text(
-                                text = stringResource(R.string.s_ac96d3416e, (cleartextOrigin).toString()),
-                            )
-                        }
-                    }
+                    OutlinedTextField(
+                        value = value,
+                        onValueChange = {
+                            valueFlow.value = it.trim()
+                        },
+                        maxLines = 8,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .autoFocus(),
+                        placeholder = {
+                            Text(text = "请输入订阅链接")
+                        },
+                        isError = value.isNotEmpty() && !URLUtil.isNetworkUrl(value),
+                    )
                 },
                 onDismissRequest = {
                     cancel()
@@ -143,15 +120,15 @@ class InputSubsLinkOption {
                     TextButton(
                         enabled = value.isNotEmpty(),
                         onClick = throttle(fn = {
-                            submit(authorizeCleartext = needsCleartextAuthorization)
+                            submit()
                         }),
                     ) {
-                        Text(text = if (needsCleartextAuthorization) stringResource(R.string.s_62221c94a0) else stringResource(R.string.s_f526c89937))
+                        Text(text = "确定")
                     }
                 },
                 dismissButton = {
                     TextButton(onClick = ::cancel) {
-                        Text(text = stringResource(R.string.s_4d0b4688c7))
+                        Text(text = "取消")
                     }
                 },
             )

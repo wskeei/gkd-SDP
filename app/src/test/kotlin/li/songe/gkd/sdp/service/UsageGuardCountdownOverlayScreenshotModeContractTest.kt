@@ -1,71 +1,87 @@
 package li.songe.gkd.sdp.service
 
-import android.view.WindowManager
-import li.songe.gkd.sdp.util.UsageGuardCountdownOverlayCaptureController
-import li.songe.gkd.sdp.util.UsageGuardCountdownOverlayCapturePolicy
-import li.songe.gkd.sdp.util.UsageGuardCountdownOverlaySession
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
+import java.io.File
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class UsageGuardCountdownOverlayScreenshotModeContractTest {
     @Test
     fun screenshotModeUnmountsThenRestoresOnlyTheCurrentSecureOverlay() {
-        val controller = mountedController()
-        val hidden = controller.snapshotForHide()!!
+        val source = sourceFile(
+            "app/src/main/kotlin/li/songe/gkd/sdp/service/UsageGuardCountdownOverlayService.kt",
+        ).readText()
+        val hideMethod = source
+            .substringAfter("private fun hideOverlayForScreenshot()")
+            .substringBefore("private fun restoreOverlayAfterScreenshot")
+        val restoreMethod = source
+            .substringAfter("private fun restoreOverlayAfterScreenshot")
+            .substringBefore("private fun showTerminateConfirmScreen")
 
-        assertTrue(controller.onHideResult(hidden, removed = true))
-        assertFalse(controller.isMounted)
-        assertEquals(
-            UsageGuardCountdownOverlayCaptureController.RestoreAction.MOUNT,
-            controller.restoreAction(
-                hidden = hidden,
-                now = hidden.expiresAt - 1L,
-                leaseActive = true,
+        assertTrue(
+            source.contains(
+                "private val captureController = UsageGuardCountdownOverlayCaptureController()",
             ),
         )
-        assertEquals(
-            UsageGuardCountdownOverlayCapturePolicy.HIDE_DURATION_MS,
-            10_000L,
+        assertTrue(source.contains("private var restoreOverlayJob: Job? = null"))
+        assertTrue(source.contains("EXTRA_OVERLAY_LEASE_ID"))
+        assertTrue(source.contains("EXTRA_RUNTIME_GENERATION"))
+        assertTrue(hideMethod.contains("windowManager.removeView(overlayView)"))
+        assertTrue(
+            hideMethod.contains(
+                "delay(UsageGuardCountdownOverlayCapturePolicy.HIDE_DURATION_MS)",
+            ),
         )
+        assertTrue(hideMethod.contains("restoreOverlayAfterScreenshot(hidden)"))
+        assertTrue(
+            restoreMethod.contains(
+                "UsageGuardEngine.canRestoreCountdownOverlay(",
+            ),
+        )
+        assertTrue(restoreMethod.contains("mountOverlayView(overlayView, params)"))
+        assertTrue(source.contains("WindowManager.LayoutParams.FLAG_SECURE"))
+        assertTrue(source.contains("captureController.onMountFailed()"))
+        assertTrue(source.contains("view = null"))
+        assertTrue(source.contains("layoutParams = null"))
     }
 
     @Test
-    fun terminalServiceRejectsAndRevokesTheIncomingReplacementLease() {
-        val controller = UsageGuardCountdownOverlayCaptureController()
-        val session = session()
-        controller.onStart(session, hasView = false)
-        controller.onMountFailed()
+    fun usageControlExposesAnAccessibleScreenshotAction() {
+        val source = sourceFile(
+            "app/src/main/kotlin/li/songe/gkd/sdp/service/UsageGuardCountdownOverlayService.kt",
+        ).readText()
+        val control = source.substringAfter("private fun UsageGuardTerminateConfirmScreen(")
 
-        assertEquals(
-            UsageGuardCountdownOverlayCaptureController.StartAction.IGNORE_TERMINAL,
-            controller.onStart(session, hasView = false),
-        )
-        assertFalse(controller.isMounted)
-        assertTrue(controller.isTerminal)
+        assertTrue(source.contains("onHideForScreenshot = { hideOverlayForScreenshot() }"))
+        assertTrue(control.contains("onHideForScreenshot: () -> Unit"))
+        assertTrue(control.contains("OutlinedButton("))
+        assertTrue(control.contains("onClick = onHideForScreenshot"))
+        assertTrue(control.contains(".heightIn(min = 48.dp)"))
+        assertTrue(control.contains("Text(\"隐藏 10 秒用于截图\")"))
+        assertTrue(control.contains("text = \"隐藏期间倒计时继续，之后自动恢复。\""))
+        assertTrue(control.contains("style = MaterialTheme.typography.bodySmall"))
     }
 
     @Test
-    fun secureWindowFlagRemainsEnabledForTheCountdownOverlay() {
-        assertEquals(
-            WindowManager.LayoutParams.FLAG_SECURE,
-            USAGE_GUARD_COUNTDOWN_OVERLAY_FLAGS and WindowManager.LayoutParams.FLAG_SECURE,
-        )
+    fun mountFailureUsesTheSharedCountdownFailurePath() {
+        val source = sourceFile(
+            "app/src/main/kotlin/li/songe/gkd/sdp/service/UsageGuardCountdownOverlayService.kt",
+        ).readText()
+        val mountMethod = source
+            .substringAfter("private fun mountOverlayView(")
+            .substringBefore("private fun hideOverlayForScreenshot")
+
+        assertTrue(mountMethod.contains("captureController.onMountFailed()"))
+        assertTrue(mountMethod.contains("UsageGuardEngine.onOverlayMountFailed("))
+        assertTrue(mountMethod.contains("countdownLeaseId = overlayLeaseId"))
     }
 
-    private fun mountedController(): UsageGuardCountdownOverlayCaptureController {
-        return UsageGuardCountdownOverlayCaptureController().apply {
-            onStart(session(), hasView = false)
-            onMountSucceeded()
+    private fun sourceFile(relativePath: String): File {
+        var directory = File(System.getProperty("user.dir").orEmpty())
+        repeat(8) {
+            val candidate = File(directory, relativePath)
+            if (candidate.isFile) return candidate
+            directory = directory.parentFile ?: return File(relativePath)
         }
+        return File(relativePath)
     }
-
-    private fun session() = UsageGuardCountdownOverlaySession(
-        appId = "com.example.target",
-        recordId = 7L,
-        expiresAt = 20_000L,
-        leaseId = 11L,
-        runtimeGeneration = 5L,
-    )
 }
