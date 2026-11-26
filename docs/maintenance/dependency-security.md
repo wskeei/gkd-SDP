@@ -14,12 +14,16 @@ Dependabot 报告的 45 条告警均来自 Maven/Gradle 传递依赖：1 条 Cri
 
 | 族群 / floor | 父依赖（当前工具链） | 告警编号 | 备注 |
 | --- | --- | --- | --- |
-| `io.netty` 4.1.x ≥ `4.1.136.Final` | Android Tools/UTP/testing-platform 的 grpc-netty 链 | 2–7, 9–11, 13, 15–16, 19–34, 36–45 | 统一覆盖 Netty 4.1 模块；不影响 tcnative 2.x 或未来更高版本 |
+| `io.netty` 4.1.x ≥ `4.1.137.Final` | Android Tools/UTP/testing-platform 的 grpc-netty 链 | 2–7, 9–11, 13, 15–16, 19–34, 36–45, 47–49 | 统一覆盖 Netty 4.1 模块；2026-11-26 提升至 `4.1.137.Final`（CVE-2026-59903/75595/75596） |
 | `org.apache.commons:commons-lang3` ≥ `3.18.0` | Android Tools / SDK common | 8 | CVE-2025-48924 |
 | `org.apache.httpcomponents:httpclient`, `httpmime` ≥ `4.5.14` | Android Tools / bundletool 工具链 | 1 | 两个 4.5 模块保持同版本 |
 | `org.bitbucket.b_c:jose4j` ≥ `0.9.6` | bundletool | 14 | CVE-2024-29371 |
-| `org.bouncycastle:bcpkix-jdk18on`, `bcprov-jdk18on`, `bcutil-jdk18on` ≥ `1.84` | Android Tools / SDK common | 17–18, 35 | Critical 告警为 35，三个模块一起对齐 |
+| `org.bouncycastle:bcpkix-jdk18on`, `bcprov-jdk18on`, `bcutil-jdk18on` ≥ `1.85` | Android Tools / SDK common | 17–18, 35, 51–52 | 三个模块一起对齐；2026-11-26 提升至 `1.85`（CVE-2026-8763/13506） |
 | `org.jdom:jdom2` ≥ `2.0.6.1` | jetifier-processor | 12 | CVE-2021-33813 |
+| `org.freemarker:freemarker` ≥ `2.3.35` | Gradle / Android 构建工具链传递依赖 | 53 | 2026-11-26 新增（CVE-2026-84939） |
+| `com.squareup.wire` 6.x ≥ `6.4.5` | Gradle / Android 构建工具链传递依赖 | 50 | 2026-11-26 新增（CVE-2026-63126） |
+
+2026-11-26 同步将直接声明的 Kotlin 工具链升级至 `2.4.21`（配套 KSP `2.3.14`），覆盖告警 #46（`org.jetbrains.kotlin:kotlin-gradle-plugin`，CVE-2026-53914）。
 
 如果未来报告显示父工具链发生变化，应以报告中的请求路径补充本表，而不是把历史父依赖当成永久事实。
 

@@ -40,6 +40,8 @@ def load_floors(path: Path) -> dict[str, str]:
         "jose4j",
         "bouncycastleJdk18on",
         "jdom2",
+        "freemarker",
+        "wire6",
     }
     missing = sorted(required - values.keys())
     if missing:
@@ -84,6 +86,10 @@ def floor_for(group: str, name: str, version: str, floors: dict[str, str]) -> st
         return floors["jose4j"]
     if group == "org.jdom" and name == "jdom2":
         return floors["jdom2"]
+    if group == "org.freemarker" and name == "freemarker":
+        return floors["freemarker"]
+    if group == "com.squareup.wire" and version.startswith("6."):
+        return floors["wire6"]
     return None
 
 

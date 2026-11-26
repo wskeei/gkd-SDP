@@ -16,12 +16,14 @@ FIXTURES = Path(__file__).parent / "fixtures"
 
 
 FLOORS = """\
-netty4_1=4.1.136.Final
+netty4_1=4.1.137.Final
 commonsLang3=3.18.0
 httpcomponents4_5=4.5.14
 jose4j=0.9.6
-bouncycastleJdk18on=1.84
+bouncycastleJdk18on=1.85
 jdom2=2.0.6.1
+freemarker=2.3.35
+wire6=6.4.5
 """
 
 
@@ -49,6 +51,8 @@ class SecurityDependencyReportTests(unittest.TestCase):
         self.assertIn("io.netty:netty-codec", output)
         self.assertIn("org.bouncycastle:bcprov-jdk18on", output)
         self.assertIn("org.jdom:jdom2", output)
+        self.assertIn("org.freemarker:freemarker", output)
+        self.assertIn("com.squareup.wire:wire-runtime", output)
 
     def test_patched_text_report_passes_and_does_not_downgrade_future_versions(self) -> None:
         result = self.run_audit(FIXTURES / "security-dependencies-patched.txt")
@@ -167,6 +171,8 @@ class SecurityDependencyReportTests(unittest.TestCase):
             "jose4jFloor",
             "bouncycastleFloor",
             "jdom2Floor",
+            "freemarkerFloor",
+            "wire6Floor",
         ):
             self.assertIn(floor_name, policy_text)
         for coordinate in (
@@ -175,6 +181,8 @@ class SecurityDependencyReportTests(unittest.TestCase):
             'group == "org.bitbucket.b_c"',
             'group == "org.bouncycastle"',
             'group == "org.jdom"',
+            'group == "org.freemarker"',
+            'group == "com.squareup.wire"',
         ):
             self.assertIn(coordinate, policy_text)
 
