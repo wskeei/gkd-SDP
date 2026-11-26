@@ -10,8 +10,8 @@ All notable GKD-SDP changes are documented here. The format follows
 
 - Upgrade Kotlin to `2.4.21` (with KSP `2.3.14`) and raise Gradle security
   dependency floors for Netty 4.1 (`4.1.137.Final`), Bouncy Castle (`1.85`),
-  Apache FreeMarker (`2.3.35`), and Square Wire 6 (`6.4.5`) to remediate open
-  Dependabot alerts.
+  Apache FreeMarker (`2.3.35`), Square Wire 6 (`6.4.5`), and Guava
+  (`33.7.2-jre` / `33.7.2-android`) to remediate open Dependabot alerts.
 
 ### Maintenance
 

@@ -22,6 +22,7 @@ Dependabot 报告的 45 条告警均来自 Maven/Gradle 传递依赖：1 条 Cri
 | `org.jdom:jdom2` ≥ `2.0.6.1` | jetifier-processor | 12 | CVE-2021-33813 |
 | `org.freemarker:freemarker` ≥ `2.3.35` | Gradle / Android 构建工具链传递依赖 | 53 | 2026-11-26 新增（CVE-2026-84939） |
 | `com.squareup.wire` 6.x ≥ `6.4.5` | Gradle / Android 构建工具链传递依赖 | 50 | 2026-11-26 新增（CVE-2026-63126） |
+| `com.google.guava:guava` ≥ `33.7.2-jre` / `33.7.2-android` | Gradle / Android 构建工具链传递依赖 | 54 | 2026-11-26 新增，保持 `-jre`/`-android` 后缀对齐（CVE-2026-102554） |
 
 2026-11-26 同步将直接声明的 Kotlin 工具链升级至 `2.4.21`（配套 KSP `2.3.14`），覆盖告警 #46（`org.jetbrains.kotlin:kotlin-gradle-plugin`，CVE-2026-53914）。
 

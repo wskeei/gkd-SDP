@@ -42,6 +42,8 @@ def load_floors(path: Path) -> dict[str, str]:
         "jdom2",
         "freemarker",
         "wire6",
+        "guavaJre",
+        "guavaAndroid",
     }
     missing = sorted(required - values.keys())
     if missing:
@@ -90,6 +92,10 @@ def floor_for(group: str, name: str, version: str, floors: dict[str, str]) -> st
         return floors["freemarker"]
     if group == "com.squareup.wire" and version.startswith("6."):
         return floors["wire6"]
+    if group == "com.google.guava" and name == "guava":
+        if version.endswith("-android"):
+            return floors["guavaAndroid"]
+        return floors["guavaJre"]
     return None
 
 

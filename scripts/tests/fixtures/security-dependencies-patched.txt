@@ -17,4 +17,6 @@ org.bitbucket.b_c:jose4j:0.9.6
 org.jdom:jdom2:2.0.6.1
 org.freemarker:freemarker:2.3.35
 com.squareup.wire:wire-runtime:6.4.5
+com.google.guava:guava:33.7.2-jre
+com.google.guava:guava:33.7.2-android
 SECURITY_DEPENDENCY_REPORT_COMPLETE=1

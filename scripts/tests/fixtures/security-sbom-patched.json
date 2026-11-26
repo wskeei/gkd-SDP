@@ -14,7 +14,8 @@
       {"name": "org.bitbucket.b_c:jose4j", "versionInfo": "0.9.6"},
       {"name": "org.jdom:jdom2", "versionInfo": "2.0.6.1"},
       {"name": "org.freemarker:freemarker", "versionInfo": "2.3.35"},
-      {"name": "com.squareup.wire:wire-runtime", "versionInfo": "6.4.5"}
+      {"name": "com.squareup.wire:wire-runtime", "versionInfo": "6.4.5"},
+      {"name": "com.google.guava:guava", "versionInfo": "33.7.2-jre"}
     ]
   }
 }
