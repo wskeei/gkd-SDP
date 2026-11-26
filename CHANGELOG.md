@@ -6,6 +6,14 @@ All notable GKD-SDP changes are documented here. The format follows
 
 ## [Unreleased]
 
+### Maintenance
+
+- Streamline repository modules and CI/Nightly workflows by removing unused
+  `baselineprofile`, `quality-lint`, Kover, screenshot-regression, and managed
+  device gates while keeping unit tests, Android Lint, dependency security
+  floors, four-variant builds, and API 35 minified release APK cold-start smoke
+  checks.
+
 ## [2.3.0] - 2026-08-28
 
 ### Fixed
