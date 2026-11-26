@@ -24,6 +24,8 @@ bouncycastleJdk18on=1.85
 jdom2=2.0.6.1
 freemarker=2.3.35
 wire6=6.4.5
+guavaJre=33.7.2-jre
+guavaAndroid=33.7.2-android
 """
 
 
@@ -53,6 +55,7 @@ class SecurityDependencyReportTests(unittest.TestCase):
         self.assertIn("org.jdom:jdom2", output)
         self.assertIn("org.freemarker:freemarker", output)
         self.assertIn("com.squareup.wire:wire-runtime", output)
+        self.assertIn("com.google.guava:guava", output)
 
     def test_patched_text_report_passes_and_does_not_downgrade_future_versions(self) -> None:
         result = self.run_audit(FIXTURES / "security-dependencies-patched.txt")
@@ -173,6 +176,8 @@ class SecurityDependencyReportTests(unittest.TestCase):
             "jdom2Floor",
             "freemarkerFloor",
             "wire6Floor",
+            "guavaJreFloor",
+            "guavaAndroidFloor",
         ):
             self.assertIn(floor_name, policy_text)
         for coordinate in (
@@ -183,6 +188,7 @@ class SecurityDependencyReportTests(unittest.TestCase):
             'group == "org.jdom"',
             'group == "org.freemarker"',
             'group == "com.squareup.wire"',
+            'group == "com.google.guava"',
         ):
             self.assertIn(coordinate, policy_text)
 

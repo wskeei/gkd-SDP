@@ -20,6 +20,8 @@ val bouncycastleFloor = requiredFloor("bouncycastleJdk18on")
 val jdom2Floor = requiredFloor("jdom2")
 val freemarkerFloor = requiredFloor("freemarker")
 val wire6Floor = requiredFloor("wire6")
+val guavaJreFloor = requiredFloor("guavaJre")
+val guavaAndroidFloor = requiredFloor("guavaAndroid")
 val numericVersionPattern = "^\\d+(?:\\.\\d+)*".toRegex()
 
 fun versionParts(version: String): List<Int> =
@@ -56,6 +58,13 @@ fun securityFloor(group: String?, name: String, version: String): Pair<String, S
             freemarkerFloor to "Apache FreeMarker security floor"
         group == "com.squareup.wire" && version.startsWith("6.") ->
             wire6Floor to "Square Wire 6 security floor"
+        group == "com.google.guava" && name == "guava" -> {
+            if (version.endsWith("-android")) {
+                guavaAndroidFloor to "Guava Android security floor"
+            } else {
+                guavaJreFloor to "Guava JRE security floor"
+            }
+        }
         else -> null
     }
 }

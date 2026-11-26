@@ -13,5 +13,6 @@ org.bitbucket.b_c:jose4j:0.9.5
 org.jdom:jdom2:2.0.6
 org.freemarker:freemarker:2.3.34
 com.squareup.wire:wire-runtime:6.4.4
+com.google.guava:guava:33.4.0-jre
 io.netty:netty-tcnative:2.0.61.Final
 SECURITY_DEPENDENCY_REPORT_COMPLETE=1
