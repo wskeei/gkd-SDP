@@ -1,7 +1,7 @@
 [versions]
-kotlin = "2.3.21"
+kotlin = "2.4.21"
 serialization = "1.11.0"
-ksp = "2.3.8"
+ksp = "2.3.14"
 agp = "9.3.0"
 compose = "1.11.2"
 nav3 = "1.1.2"
