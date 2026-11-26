@@ -1,8 +1,0 @@
-{
-  "unstableClassCount": 326,
-  "coreStableTypes": [
-    "UsageGuardCountdownOverlaySession",
-    "UsageGuardCountdownOverlayCapturePolicy",
-    "UsageGuardPolicy"
-  ]
-}

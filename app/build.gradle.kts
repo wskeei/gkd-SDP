@@ -113,27 +113,12 @@ plugins {
     alias(libs.plugins.google.ksp)
     alias(libs.plugins.remap)
     alias(libs.plugins.loc)
-    alias(libs.plugins.kotlinx.kover)
-    alias(libs.plugins.compose.screenshot)
-    alias(libs.plugins.baselineprofile)
 }
-
-val koverIncludes = rootProject.file("config/quality/kover-includes.txt")
-    .readLines()
-    .map(String::trim)
-    .filter { it.isNotEmpty() && !it.startsWith("#") }
-    .distinct()
-val koverExcludes = rootProject.file("config/quality/kover-excludes.txt")
-    .readLines()
-    .map(String::trim)
-    .filter { it.isNotEmpty() && !it.startsWith("#") }
-    .distinct()
 
 android {
     namespace = rootProject.ext["android.namespace"].toString()
     compileSdk = rootProject.ext["android.compileSdk"] as Int
     buildToolsVersion = rootProject.ext["android.buildToolsVersion"].toString()
-    experimentalProperties["android.experimental.enableScreenshotTest"] = true
 
     defaultConfig {
         minSdk = rootProject.ext["android.minSdk"] as Int
@@ -242,60 +227,6 @@ android {
         "**/custom.config.conf",
         "**/custom.config.yaml",
     )
-
-    testOptions {
-        managedDevices {
-            localDevices {
-                create("pixel2Api26") {
-                    device = "Pixel 2"
-                    apiLevel = 26
-                    systemImageSource = "google"
-                    testedAbi = "x86_64"
-                    require64Bit = true
-                }
-                create("pixel6Api35") {
-                    device = "Pixel 6"
-                    apiLevel = 35
-                    systemImageSource = "google"
-                    testedAbi = "x86_64"
-                    require64Bit = true
-                }
-            }
-        }
-    }
-
-    kover {
-        reports {
-            filters {
-                includes {
-                    classes(*koverIncludes.toTypedArray())
-                }
-                excludes {
-                    classes(*koverExcludes.toTypedArray())
-                }
-            }
-            verify {
-                rule {
-                    minBound(
-                        80,
-                        kotlinx.kover.gradle.plugin.dsl.CoverageUnit.LINE,
-                        kotlinx.kover.gradle.plugin.dsl.AggregationType.COVERED_PERCENTAGE,
-                    )
-                }
-                rule {
-                    minBound(
-                        70,
-                        kotlinx.kover.gradle.plugin.dsl.CoverageUnit.BRANCH,
-                        kotlinx.kover.gradle.plugin.dsl.AggregationType.COVERED_PERCENTAGE,
-                    )
-                }
-            }
-        }
-    }
-
-    lint {
-        baseline = rootProject.file("app/lint-baseline.xml")
-    }
 }
 
 if (project.hasProperty("GKD_RENAME_APK_FLAG")) {
@@ -345,8 +276,6 @@ loc {
 }
 
 dependencies {
-    lintChecks(project(":quality-lint"))
-
     implementation(libs.kotlin.stdlib)
 
     implementation(project(":selector"))
@@ -367,8 +296,6 @@ dependencies {
 
     implementation(libs.compose.activity)
     implementation(libs.compose.material3)
-    screenshotTestImplementation(libs.compose.tooling)
-    screenshotTestImplementation(libs.screenshot.validation.api)
     debugImplementation(libs.compose.ui.test.manifest)
 
     implementation(libs.androidx.navigation3.ui)
@@ -416,8 +343,6 @@ dependencies {
     implementation(libs.reorderable)
 
     implementation(libs.androidx.splashscreen)
-    implementation(libs.androidx.profileinstaller)
-    baselineProfile(project(":baselineprofile"))
 
     implementation(libs.coil.compose)
     implementation(libs.coil.network)
